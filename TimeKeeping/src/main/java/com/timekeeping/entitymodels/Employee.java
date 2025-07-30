@@ -26,7 +26,6 @@ public class Employee implements Serializable {
     @Column(name = "employeePassword")
     private String employeePassword;
 
-    @NotBlank(message = "User Role is mandatory")
     @Column(name = "userRole")
     private String role;
 
