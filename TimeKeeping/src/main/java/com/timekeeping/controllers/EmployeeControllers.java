@@ -27,7 +27,7 @@ public class EmployeeControllers {
     }
 
     @PostMapping("/employee/register")
-    public ResponseEntity<EmployeeDTO> createEmployee(@Valid @RequestBody EmployeeDTO employeeDTO) throws Exception {
+    public ResponseEntity<EmployeeDTO> createEmployee(@RequestBody EmployeeDTO employeeDTO) throws Exception {
         return ResponseEntity.status(HttpStatus.CREATED).body(employeeService.createEmployee(employeeDTO));
     }
 
