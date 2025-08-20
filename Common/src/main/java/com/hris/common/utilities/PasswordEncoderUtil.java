@@ -1,4 +1,4 @@
-package com.timekeeping.utilities;
+package com.hris.common.utilities;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 

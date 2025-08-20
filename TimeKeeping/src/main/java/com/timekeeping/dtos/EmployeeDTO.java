@@ -71,12 +71,13 @@ public class EmployeeDTO implements Serializable {
         this.role = role;
     }
 
-    public EmployeeDTO(String employeeNo, String firstname, String lastname, String suffix) {
+    public EmployeeDTO(String employeeNo, String firstname, String lastname, String suffix, String role) {
         this.employeeNo = employeeNo;
         this.firstname = firstname;
         this.lastname = lastname;
         this.suffix = suffix;
         this.fullName = getFullName();
+        this.role = role;
     }
 
     public EmployeeDTO(String employeeNo, String firstname, String lastname, String suffix, String email, String position, String shortJobDesc, LocalDateTime createdAt, String role, LocalDateTime updatedAt) {

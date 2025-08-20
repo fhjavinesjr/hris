@@ -1,61 +1,51 @@
-package com.timekeeping.entitymodels;
+package com.administrative.dtos;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-@Entity
-@Table(name = "time_shift")
-public class TimeShift implements Serializable {
+public class TimeShiftDTO implements Serializable {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "timeShiftId")
-    private Long timeShiftId;
+    @NotBlank(message = "Code is mandatory")
+    private String tsCode;
 
     @NotNull(message = "Time In is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
-    @Column(name = "timeIn")
     private LocalTime timeIn;
 
     @NotNull(message = "Break Out is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
-    @Column(name = "breakOut")
     private LocalTime breakOut;
 
     @NotNull(message = "Break In is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
-    @Column(name = "breakIn")
     private LocalTime breakIn;
 
     @NotNull(message = "Time Out is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
-    @Column(name = "timeOut")
     private LocalTime timeOut;
 
-    public TimeShift() {
+    public TimeShiftDTO() {
 
     }
 
-    public TimeShift(Long timeShiftId, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut) {
-        this.timeShiftId = timeShiftId;
+    public TimeShiftDTO(String tsCode, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut) {
+        this.tsCode = tsCode;
         this.timeIn = timeIn;
         this.breakOut = breakOut;
         this.breakIn = breakIn;
         this.timeOut = timeOut;
     }
 
-    public Long getTimeShiftId() {
-        return timeShiftId;
+    public String getTsCode() {
+        return tsCode;
     }
 
-    public void setTimeShiftId(Long timeShiftId) {
-        this.timeShiftId = timeShiftId;
+    public void setTsCode(String tsCode) {
+        this.tsCode = tsCode;
     }
 
     public LocalTime getTimeIn() {

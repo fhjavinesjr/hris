@@ -1,4 +1,4 @@
-package com.timekeeping.entitymodels;
+package com.administrative.entitymodels;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
@@ -17,6 +16,10 @@ public class TimeShift implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "timeShiftId")
     private Long timeShiftId;
+
+    @NotBlank(message = "Code is mandatory")
+    @Column(name = "tsCode", length = 100, unique = true, nullable = false)
+    private String tsCode;
 
     @NotNull(message = "Time In is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
@@ -42,8 +45,8 @@ public class TimeShift implements Serializable {
 
     }
 
-    public TimeShift(Long timeShiftId, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut) {
-        this.timeShiftId = timeShiftId;
+    public TimeShift(String tsCode, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut) {
+        this.tsCode = tsCode;
         this.timeIn = timeIn;
         this.breakOut = breakOut;
         this.breakIn = breakIn;
@@ -56,6 +59,14 @@ public class TimeShift implements Serializable {
 
     public void setTimeShiftId(Long timeShiftId) {
         this.timeShiftId = timeShiftId;
+    }
+
+    public String getTsCode() {
+        return tsCode;
+    }
+
+    public void setTsCode(String tsCode) {
+        this.tsCode = tsCode;
     }
 
     public LocalTime getTimeIn() {

@@ -1,12 +1,12 @@
 package com.timekeeping.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hris.common.utilities.JwtUtil;
+import com.hris.common.utilities.UseUtils;
 import com.timekeeping.dtos.EmployeeDTO;
 import com.timekeeping.entitymodels.Employee;
 import com.timekeeping.repositories.EmployeeRepository;
 import com.timekeeping.services.EmployeeService;
-import com.timekeeping.utilities.JwtUtil;
-import com.timekeeping.utilities.UseUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -44,7 +44,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee employee = employeeRepository.findByEmployeeNo(employeeNo)
                 .orElseThrow(() -> new RuntimeException("Employee No not found"));
         if (passwordEncoder.matches(employeePassword, employee.getEmployeePassword())) {
-            return jwtUtil.generateToken(employee);
+            return jwtUtil.generateToken(employee.getEmployeeNo(), employee.getRole());
         }
 
         throw new RuntimeException("Invalid credentials");
@@ -121,7 +121,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         List<EmployeeDTO> employeeDisplays = new ArrayList<>();
         for(Employee employee : employees) {
             EmployeeDTO employeeDisplay = new EmployeeDTO(employee.getEmployeeNo(), employee.getFirstname(),
-                    employee.getLastname(), employee.getSuffix());
+                    employee.getLastname(), employee.getSuffix(), employee.getRole());
 
             employeeDisplays.add(employeeDisplay);
         }

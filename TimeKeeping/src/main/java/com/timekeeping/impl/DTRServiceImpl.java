@@ -4,7 +4,6 @@ import com.timekeeping.dtos.DTRDTO;
 import com.timekeeping.entitymodels.DTR;
 import com.timekeeping.repositories.DTRRepository;
 import com.timekeeping.services.DTRService;
-import com.timekeeping.utilities.JwtFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
