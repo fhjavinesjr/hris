@@ -1,4 +1,4 @@
-package com.timekeeping.configs;
+package com.administrative.configs;
 
 import com.hris.common.utilities.JwtFilter;
 import org.slf4j.Logger;

@@ -7,19 +7,17 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>TimeKeeping</artifactId>
+    <artifactId>Common</artifactId>
     <packaging>jar</packaging>
 
-    <name>TimeKeeping</name>
+    <name>Common</name>
     <url>http://maven.apache.org</url>
 
-    <dependencies>
-        <dependency>
-            <groupId>com.hris</groupId>
-            <artifactId>Common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
+    <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

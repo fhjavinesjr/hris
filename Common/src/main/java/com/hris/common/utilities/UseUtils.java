@@ -1,4 +1,4 @@
-package com.timekeeping.utilities;
+package com.hris.common.utilities;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
