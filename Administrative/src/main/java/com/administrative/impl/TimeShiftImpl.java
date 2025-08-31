@@ -8,6 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class TimeShiftImpl implements TimeShiftService {
 
@@ -27,6 +30,25 @@ public class TimeShiftImpl implements TimeShiftService {
             return timeShiftDTO;
         } catch(Exception e) {
             log.error("Error failed save TimeShift: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public List<TimeShiftDTO> getAllTimeShift() throws Exception {
+        List<TimeShiftDTO> timeShiftDTOS = new ArrayList<>();
+        try {
+            List<TimeShift> timeShifts = new ArrayList<>(timeShiftRepository.findAll());
+
+            for(TimeShift ts : timeShifts) {
+                TimeShiftDTO timeShiftDTO = new TimeShiftDTO(ts.getTsCode(), ts.getTimeIn(), ts.getBreakOut(), ts.getBreakIn(), ts.getTimeOut());
+
+                timeShiftDTOS.add(timeShiftDTO);
+            }
+
+            return timeShiftDTOS;
+        } catch(Exception e) {
+            log.error("Error failed fetching TimeShift: {}", e.getMessage());
             return null;
         }
     }
