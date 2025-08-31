@@ -2,6 +2,7 @@ package com.timekeeping.dtos;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -16,15 +17,16 @@ public class WorkScheduleDTO implements Serializable {
     @NotBlank(message = "Time Shift Code is mandatory")
     private String tsCode;
 
-    @NotBlank(message = "Work Schedule Date/Time is mandatory")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM/dd/yyyy HH:mm:ss")
+    @NotNull(message = "Work Schedule Date/Time is mandatory")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     private LocalDateTime wsDateTime;
 
     public WorkScheduleDTO() {
 
     }
 
-    public WorkScheduleDTO(String employeeNo, String tsCode, LocalDateTime wsDateTime) {
+    public WorkScheduleDTO(Long wsId, String employeeNo, String tsCode, LocalDateTime wsDateTime) {
+        this.wsId = wsId;
         this.employeeNo = employeeNo;
         this.tsCode = tsCode;
         this.wsDateTime = wsDateTime;
