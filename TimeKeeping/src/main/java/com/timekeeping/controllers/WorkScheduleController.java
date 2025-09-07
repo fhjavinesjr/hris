@@ -33,7 +33,7 @@ public class WorkScheduleController {
         return ResponseEntity.status(HttpStatus.CREATED).body(new MetadataResponse(workScheduleDTO.getWsId(), "Successful to create work schedule"));
     }
 
-    @GetMapping("/getAll/work-schedule")
+    @GetMapping("/getListByEmployeeAndDateRange/work-schedule")
     public ResponseEntity<List<WorkScheduleDTO>> getAllWorkSchedule(@RequestParam("employeeNo") String employeeNo, @RequestParam("monthStart") @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime monthStart, @RequestParam("monthEnd") @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime monthEnd) throws Exception {
         List<WorkScheduleDTO> workScheduleDTOList = workScheduleService.getAllWorkSchedule(employeeNo, monthStart, monthEnd);
 

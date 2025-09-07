@@ -1,8 +1,6 @@
 package com.timekeeping.controllers;
 
 import com.timekeeping.dtos.DTRDTO;
-import com.timekeeping.dtos.ResponseDTO;
-import com.timekeeping.entitymodels.DTR;
 import com.timekeeping.services.DTRService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -11,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
