@@ -26,12 +26,10 @@ public class TimeShift implements Serializable {
     @Column(name = "timeIn")
     private LocalTime timeIn;
 
-    @NotNull(message = "Break Out is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
     @Column(name = "breakOut")
     private LocalTime breakOut;
 
-    @NotNull(message = "Break In is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
     @Column(name = "breakIn")
     private LocalTime breakIn;
