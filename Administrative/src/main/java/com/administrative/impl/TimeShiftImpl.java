@@ -41,7 +41,7 @@ public class TimeShiftImpl implements TimeShiftService {
             List<TimeShift> timeShifts = new ArrayList<>(timeShiftRepository.findAll());
 
             for(TimeShift ts : timeShifts) {
-                TimeShiftDTO timeShiftDTO = new TimeShiftDTO(ts.getTsCode(), ts.getTimeIn(), ts.getBreakOut(), ts.getBreakIn(), ts.getTimeOut());
+                TimeShiftDTO timeShiftDTO = new TimeShiftDTO(ts.getTimeShiftId(), ts.getTsCode(), ts.getTimeIn(), ts.getBreakOut(), ts.getBreakIn(), ts.getTimeOut());
 
                 timeShiftDTOS.add(timeShiftDTO);
             }
@@ -51,5 +51,40 @@ public class TimeShiftImpl implements TimeShiftService {
             log.error("Error failed fetching TimeShift: {}", e.getMessage());
             return null;
         }
+    }
+
+    @Override
+    public TimeShiftDTO updateTimeShift(Long timeShiftId, TimeShiftDTO timeShiftDTO) throws Exception {
+        try {
+            TimeShift timeShift = timeShiftRepository.findById(timeShiftId).orElseThrow(() -> new RuntimeException("Time Shift not found"));
+            if(timeShift != null) {
+                timeShift.setTsCode(timeShiftDTO.getTsCode());
+                timeShift.setTimeIn(timeShiftDTO.getTimeIn());
+                timeShift.setBreakOut(timeShiftDTO.getBreakOut());
+                timeShift.setBreakIn(timeShiftDTO.getBreakIn());
+                timeShift.setTimeOut(timeShiftDTO.getTimeOut());
+
+                timeShiftRepository.save(timeShift);
+
+                return timeShiftDTO;
+            }
+        } catch(Exception e) {
+            log.error("Error failed fetching TimeShift: {}", e.getMessage());
+        }
+
+        return null;
+    }
+
+    @Override
+    public Boolean deleteTimeShift(Long timeShiftId) throws Exception {
+        try {
+            timeShiftRepository.deleteById(timeShiftId);
+
+            return true;
+        } catch(Exception e) {
+            log.error("Error failed delete TimeShift: {}", e.getMessage());
+        }
+
+        return false;
     }
 }
