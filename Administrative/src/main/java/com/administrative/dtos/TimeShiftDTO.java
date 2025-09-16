@@ -9,6 +9,8 @@ import java.time.LocalTime;
 
 public class TimeShiftDTO implements Serializable {
 
+    private Long timeShiftId;
+
     @NotBlank(message = "Code is mandatory")
     private String tsCode;
 
@@ -30,12 +32,21 @@ public class TimeShiftDTO implements Serializable {
 
     }
 
-    public TimeShiftDTO(String tsCode, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut) {
+    public TimeShiftDTO(Long timeShiftId, String tsCode, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut) {
+        this.timeShiftId = timeShiftId;
         this.tsCode = tsCode;
         this.timeIn = timeIn;
         this.breakOut = breakOut;
         this.breakIn = breakIn;
         this.timeOut = timeOut;
+    }
+
+    public Long getTimeShiftId() {
+        return timeShiftId;
+    }
+
+    public void setTimeShiftId(Long timeShiftId) {
+        this.timeShiftId = timeShiftId;
     }
 
     public String getTsCode() {

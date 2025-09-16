@@ -11,4 +11,8 @@ public interface TimeShiftService {
 
     List<TimeShiftDTO> getAllTimeShift() throws Exception;
 
+    TimeShiftDTO updateTimeShift(Long timeShiftId, TimeShiftDTO timeShiftDTO) throws Exception;
+
+    Boolean deleteTimeShift(Long timeShiftId) throws Exception;
+
 }
