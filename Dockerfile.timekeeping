@@ -1,0 +1,33 @@
+# ===== Stage 1: Build Stage =====
+FROM maven:3.9.9-eclipse-temurin-17 AS build
+
+WORKDIR /app
+
+# Copy only pom files first for better caching
+COPY pom.xml .
+COPY Common/pom.xml Common/
+COPY TimeKeeping/pom.xml TimeKeeping/
+COPY Administrative/pom.xml Administrative/
+
+# 🧩 Download dependencies (cached between builds)
+RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline -B
+
+# Copy the full project source
+COPY . .
+
+# 🧱 Build only the TimeKeeping module (and its dependencies)
+RUN --mount=type=cache,target=/root/.m2 mvn clean package -DskipTests -pl TimeKeeping -am -B
+
+# ===== Stage 2: Runtime Stage =====
+FROM eclipse-temurin:17-jre
+
+WORKDIR /app
+
+# Copy the built JAR from the build stage
+COPY --from=build /app/TimeKeeping/target/*.jar app.jar
+
+# Expose port (8081 for TimeKeeping)
+EXPOSE 8081
+
+# Run the Spring Boot app
+ENTRYPOINT ["java", "-jar", "app.jar"]
