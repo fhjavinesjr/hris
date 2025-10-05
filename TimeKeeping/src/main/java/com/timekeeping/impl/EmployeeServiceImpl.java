@@ -8,6 +8,7 @@ import com.timekeeping.entitymodels.Employee;
 import com.timekeeping.repositories.EmployeeRepository;
 import com.timekeeping.services.EmployeeService;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final JwtUtil jwtUtil;
 
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, @Qualifier("timekeepingPasswordEncoder") PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.employeeRepository = employeeRepository;
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;

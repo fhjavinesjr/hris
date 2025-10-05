@@ -1,4 +1,4 @@
-package com.administrative.configs;
+package com.hris.configs;
 
 import com.hris.common.utilities.JwtFilter;
 import org.slf4j.Logger;

@@ -22,18 +22,18 @@ import java.util.List;
 @Configuration
 @EnableMethodSecurity
 @EnableWebSecurity
-public class SecurityConfig {
+public class TimeKeepingSecurityConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
+    private static final Logger log = LoggerFactory.getLogger(TimeKeepingSecurityConfig.class);
 
     private final JwtFilter jwtFilter;
 
-    public SecurityConfig(JwtFilter jwtFilter) {
+    public TimeKeepingSecurityConfig(JwtFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
     }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Bean(name = "timekeepingSecurityFilterChain")
+    public SecurityFilterChain timekeepingSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(request -> {
@@ -66,8 +66,8 @@ public class SecurityConfig {
 
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
+    @Bean(name = "timekeepingPasswordEncoder")
+    public PasswordEncoder timekeepingPasswordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
