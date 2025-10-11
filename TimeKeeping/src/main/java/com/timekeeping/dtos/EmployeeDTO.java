@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 
 public class EmployeeDTO implements Serializable {
 
+    private Long employeeId;
+
     @NotBlank(message = "Employee No is mandatory")
     private String employeeNo;
 
@@ -71,7 +73,8 @@ public class EmployeeDTO implements Serializable {
         this.role = role;
     }
 
-    public EmployeeDTO(String employeeNo, String firstname, String lastname, String suffix, String role) {
+    public EmployeeDTO(Long employeeId, String employeeNo, String firstname, String lastname, String suffix, String role) {
+        this.employeeId = employeeId;
         this.employeeNo = employeeNo;
         this.firstname = firstname;
         this.lastname = lastname;
@@ -91,6 +94,18 @@ public class EmployeeDTO implements Serializable {
         this.createdAt = createdAt;
         this.role = role;
         this.updatedAt = updatedAt;
+    }
+
+    public Long getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(Long employeeId) {
+        this.employeeId = employeeId;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public String getEmployeeNo() {

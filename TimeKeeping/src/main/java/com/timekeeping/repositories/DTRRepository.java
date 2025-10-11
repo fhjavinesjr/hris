@@ -10,11 +10,11 @@ import java.util.Optional;
 public interface DTRRepository  extends JpaRepository<DTR, Long> {
     // Avoid using raw SQL queries to prevent SQL injection attacks.
 
-    Optional<List<DTR>> findByEmployeeNoAndDtrDateBetween(String employeeNo, LocalDateTime fromDate, LocalDateTime toDate);
+    Optional<List<DTR>> findByEmployeeIdAndDtrDateBetween(String employeeId, LocalDateTime fromDate, LocalDateTime toDate);
 
-//    @Query("SELECT d FROM DTR d WHERE d.employeeNo = :employeeNo AND d.dtrDate BETWEEN :fromDate AND :toDate")
-//    List<DTR> fetchByEmployeeNoAndDateRange(
-//            @Param("employeeNo") String employeeNo,
+//    @Query("SELECT d FROM DTR d WHERE d.employeeId = :employeeNo AND d.dtrDate BETWEEN :fromDate AND :toDate")
+//    List<DTR> fetchByEmployeeIdAndDateRange(
+//            @Param("employeeId") String employeeId,
 //            @Param("fromDate") LocalDateTime fromDate,
 //            @Param("toDate") LocalDateTime toDate
 //    );

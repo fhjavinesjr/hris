@@ -26,7 +26,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
     @Override
     public WorkScheduleDTO createWorkSchedule(WorkScheduleDTO workScheduleDTO) throws Exception {
         try {
-            WorkSchedule workSchedule = new WorkSchedule(workScheduleDTO.getEmployeeNo(), workScheduleDTO.getTsCode(), workScheduleDTO.getWsDateTime());
+            WorkSchedule workSchedule = new WorkSchedule(workScheduleDTO.getEmployeeId(), workScheduleDTO.getTsCode(), workScheduleDTO.getWsDateTime());
             WorkSchedule wsSaved = workScheduleRepository.save(workSchedule);
             workScheduleDTO.setWsId(wsSaved.getWsId());
             return workScheduleDTO;
@@ -37,14 +37,14 @@ public class WorkScheduleImpl implements WorkScheduleService {
     }
 
     @Override
-    public List<WorkScheduleDTO> getAllWorkSchedule(String employeeNo, LocalDateTime monthStart, LocalDateTime monthEnd) throws Exception {
+    public List<WorkScheduleDTO> getAllWorkSchedule(String employeeId, LocalDateTime monthStart, LocalDateTime monthEnd) throws Exception {
         try {
             List<WorkScheduleDTO> workScheduleDTOList = new ArrayList<>();
-            Optional<List<WorkSchedule>> opWorkSchedules = workScheduleRepository.findByEmployeeNoAndWsDateTimeBetween(employeeNo, monthStart, monthEnd);
+            Optional<List<WorkSchedule>> opWorkSchedules = workScheduleRepository.findByEmployeeIdAndWsDateTimeBetween(employeeId, monthStart, monthEnd);
             if(opWorkSchedules.isPresent()) {
                 List<WorkSchedule> workSchedules = opWorkSchedules.get();
                 for(WorkSchedule workSchedule : workSchedules) {
-                    WorkScheduleDTO workScheduleDTO = new WorkScheduleDTO(workSchedule.getWsId(), workSchedule.getEmployeeNo(), workSchedule.getTsCode(), workSchedule.getWsDateTime());
+                    WorkScheduleDTO workScheduleDTO = new WorkScheduleDTO(workSchedule.getWsId(), workSchedule.getEmployeeId(), workSchedule.getTsCode(), workSchedule.getWsDateTime());
                     workScheduleDTOList.add(workScheduleDTO);
                 }
             }
@@ -64,7 +64,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
     public WorkScheduleDTO updateWorkSchedule(Long wsId, WorkScheduleDTO workScheduleDTO) throws Exception {
         try {
             WorkSchedule workSchedule = getWorkScheduleById(wsId);
-            workSchedule = new WorkSchedule(workScheduleDTO.getEmployeeNo(), workScheduleDTO.getTsCode(), workScheduleDTO.getWsDateTime());
+            workSchedule = new WorkSchedule(workScheduleDTO.getEmployeeId(), workScheduleDTO.getTsCode(), workScheduleDTO.getWsDateTime());
             workSchedule.setWsId(wsId);
             workScheduleRepository.save(workSchedule);
             return workScheduleDTO;

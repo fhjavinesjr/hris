@@ -26,8 +26,8 @@ public class DTRController {
     }
 
     @GetMapping("/employee/dtr")
-    public ResponseEntity<List<DTRDTO>> getEmployeeDTR(@RequestParam("employeeNo") String employeeNo, @RequestParam @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime fromDate, @RequestParam @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime toDate) throws Exception {
-        List<DTRDTO> dtrdtoList = dtrService.getEmployeeDTR(employeeNo, fromDate, toDate);
+    public ResponseEntity<List<DTRDTO>> getEmployeeDTR(@RequestParam("employeeId") String employeeId, @RequestParam @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime fromDate, @RequestParam @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime toDate) throws Exception {
+        List<DTRDTO> dtrdtoList = dtrService.getEmployeeDTR(employeeId, fromDate, toDate);
         return ResponseEntity.ok(dtrdtoList);
     }
 

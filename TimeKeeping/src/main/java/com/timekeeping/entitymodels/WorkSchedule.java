@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Table(
     name = "work_schedule",
     uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"employeeNo", "wsDateTime"})
+        @UniqueConstraint(columnNames = {"employeeId", "wsDateTime"})
     }
 )
 public class WorkSchedule implements Serializable {
@@ -22,9 +22,9 @@ public class WorkSchedule implements Serializable {
     @Column(name = "wsId")
     private Long wsId;
 
-    @NotBlank(message = "Employee No is mandatory")
-    @Column(name = "employeeNo")
-    private String employeeNo;
+    @NotBlank(message = "Employee ID is mandatory")
+    @Column(name = "employeeId")
+    private String employeeId;
 
     @NotBlank(message = "Time Shift Code is mandatory")
     @Column(name = "tsCode")
@@ -39,8 +39,8 @@ public class WorkSchedule implements Serializable {
 
     }
 
-    public WorkSchedule(String employeeNo, String tsCode, LocalDateTime wsDateTime) {
-        this.employeeNo = employeeNo;
+    public WorkSchedule(String employeeId, String tsCode, LocalDateTime wsDateTime) {
+        this.employeeId = employeeId;
         this.tsCode = tsCode;
         this.wsDateTime = wsDateTime;
     }
@@ -53,12 +53,12 @@ public class WorkSchedule implements Serializable {
         this.wsId = wsId;
     }
 
-    public String getEmployeeNo() {
-        return employeeNo;
+    public String getEmployeeId() {
+        return employeeId;
     }
 
-    public void setEmployeeNo(String employeeNo) {
-        this.employeeNo = employeeNo;
+    public void setEmployeeId(String employeeId) {
+        this.employeeId = employeeId;
     }
 
     public String getTsCode() {

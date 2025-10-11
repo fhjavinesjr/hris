@@ -9,6 +9,6 @@ public interface DTRService {
 
     Boolean createEmployeeDTR(DTRDTO dtrdto) throws Exception;
 
-    List<DTRDTO> getEmployeeDTR(String employeeNo, LocalDateTime fromDate, LocalDateTime toDate) throws Exception;
+    List<DTRDTO> getEmployeeDTR(String employeeId, LocalDateTime fromDate, LocalDateTime toDate) throws Exception;
 
 }

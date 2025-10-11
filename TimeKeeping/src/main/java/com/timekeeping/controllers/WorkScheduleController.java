@@ -34,8 +34,8 @@ public class WorkScheduleController {
     }
 
     @GetMapping("/getListByEmployeeAndDateRange/work-schedule")
-    public ResponseEntity<List<WorkScheduleDTO>> getAllWorkSchedule(@RequestParam("employeeNo") String employeeNo, @RequestParam("monthStart") @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime monthStart, @RequestParam("monthEnd") @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime monthEnd) throws Exception {
-        List<WorkScheduleDTO> workScheduleDTOList = workScheduleService.getAllWorkSchedule(employeeNo, monthStart, monthEnd);
+    public ResponseEntity<List<WorkScheduleDTO>> getAllWorkSchedule(@RequestParam("employeeId") String employeeId, @RequestParam("monthStart") @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime monthStart, @RequestParam("monthEnd") @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime monthEnd) throws Exception {
+        List<WorkScheduleDTO> workScheduleDTOList = workScheduleService.getAllWorkSchedule(employeeId, monthStart, monthEnd);
 
         if (workScheduleDTOList == null || workScheduleDTOList.isEmpty()) {
             return ResponseEntity.noContent().build();

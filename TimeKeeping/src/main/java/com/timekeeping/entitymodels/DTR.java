@@ -18,9 +18,9 @@ public class DTR implements Serializable {
     @Column(name = "dtrId")
     private Long dtrId;
 
-    @NotBlank(message = "Employee No is mandatory")
-    @Column(name = "employeeNo", length = 100, nullable = false)
-    private String employeeNo;
+    @NotBlank(message = "Employee ID is mandatory")
+    @Column(name = "employeeId", length = 100, nullable = false)
+    private String employeeId;
 
     @NotNull(message = "DTR Date is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
@@ -63,9 +63,9 @@ public class DTR implements Serializable {
 
     }
 
-    public DTR(Long dtrId, String employeeNo, LocalDateTime dtrDate, String workDate, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut, Long lateMin, Long underMin) {
+    public DTR(Long dtrId, String employeeId, LocalDateTime dtrDate, String workDate, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut, Long lateMin, Long underMin) {
         this.dtrId = dtrId;
-        this.employeeNo = employeeNo;
+        this.employeeId = employeeId;
         this.dtrDate = dtrDate;
         this.workDate = workDate;
         this.timeIn = timeIn;
@@ -84,12 +84,12 @@ public class DTR implements Serializable {
         this.dtrId = dtrId;
     }
 
-    public String getEmployeeNo() {
-        return employeeNo;
+    public String getEmployeeId() {
+        return employeeId;
     }
 
-    public void setEmployeeNo(String employeeNo) {
-        this.employeeNo = employeeNo;
+    public void setEmployeeId(String employeeId) {
+        this.employeeId = employeeId;
     }
 
     public LocalDateTime getDtrDate() {

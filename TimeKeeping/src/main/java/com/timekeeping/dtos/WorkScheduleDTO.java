@@ -11,8 +11,8 @@ public class WorkScheduleDTO implements Serializable {
 
     private Long wsId;
 
-    @NotBlank(message = "Employee No is mandatory")
-    private String employeeNo;
+    @NotBlank(message = "Employee ID is mandatory")
+    private String employeeId;
 
     @NotBlank(message = "Time Shift Code is mandatory")
     private String tsCode;
@@ -25,9 +25,9 @@ public class WorkScheduleDTO implements Serializable {
 
     }
 
-    public WorkScheduleDTO(Long wsId, String employeeNo, String tsCode, LocalDateTime wsDateTime) {
+    public WorkScheduleDTO(Long wsId, String employeeId, String tsCode, LocalDateTime wsDateTime) {
         this.wsId = wsId;
-        this.employeeNo = employeeNo;
+        this.employeeId = employeeId;
         this.tsCode = tsCode;
         this.wsDateTime = wsDateTime;
     }
@@ -40,12 +40,12 @@ public class WorkScheduleDTO implements Serializable {
         this.wsId = wsId;
     }
 
-    public String getEmployeeNo() {
-        return employeeNo;
+    public String getEmployeeId() {
+        return employeeId;
     }
 
-    public void setEmployeeNo(String employeeNo) {
-        this.employeeNo = employeeNo;
+    public void setEmployeeId(String employeeId) {
+        this.employeeId = employeeId;
     }
 
     public String getTsCode() {

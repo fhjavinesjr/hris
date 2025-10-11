@@ -11,6 +11,6 @@ import java.util.Optional;
 @Repository
 public interface WorkScheduleRepository extends JpaRepository<WorkSchedule, Long> {
 
-    Optional<List<WorkSchedule>> findByEmployeeNoAndWsDateTimeBetween(String employeeNo, LocalDateTime fromDate, LocalDateTime toDate);
+    Optional<List<WorkSchedule>> findByEmployeeIdAndWsDateTimeBetween(String employeeId, LocalDateTime fromDate, LocalDateTime toDate);
 
 }

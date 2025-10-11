@@ -26,7 +26,7 @@ public class DTRServiceImpl implements DTRService {
     @Override
     public Boolean createEmployeeDTR(DTRDTO dtrdto) throws Exception {
         try {
-            DTR dtr = new DTR(0L, dtrdto.getEmployeeNo(), dtrdto.getDtrDate(), dtrdto.getWorkDate(), dtrdto.getTimeIn(),
+            DTR dtr = new DTR(0L, dtrdto.getEmployeeId(), dtrdto.getDtrDate(), dtrdto.getWorkDate(), dtrdto.getTimeIn(),
                     dtrdto.getBreakOut(), dtrdto.getBreakIn(), dtrdto.getTimeOut(), dtrdto.getLateMin(), dtrdto.getUnderMin());
             dtrRepository.save(dtr);
 
@@ -38,12 +38,12 @@ public class DTRServiceImpl implements DTRService {
     }
 
     @Override
-    public List<DTRDTO> getEmployeeDTR(String employeeNo, LocalDateTime fromDate, LocalDateTime toDate) {
-        List<DTR> dtrList = dtrRepository.findByEmployeeNoAndDtrDateBetween(employeeNo, fromDate, toDate).orElseThrow(() -> new RuntimeException("DTR not found"));;
+    public List<DTRDTO> getEmployeeDTR(String employeeId, LocalDateTime fromDate, LocalDateTime toDate) {
+        List<DTR> dtrList = dtrRepository.findByEmployeeIdAndDtrDateBetween(employeeId, fromDate, toDate).orElseThrow(() -> new RuntimeException("DTR not found"));;
 
         List<DTRDTO> dtrdtoList = new ArrayList<>();
         for(DTR dtr : dtrList) {
-            DTRDTO dtrdto = new DTRDTO(dtr.getDtrId(), dtr.getEmployeeNo(), dtr.getDtrDate(), dtr.getWorkDate(), dtr.getTimeIn(),
+            DTRDTO dtrdto = new DTRDTO(dtr.getDtrId(), dtr.getEmployeeId(), dtr.getDtrDate(), dtr.getWorkDate(), dtr.getTimeIn(),
                     dtr.getBreakOut(), dtr.getBreakIn(), dtr.getTimeOut(), dtr.getLateMin(), dtr.getUnderMin());
 
             dtrdtoList.add(dtrdto);

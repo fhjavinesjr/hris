@@ -11,7 +11,7 @@ public interface WorkScheduleService {
 
     WorkScheduleDTO createWorkSchedule(WorkScheduleDTO workScheduleDTO) throws Exception;
 
-    List<WorkScheduleDTO> getAllWorkSchedule(String employeeNo, LocalDateTime monthStart, LocalDateTime monthEnd) throws Exception;
+    List<WorkScheduleDTO> getAllWorkSchedule(String employeeId, LocalDateTime monthStart, LocalDateTime monthEnd) throws Exception;
 
     WorkScheduleDTO updateWorkSchedule(Long wsId, WorkScheduleDTO workScheduleDTO) throws Exception;
 

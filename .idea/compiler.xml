@@ -10,6 +10,7 @@
         <module name="TimeKeeping" />
         <module name="HRISApp" />
         <module name="Common" />
+        <module name="HumanResource" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
