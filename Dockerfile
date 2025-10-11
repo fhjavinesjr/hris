@@ -6,6 +6,7 @@ COPY HRISApp/pom.xml HRISApp/
 COPY Common/pom.xml Common/
 COPY Administrative/pom.xml Administrative/
 COPY TimeKeeping/pom.xml TimeKeeping/
+COPY HumanResource/pom.xml HumanResource/
 
 RUN mvn -B -q dependency:go-offline
 
