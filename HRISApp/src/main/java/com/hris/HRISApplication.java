@@ -1,6 +1,7 @@
 package com.hris;
 
 import com.administrative.configs.AdministrativeSecurityConfig;
+import com.humanresource.configs.HumanResourceSecurityConfig;
 import com.timekeeping.configs.TimeKeepingSecurityConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -17,13 +18,15 @@ import org.springframework.context.annotation.FilterType;
         basePackages = {
                 "com.timekeeping",
                 "com.administrative",
+                "com.humanresource",
                 "com.hris.common"
         },
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.ASSIGNABLE_TYPE,
                 classes = {
                         TimeKeepingSecurityConfig.class,
-                        AdministrativeSecurityConfig.class
+                        AdministrativeSecurityConfig.class,
+                        HumanResourceSecurityConfig.class
                 }
         )
 )
