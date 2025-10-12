@@ -1,268 +1,130 @@
-package com.humanresource.entitymodels;
-
+package com.humanresource.dtos;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Lob;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "personaldata")
-public class PersonalData implements Serializable {
+public class PersonalDataDTO implements Serializable {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "personalDataId")
     private Long personalDataId;
-
-    @Column(name = "employeeId")
     private Long employeeId;
 
     @NotBlank(message = "Surname is mandatory")
-    @Column(name = "surname")
     private String surname;
 
     @NotBlank(message = "firstname is mandatory")
-    @Column(name = "firstname")
     private String firstname;
 
     @NotBlank(message = "middlename is mandatory")
-    @Column(name = "middlename")
     private String middlename;
 
     @NotBlank(message = "extname is mandatory")
-    @Column(name = "extname")
     private String extname;
 
     @NotNull(message = "Date of Birth is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    @Column(name = "dob")
     private LocalDateTime dob;
 
-    @Column(name = "pob")
     private String pob;
 
     @NotNull(message = "sex_id is mandatory")
-    @Column(name = "sex_id")
     private Integer sex_id;
 
     @NotNull(message = "civilStatus_id is mandatory")
-    @Column(name = "civilStatus_id")
     private Integer civilStatus_id;
-
-    @Column(name = "height")
     private Integer height;
-
-    @Column(name = "weight")
     private Integer weight;
-
-    @Column(name = "bloodType")
     private String bloodType;
-
-    @Column(name = "gsisId")
     private String gsisId;
-
-    @Column(name = "pagibigId")
     private String pagibigId;
-
-    @Column(name = "philhealthNo")
     private String philhealthNo;
-
-    @Column(name = "sssNo")
     private String sssNo;
-
-    @Column(name = "tinNo")
     private String tinNo;
-
-    @Column(name = "agencyEmpNo")
     private String agencyEmpNo;
-
-    @Column(name = "citizenship")
     private String citizenship;
-
-    @Column(name = "resAddress")
     private String resAddress;
-
-    @Column(name = "resZip")
     private String resZip;
-
-    @Column(name = "permAddress")
     private String permAddress;
-
-    @Column(name = "permZip")
     private String permZip;
-
-    @Column(name = "telNo")
     private String telNo;
 
     @NotBlank(message = "Mobile number is mandatory")
-    @Column(name = "mobileNo")
     private String mobileNo;
 
     @NotBlank(message = "Email is mandatory")
-    @Column(name = "email")
     private String email;
 
     //Spring is expecting the raw file bytes inside the JSON body — not multipart form-data
     @Lob
-    @Column(name = "employeePicture")
     private byte[] employeePicture;
     //Spring is expecting the raw file bytes inside the JSON body — not multipart form-data
     @Lob
-    @Column(name = "employeeSignature")
     private byte[] employeeSignature;
 
-    @Column(name = "spouseSurname")
     private String spouseSurname;
-
-    @Column(name = "spouseFirstname")
     private String spouseFirstname;
-
-    @Column(name = "spouseMiddlename")
     private String spouseMiddlename;
-
-    @Column(name = "spouseOccupation")
     private String spouseOccupation;
-
-    @Column(name = "spouseEmployer")
     private String spouseEmployer;
-
-    @Column(name = "spouseBusinessAddress")
     private String spouseBusinessAddress;
-
-    @Column(name = "spouseTelNo")
     private String spouseTelNo;
-
-    @Column(name = "fatherSurname")
     private String fatherSurname;
-
-    @Column(name = "fatherFirstname")
     private String fatherFirstname;
-
-    @Column(name = "fatherMiddlename")
     private String fatherMiddlename;
-
-    @Column(name = "motherSurname")
     private String motherSurname;
-
-    @Column(name = "motherFirstname")
     private String motherFirstname;
-
-    @Column(name = "motherMiddlename")
     private String motherMiddlename;
-
-    @Column(name = "govIdNumber")
     private String govIdNumber;
-
-    @Column(name = "govIdType")
     private String govIdType;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    @Column(name = "govIdDate")
     private LocalDateTime govIdDate;
 
-    @Column(name = "govIdPlace")
     private String govIdPlace;
-
-    @Column(name = "skillOrHobby")
     private String skillOrHobby;
-
-    @Column(name = "distinction")
     private String distinction;
-
-    @Column(name = "association")
     private String association;
-
-    @Column(name = "q34a")
     private String q34a;
-
-    @Column(name = "q34b")
     private String q34b;
-
-    @Column(name = "q35a")
     private String q35a;
-
-    @Column(name = "q35b")
     private String q35b;
-
-    @Column(name = "q36")
     private String q36;
-
-    @Column(name = "q37a")
     private String q37a;
-
-    @Column(name = "q37b")
     private String q37b;
-
-    @Column(name = "q37c")
     private String q37c;
-
-    @Column(name = "q38")
     private String q38;
-
-    @Column(name = "q39a")
     private String q39a;
-
-    @Column(name = "q39b")
     private String q39b;
-
-    @Column(name = "q39c")
     private String q39c;
-
-    @Column(name = "q34aDetails")
     private String q34aDetails;
-
-    @Column(name = "q34bDetails")
     private String q34bDetails;
-
-    @Column(name = "q35aDetails")
     private String q35aDetails;
-
-    @Column(name = "q35bDetails")
     private String q35bDetails;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    @Column(name = "q35bDateFiled")
     private LocalDateTime q35bDateFiled;
 
-    @Column(name = "q35bStatus")
     private String q35bStatus;
-
-    @Column(name = "q36Details")
     private String q36Details;
-
-    @Column(name = "q37aDetails")
     private String q37aDetails;
-
-    @Column(name = "q37bDetails")
     private String q37bDetails;
-
-    @Column(name = "q37cDetails")
     private String q37cDetails;
-
-    @Column(name = "q38Details")
     private String q38Details;
-
-    @Column(name = "q39aDetails")
     private String q39aDetails;
-
-    @Column(name = "q39bDetails")
     private String q39bDetails;
-
-    @Column(name = "q39cDetails")
     private String q39cDetails;
-
-    @Column(name = "q42")
     private Boolean q42;
 
-    public PersonalData() {
+    public PersonalDataDTO() {
 
     }
 
-    public PersonalData(Long personalDataId, Long employeeId, String surname, String firstname, String middlename, String extname, LocalDateTime dob, String pob, Integer sex_id, Integer civilStatus_id, Integer height, Integer weight, String bloodType, String gsisId, String pagibigId, String philhealthNo, String sssNo, String tinNo, String agencyEmpNo, String citizenship, String resAddress, String resZip, String permAddress, String permZip, String telNo, String mobileNo, String email, byte[] employeePicture, byte[] employeeSignature, String spouseSurname, String spouseFirstname, String spouseMiddlename, String spouseOccupation, String spouseEmployer, String spouseBusinessAddress, String spouseTelNo, String fatherSurname, String fatherFirstname, String fatherMiddlename, String motherSurname, String motherFirstname, String motherMiddlename, String govIdNumber, String govIdType, LocalDateTime govIdDate, String govIdPlace, String skillOrHobby, String distinction, String association, String q34a, String q34b, String q35a, String q35b, String q36, String q37a, String q37b, String q37c, String q38, String q39a, String q39b, String q39c, String q34aDetails, String q34bDetails, String q35aDetails, String q35bDetails, LocalDateTime q35bDateFiled, String q35bStatus, String q36Details, String q37aDetails, String q37bDetails, String q37cDetails, String q38Details, String q39aDetails, String q39bDetails, String q39cDetails, Boolean q42) {
+    public PersonalDataDTO(Long personalDataId, Long employeeId, String surname, String firstname, String middlename, String extname, LocalDateTime dob, String pob, Integer sex_id, Integer civilStatus_id, Integer height, Integer weight, String bloodType, String gsisId, String pagibigId, String philhealthNo, String sssNo, String tinNo, String agencyEmpNo, String citizenship, String resAddress, String resZip, String permAddress, String permZip, String telNo, String mobileNo, String email, byte[] employeePicture, byte[] employeeSignature, String spouseSurname, String spouseFirstname, String spouseMiddlename, String spouseOccupation, String spouseEmployer, String spouseBusinessAddress, String spouseTelNo, String fatherSurname, String fatherFirstname, String fatherMiddlename, String motherSurname, String motherFirstname, String motherMiddlename, String govIdNumber, String govIdType, LocalDateTime govIdDate, String govIdPlace, String skillOrHobby, String distinction, String association, String q34a, String q34b, String q35a, String q35b, String q36, String q37a, String q37b, String q37c, String q38, String q39a, String q39b, String q39c, String q34aDetails, String q34bDetails, String q35aDetails, String q35bDetails, LocalDateTime q35bDateFiled, String q35bStatus, String q36Details, String q37aDetails, String q37bDetails, String q37cDetails, String q38Details, String q39aDetails, String q39bDetails, String q39cDetails, Boolean q42) {
         this.personalDataId = personalDataId;
         this.employeeId = employeeId;
         this.surname = surname;

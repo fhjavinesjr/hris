@@ -4,6 +4,7 @@ import com.timekeeping.dtos.WorkScheduleDTO;
 import com.timekeeping.entitymodels.WorkSchedule;
 import com.timekeeping.repositories.WorkScheduleRepository;
 import com.timekeeping.services.WorkScheduleService;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
         this.workScheduleRepository = workScheduleRepository;
     }
 
+    @Transactional
     @Override
     public WorkScheduleDTO createWorkSchedule(WorkScheduleDTO workScheduleDTO) throws Exception {
         try {
@@ -60,6 +62,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
         return workScheduleRepository.findById(wsId).orElseThrow(() -> new RuntimeException("Work Schedule not found"));
     }
 
+    @Transactional
     @Override
     public WorkScheduleDTO updateWorkSchedule(Long wsId, WorkScheduleDTO workScheduleDTO) throws Exception {
         try {
@@ -74,6 +77,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
         }
     }
 
+    @Transactional
     @Override
     public Boolean deleteWorkSchedule(Long wsId) throws Exception {
         try {

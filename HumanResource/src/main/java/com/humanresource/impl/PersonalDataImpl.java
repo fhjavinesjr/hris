@@ -1,0 +1,127 @@
+package com.humanresource.impl;
+
+import com.humanresource.dtos.PersonalDataDTO;
+import com.humanresource.entitymodels.PersonalData;
+import com.humanresource.repositories.PersonalDataRepository;
+import com.humanresource.services.PersonalDataService;
+import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+@Service
+public class PersonalDataImpl implements PersonalDataService {
+
+    private static final Logger log = LoggerFactory.getLogger(PersonalDataImpl.class);
+    private final PersonalDataRepository personalDataRepository;
+
+    public PersonalDataImpl(PersonalDataRepository personalDataRepository) {
+        this.personalDataRepository = personalDataRepository;
+    }
+
+    @Transactional
+    @Override
+    public PersonalDataDTO createPersonalData(PersonalDataDTO personalDataDTO) {
+        try {
+            PersonalData personalData = new PersonalData(
+                    personalDataDTO.getPersonalDataId(),
+                    personalDataDTO.getEmployeeId(),
+                    personalDataDTO.getSurname(),
+                    personalDataDTO.getFirstname(),
+                    personalDataDTO.getMiddlename(),
+                    personalDataDTO.getExtname(),
+                    personalDataDTO.getDob(),
+                    personalDataDTO.getPob(),
+                    personalDataDTO.getSex_id(),
+                    personalDataDTO.getCivilStatus_id(),
+                    personalDataDTO.getHeight(),
+                    personalDataDTO.getWeight(),
+                    personalDataDTO.getBloodType(),
+                    personalDataDTO.getGsisId(),
+                    personalDataDTO.getPagibigId(),
+                    personalDataDTO.getPhilhealthNo(),
+                    personalDataDTO.getSssNo(),
+                    personalDataDTO.getTinNo(),
+                    personalDataDTO.getAgencyEmpNo(),
+                    personalDataDTO.getCitizenship(),
+                    personalDataDTO.getResAddress(),
+                    personalDataDTO.getResZip(),
+                    personalDataDTO.getPermAddress(),
+                    personalDataDTO.getPermZip(),
+                    personalDataDTO.getTelNo(),
+                    personalDataDTO.getMobileNo(),
+                    personalDataDTO.getEmail(),
+                    personalDataDTO.getEmployeePicture(),
+                    personalDataDTO.getEmployeeSignature(),
+                    personalDataDTO.getSpouseSurname(),
+                    personalDataDTO.getSpouseFirstname(),
+                    personalDataDTO.getSpouseMiddlename(),
+                    personalDataDTO.getSpouseOccupation(),
+                    personalDataDTO.getSpouseEmployer(),
+                    personalDataDTO.getSpouseBusinessAddress(),
+                    personalDataDTO.getSpouseTelNo(),
+                    personalDataDTO.getFatherSurname(),
+                    personalDataDTO.getFatherFirstname(),
+                    personalDataDTO.getFatherMiddlename(),
+                    personalDataDTO.getMotherSurname(),
+                    personalDataDTO.getMotherFirstname(),
+                    personalDataDTO.getMotherMiddlename(),
+                    personalDataDTO.getGovIdNumber(),
+                    personalDataDTO.getGovIdType(),
+                    personalDataDTO.getGovIdDate(),
+                    personalDataDTO.getGovIdPlace(),
+                    personalDataDTO.getSkillOrHobby(),
+                    personalDataDTO.getDistinction(),
+                    personalDataDTO.getAssociation(),
+                    personalDataDTO.getQ34a(),
+                    personalDataDTO.getQ34b(),
+                    personalDataDTO.getQ35a(),
+                    personalDataDTO.getQ35b(),
+                    personalDataDTO.getQ36(),
+                    personalDataDTO.getQ37a(),
+                    personalDataDTO.getQ37b(),
+                    personalDataDTO.getQ37c(),
+                    personalDataDTO.getQ38(),
+                    personalDataDTO.getQ39a(),
+                    personalDataDTO.getQ39b(),
+                    personalDataDTO.getQ39c(),
+                    personalDataDTO.getQ34aDetails(),
+                    personalDataDTO.getQ34bDetails(),
+                    personalDataDTO.getQ35aDetails(),
+                    personalDataDTO.getQ35bDetails(),
+                    personalDataDTO.getQ35bDateFiled(),
+                    personalDataDTO.getQ35bStatus(),
+                    personalDataDTO.getQ36Details(),
+                    personalDataDTO.getQ37aDetails(),
+                    personalDataDTO.getQ37bDetails(),
+                    personalDataDTO.getQ37cDetails(),
+                    personalDataDTO.getQ38Details(),
+                    personalDataDTO.getQ39aDetails(),
+                    personalDataDTO.getQ39bDetails(),
+                    personalDataDTO.getQ39cDetails(),
+                    personalDataDTO.getQ42()
+            );
+
+            personalDataRepository.save(personalData);
+            return personalDataDTO;
+        } catch(Exception e) {
+            log.info("Error creating personal data: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public PersonalData getPersonalDataByEmployeeId(String employeeId) {
+        return null;
+    }
+
+    @Override
+    public String updatePersonalData(String employeeId, PersonalData personalData) {
+        return "";
+    }
+
+    @Override
+    public String deletePersonalData(String employeeId) {
+        return "";
+    }
+}

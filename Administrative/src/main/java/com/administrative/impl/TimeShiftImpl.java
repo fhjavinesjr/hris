@@ -4,6 +4,7 @@ import com.administrative.dtos.TimeShiftDTO;
 import com.administrative.entitymodels.TimeShift;
 import com.administrative.repositories.TimeShiftRepository;
 import com.administrative.services.TimeShiftService;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class TimeShiftImpl implements TimeShiftService {
         this.timeShiftRepository = timeShiftRepository;
     }
 
+    @Transactional
     @Override
     public TimeShiftDTO createTimeShift(TimeShiftDTO timeShiftDTO) throws Exception {
         try {
@@ -53,6 +55,7 @@ public class TimeShiftImpl implements TimeShiftService {
         }
     }
 
+    @Transactional
     @Override
     public TimeShiftDTO updateTimeShift(Long timeShiftId, TimeShiftDTO timeShiftDTO) throws Exception {
         try {
@@ -75,6 +78,7 @@ public class TimeShiftImpl implements TimeShiftService {
         return null;
     }
 
+    @Transactional
     @Override
     public Boolean deleteTimeShift(Long timeShiftId) throws Exception {
         try {
