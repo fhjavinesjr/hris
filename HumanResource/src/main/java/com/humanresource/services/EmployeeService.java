@@ -1,6 +1,6 @@
-package com.timekeeping.services;
+package com.humanresource.services;
 
-import com.timekeeping.dtos.EmployeeDTO;
+import com.humanresource.dtos.EmployeeDTO;
 
 import java.util.List;
 import java.util.Map;

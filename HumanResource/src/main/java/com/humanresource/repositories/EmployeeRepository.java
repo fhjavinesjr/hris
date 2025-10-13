@@ -1,6 +1,6 @@
-package com.timekeeping.repositories;
+package com.humanresource.repositories;
 
-import com.timekeeping.entitymodels.Employee;
+import com.humanresource.entitymodels.Employee;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,4 +1,4 @@
-package com.timekeeping.dtos;
+package com.humanresource.dtos;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -16,6 +16,8 @@ public class EmployeeDTO implements Serializable {
 
     @NotBlank(message = "Employee Password is mandatory")
     private String employeePassword;
+
+    private String biometricNo;
 
     @NotBlank(message = "User Role is mandatory")
     private String role;
@@ -212,5 +214,13 @@ public class EmployeeDTO implements Serializable {
         }
 
         return fullName.toString().trim();
+    }
+
+    public String getBiometricNo() {
+        return biometricNo;
+    }
+
+    public void setBiometricNo(String biometricNo) {
+        this.biometricNo = biometricNo;
     }
 }

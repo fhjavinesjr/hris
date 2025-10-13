@@ -1,7 +1,7 @@
-package com.timekeeping.controllers;
+package com.humanresource.controllers;
 
-import com.timekeeping.dtos.EmployeeDTO;
-import com.timekeeping.services.EmployeeService;
+import com.humanresource.dtos.EmployeeDTO;
+import com.humanresource.services.EmployeeService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

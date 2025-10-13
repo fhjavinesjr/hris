@@ -1,12 +1,12 @@
-package com.timekeeping.impl;
+package com.humanresource.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hris.common.utilities.JwtUtil;
 import com.hris.common.utilities.UseUtils;
-import com.timekeeping.dtos.EmployeeDTO;
-import com.timekeeping.entitymodels.Employee;
-import com.timekeeping.repositories.EmployeeRepository;
-import com.timekeeping.services.EmployeeService;
+import com.humanresource.dtos.EmployeeDTO;
+import com.humanresource.entitymodels.Employee;
+import com.humanresource.repositories.EmployeeRepository;
+import com.humanresource.services.EmployeeService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,7 +33,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final JwtUtil jwtUtil;
 
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, @Qualifier("timekeepingPasswordEncoder") PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, @Qualifier("humanresourcePasswordEncoder") PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.employeeRepository = employeeRepository;
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;
@@ -55,7 +55,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public EmployeeDTO createEmployee(EmployeeDTO employeeDTO) throws Exception {
         Employee employee = new Employee(employeeDTO.getEmployeeNo(), employeeDTO.getEmployeePassword(),
-                employeeDTO.getRole(), employeeDTO.getFirstname(), employeeDTO.getLastname(),
+                employeeDTO.getBiometricNo(), employeeDTO.getRole(), employeeDTO.getFirstname(), employeeDTO.getLastname(),
                 employeeDTO.getSuffix(), employeeDTO.getEmail(), employeeDTO.getPosition(),
                 employeeDTO.getShortJobDesc(), UseUtils.getLocalDateTimeNow(), UseUtils.getLocalDateTimeNow());
 
@@ -77,7 +77,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         EmployeeDTO employeeDTO = getEmployeeById(employeeId);
 
         Employee existingEmployee = new Employee(employeeDTO.getEmployeeNo(), employeeDTO.getEmployeePassword(),
-                employeeDTO.getRole(), employeeDTO.getFirstname(), employeeDTO.getLastname(),
+                employeeDTO.getBiometricNo(), employeeDTO.getRole(), employeeDTO.getFirstname(), employeeDTO.getLastname(),
                 employeeDTO.getSuffix(), employeeDTO.getEmail(), employeeDTO.getPosition(),
                 employeeDTO.getShortJobDesc(), employeeDTO.getCreatedAt(), employeeDTO.getUpdatedAt());
         existingEmployee.setEmployeeId(employeeId);

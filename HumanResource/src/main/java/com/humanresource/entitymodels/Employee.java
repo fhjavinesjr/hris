@@ -1,4 +1,4 @@
-package com.timekeeping.entitymodels;
+package com.humanresource.entitymodels;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
@@ -25,6 +25,10 @@ public class Employee implements Serializable {
     @NotBlank(message = "Employee Password is mandatory")
     @Column(name = "employeePassword")
     private String employeePassword;
+
+    @NotBlank(message = "biometricNo is mandatory")
+    @Column(name = "biometricNo", length = 100, unique = true)
+    private String biometricNo;
 
     @Column(name = "userRole")
     private String role;
@@ -64,9 +68,11 @@ public class Employee implements Serializable {
 
     }
 
-    public Employee(String employeeNo, String employeePassword, String role, String firstname, String lastname, String suffix, String email, String position, String shortJobDesc, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public Employee(String employeeNo, String employeePassword, String biometricNo, String role, String firstname, String lastname, String suffix, String email, String position, String shortJobDesc, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.employeeNo = employeeNo;
         this.employeePassword = employeePassword;
+        this.biometricNo = biometricNo;
+        this.role = role;
         this.firstname = firstname;
         this.lastname = lastname;
         this.suffix = suffix;
@@ -75,7 +81,6 @@ public class Employee implements Serializable {
         this.shortJobDesc = shortJobDesc;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.role = role;
     }
 
     public Long getEmployeeId() {
@@ -100,6 +105,14 @@ public class Employee implements Serializable {
 
     public void setEmployeePassword(String employeePassword) {
         this.employeePassword = employeePassword;
+    }
+
+    public String getBiometricNo() {
+        return biometricNo;
+    }
+
+    public void setBiometricNo(String biometricNo) {
+        this.biometricNo = biometricNo;
     }
 
     public String getRole() {
