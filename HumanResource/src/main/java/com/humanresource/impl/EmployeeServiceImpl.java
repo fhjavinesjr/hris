@@ -40,6 +40,22 @@ public class EmployeeServiceImpl implements EmployeeService {
         this.jwtUtil = jwtUtil;
     }
 
+    @Transactional
+    @Override
+    public void installAuth() throws Exception {
+        Employee employee = new Employee("admin", "!@#$%^&*()",
+                "-", "2", "", "",
+                "", "", "",
+                "", UseUtils.getLocalDateTimeNow(), UseUtils.getLocalDateTimeNow());
+
+        if(employee.getEmployeePassword() != null) {
+            //hashing algorithm the password
+            employee.setEmployeePassword(passwordEncoder.encode(employee.getEmployeePassword()));
+        }
+
+        employeeRepository.save(employee);
+    }
+
     @Override
     public String loginEmployee(String employeeNo, String employeePassword) {
         Employee employee = employeeRepository.findByEmployeeNo(employeeNo)
@@ -59,8 +75,10 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employeeDTO.getSuffix(), employeeDTO.getEmail(), employeeDTO.getPosition(),
                 employeeDTO.getShortJobDesc(), UseUtils.getLocalDateTimeNow(), UseUtils.getLocalDateTimeNow());
 
-        //hashing algorithm the password
-        employee.setEmployeePassword(passwordEncoder.encode(employee.getEmployeePassword()));
+        if(employeeDTO.getEmployeePassword() != null) {
+            //hashing algorithm the password
+            employee.setEmployeePassword(passwordEncoder.encode(employee.getEmployeePassword()));
+        }
 
         employeeRepository.save(employee);
 

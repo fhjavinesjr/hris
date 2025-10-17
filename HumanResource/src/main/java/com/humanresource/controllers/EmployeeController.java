@@ -20,6 +20,11 @@ public class EmployeeController {
         this.employeeService = employeeService;
     }
 
+    @GetMapping("/hris/installAuth")
+    public void installAuth() throws Exception {
+        employeeService.installAuth();
+    }
+
     @PostMapping("/employee/login")
     public ResponseEntity<String> login(@RequestBody Map<String, String> credentials) {
         String token = employeeService.loginEmployee(credentials.get("employeeNo"), credentials.get("employeePassword"));

@@ -14,27 +14,22 @@ public class EmployeeDTO implements Serializable {
     @NotBlank(message = "Employee No is mandatory")
     private String employeeNo;
 
-    @NotBlank(message = "Employee Password is mandatory")
     private String employeePassword;
 
+    @NotBlank(message = "biometricNo is mandatory")
     private String biometricNo;
 
     @NotBlank(message = "User Role is mandatory")
     private String role;
 
-    @NotBlank(message = "Firstname is mandatory")
     private String firstname;
 
-    @NotBlank(message = "Lastname is mandatory")
     private String lastname;
 
     private String suffix;
 
-    @Email(message = "Email should be valid")
-    @NotNull(message = "Email is mandatory")
     private String email;
 
-    @NotBlank(message = "Position is mandatory")
     private String position;
 
     private String shortJobDesc;

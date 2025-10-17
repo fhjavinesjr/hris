@@ -22,7 +22,6 @@ public class Employee implements Serializable {
     @Column(name = "employeeNo", length = 100, unique = true, nullable = false)
     private String employeeNo;
 
-    @NotBlank(message = "Employee Password is mandatory")
     @Column(name = "employeePassword")
     private String employeePassword;
 
@@ -33,23 +32,18 @@ public class Employee implements Serializable {
     @Column(name = "userRole")
     private String role;
 
-    @NotBlank(message = "Firstname is mandatory")
     @Column(name = "firstname")
     private String firstname;
 
-    @NotBlank(message = "Lastname is mandatory")
     @Column(name = "lastname")
     private String lastname;
 
     @Column(name = "suffix")
     private String suffix;
 
-    @Email(message = "Email should be valid")
-    @NotNull(message = "Email is mandatory")
-    @Column(name = "email", unique = true, nullable = false)
+    @Column(name = "email", unique = true)
     private String email;
 
-    @NotBlank(message = "Position is mandatory")
     @Column(name = "position")
     private String position;
 

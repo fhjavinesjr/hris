@@ -7,6 +7,8 @@ import java.util.Map;
 
 public interface EmployeeService {
 
+    void installAuth() throws Exception;
+
     String loginEmployee(String employeeNo, String employeePassword);
 
     EmployeeDTO createEmployee(EmployeeDTO employeeDTO) throws Exception;
