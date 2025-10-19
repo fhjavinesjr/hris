@@ -1,6 +1,9 @@
 package com.humanresource.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.humanresource.dtos.EmployeeDTO;
 import com.humanresource.dtos.PersonalDataDTO;
+import com.humanresource.entitymodels.Employee;
 import com.humanresource.entitymodels.PersonalData;
 import com.humanresource.repositories.PersonalDataRepository;
 import com.humanresource.services.PersonalDataService;
@@ -9,14 +12,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 public class PersonalDataImpl implements PersonalDataService {
 
     private static final Logger log = LoggerFactory.getLogger(PersonalDataImpl.class);
     private final PersonalDataRepository personalDataRepository;
+    private final ObjectMapper objectMapper;
 
-    public PersonalDataImpl(PersonalDataRepository personalDataRepository) {
+    public PersonalDataImpl(PersonalDataRepository personalDataRepository, ObjectMapper objectMapper) {
         this.personalDataRepository = personalDataRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -110,9 +118,18 @@ public class PersonalDataImpl implements PersonalDataService {
         }
     }
 
+    public PersonalData getPersonalDataEntityByEmployeeId(Long employeeId) {
+        PersonalData personalData = personalDataRepository.findByEmployeeId(employeeId);
+        if(personalData == null) {
+            return null;
+        }
+
+        return personalData;
+    }
+
     @Override
     public PersonalDataDTO getPersonalDataByEmployeeId(Long employeeId) {
-        PersonalData personalData = personalDataRepository.findByEmployeeId(employeeId);
+        PersonalData personalData = getPersonalDataEntityByEmployeeId(employeeId);
         if(personalData != null) {
             PersonalDataDTO personalDataDTO = new PersonalDataDTO(
                     personalData.getPersonalDataId(),
@@ -199,9 +216,21 @@ public class PersonalDataImpl implements PersonalDataService {
         return null;
     }
 
+    @Transactional
     @Override
-    public String updatePersonalData(String employeeId, PersonalData personalData) {
-        return "";
+    public Boolean updatePersonalData(Long employeeId, Map<String, Object> updates) throws Exception {
+        try {
+            PersonalData personalDataExisting = getPersonalDataEntityByEmployeeId(employeeId);
+            if(personalDataExisting != null) {
+                objectMapper.updateValue(personalDataExisting, updates);
+                personalDataRepository.save(personalDataExisting);
+                return true;
+            }
+
+            return false;
+        } catch(Exception e) {
+            return false;
+        }
     }
 
     @Override

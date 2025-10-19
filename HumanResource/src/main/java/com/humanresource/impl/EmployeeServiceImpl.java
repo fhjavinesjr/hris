@@ -140,7 +140,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         List<EmployeeDTO> employeeDisplays = new ArrayList<>();
         for(Employee employee : employees) {
-            EmployeeDTO employeeDisplay = new EmployeeDTO(employee.getEmployeeId(), employee.getEmployeeNo(), employee.getFirstname(),
+            EmployeeDTO employeeDisplay = new EmployeeDTO(employee.getEmployeeId(), employee.getEmployeeNo(), employee.getBiometricNo(), employee.getFirstname(),
                     employee.getLastname(), employee.getSuffix(), employee.getRole());
 
             employeeDisplays.add(employeeDisplay);

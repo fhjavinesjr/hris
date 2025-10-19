@@ -70,9 +70,10 @@ public class EmployeeDTO implements Serializable {
         this.role = role;
     }
 
-    public EmployeeDTO(Long employeeId, String employeeNo, String firstname, String lastname, String suffix, String role) {
+    public EmployeeDTO(Long employeeId, String employeeNo, String biometricNo, String firstname, String lastname, String suffix, String role) {
         this.employeeId = employeeId;
         this.employeeNo = employeeNo;
+        this.biometricNo = biometricNo;
         this.firstname = firstname;
         this.lastname = lastname;
         this.suffix = suffix;
