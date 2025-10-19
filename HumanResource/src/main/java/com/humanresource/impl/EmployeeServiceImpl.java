@@ -44,7 +44,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public void installAuth() throws Exception {
         Employee employee = new Employee("admin", "!@#$%^&*()",
-                "-", "2", "", "",
+                "-", "1", "user", "super",
                 "", "", "",
                 "", UseUtils.getLocalDateTimeNow(), UseUtils.getLocalDateTimeNow());
 
@@ -80,8 +80,9 @@ public class EmployeeServiceImpl implements EmployeeService {
             employee.setEmployeePassword(passwordEncoder.encode(employee.getEmployeePassword()));
         }
 
-        employeeRepository.save(employee);
+        employee = employeeRepository.save(employee);
 
+        employeeDTO.setEmployeeId(employee.getEmployeeId());
         employeeDTO.setEmployeePassword("");
         employeeDTO.setCreatedAt(UseUtils.getLocalDateTimeNow());
         employeeDTO.setUpdatedAt(UseUtils.getLocalDateTimeNow());

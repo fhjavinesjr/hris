@@ -1,6 +1,7 @@
 package com.humanresource.controllers;
 
 import com.hris.common.dtos.MetadataResponse;
+import com.humanresource.dtos.EmployeeDTO;
 import com.humanresource.dtos.PersonalDataDTO;
 import com.humanresource.services.PersonalDataService;
 import org.springframework.http.HttpStatus;
@@ -27,6 +28,12 @@ public class PersonalDataController {
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(new MetadataResponse(personalDataDTO.getEmployeeId(), "Successful to create personal data"));
+    }
+
+    @GetMapping("/fetch/personal-data/{employeeId}")
+    public ResponseEntity<PersonalDataDTO> getPersonalDataByEmployeeId(@PathVariable("employeeId") Long employeeId) throws Exception {
+        PersonalDataDTO dto = personalDataService.getPersonalDataByEmployeeId(employeeId);
+        return ResponseEntity.ok(dto);
     }
 
 }

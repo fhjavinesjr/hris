@@ -33,7 +33,6 @@ public class PersonalData implements Serializable {
     @Column(name = "middlename")
     private String middlename;
 
-    @NotBlank(message = "extname is mandatory")
     @Column(name = "extname")
     private String extname;
 

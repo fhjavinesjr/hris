@@ -111,7 +111,91 @@ public class PersonalDataImpl implements PersonalDataService {
     }
 
     @Override
-    public PersonalData getPersonalDataByEmployeeId(String employeeId) {
+    public PersonalDataDTO getPersonalDataByEmployeeId(Long employeeId) {
+        PersonalData personalData = personalDataRepository.findByEmployeeId(employeeId);
+        if(personalData != null) {
+            PersonalDataDTO personalDataDTO = new PersonalDataDTO(
+                    personalData.getPersonalDataId(),
+                    personalData.getEmployeeId(),
+                    personalData.getSurname(),
+                    personalData.getFirstname(),
+                    personalData.getMiddlename(),
+                    personalData.getExtname(),
+                    personalData.getDob(),
+                    personalData.getPob(),
+                    personalData.getSex_id(),
+                    personalData.getCivilStatus_id(),
+                    personalData.getHeight(),
+                    personalData.getWeight(),
+                    personalData.getBloodType(),
+                    personalData.getGsisId(),
+                    personalData.getPagibigId(),
+                    personalData.getPhilhealthNo(),
+                    personalData.getSssNo(),
+                    personalData.getTinNo(),
+                    personalData.getAgencyEmpNo(),
+                    personalData.getCitizenship(),
+                    personalData.getResAddress(),
+                    personalData.getResZip(),
+                    personalData.getPermAddress(),
+                    personalData.getPermZip(),
+                    personalData.getTelNo(),
+                    personalData.getMobileNo(),
+                    personalData.getEmail(),
+                    personalData.getEmployeePicture(),
+                    personalData.getEmployeeSignature(),
+                    personalData.getSpouseSurname(),
+                    personalData.getSpouseFirstname(),
+                    personalData.getSpouseMiddlename(),
+                    personalData.getSpouseOccupation(),
+                    personalData.getSpouseEmployer(),
+                    personalData.getSpouseBusinessAddress(),
+                    personalData.getSpouseTelNo(),
+                    personalData.getFatherSurname(),
+                    personalData.getFatherFirstname(),
+                    personalData.getFatherMiddlename(),
+                    personalData.getMotherSurname(),
+                    personalData.getMotherFirstname(),
+                    personalData.getMotherMiddlename(),
+                    personalData.getGovIdNumber(),
+                    personalData.getGovIdType(),
+                    personalData.getGovIdDate(),
+                    personalData.getGovIdPlace(),
+                    personalData.getSkillOrHobby(),
+                    personalData.getDistinction(),
+                    personalData.getAssociation(),
+                    personalData.getQ34a(),
+                    personalData.getQ34b(),
+                    personalData.getQ35a(),
+                    personalData.getQ35b(),
+                    personalData.getQ36(),
+                    personalData.getQ37a(),
+                    personalData.getQ37b(),
+                    personalData.getQ37c(),
+                    personalData.getQ38(),
+                    personalData.getQ39a(),
+                    personalData.getQ39b(),
+                    personalData.getQ39c(),
+                    personalData.getQ34aDetails(),
+                    personalData.getQ34bDetails(),
+                    personalData.getQ35aDetails(),
+                    personalData.getQ35bDetails(),
+                    personalData.getQ35bDateFiled(),
+                    personalData.getQ35bStatus(),
+                    personalData.getQ36Details(),
+                    personalData.getQ37aDetails(),
+                    personalData.getQ37bDetails(),
+                    personalData.getQ37cDetails(),
+                    personalData.getQ38Details(),
+                    personalData.getQ39aDetails(),
+                    personalData.getQ39bDetails(),
+                    personalData.getQ39cDetails(),
+                    personalData.getQ42()
+            );
+
+            return personalDataDTO;
+        }
+
         return null;
     }
 

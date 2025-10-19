@@ -23,7 +23,6 @@ public class PersonalDataDTO implements Serializable {
     @NotBlank(message = "middlename is mandatory")
     private String middlename;
 
-    @NotBlank(message = "extname is mandatory")
     private String extname;
 
     @NotNull(message = "Date of Birth is mandatory")

@@ -7,7 +7,7 @@ public interface PersonalDataService {
 
     PersonalDataDTO createPersonalData(PersonalDataDTO personalDataDTO);
 
-    PersonalData getPersonalDataByEmployeeId(String employeeId) throws Exception;
+    PersonalDataDTO getPersonalDataByEmployeeId(Long employeeId) throws Exception;
 
     String updatePersonalData(String employeeId, PersonalData personalData) throws Exception;
 
