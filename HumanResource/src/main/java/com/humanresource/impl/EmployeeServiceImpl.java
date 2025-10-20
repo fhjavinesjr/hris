@@ -125,7 +125,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         EmployeeDTO employeeDisplay = null;
         if(employeeDTO != null) {
-            employeeDisplay = new EmployeeDTO(employeeDTO.getEmployeeNo(), employeeDTO.getFirstname(),
+            employeeDisplay = new EmployeeDTO(employeeDTO.getEmployeeNo(), employeeDTO.getBiometricNo(), employeeDTO.getFirstname(),
                     employeeDTO.getLastname(), employeeDTO.getSuffix(), employeeDTO.getEmail(),
                     employeeDTO.getPosition(), employeeDTO.getShortJobDesc(), employeeDTO.getCreatedAt(),
                     employeeDTO.getRole(), employeeDTO.getUpdatedAt());
@@ -150,7 +150,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     private EmployeeDTO buildEmployeeDTO(Employee employee) {
-        return new EmployeeDTO(employee.getEmployeeNo(), employee.getEmployeePassword(), employee.getFirstname(),
+        return new EmployeeDTO(employee.getEmployeeNo(), employee.getBiometricNo(), employee.getEmployeePassword(), employee.getFirstname(),
                 employee.getLastname(), employee.getSuffix(), employee.getEmail(),
                 employee.getPosition(), employee.getShortJobDesc(),
                 employee.getCreatedAt(), employee.getUpdatedAt(), employee.getRole());

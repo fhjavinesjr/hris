@@ -44,8 +44,9 @@ public class EmployeeDTO implements Serializable {
 
     }
 
-    public EmployeeDTO(String employeeNo, String employeePassword, String firstname, String lastname, String suffix, String email, String position, String shortJobDesc, String role) {
+    public EmployeeDTO(String employeeNo, String biometricNo, String employeePassword, String firstname, String lastname, String suffix, String email, String position, String shortJobDesc, String role) {
         this.employeeNo = employeeNo;
+        this.biometricNo = biometricNo;
         this.employeePassword = employeePassword;
         this.firstname = firstname;
         this.lastname = lastname;
@@ -56,8 +57,9 @@ public class EmployeeDTO implements Serializable {
         this.role = role;
     }
 
-    public EmployeeDTO(String employeeNo, String employeePassword, String firstname, String lastname, String suffix, String email, String position, String shortJobDesc, LocalDateTime createdAt, LocalDateTime updatedAt, String role) {
+    public EmployeeDTO(String employeeNo, String biometricNo, String employeePassword, String firstname, String lastname, String suffix, String email, String position, String shortJobDesc, LocalDateTime createdAt, LocalDateTime updatedAt, String role) {
         this.employeeNo = employeeNo;
+        this.biometricNo = biometricNo;
         this.employeePassword = employeePassword;
         this.firstname = firstname;
         this.lastname = lastname;
@@ -81,8 +83,9 @@ public class EmployeeDTO implements Serializable {
         this.role = role;
     }
 
-    public EmployeeDTO(String employeeNo, String firstname, String lastname, String suffix, String email, String position, String shortJobDesc, LocalDateTime createdAt, String role, LocalDateTime updatedAt) {
+    public EmployeeDTO(String employeeNo, String biometricNo, String firstname, String lastname, String suffix, String email, String position, String shortJobDesc, LocalDateTime createdAt, String role, LocalDateTime updatedAt) {
         this.employeeNo = employeeNo;
+        this.biometricNo = biometricNo;
         this.firstname = firstname;
         this.lastname = lastname;
         this.suffix = suffix;
