@@ -38,7 +38,7 @@ public class AdministrativeSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration corsConfiguration = new CorsConfiguration();
-                    corsConfiguration.setAllowedOrigins(List.of("http://localhost:3080","http://localhost:3081","http://localhost:3082","http://localhost:3083","http://localhost:3084","http://localhost:3085")); // Frontend URL (React/Next.js)
+                    corsConfiguration.setAllowedOrigins(List.of("http://localhost:3080","http://localhost:3081","http://localhost:3082","http://localhost:3083","http://localhost:3084","http://localhost:3085","http://192.168.68.128:3082")); // Frontend URL (React/Next.js)
                     corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
                     corsConfiguration.setAllowCredentials(true); // If you need cookies/session

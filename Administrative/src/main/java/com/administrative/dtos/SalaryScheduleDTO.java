@@ -11,15 +11,15 @@ public class SalaryScheduleDTO implements Serializable {
     private Long salaryScheduleId;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    private LocalDateTime effectDate;
+    private LocalDateTime effectivityDate;
 
+    private String nbcNo;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     private LocalDateTime nbcDate;
 
-    private String executiveOrderNo;
-
+    private String eoNo;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    private LocalDateTime executiveOrderDate;
+    private LocalDateTime eoDate;
 
     private Long salaryGrade;
     private Long salaryStep;
@@ -30,12 +30,12 @@ public class SalaryScheduleDTO implements Serializable {
 
     }
 
-    public SalaryScheduleDTO(Long salaryScheduleId, LocalDateTime effectDate, LocalDateTime nbcDate, String executiveOrderNo, LocalDateTime executiveOrderDate, Long salaryGrade, Long salaryStep, BigDecimal monthlySalary, Long createdOrModifiedByEployeeId) {
-        this.salaryScheduleId = salaryScheduleId;
-        this.effectDate = effectDate;
+    public SalaryScheduleDTO(LocalDateTime effectivityDate, String nbcNo, LocalDateTime nbcDate, String eoNo, LocalDateTime eoDate, Long salaryGrade, Long salaryStep, BigDecimal monthlySalary, Long createdOrModifiedByEployeeId) {
+        this.effectivityDate = effectivityDate;
+        this.nbcNo = nbcNo;
         this.nbcDate = nbcDate;
-        this.executiveOrderNo = executiveOrderNo;
-        this.executiveOrderDate = executiveOrderDate;
+        this.eoNo = eoNo;
+        this.eoDate = eoDate;
         this.salaryGrade = salaryGrade;
         this.salaryStep = salaryStep;
         this.monthlySalary = monthlySalary;
@@ -50,12 +50,20 @@ public class SalaryScheduleDTO implements Serializable {
         this.salaryScheduleId = salaryScheduleId;
     }
 
-    public LocalDateTime getEffectDate() {
-        return effectDate;
+    public LocalDateTime getEffectivityDate() {
+        return effectivityDate;
     }
 
-    public void setEffectDate(LocalDateTime effectDate) {
-        this.effectDate = effectDate;
+    public void setEffectivityDate(LocalDateTime effectivityDate) {
+        this.effectivityDate = effectivityDate;
+    }
+
+    public String getNbcNo() {
+        return nbcNo;
+    }
+
+    public void setNbcNo(String nbcNo) {
+        this.nbcNo = nbcNo;
     }
 
     public LocalDateTime getNbcDate() {
@@ -66,20 +74,20 @@ public class SalaryScheduleDTO implements Serializable {
         this.nbcDate = nbcDate;
     }
 
-    public String getExecutiveOrderNo() {
-        return executiveOrderNo;
+    public String getEoNo() {
+        return eoNo;
     }
 
-    public void setExecutiveOrderNo(String executiveOrderNo) {
-        this.executiveOrderNo = executiveOrderNo;
+    public void setEoNo(String eoNo) {
+        this.eoNo = eoNo;
     }
 
-    public LocalDateTime getExecutiveOrderDate() {
-        return executiveOrderDate;
+    public LocalDateTime getEoDate() {
+        return eoDate;
     }
 
-    public void setExecutiveOrderDate(LocalDateTime executiveOrderDate) {
-        this.executiveOrderDate = executiveOrderDate;
+    public void setEoDate(LocalDateTime eoDate) {
+        this.eoDate = eoDate;
     }
 
     public Long getSalaryGrade() {

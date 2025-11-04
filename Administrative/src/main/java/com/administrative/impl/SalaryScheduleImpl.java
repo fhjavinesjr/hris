@@ -25,10 +25,9 @@ public class SalaryScheduleImpl implements SalaryScheduleService {
     @Override
     public List<SalaryScheduleDTO> createSalarySchedule(List<SalaryScheduleDTO> salaryScheduleDTOList) throws Exception {
         for(SalaryScheduleDTO salaryScheduleDTO : salaryScheduleDTOList) {
-            SalarySchedule salarySchedule = new SalarySchedule(salaryScheduleDTO.getEffectDate(), salaryScheduleDTO.getExecutiveOrderNo(),
-                    salaryScheduleDTO.getNbcDate(), salaryScheduleDTO.getExecutiveOrderNo(), salaryScheduleDTO.getExecutiveOrderDate(),
-                    salaryScheduleDTO.getSalaryGrade(), salaryScheduleDTO.getSalaryStep(), salaryScheduleDTO.getMonthlySalary(),
-                    salaryScheduleDTO.getCreatedOrModifiedByEployeeId());
+            SalarySchedule salarySchedule = new SalarySchedule(salaryScheduleDTO.getEffectivityDate(), salaryScheduleDTO.getNbcNo(), salaryScheduleDTO.getNbcDate(),
+                    salaryScheduleDTO.getEoNo(), salaryScheduleDTO.getEoDate(), salaryScheduleDTO.getSalaryGrade(),
+                    salaryScheduleDTO.getSalaryStep(), salaryScheduleDTO.getMonthlySalary(), salaryScheduleDTO.getCreatedOrModifiedByEployeeId());
 
             salaryScheduleRepository.save(salarySchedule);
         }

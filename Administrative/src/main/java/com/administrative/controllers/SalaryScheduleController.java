@@ -23,7 +23,7 @@ public class SalaryScheduleController {
     }
 
     @PostMapping("/salary-schedule/create")
-    public ResponseEntity<MetadataResponse> createTimeShift(@RequestBody List<SalaryScheduleDTO> salaryScheduleDTOList) throws Exception {
+    public ResponseEntity<MetadataResponse> createSalarySchedule(@RequestBody List<SalaryScheduleDTO> salaryScheduleDTOList) throws Exception {
         salaryScheduleDTOList = salaryScheduleService.createSalarySchedule(salaryScheduleDTOList);
         if(salaryScheduleDTOList == null || salaryScheduleDTOList.isEmpty()) {
             return ResponseEntity

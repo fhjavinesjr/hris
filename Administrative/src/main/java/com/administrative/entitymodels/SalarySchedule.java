@@ -17,8 +17,8 @@ public class SalarySchedule implements Serializable {
     private Long salaryScheduleId;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    @Column(name = "effectDate")
-    private LocalDateTime effectDate;
+    @Column(name = "effectivityDate")
+    private LocalDateTime effectivityDate;
 
     @Column(name = "nbcNo", length = 100)
     private String nbcNo;
@@ -27,12 +27,12 @@ public class SalarySchedule implements Serializable {
     @Column(name = "nbcDate")
     private LocalDateTime nbcDate;
 
-    @Column(name = "executiveOrderNo", length = 100)
-    private String executiveOrderNo;
+    @Column(name = "eoNo", length = 100)
+    private String eoNo;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    @Column(name = "executiveOrderDate")
-    private LocalDateTime executiveOrderDate;
+    @Column(name = "eoDate")
+    private LocalDateTime eoDate;
 
     @Column(name = "salaryGrade")
     private Long salaryGrade;
@@ -50,32 +50,24 @@ public class SalarySchedule implements Serializable {
 
     }
 
-    public SalarySchedule(LocalDateTime effectDate, String nbcNo, LocalDateTime nbcDate, String executiveOrderNo, LocalDateTime executiveOrderDate, Long salaryGrade, Long salaryStep, BigDecimal monthlySalary, Long createdOrModifiedByEployeeId) {
-        this.effectDate = effectDate;
+    public SalarySchedule(LocalDateTime effectivityDate, String nbcNo, LocalDateTime nbcDate, String eoNo, LocalDateTime eoDate, Long salaryGrade, Long salaryStep, BigDecimal monthlySalary, Long createdOrModifiedByEployeeId) {
+        this.effectivityDate = effectivityDate;
         this.nbcNo = nbcNo;
         this.nbcDate = nbcDate;
-        this.executiveOrderNo = executiveOrderNo;
-        this.executiveOrderDate = executiveOrderDate;
+        this.eoNo = eoNo;
+        this.eoDate = eoDate;
         this.salaryGrade = salaryGrade;
         this.salaryStep = salaryStep;
         this.monthlySalary = monthlySalary;
         this.createdOrModifiedByEployeeId = createdOrModifiedByEployeeId;
     }
 
-    public Long getSalaryScheduleId() {
-        return salaryScheduleId;
+    public LocalDateTime getEffectivityDate() {
+        return effectivityDate;
     }
 
-    public void setSalaryScheduleId(Long salaryScheduleId) {
-        this.salaryScheduleId = salaryScheduleId;
-    }
-
-    public LocalDateTime getEffectDate() {
-        return effectDate;
-    }
-
-    public void setEffectDate(LocalDateTime effectDate) {
-        this.effectDate = effectDate;
+    public void setEffectivityDate(LocalDateTime effectivityDate) {
+        this.effectivityDate = effectivityDate;
     }
 
     public String getNbcNo() {
@@ -94,20 +86,20 @@ public class SalarySchedule implements Serializable {
         this.nbcDate = nbcDate;
     }
 
-    public String getExecutiveOrderNo() {
-        return executiveOrderNo;
+    public String getEoNo() {
+        return eoNo;
     }
 
-    public void setExecutiveOrderNo(String executiveOrderNo) {
-        this.executiveOrderNo = executiveOrderNo;
+    public void setEoNo(String eoNo) {
+        this.eoNo = eoNo;
     }
 
-    public LocalDateTime getExecutiveOrderDate() {
-        return executiveOrderDate;
+    public LocalDateTime getEoDate() {
+        return eoDate;
     }
 
-    public void setExecutiveOrderDate(LocalDateTime executiveOrderDate) {
-        this.executiveOrderDate = executiveOrderDate;
+    public void setEoDate(LocalDateTime eoDate) {
+        this.eoDate = eoDate;
     }
 
     public Long getSalaryGrade() {
