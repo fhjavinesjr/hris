@@ -62,6 +62,14 @@ public class SalarySchedule implements Serializable {
         this.createdOrModifiedByEployeeId = createdOrModifiedByEployeeId;
     }
 
+    public Long getSalaryScheduleId() {
+        return salaryScheduleId;
+    }
+
+    public void setSalaryScheduleId(Long salaryScheduleId) {
+        this.salaryScheduleId = salaryScheduleId;
+    }
+
     public LocalDateTime getEffectivityDate() {
         return effectivityDate;
     }

@@ -2,6 +2,7 @@ package com.administrative.services;
 
 import com.administrative.dtos.SalaryScheduleDTO;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface SalaryScheduleService {
@@ -12,8 +13,8 @@ public interface SalaryScheduleService {
 
     SalaryScheduleDTO getSalaryScheduleById(Long SalaryScheduleId) throws Exception;
 
-    SalaryScheduleDTO updateSalarySchedule(Long SalaryScheduleId, SalaryScheduleDTO salaryScheduleDTO) throws Exception;
+    List<SalaryScheduleDTO> updateSalarySchedule(List<SalaryScheduleDTO> salaryScheduleDTOList) throws Exception;
 
-    Boolean deleteSalarySchedule(Long SalaryScheduleId) throws Exception;
+    Boolean deleteSalarySchedule(LocalDateTime effectivityDate) throws Exception;
 
 }
