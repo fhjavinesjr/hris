@@ -19,13 +19,17 @@ public class JobPosition implements Serializable {
     @Column(name = "salaryGrade", length = 50)
     private Long salaryGrade;
 
+    @Column(name = "salaryStep", length = 50)
+    private Long salaryStep;
+
     public JobPosition() {
 
     }
 
-    public JobPosition(String jobPositionName, Long salaryGrade) {
+    public JobPosition(String jobPositionName, Long salaryGrade, Long salaryStep) {
         this.jobPositionName = jobPositionName;
         this.salaryGrade = salaryGrade;
+        this.salaryStep = salaryStep;
     }
 
     public JobPosition(Long jobPositionId, String jobPositionName, Long salaryGrade) {
@@ -56,5 +60,13 @@ public class JobPosition implements Serializable {
 
     public void setSalaryGrade(Long salaryGrade) {
         this.salaryGrade = salaryGrade;
+    }
+
+    public Long getSalaryStep() {
+        return salaryStep;
+    }
+
+    public void setSalaryStep(Long salaryStep) {
+        this.salaryStep = salaryStep;
     }
 }

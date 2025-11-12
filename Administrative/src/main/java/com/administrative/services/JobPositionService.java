@@ -10,10 +10,10 @@ public interface JobPositionService {
 
     List<JobPositionDTO> getAllJobPosition() throws Exception;
 
-    JobPositionDTO getJobPositionById(Long JobPositionId) throws Exception;
+    JobPositionDTO getJobPositionById(Long jobPositionId) throws Exception;
 
-    JobPositionDTO updateJobPosition(Long JobPositionId, JobPositionDTO JobPositionDTO) throws Exception;
+    JobPositionDTO updateJobPosition(Long jobPositionId, JobPositionDTO JobPositionDTO) throws Exception;
 
-    Boolean deleteJobPosition(Long JobPositionId) throws Exception;
+    Boolean deleteJobPosition(Long jobPositionId) throws Exception;
 
 }

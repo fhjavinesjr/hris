@@ -7,15 +7,16 @@ public class JobPositionDTO implements Serializable {
     private Long jobPositionId;
     private String jobPositionName;
     private Long salaryGrade;
+    private Long salaryStep;
 
     public JobPositionDTO() {
 
     }
 
-    public JobPositionDTO(Long jobPositionId, String jobPositionName, Long salaryGrade) {
-        this.jobPositionId = jobPositionId;
+    public JobPositionDTO(String jobPositionName, Long salaryGrade, Long salaryStep) {
         this.jobPositionName = jobPositionName;
         this.salaryGrade = salaryGrade;
+        this.salaryStep = salaryStep;
     }
 
     public Long getJobPositionId() {
@@ -40,5 +41,13 @@ public class JobPositionDTO implements Serializable {
 
     public void setSalaryGrade(Long salaryGrade) {
         this.salaryGrade = salaryGrade;
+    }
+
+    public Long getSalaryStep() {
+        return salaryStep;
+    }
+
+    public void setSalaryStep(Long salaryStep) {
+        this.salaryStep = salaryStep;
     }
 }
