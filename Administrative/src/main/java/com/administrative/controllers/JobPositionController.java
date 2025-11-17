@@ -1,7 +1,6 @@
 package com.administrative.controllers;
 
 import com.administrative.dtos.JobPositionDTO;
-import com.administrative.dtos.TimeShiftDTO;
 import com.administrative.services.JobPositionService;
 import com.hris.common.dtos.MetadataResponse;
 import org.springframework.http.HttpStatus;
@@ -21,7 +20,7 @@ public class JobPositionController {
     }
 
     @PostMapping("/job-position/create")
-    public ResponseEntity<MetadataResponse> createTimeShift(@RequestBody JobPositionDTO jobPositionDTO) throws Exception {
+    public ResponseEntity<MetadataResponse> createJobPosition(@RequestBody JobPositionDTO jobPositionDTO) throws Exception {
         jobPositionDTO = jobPositionService.createJobPosition(jobPositionDTO);
         if(jobPositionDTO == null) {
             return ResponseEntity
