@@ -18,6 +18,9 @@ public class EmployeeAppointment implements Serializable {
     @Column(name = "employeeAppointmentId")
     private Long employeeAppointmentId;
 
+    @Column(name = "employeeId")
+    private Long employeeId;
+
     @NotNull(message = "appointmentIssuedDate is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     @Column(name = "appointmentIssuedDate", nullable = false)
@@ -62,6 +65,24 @@ public class EmployeeAppointment implements Serializable {
     @NotNull(message = "details is mandatory")
     @Column(name = "details", length = 100, nullable = false)
     private String details;
+
+    public EmployeeAppointment() {
+
+    }
+
+    public EmployeeAppointment(LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+        this.appointmentIssuedDate = appointmentIssuedDate;
+        this.assumptionToDutyDate = assumptionToDutyDate;
+        this.natureOfAppointmentId = natureOfAppointmentId;
+        this.plantillaId = plantillaId;
+        this.jobPositionId = jobPositionId;
+        this.salaryGrade = salaryGrade;
+        this.salaryStep = salaryStep;
+        this.salaryPerAnnum = salaryPerAnnum;
+        this.salaryPerMonth = salaryPerMonth;
+        this.salaryPerDay = salaryPerDay;
+        this.details = details;
+    }
 
     public EmployeeAppointment(Long employeeAppointmentId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
         this.employeeAppointmentId = employeeAppointmentId;

@@ -16,4 +16,6 @@ public interface PlantillaService {
 
     Boolean deletePlantilla(Long plantillaId) throws Exception;
 
+    List<PlantillaDTO> getByJobPositionId(Long jobPositionId) throws Exception;
+
 }

@@ -91,4 +91,22 @@ public class PlantillaImpl implements PlantillaService {
 
         return false;
     }
+
+    @Override
+    public List<PlantillaDTO> getByJobPositionId(Long jobPositionId) throws Exception {
+        List<Plantilla> plantillaList = plantillaRepository.findByJobPositionId(jobPositionId);
+
+        List<PlantillaDTO> plantillaDTOList = new ArrayList<>();
+
+        for(Plantilla plantilla : plantillaList) {
+            PlantillaDTO plantillaDTO = new PlantillaDTO();
+            plantillaDTO.setPlantillaId(plantilla.getPlantillaId());
+            plantillaDTO.setPlantillaName(plantilla.getPlantillaName());
+            plantillaDTO.setJobPositionId(plantilla.getJobPositionId());
+
+            plantillaDTOList.add(plantillaDTO);
+        }
+
+        return plantillaDTOList;
+    }
 }

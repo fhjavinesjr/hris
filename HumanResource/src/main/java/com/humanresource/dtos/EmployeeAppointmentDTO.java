@@ -4,18 +4,13 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class EmployeeAppointmentDTO {
+public class EmployeeAppointmentDTO implements Serializable {
 
     private Long employeeAppointmentId;
-
-    @NotBlank(message = "Employee No is mandatory")
-    private String employeeNo;
-
-    @NotBlank(message = "biometricNo is mandatory")
-    private String biometricNo;
 
     @NotNull(message = "appointmentIssuedDate is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
@@ -51,10 +46,26 @@ public class EmployeeAppointmentDTO {
     @NotNull(message = "details is mandatory")
     private String details;
 
-    public EmployeeAppointmentDTO(Long employeeAppointmentId, String employeeNo, String biometricNo, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+    public EmployeeAppointmentDTO() {
+
+    }
+
+    public EmployeeAppointmentDTO(LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+        this.appointmentIssuedDate = appointmentIssuedDate;
+        this.assumptionToDutyDate = assumptionToDutyDate;
+        this.natureOfAppointmentId = natureOfAppointmentId;
+        this.plantillaId = plantillaId;
+        this.jobPositionId = jobPositionId;
+        this.salaryGrade = salaryGrade;
+        this.salaryStep = salaryStep;
+        this.salaryPerAnnum = salaryPerAnnum;
+        this.salaryPerMonth = salaryPerMonth;
+        this.salaryPerDay = salaryPerDay;
+        this.details = details;
+    }
+
+    public EmployeeAppointmentDTO(Long employeeAppointmentId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
         this.employeeAppointmentId = employeeAppointmentId;
-        this.employeeNo = employeeNo;
-        this.biometricNo = biometricNo;
         this.appointmentIssuedDate = appointmentIssuedDate;
         this.assumptionToDutyDate = assumptionToDutyDate;
         this.natureOfAppointmentId = natureOfAppointmentId;
@@ -74,22 +85,6 @@ public class EmployeeAppointmentDTO {
 
     public void setEmployeeAppointmentId(Long employeeAppointmentId) {
         this.employeeAppointmentId = employeeAppointmentId;
-    }
-
-    public String getEmployeeNo() {
-        return employeeNo;
-    }
-
-    public void setEmployeeNo(String employeeNo) {
-        this.employeeNo = employeeNo;
-    }
-
-    public String getBiometricNo() {
-        return biometricNo;
-    }
-
-    public void setBiometricNo(String biometricNo) {
-        this.biometricNo = biometricNo;
     }
 
     public LocalDateTime getAppointmentIssuedDate() {

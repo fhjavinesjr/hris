@@ -119,4 +119,27 @@ public class SalaryScheduleImpl implements SalaryScheduleService {
         }
     }
 
+    @Override
+    public SalaryScheduleDTO getSalaryScheduleByDateAssumptionAndSalaryGradeAndSalaryStep(LocalDateTime assumptionToDutyDate, Long salaryGrade, Long salaryStep) {
+        SalarySchedule salarySchedule = salaryScheduleRepository.findByEffectivityDateAndSalaryGradeAndSalaryStep(assumptionToDutyDate, salaryGrade, salaryStep);
+
+        if (salarySchedule == null) {
+            throw new RuntimeException("No SalarySchedule found for the given date and grade/step.");
+        }
+
+        SalaryScheduleDTO salaryScheduleDTO = new SalaryScheduleDTO();
+        salaryScheduleDTO.setSalaryScheduleId(salarySchedule.getSalaryScheduleId());
+        salaryScheduleDTO.setEffectivityDate(salarySchedule.getEffectivityDate());
+        salaryScheduleDTO.setNbcNo(salarySchedule.getNbcNo());
+        salaryScheduleDTO.setNbcDate(salarySchedule.getNbcDate());
+        salaryScheduleDTO.setEoNo(salarySchedule.getEoNo());
+        salaryScheduleDTO.setEoDate(salarySchedule.getEoDate());
+        salaryScheduleDTO.setSalaryGrade(salarySchedule.getSalaryGrade());
+        salaryScheduleDTO.setSalaryStep(salarySchedule.getSalaryStep());
+        salaryScheduleDTO.setMonthlySalary(salarySchedule.getMonthlySalary());
+        salaryScheduleDTO.setCreatedOrModifiedByEployeeId(salarySchedule.getCreatedOrModifiedByEployeeId());
+
+        return salaryScheduleDTO;
+    }
+
 }

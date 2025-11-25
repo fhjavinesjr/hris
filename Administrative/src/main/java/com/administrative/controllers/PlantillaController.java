@@ -61,4 +61,11 @@ public class PlantillaController {
         return ResponseEntity.ok(new MetadataResponse(plantillaId, "Successful to plantilla"));
     }
 
+    @GetMapping("/plantilla/by-job-position/{jobPositionId}")
+    public ResponseEntity<List<PlantillaDTO>> getByJobPosition(@PathVariable Long jobPositionId) throws Exception {
+
+        List<PlantillaDTO> list = plantillaService.getByJobPositionId(jobPositionId);
+        return ResponseEntity.ok(list);
+    }
+
 }

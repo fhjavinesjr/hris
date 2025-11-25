@@ -63,4 +63,12 @@ public class SalaryScheduleController {
 
         return ResponseEntity.ok(new MetadataResponse(0L, "Successful to delete salary schedule"));
     }
+
+    @GetMapping("/salary-schedule/get-by-date-assumption-and-salary-grade-and-salary-step")
+    public SalaryScheduleDTO getSalaryScheduleByDateAssumptionAndSalaryGradeAndSalaryStep(@DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime dateAssumption,
+            @RequestParam("salaryGrade") Long salaryGrade,
+            @RequestParam("salaryStep") Long salaryStep) throws Exception {
+
+        return salaryScheduleService.getSalaryScheduleByDateAssumptionAndSalaryGradeAndSalaryStep(dateAssumption, salaryGrade, salaryStep);
+    }
 }
