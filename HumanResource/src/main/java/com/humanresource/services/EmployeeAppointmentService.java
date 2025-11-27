@@ -10,6 +10,8 @@ public interface EmployeeAppointmentService {
 
     List<EmployeeAppointmentDTO> getAllEmployeeAppointment() throws Exception;
 
+    EmployeeAppointmentDTO getLatestEmployeeAppointmentByEmployeeId(Long employeeId) throws Exception;
+
     EmployeeAppointmentDTO getEmployeeAppointmentById(Long employeeAppointmentId) throws Exception;
 
     EmployeeAppointmentDTO updateEmployeeAppointment(Long employeeAppointmentId, EmployeeAppointmentDTO employeeAppointmentDTO) throws Exception;

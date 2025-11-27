@@ -1,6 +1,7 @@
 package com.humanresource.dtos;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -11,6 +12,9 @@ import java.time.LocalDateTime;
 public class EmployeeAppointmentDTO implements Serializable {
 
     private Long employeeAppointmentId;
+
+    @NotNull(message = "Employee ID is mandatory")
+    private Long employeeId;
 
     @NotNull(message = "appointmentIssuedDate is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
@@ -50,7 +54,8 @@ public class EmployeeAppointmentDTO implements Serializable {
 
     }
 
-    public EmployeeAppointmentDTO(LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+    public EmployeeAppointmentDTO(Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+        this.employeeId = employeeId;
         this.appointmentIssuedDate = appointmentIssuedDate;
         this.assumptionToDutyDate = assumptionToDutyDate;
         this.natureOfAppointmentId = natureOfAppointmentId;
@@ -64,8 +69,9 @@ public class EmployeeAppointmentDTO implements Serializable {
         this.details = details;
     }
 
-    public EmployeeAppointmentDTO(Long employeeAppointmentId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+    public EmployeeAppointmentDTO(Long employeeAppointmentId, Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
         this.employeeAppointmentId = employeeAppointmentId;
+        this.employeeId = employeeId;
         this.appointmentIssuedDate = appointmentIssuedDate;
         this.assumptionToDutyDate = assumptionToDutyDate;
         this.natureOfAppointmentId = natureOfAppointmentId;
@@ -85,6 +91,14 @@ public class EmployeeAppointmentDTO implements Serializable {
 
     public void setEmployeeAppointmentId(Long employeeAppointmentId) {
         this.employeeAppointmentId = employeeAppointmentId;
+    }
+
+    public Long getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(Long employeeId) {
+        this.employeeId = employeeId;
     }
 
     public LocalDateTime getAppointmentIssuedDate() {

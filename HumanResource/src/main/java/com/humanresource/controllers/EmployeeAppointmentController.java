@@ -69,9 +69,9 @@ public class EmployeeAppointmentController {
     }
 
     @GetMapping("/employeeAppointment/getLatestEmployeeAppointmentByEmployeeId/{employeeId}")
-    public ResponseEntity<List<EmployeeAppointmentDTO>> getLatestEmployeeAppointmentByEmployeeId() throws Exception {
-        List<EmployeeAppointmentDTO> employeeAppointmentDTOList = employeeAppointmentService.getAllEmployeeAppointment();
-        return ResponseEntity.ok(employeeAppointmentDTOList);
+    public ResponseEntity<EmployeeAppointmentDTO> getLatestEmployeeAppointmentByEmployeeId(@PathVariable Long employeeId) throws Exception {
+        EmployeeAppointmentDTO employeeAppointmentDTO = employeeAppointmentService.getLatestEmployeeAppointmentByEmployeeId(employeeId);
+        return ResponseEntity.ok(employeeAppointmentDTO);
     }
 
 }

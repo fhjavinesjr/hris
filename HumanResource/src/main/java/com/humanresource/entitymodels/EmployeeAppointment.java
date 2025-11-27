@@ -18,6 +18,7 @@ public class EmployeeAppointment implements Serializable {
     @Column(name = "employeeAppointmentId")
     private Long employeeAppointmentId;
 
+    @NotNull(message = "Employee ID is mandatory")
     @Column(name = "employeeId")
     private Long employeeId;
 
@@ -70,7 +71,8 @@ public class EmployeeAppointment implements Serializable {
 
     }
 
-    public EmployeeAppointment(LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+    public EmployeeAppointment(Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+        this.employeeId = employeeId;
         this.appointmentIssuedDate = appointmentIssuedDate;
         this.assumptionToDutyDate = assumptionToDutyDate;
         this.natureOfAppointmentId = natureOfAppointmentId;
@@ -84,8 +86,9 @@ public class EmployeeAppointment implements Serializable {
         this.details = details;
     }
 
-    public EmployeeAppointment(Long employeeAppointmentId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+    public EmployeeAppointment(Long employeeAppointmentId, Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
         this.employeeAppointmentId = employeeAppointmentId;
+        this.employeeId = employeeId;
         this.appointmentIssuedDate = appointmentIssuedDate;
         this.assumptionToDutyDate = assumptionToDutyDate;
         this.natureOfAppointmentId = natureOfAppointmentId;
@@ -105,6 +108,14 @@ public class EmployeeAppointment implements Serializable {
 
     public void setEmployeeAppointmentId(Long employeeAppointmentId) {
         this.employeeAppointmentId = employeeAppointmentId;
+    }
+
+    public Long getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(Long employeeId) {
+        this.employeeId = employeeId;
     }
 
     public LocalDateTime getAppointmentIssuedDate() {

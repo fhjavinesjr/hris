@@ -26,7 +26,8 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
     @Override
     public EmployeeAppointmentDTO createEmployeeAppointment(EmployeeAppointmentDTO employeeAppointmentDTO) throws Exception {
         try {
-            EmployeeAppointment employeeAppointment = new EmployeeAppointment(employeeAppointmentDTO.getAppointmentIssuedDate()
+            EmployeeAppointment employeeAppointment = new EmployeeAppointment(employeeAppointmentDTO.getEmployeeId()
+                    ,employeeAppointmentDTO.getAppointmentIssuedDate()
                     ,employeeAppointmentDTO.getAssumptionToDutyDate()
                     ,employeeAppointmentDTO.getNatureOfAppointmentId()
                     ,employeeAppointmentDTO.getPlantillaId()
@@ -55,6 +56,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
         for(EmployeeAppointment employeeAppointment : employeeAppointmentList) {
             EmployeeAppointmentDTO employeeAppointmentDTO = new EmployeeAppointmentDTO();
             employeeAppointmentDTO.setEmployeeAppointmentId(employeeAppointment.getEmployeeAppointmentId());
+            employeeAppointmentDTO.setEmployeeId(employeeAppointment.getEmployeeId());
             employeeAppointmentDTO.setAppointmentIssuedDate(employeeAppointment.getAppointmentIssuedDate());
             employeeAppointmentDTO.setAssumptionToDutyDate(employeeAppointment.getAssumptionToDutyDate());
             employeeAppointmentDTO.setNatureOfAppointmentId(employeeAppointment.getNatureOfAppointmentId());
@@ -74,6 +76,30 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
     }
 
     @Override
+    public EmployeeAppointmentDTO getLatestEmployeeAppointmentByEmployeeId(Long employeeId) throws Exception {
+        EmployeeAppointment employeeAppointment = employeeAppointmentRepository.findTop1ByEmployeeIdOrderByAssumptionToDutyDateDesc(employeeId);
+        EmployeeAppointmentDTO employeeAppointmentDTO = new EmployeeAppointmentDTO();
+        if(employeeAppointment != null) {
+            employeeAppointmentDTO.setEmployeeId(employeeAppointment.getEmployeeId());
+            employeeAppointmentDTO.setAppointmentIssuedDate(employeeAppointment.getAppointmentIssuedDate());
+            employeeAppointmentDTO.setAssumptionToDutyDate(employeeAppointment.getAssumptionToDutyDate());
+            employeeAppointmentDTO.setNatureOfAppointmentId(employeeAppointment.getNatureOfAppointmentId());
+            employeeAppointmentDTO.setPlantillaId(employeeAppointment.getPlantillaId());
+            employeeAppointmentDTO.setJobPositionId(employeeAppointment.getJobPositionId());
+            employeeAppointmentDTO.setSalaryGrade(employeeAppointment.getSalaryGrade());
+            employeeAppointmentDTO.setSalaryStep(employeeAppointment.getSalaryStep());
+            employeeAppointmentDTO.setSalaryPerAnnum(employeeAppointment.getSalaryPerAnnum());
+            employeeAppointmentDTO.setSalaryPerMonth(employeeAppointment.getSalaryPerMonth());
+            employeeAppointmentDTO.setSalaryPerDay(employeeAppointment.getSalaryPerDay());
+            employeeAppointmentDTO.setDetails(employeeAppointment.getDetails());
+
+            return employeeAppointmentDTO;
+        }
+
+        return null;
+    }
+
+    @Override
     public EmployeeAppointmentDTO getEmployeeAppointmentById(Long employeeAppointmentId) throws Exception {
         return null;
     }
@@ -84,6 +110,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
         try {
             EmployeeAppointment employeeAppointment = employeeAppointmentRepository.findById(employeeAppointmentId).orElseThrow(() -> new RuntimeException("EmployeeAppointment not found"));
             if(employeeAppointment != null) {
+                employeeAppointment.setEmployeeId(employeeAppointmentDTO.getEmployeeId());
                 employeeAppointment.setAppointmentIssuedDate(employeeAppointmentDTO.getAppointmentIssuedDate());
                 employeeAppointment.setAssumptionToDutyDate(employeeAppointmentDTO.getAssumptionToDutyDate());
                 employeeAppointment.setNatureOfAppointmentId(employeeAppointmentDTO.getNatureOfAppointmentId());
@@ -130,6 +157,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
         for(EmployeeAppointment employeeAppointment : employeeAppointmentList) {
             EmployeeAppointmentDTO employeeAppointmentDTO = new EmployeeAppointmentDTO();
             employeeAppointmentDTO.setEmployeeAppointmentId(employeeAppointment.getEmployeeAppointmentId());
+            employeeAppointmentDTO.setEmployeeId(employeeAppointment.getEmployeeId());
             employeeAppointmentDTO.setAppointmentIssuedDate(employeeAppointment.getAppointmentIssuedDate());
             employeeAppointmentDTO.setAssumptionToDutyDate(employeeAppointment.getAssumptionToDutyDate());
             employeeAppointmentDTO.setNatureOfAppointmentId(employeeAppointment.getNatureOfAppointmentId());
