@@ -50,11 +50,14 @@ public class EmployeeAppointmentDTO implements Serializable {
     @NotNull(message = "details is mandatory")
     private String details;
 
+    @NotNull(message = "isActive is mandatory")
+    private Boolean isActive;
+
     public EmployeeAppointmentDTO() {
 
     }
 
-    public EmployeeAppointmentDTO(Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+    public EmployeeAppointmentDTO(Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details, Boolean isActive) {
         this.employeeId = employeeId;
         this.appointmentIssuedDate = appointmentIssuedDate;
         this.assumptionToDutyDate = assumptionToDutyDate;
@@ -67,9 +70,10 @@ public class EmployeeAppointmentDTO implements Serializable {
         this.salaryPerMonth = salaryPerMonth;
         this.salaryPerDay = salaryPerDay;
         this.details = details;
+        this.isActive = isActive;
     }
 
-    public EmployeeAppointmentDTO(Long employeeAppointmentId, Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details) {
+    public EmployeeAppointmentDTO(Long employeeAppointmentId, Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details, Boolean isActive) {
         this.employeeAppointmentId = employeeAppointmentId;
         this.employeeId = employeeId;
         this.appointmentIssuedDate = appointmentIssuedDate;
@@ -83,6 +87,7 @@ public class EmployeeAppointmentDTO implements Serializable {
         this.salaryPerMonth = salaryPerMonth;
         this.salaryPerDay = salaryPerDay;
         this.details = details;
+        this.isActive = isActive;
     }
 
     public Long getEmployeeAppointmentId() {
@@ -187,5 +192,13 @@ public class EmployeeAppointmentDTO implements Serializable {
 
     public void setDetails(String details) {
         this.details = details;
+    }
+
+    public Boolean getActive() {
+        return isActive;
+    }
+
+    public void setActive(Boolean active) {
+        isActive = active;
     }
 }

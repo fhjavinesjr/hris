@@ -37,6 +37,12 @@ public class EmployeeAppointmentController {
         return ResponseEntity.ok(employeeAppointmentDTOList);
     }
 
+    @GetMapping("/employeeAppointment/get-all/{employeeId}")
+    public ResponseEntity<List<EmployeeAppointmentDTO>> getAllEmployeeAppointmentByEmployeeId(@PathVariable Long employeeId) throws Exception {
+        List<EmployeeAppointmentDTO> employeeAppointmentDTOList = employeeAppointmentService.getAllEmployeeAppointmentByEmployeeId(employeeId);
+        return ResponseEntity.ok(employeeAppointmentDTOList);
+    }
+
     @PutMapping("/employeeAppointment/update/{employeeAppointmentId}")
     public ResponseEntity<MetadataResponse> updateEmployeeAppointment(@PathVariable("employeeAppointmentId") Long employeeAppointmentId, @RequestBody EmployeeAppointmentDTO employeeAppointmentDTO) throws Exception {
         employeeAppointmentDTO = employeeAppointmentService.updateEmployeeAppointment(employeeAppointmentId, employeeAppointmentDTO);

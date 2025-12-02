@@ -13,4 +13,6 @@ public interface EmployeeAppointmentRepository extends JpaRepository<EmployeeApp
 
     EmployeeAppointment findTop1ByEmployeeIdOrderByAssumptionToDutyDateDesc(Long employeeId);
 
+    List<EmployeeAppointment> findByEmployeeId(Long employeeId);
+
 }
