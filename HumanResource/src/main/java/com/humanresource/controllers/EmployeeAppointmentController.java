@@ -28,7 +28,7 @@ public class EmployeeAppointmentController {
                     .body(new MetadataResponse("Failed to update EmployeeAppointment"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(employeeAppointmentDTO.getEmployeeAppointmentId(), "Successful to update EmployeeAppointment"));
+        return ResponseEntity.ok(new MetadataResponse(employeeAppointmentDTO.getEmployeeAppointmentId(), "Successful to create EmployeeAppointment"));
     }
 
     @GetMapping("/employeeAppointment/get-all")

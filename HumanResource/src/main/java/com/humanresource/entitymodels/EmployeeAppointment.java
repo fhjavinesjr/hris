@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Table(
         name = "employeeappointment",
         uniqueConstraints = {
-            @UniqueConstraint(columnNames = {"employeeId", "appointmentIssuedDate"}) //can have multiple appointments but not on the same date within the same employee
+            @UniqueConstraint(columnNames = {"employeeId", "assumptionToDutyDate"}) //can have multiple appointments but not on the same date within the same employee
         }
 )
 public class EmployeeAppointment implements Serializable {
@@ -72,15 +72,15 @@ public class EmployeeAppointment implements Serializable {
     @Column(name = "details", length = 100, nullable = false)
     private String details;
 
-    @NotNull(message = "isActive is mandatory")
-    @Column(name = "isActive")
-    private Boolean isActive;
+    @NotNull(message = "activeAppointment is mandatory")
+    @Column(name = "activeAppointment")
+    private Boolean activeAppointment;
 
     public EmployeeAppointment() {
 
     }
 
-    public EmployeeAppointment(Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details, Boolean isActive) {
+    public EmployeeAppointment(Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details, Boolean activeAppointment) {
         this.employeeId = employeeId;
         this.appointmentIssuedDate = appointmentIssuedDate;
         this.assumptionToDutyDate = assumptionToDutyDate;
@@ -93,10 +93,10 @@ public class EmployeeAppointment implements Serializable {
         this.salaryPerMonth = salaryPerMonth;
         this.salaryPerDay = salaryPerDay;
         this.details = details;
-        this.isActive = isActive;
+        this.activeAppointment = activeAppointment;
     }
 
-    public EmployeeAppointment(Long employeeAppointmentId, Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details, Boolean isActive) {
+    public EmployeeAppointment(Long employeeAppointmentId, Long employeeId, LocalDateTime appointmentIssuedDate, LocalDateTime assumptionToDutyDate, Integer natureOfAppointmentId, Integer plantillaId, Integer jobPositionId, Integer salaryGrade, Integer salaryStep, BigDecimal salaryPerAnnum, BigDecimal salaryPerMonth, BigDecimal salaryPerDay, String details, Boolean activeAppointment) {
         this.employeeAppointmentId = employeeAppointmentId;
         this.employeeId = employeeId;
         this.appointmentIssuedDate = appointmentIssuedDate;
@@ -110,7 +110,7 @@ public class EmployeeAppointment implements Serializable {
         this.salaryPerMonth = salaryPerMonth;
         this.salaryPerDay = salaryPerDay;
         this.details = details;
-        this.isActive = isActive;
+        this.activeAppointment = activeAppointment;
     }
 
     public Long getEmployeeAppointmentId() {
@@ -217,11 +217,11 @@ public class EmployeeAppointment implements Serializable {
         this.details = details;
     }
 
-    public Boolean getActive() {
-        return isActive;
+    public Boolean getActiveAppointment() {
+        return activeAppointment;
     }
 
-    public void setActive(Boolean active) {
-        isActive = active;
+    public void setActiveAppointment(Boolean activeAppointment) {
+        this.activeAppointment = activeAppointment;
     }
 }

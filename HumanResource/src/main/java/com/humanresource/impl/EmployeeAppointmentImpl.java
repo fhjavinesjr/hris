@@ -26,6 +26,15 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
     @Override
     public EmployeeAppointmentDTO createEmployeeAppointment(EmployeeAppointmentDTO employeeAppointmentDTO) throws Exception {
         try {
+            if(employeeAppointmentDTO.getEmployeeAppointmentId() != null
+                    && employeeAppointmentDTO.getEmployeeAppointmentId() > 0) {
+                //Modify previous active to inactive
+                EmployeeAppointment employeeAppointmentModifyActive = employeeAppointmentRepository.findTop1ByEmployeeIdOrderByAssumptionToDutyDateDesc(employeeAppointmentDTO.getEmployeeId());
+                employeeAppointmentModifyActive.setActiveAppointment(employeeAppointmentDTO.getActiveAppointment());
+                employeeAppointmentRepository.save(employeeAppointmentModifyActive);
+            }
+
+            //Add new employee appointment with active true
             EmployeeAppointment employeeAppointment = new EmployeeAppointment(employeeAppointmentDTO.getEmployeeId()
                     ,employeeAppointmentDTO.getAppointmentIssuedDate()
                     ,employeeAppointmentDTO.getAssumptionToDutyDate()
@@ -38,7 +47,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
                     ,employeeAppointmentDTO.getSalaryPerMonth()
                     ,employeeAppointmentDTO.getSalaryPerDay()
                     ,employeeAppointmentDTO.getDetails()
-                    ,employeeAppointmentDTO.getActive());
+                    ,employeeAppointmentDTO.getActiveAppointment());
 
             employeeAppointmentRepository.save(employeeAppointment);
 
@@ -69,7 +78,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
             employeeAppointmentDTO.setSalaryPerMonth(employeeAppointment.getSalaryPerMonth());
             employeeAppointmentDTO.setSalaryPerDay(employeeAppointment.getSalaryPerDay());
             employeeAppointmentDTO.setDetails(employeeAppointment.getDetails());
-            employeeAppointmentDTO.setActive(employeeAppointment.getActive());
+            employeeAppointmentDTO.setActiveAppointment(employeeAppointment.getActiveAppointment());
 
             employeeAppointmentDTOList.add(employeeAppointmentDTO);
         }
@@ -97,7 +106,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
             employeeAppointmentDTO.setSalaryPerMonth(employeeAppointment.getSalaryPerMonth());
             employeeAppointmentDTO.setSalaryPerDay(employeeAppointment.getSalaryPerDay());
             employeeAppointmentDTO.setDetails(employeeAppointment.getDetails());
-            employeeAppointmentDTO.setActive(employeeAppointment.getActive());
+            employeeAppointmentDTO.setActiveAppointment(employeeAppointment.getActiveAppointment());
 
             employeeAppointmentDTOList.add(employeeAppointmentDTO);
         }
@@ -122,7 +131,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
             employeeAppointmentDTO.setSalaryPerMonth(employeeAppointment.getSalaryPerMonth());
             employeeAppointmentDTO.setSalaryPerDay(employeeAppointment.getSalaryPerDay());
             employeeAppointmentDTO.setDetails(employeeAppointment.getDetails());
-            employeeAppointmentDTO.setActive(employeeAppointment.getActive());
+            employeeAppointmentDTO.setActiveAppointment(employeeAppointment.getActiveAppointment());
 
             return employeeAppointmentDTO;
         }
@@ -153,7 +162,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
                 employeeAppointment.setSalaryPerMonth(employeeAppointmentDTO.getSalaryPerMonth());
                 employeeAppointment.setSalaryPerDay(employeeAppointmentDTO.getSalaryPerDay());
                 employeeAppointment.setDetails(employeeAppointmentDTO.getDetails());
-                employeeAppointment.setActive(employeeAppointmentDTO.getActive());
+                employeeAppointment.setActiveAppointment(employeeAppointmentDTO.getActiveAppointment());
 
                 employeeAppointmentRepository.save(employeeAppointment);
 
@@ -201,7 +210,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
             employeeAppointmentDTO.setSalaryPerMonth(employeeAppointment.getSalaryPerMonth());
             employeeAppointmentDTO.setSalaryPerDay(employeeAppointment.getSalaryPerDay());
             employeeAppointmentDTO.setDetails(employeeAppointment.getDetails());
-            employeeAppointmentDTO.setActive(employeeAppointment.getActive());
+            employeeAppointmentDTO.setActiveAppointment(employeeAppointment.getActiveAppointment());
 
             employeeAppointmentDTOList.add(employeeAppointmentDTO);
         }
