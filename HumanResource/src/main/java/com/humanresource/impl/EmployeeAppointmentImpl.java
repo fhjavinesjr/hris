@@ -30,7 +30,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
                     && employeeAppointmentDTO.getEmployeeAppointmentId() > 0) {
                 //Modify previous active to inactive
                 EmployeeAppointment employeeAppointmentModifyActive = employeeAppointmentRepository.findTop1ByEmployeeIdOrderByAssumptionToDutyDateDesc(employeeAppointmentDTO.getEmployeeId());
-                employeeAppointmentModifyActive.setActiveAppointment(employeeAppointmentDTO.getActiveAppointment());
+                employeeAppointmentModifyActive.setActiveAppointment(false);
                 employeeAppointmentRepository.save(employeeAppointmentModifyActive);
             }
 
