@@ -1,7 +1,6 @@
 package com.humanresource.dtos;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
 import java.io.Serializable;
@@ -29,7 +28,7 @@ public class SeparationDTO implements Serializable {
 
     @NotNull(message = "exitInterviewDate is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    private Long exitInterviewDate;
+    private LocalDateTime exitInterviewDate;
 
     @NotNull(message = "employeeIdProcessingBy is mandatory")
     private Long employeeIdProcessingBy;
@@ -40,7 +39,7 @@ public class SeparationDTO implements Serializable {
     public SeparationDTO() {
     }
 
-    public SeparationDTO(Long separationId, Long employeeId, LocalDateTime separationDate, Integer natureOfSeparationId, String remarks, Long employeeInterviewerId, Long exitInterviewDate, Long employeeIdProcessingBy, Long approvedById) {
+    public SeparationDTO(Long separationId, Long employeeId, LocalDateTime separationDate, Integer natureOfSeparationId, String remarks, Long employeeInterviewerId, LocalDateTime exitInterviewDate, Long employeeIdProcessingBy, Long approvedById) {
         this.separationId = separationId;
         this.employeeId = employeeId;
         this.separationDate = separationDate;
@@ -100,11 +99,11 @@ public class SeparationDTO implements Serializable {
         this.employeeInterviewerId = employeeInterviewerId;
     }
 
-    public Long getExitInterviewDate() {
+    public LocalDateTime getExitInterviewDate() {
         return exitInterviewDate;
     }
 
-    public void setExitInterviewDate(Long exitInterviewDate) {
+    public void setExitInterviewDate(LocalDateTime exitInterviewDate) {
         this.exitInterviewDate = exitInterviewDate;
     }
 

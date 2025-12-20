@@ -40,7 +40,7 @@ public class Separation implements Serializable {
     @NotNull(message = "exitInterviewDate is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     @Column(name = "exitInterviewDate")
-    private Long exitInterviewDate;
+    private LocalDateTime exitInterviewDate;
 
     @NotNull(message = "employeeIdProcessingBy is mandatory")
     @Column(name = "employeeIdProcessingBy", nullable = false)
@@ -54,7 +54,7 @@ public class Separation implements Serializable {
 
     }
 
-    public Separation(Long separationId, Long employeeId, LocalDateTime separationDate, Integer natureOfSeparationId, String remarks, Long employeeInterviewerId, Long exitInterviewDate, Long employeeIdProcessingBy, Long approvedById) {
+    public Separation(Long separationId, Long employeeId, LocalDateTime separationDate, Integer natureOfSeparationId, String remarks, Long employeeInterviewerId, LocalDateTime exitInterviewDate, Long employeeIdProcessingBy, Long approvedById) {
         this.separationId = separationId;
         this.employeeId = employeeId;
         this.separationDate = separationDate;
@@ -114,11 +114,11 @@ public class Separation implements Serializable {
         this.employeeInterviewerId = employeeInterviewerId;
     }
 
-    public Long getExitInterviewDate() {
+    public LocalDateTime getExitInterviewDate() {
         return exitInterviewDate;
     }
 
-    public void setExitInterviewDate(Long exitInterviewDate) {
+    public void setExitInterviewDate(LocalDateTime exitInterviewDate) {
         this.exitInterviewDate = exitInterviewDate;
     }
 

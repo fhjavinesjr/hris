@@ -121,7 +121,7 @@ public class SeparationImpl implements SeparationService {
         try {
             Separation separation = separationRepository.findById(separationId).orElseThrow(() -> new RuntimeException("Separation not found"));
             if(separation != null) {
-                separation.setSeparationId(separationDTO.getSeparationId());
+                separation.setSeparationId(separationId);
                 separation.setEmployeeId(separationDTO.getEmployeeId());
                 separation.setSeparationDate(separationDTO.getSeparationDate());
                 separation.setNatureOfSeparationId(separationDTO.getNatureOfSeparationId());
