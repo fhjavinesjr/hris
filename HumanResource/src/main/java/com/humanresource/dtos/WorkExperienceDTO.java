@@ -10,33 +10,24 @@ public class WorkExperienceDTO implements Serializable {
 
     private Long workExperienceId;
 
-    @Column(name = "personalDataId")
     private Long personalDataId;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    @Column(name = "fromDate")
     private LocalDateTime fromDate;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    @Column(name = "toDate")
     private LocalDateTime toDate;
 
-    @Column(name = "positionTitle")
     private String positionTitle;
 
-    @Column(name = "agencyName")
     private String agencyName;
 
-    @Column(name = "monthlySalary")
     private Double monthlySalary;
 
-    @Column(name = "payGrade")
     private Long payGrade;
 
-    @Column(name = "workStatus")
     private String workStatus;
 
-    @Column(name = "boolGovernmentService")
     private String boolGovernmentService;
 
     public WorkExperienceDTO() {

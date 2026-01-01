@@ -10,27 +10,20 @@ public class CivilServiceEligibilityDTO implements Serializable {
 
     private Long civilServiceEligibilityId;
 
-    @Column(name = "personalDataId")
     private Long personalDataId;
 
-    @Column(name = "careerServiceName")
     private String careerServiceName;
 
-    @Column(name = "civilServiceRating")
     private Double civilServiceRating;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    @Column(name = "dateOfExamination")
     private LocalDateTime dateOfExamination;
 
-    @Column(name = "placeOfExamination")
     private String placeOfExamination;
 
-    @Column(name = "licenseNumber")
     private String licenseNumber;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    @Column(name = "licenseValidityDate")
     private LocalDateTime licenseValidityDate;
 
     public CivilServiceEligibilityDTO() {

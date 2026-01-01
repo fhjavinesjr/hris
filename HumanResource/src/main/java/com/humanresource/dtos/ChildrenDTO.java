@@ -13,16 +13,13 @@ public class ChildrenDTO implements Serializable {
     private Long childrenId;
 
     @NotNull(message = "Personal Data ID is mandatory")
-    @Column(name = "personalDataId")
     private Long personalDataId;
 
     @NotBlank(message = "Children fullname is mandatory")
-    @Column(name = "childFullname")
     private String childFullname;
 
     @NotNull(message = "Date of Birth is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
-    @Column(name = "dob")
     private LocalDateTime dob;
 
     public ChildrenDTO() {
