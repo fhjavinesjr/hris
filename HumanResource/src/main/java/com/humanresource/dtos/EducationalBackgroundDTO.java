@@ -12,33 +12,24 @@ public class EducationalBackgroundDTO implements Serializable {
 
     private Long educationalBackgroundId;
 
-    @NotNull(message = "Personal Data ID is mandatory")
     private Long personalDataId;
 
-    @NotBlank(message = "levelOfEducation is mandatory")
     private String levelOfEducation;
 
-    @NotBlank(message = "nameOfSchool is mandatory")
     private String nameOfSchool;
 
-    @NotBlank(message = "degreeCourse is mandatory")
     private String degreeCourse;
 
-    @NotNull(message = "scoreGrade is mandatory")
     private Double scoreGrade;
 
-    @NotNull(message = "yearGraduated is mandatory")
     private Long yearGraduated;
 
-    @NotNull(message = "From Date is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     private LocalDateTime fromDate;
 
-    @NotNull(message = "To Date is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     private LocalDateTime toDate;
 
-    @NotNull(message = "honorsReceived is mandatory")
     private String honorsReceived;
 
     public EducationalBackgroundDTO() {

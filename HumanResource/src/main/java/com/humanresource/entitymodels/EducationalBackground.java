@@ -17,41 +17,32 @@ public class EducationalBackground implements Serializable {
     @Column(name = "educationalBackgroundId")
     private Long educationalBackgroundId;
 
-    @NotNull(message = "Personal Data ID is mandatory")
     @Column(name = "personalDataId")
     private Long personalDataId;
 
-    @NotBlank(message = "levelOfEducation is mandatory")
     @Column(name = "levelOfEducation")
     private String levelOfEducation;
 
-    @NotBlank(message = "nameOfSchool is mandatory")
     @Column(name = "nameOfSchool")
     private String nameOfSchool;
 
-    @NotBlank(message = "degreeCourse is mandatory")
     @Column(name = "degreeCourse")
     private String degreeCourse;
 
-    @NotNull(message = "scoreGrade is mandatory")
     @Column(name = "scoreGrade")
     private Double scoreGrade;
 
-    @NotNull(message = "yearGraduated is mandatory")
     @Column(name = "yearGraduated")
     private Long yearGraduated;
 
-    @NotNull(message = "From Date is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     @Column(name = "fromDate")
     private LocalDateTime fromDate;
 
-    @NotNull(message = "To Date is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     @Column(name = "toDate")
     private LocalDateTime toDate;
 
-    @NotNull(message = "honorsReceived is mandatory")
     @Column(name = "honorsReceived")
     private String honorsReceived;
 
