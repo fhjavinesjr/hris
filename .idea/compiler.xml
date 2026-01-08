@@ -9,6 +9,7 @@
         <module name="Administrative" />
         <module name="TimeKeeping" />
         <module name="HRISApp" />
+        <module name="EmployeePortal" />
         <module name="Common" />
         <module name="HumanResource" />
       </profile>

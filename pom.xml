@@ -15,6 +15,7 @@
     <module>Common</module>
     <module>HRISApp</module>
     <module>HumanResource</module>
+    <module>EmployeePortal</module>
   </modules>
 
   <properties>

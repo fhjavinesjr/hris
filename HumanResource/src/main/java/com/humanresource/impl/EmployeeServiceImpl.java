@@ -9,13 +9,12 @@ import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.services.EmployeeService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -147,6 +146,28 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
 
         return employeeDisplays;
+    }
+
+    @Override
+    public EmployeeDTO updateEmployeePassword(Long employeeId, Map<String, Object> updates) throws Exception {
+        Employee employee = employeeRepository.findById(employeeId).orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        String currentPassword = updates.containsKey("currentPassword") ? (String) updates.get("currentPassword") : null;
+        if(!passwordEncoder.matches(currentPassword, employee.getEmployeePassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is not correct", null);
+        }
+
+        if (updates.containsKey("employeePassword")) {
+            String newPassword = (String) updates.get("employeePassword");
+            // Hash the new password before updating
+            employee.setEmployeePassword(passwordEncoder.encode(newPassword));
+        } else {
+            throw new RuntimeException("Password not provided");
+        }
+
+        employeeRepository.save(employee);
+
+        return buildEmployeeDTO(employee);
     }
 
     private EmployeeDTO buildEmployeeDTO(Employee employee) {

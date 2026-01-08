@@ -19,4 +19,6 @@ public interface EmployeeService {
 
     List<EmployeeDTO> getAllEmployeeNoAndName() throws Exception;
 
+    EmployeeDTO updateEmployeePassword(Long employeeId, Map<String, Object> updates) throws Exception;
+
 }

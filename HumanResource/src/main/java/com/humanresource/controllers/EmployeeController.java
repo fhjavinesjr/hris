@@ -51,4 +51,10 @@ public class EmployeeController {
     public ResponseEntity<List<EmployeeDTO>> getAllEmployeeNoAndName() throws Exception {
         return ResponseEntity.ok(employeeService.getAllEmployeeNoAndName());
     }
+
+    @PutMapping("/employee/password/update/{employeeId}")
+    public ResponseEntity<EmployeeDTO> updateEmployeePassword(@PathVariable("employeeId") Long employeeId, @Valid @RequestBody Map<String, Object> updates) throws Exception {
+        EmployeeDTO updateEmployee = employeeService.updateEmployeePassword(employeeId, updates);
+        return ResponseEntity.ok(updateEmployee);
+    }
 }
