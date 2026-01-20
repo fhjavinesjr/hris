@@ -31,6 +31,11 @@ public class EmployeeController {
         return ResponseEntity.ok(token);
     }
 
+    @PostMapping("/singleSignOn/validateToken")
+    public ResponseEntity<String> singleSignOn(@RequestBody String token) {
+        return ResponseEntity.ok(token);
+    }
+
     @PostMapping("/employee/register")
     public ResponseEntity<EmployeeDTO> createEmployee(@RequestBody EmployeeDTO employeeDTO) throws Exception {
         return ResponseEntity.status(HttpStatus.CREATED).body(employeeService.createEmployee(employeeDTO));

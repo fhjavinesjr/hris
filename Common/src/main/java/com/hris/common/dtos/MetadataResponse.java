@@ -3,6 +3,7 @@ package com.hris.common.dtos;
 public class MetadataResponse {
 
     private Long metaId;
+    private String identifier;
     private String message;
 
     public MetadataResponse() {
@@ -13,9 +14,22 @@ public class MetadataResponse {
         this.message = message;
     }
 
-    public MetadataResponse(Long metaId, String message) {
-        this.metaId = metaId;
+    public MetadataResponse(String identifier, String message) {
+        this.identifier = identifier;
         this.message = message;
+    }
+
+    public MetadataResponse(Long metaId, String message) {
+        this.message = message;
+        this.metaId = metaId;
+    }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
     }
 
     public Long getMetaId() {

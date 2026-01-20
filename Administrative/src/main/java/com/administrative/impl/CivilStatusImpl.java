@@ -16,20 +16,20 @@ import java.util.List;
 public class CivilStatusImpl implements CivilStatusService {
 
     private static final Logger log = LoggerFactory.getLogger(CivilStatusImpl.class);
-    private final CivilStatusRepository genderRepository;
+    private final CivilStatusRepository civilStatusRepository;
 
-    public CivilStatusImpl(CivilStatusRepository genderRepository) {
-        this.genderRepository = genderRepository;
+    public CivilStatusImpl(CivilStatusRepository civilStatusRepository) {
+        this.civilStatusRepository = civilStatusRepository;
     }
 
     @Transactional
     @Override
-    public CivilStatusDTO createCivilStatus(CivilStatusDTO genderDTO) throws Exception {
+    public CivilStatusDTO createCivilStatus(CivilStatusDTO civilStatusDTO) throws Exception {
         try {
-            CivilStatus gender = new CivilStatus(genderDTO.getCivilStatusId(), genderDTO.getCode(), genderDTO.getName());
-            genderRepository.save(gender);
+            CivilStatus civilStatus = new CivilStatus(civilStatusDTO.getCivilStatusId(), civilStatusDTO.getCode(), civilStatusDTO.getName());
+            civilStatusRepository.save(civilStatus);
 
-            return genderDTO;
+            return civilStatusDTO;
         } catch(Exception e) {
             log.error("Error in creating CivilStatus: ", e);
             return null;
@@ -38,38 +38,38 @@ public class CivilStatusImpl implements CivilStatusService {
 
     @Override
     public List<CivilStatusDTO> getAllCivilStatus() throws Exception {
-        List<CivilStatus> genderList = genderRepository.findAll();
-        List<CivilStatusDTO> genderDTOList = new ArrayList<>();
+        List<CivilStatus> civilStatusList = civilStatusRepository.findAll();
+        List<CivilStatusDTO> civilStatusDTOList = new ArrayList<>();
 
-        for(CivilStatus gender : genderList) {
-            CivilStatusDTO genderDTO = new CivilStatusDTO();
-            genderDTO.setCivilStatusId(gender.getCivilStatusId());
-            genderDTO.setCode(gender.getCode());
-            genderDTO.setName(gender.getName());
+        for(CivilStatus civilStatus : civilStatusList) {
+            CivilStatusDTO civilStatusDTO = new CivilStatusDTO();
+            civilStatusDTO.setCivilStatusId(civilStatus.getCivilStatusId());
+            civilStatusDTO.setCode(civilStatus.getCode());
+            civilStatusDTO.setName(civilStatus.getName());
 
-            genderDTOList.add(genderDTO);
+            civilStatusDTOList.add(civilStatusDTO);
         }
 
-        return genderDTOList;
+        return civilStatusDTOList;
     }
 
     @Override
-    public CivilStatusDTO getCivilStatusById(Long genderId) throws Exception {
+    public CivilStatusDTO getCivilStatusById(Long civilStatusId) throws Exception {
         return null;
     }
 
     @Transactional
     @Override
-    public CivilStatusDTO updateCivilStatus(Long genderId, CivilStatusDTO genderDTO) throws Exception {
+    public CivilStatusDTO updateCivilStatus(Long civilStatusId, CivilStatusDTO civilStatusDTO) throws Exception {
         try {
-            CivilStatus gender = genderRepository.findById(genderId).orElseThrow(() -> new RuntimeException("CivilStatus not found"));
-            if(gender != null) {
-                gender.setCode(genderDTO.getCode());
-                gender.setName(genderDTO.getName());
+            CivilStatus civilStatus = civilStatusRepository.findById(civilStatusId).orElseThrow(() -> new RuntimeException("CivilStatus not found"));
+            if(civilStatus != null) {
+                civilStatus.setCode(civilStatusDTO.getCode());
+                civilStatus.setName(civilStatusDTO.getName());
 
-                genderRepository.save(gender);
+                civilStatusRepository.save(civilStatus);
 
-                return genderDTO;
+                return civilStatusDTO;
             }
         } catch(Exception e) {
             log.error("Error failed fetching CivilStatus: {}", e.getMessage());
@@ -80,9 +80,9 @@ public class CivilStatusImpl implements CivilStatusService {
 
     @Transactional
     @Override
-    public Boolean deleteCivilStatus(Long genderId) throws Exception {
+    public Boolean deleteCivilStatus(Long civilStatusId) throws Exception {
         try {
-            genderRepository.deleteById(genderId);
+            civilStatusRepository.deleteById(civilStatusId);
 
             return true;
         } catch(Exception e) {
