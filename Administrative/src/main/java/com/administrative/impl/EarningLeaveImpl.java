@@ -1,6 +1,8 @@
 package com.administrative.impl;
 
+import com.administrative.dtos.DayEquivalentMinutesDTO;
 import com.administrative.dtos.EarningLeaveDTO;
+import com.administrative.entitymodels.DayEquivalentMinutes;
 import com.administrative.entitymodels.EarningLeave;
 import com.administrative.repositories.EarningLeaveRepository;
 import com.administrative.services.EarningLeaveService;
@@ -91,6 +93,18 @@ public class EarningLeaveImpl implements EarningLeaveService {
     public List<EarningLeaveDTO> updateEarningLeave(List<EarningLeaveDTO> earningLeaveDTOList) throws Exception {
         try {
             for(EarningLeaveDTO earningLeaveDTO : earningLeaveDTOList) {
+                if(earningLeaveDTO.getEarningLeaveId() == null || earningLeaveDTO.getEarningLeaveId() == 0) {
+                    //added new entry values
+                    EarningLeave earningLeave = new EarningLeave();
+                    earningLeave.setEffectivityDate(earningLeaveDTO.getEffectivityDate());
+                    earningLeave.setDay(earningLeaveDTO.getDay());
+                    earningLeave.setEarn(earningLeaveDTO.getEarn());
+
+                    earningLeaveRepository.save(earningLeave);
+                    continue;
+                }
+
+                //modify existing entry values
                 EarningLeave earningLeave = earningLeaveRepository.findById(earningLeaveDTO.getEarningLeaveId()).orElseThrow(() -> new RuntimeException("EarningLeave not found"));
                 if(earningLeave != null) {
                     earningLeave.setEffectivityDate(earningLeaveDTO.getEffectivityDate());
@@ -121,5 +135,21 @@ public class EarningLeaveImpl implements EarningLeaveService {
         }
 
         return false;
+    }
+
+    @Transactional
+    @Override
+    public Boolean deleteEarningLeaveById(List<EarningLeaveDTO> earningLeaveDTOList) throws Exception {
+        try {
+            for(EarningLeaveDTO earningLeaveDTO : earningLeaveDTOList) {
+                earningLeaveRepository.deleteById(earningLeaveDTO.getEarningLeaveId());
+            }
+
+            return true;
+        } catch(Exception e) {
+            log.error("Error failed deleting EarningLeave: {}", e.getMessage());
+        }
+
+        return null;
     }
 }

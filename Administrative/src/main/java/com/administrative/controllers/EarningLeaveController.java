@@ -1,5 +1,6 @@
 package com.administrative.controllers;
 
+import com.administrative.dtos.DayEquivalentMinutesDTO;
 import com.administrative.dtos.EarningLeaveDTO;
 import com.administrative.services.EarningLeaveService;
 import com.hris.common.dtos.MetadataResponse;
@@ -67,6 +68,18 @@ public class EarningLeaveController {
         }
 
         return ResponseEntity.ok(new MetadataResponse(0L, "Successful to earningLeave"));
+    }
+
+    @DeleteMapping("/earningLeave/deleteById")
+    public ResponseEntity<MetadataResponse> deleteEarningLeaveById(@RequestBody List<EarningLeaveDTO> earningLeaveDTOList) throws Exception {
+        Boolean boolDel = earningLeaveService.deleteEarningLeaveById(earningLeaveDTOList);
+        if(!boolDel) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MetadataResponse("Failed to delete earningLeave"));
+        }
+
+        return ResponseEntity.ok(new MetadataResponse(0L, "Successful delete of earningLeave by Id"));
     }
 
 }

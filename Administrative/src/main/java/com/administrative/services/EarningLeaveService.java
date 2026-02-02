@@ -1,5 +1,6 @@
 package com.administrative.services;
 
+import com.administrative.dtos.DayEquivalentMinutesDTO;
 import com.administrative.dtos.EarningLeaveDTO;
 
 import java.time.LocalDateTime;
@@ -18,5 +19,7 @@ public interface EarningLeaveService {
     List<EarningLeaveDTO> updateEarningLeave(List<EarningLeaveDTO> earningLeaveDTOList) throws Exception;
 
     Boolean deleteEarningLeave(LocalDateTime effectivityDate) throws Exception;
+
+    Boolean deleteEarningLeaveById(List<EarningLeaveDTO> earningLeaveDTOList) throws Exception;
 
 }
