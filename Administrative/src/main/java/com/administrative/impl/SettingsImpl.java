@@ -48,6 +48,23 @@ public class SettingsImpl implements SettingsService {
 
         for(Settings settings : settingsList) {
             SettingsDTO settingsDTO = new SettingsDTO();
+            settingsDTO.setSettingsId(settings.getSettingsId());
+            settingsDTO.setSystemStartDate(settings.getSystemStartDate());
+            settingsDTO.setCompanyName(settings.getCompanyName());
+            settingsDTO.setShortName(settings.getShortName());
+            settingsDTO.setCity(settings.getCity());
+            settingsDTO.setAddress(settings.getAddress());
+            settingsDTO.setIsoNo(settings.getIsoNo());
+            settingsDTO.setZipCode(settings.getZipCode());
+            settingsDTO.setTelMobileNo(settings.getTelMobileNo());
+            settingsDTO.setEmailAddress(settings.getEmailAddress());
+            settingsDTO.setTinNo(settings.getTinNo());
+            settingsDTO.setPagIbigNo(settings.getPagIbigNo());
+            settingsDTO.setPhilHealthNo(settings.getPhilHealthNo());
+            settingsDTO.setHospitalAgency(settings.getHospitalAgency());
+            settingsDTO.setLeftHeaderLogo(settings.getLeftHeaderLogo());
+            settingsDTO.setMainLogo(settings.getMainLogo());
+            settingsDTO.setRightHeaderLogo(settings.getRightHeaderLogo());
 
             settingsDTOList.add(settingsDTO);
         }
