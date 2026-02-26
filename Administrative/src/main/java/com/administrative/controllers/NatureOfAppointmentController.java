@@ -25,10 +25,10 @@ public class NatureOfAppointmentController {
         if(natureOfAppointmentDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update NatureOfAppointment"));
+                    .body(new MetadataResponse("Failed to create NatureOfAppointment"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(natureOfAppointmentDTO.getNatureOfAppointmentId(), "Successful to update NatureOfAppointment"));
+        return ResponseEntity.ok(new MetadataResponse(natureOfAppointmentDTO.getNatureOfAppointmentId(), "Successful to create NatureOfAppointment"));
     }
 
     @GetMapping("/natureOfAppointment/get-all")

@@ -27,7 +27,7 @@ public class DayEquivalentMinutesController {
         if(dayEquivalentMinutesDTOs == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update DayEquivalentMinutes"));
+                    .body(new MetadataResponse("Failed to create DayEquivalentMinutes"));
         }
 
         return ResponseEntity.ok(new MetadataResponse(dayEquivalentMinutesDTOs.get(0).getEffectivityDate().toString(), "Successful to create DayEquivalentMinutes"));

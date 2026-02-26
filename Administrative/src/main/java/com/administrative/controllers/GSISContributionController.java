@@ -25,10 +25,10 @@ public class GSISContributionController {
         if(gsisContributionDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update GSISContribution"));
+                    .body(new MetadataResponse("Failed to create GSISContribution"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(gsisContributionDTO.getGsisContributionId(), "Successful to update GSISContribution"));
+        return ResponseEntity.ok(new MetadataResponse(gsisContributionDTO.getGsisContributionId(), "Successful to create GSISContribution"));
     }
 
     @GetMapping("/gsisContribution/get-all")

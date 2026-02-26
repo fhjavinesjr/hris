@@ -25,10 +25,10 @@ public class JobPositionController {
         if(jobPositionDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update Job Position"));
+                    .body(new MetadataResponse("Failed to create Job Position"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(jobPositionDTO.getJobPositionId(), "Successful to update Job Position"));
+        return ResponseEntity.ok(new MetadataResponse(jobPositionDTO.getJobPositionId(), "Successful to create Job Position"));
     }
 
     @GetMapping("/job-position/get-all")

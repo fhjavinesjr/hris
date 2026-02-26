@@ -25,10 +25,10 @@ public class GenderController {
         if(genderDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update Gender"));
+                    .body(new MetadataResponse("Failed to create Gender"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(genderDTO.getGenderId(), "Successful to update Gender"));
+        return ResponseEntity.ok(new MetadataResponse(genderDTO.getGenderId(), "Successful to create Gender"));
     }
 
     @GetMapping("/gender/get-all")

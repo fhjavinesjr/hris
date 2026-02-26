@@ -25,10 +25,10 @@ public class CivilStatusController {
         if(civilStatusDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update CivilStatus"));
+                    .body(new MetadataResponse("Failed to create CivilStatus"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(civilStatusDTO.getCivilStatusId(), "Successful to update CivilStatus"));
+        return ResponseEntity.ok(new MetadataResponse(civilStatusDTO.getCivilStatusId(), "Successful to create CivilStatus"));
     }
 
     @GetMapping("/civilStatus/get-all")

@@ -25,10 +25,10 @@ public class OfficialEngagementController {
         if(officialEngagementDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update OfficialEngagement"));
+                    .body(new MetadataResponse("Failed to create OfficialEngagement"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(officialEngagementDTO.getOfficialEngagementId(), "Successful to update OfficialEngagement"));
+        return ResponseEntity.ok(new MetadataResponse(officialEngagementDTO.getOfficialEngagementId(), "Successful to create OfficialEngagement"));
     }
 
     @GetMapping("/officialEngagement/get-all")

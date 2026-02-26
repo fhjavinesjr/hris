@@ -25,10 +25,10 @@ public class WTAXContributionController {
         if(wTAXContributionDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update WTAXContribution"));
+                    .body(new MetadataResponse("Failed to create WTAXContribution"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(wTAXContributionDTO.getwTaxContributionId(), "Successful to update WTAXContribution"));
+        return ResponseEntity.ok(new MetadataResponse(wTAXContributionDTO.getwTaxContributionId(), "Successful to create WTAXContribution"));
     }
 
     @GetMapping("/wTAXContribution/get-all")

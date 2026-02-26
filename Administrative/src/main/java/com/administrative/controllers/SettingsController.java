@@ -25,10 +25,10 @@ public class SettingsController {
         if(settingsDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update Settings"));
+                    .body(new MetadataResponse("Failed to create Settings"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(settingsDTO.getSettingsId(), "Successful to update Settings"));
+        return ResponseEntity.ok(new MetadataResponse(settingsDTO.getSettingsId(), "Successful to create Settings"));
     }
 
     @GetMapping("/settings/get-all")

@@ -25,7 +25,7 @@ public class EmployeeAppointmentController {
         if(employeeAppointmentDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update EmployeeAppointment"));
+                    .body(new MetadataResponse("Failed to create EmployeeAppointment"));
         }
 
         return ResponseEntity.ok(new MetadataResponse(employeeAppointmentDTO.getEmployeeAppointmentId(), "Successful to create EmployeeAppointment"));

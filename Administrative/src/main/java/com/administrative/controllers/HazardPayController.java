@@ -27,10 +27,10 @@ public class HazardPayController {
         if(hazardPayDTOs == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update HazardPay"));
+                    .body(new MetadataResponse("Failed to create HazardPay"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(hazardPayDTOs.get(0).getEffectivityDate().toString(), "Successful to update HazardPay"));
+        return ResponseEntity.ok(new MetadataResponse(hazardPayDTOs.get(0).getEffectivityDate().toString(), "Successful to create HazardPay"));
     }
 
     @GetMapping("/hazardPay/get-all")

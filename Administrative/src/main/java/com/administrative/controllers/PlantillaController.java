@@ -25,10 +25,10 @@ public class PlantillaController {
         if(plantillaDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update Plantilla"));
+                    .body(new MetadataResponse("Failed to create Plantilla"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(plantillaDTO.getPlantillaId(), "Successful to update Plantilla"));
+        return ResponseEntity.ok(new MetadataResponse(plantillaDTO.getPlantillaId(), "Successful to create Plantilla"));
     }
 
     @GetMapping("/plantilla/get-all")

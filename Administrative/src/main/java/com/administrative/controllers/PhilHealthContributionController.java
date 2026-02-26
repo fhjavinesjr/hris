@@ -25,10 +25,10 @@ public class PhilHealthContributionController {
         if(philHealthContributionDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update PhilHealthContribution"));
+                    .body(new MetadataResponse("Failed to create PhilHealthContribution"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(philHealthContributionDTO.getPhilhealthContributionId(), "Successful to update PhilHealthContribution"));
+        return ResponseEntity.ok(new MetadataResponse(philHealthContributionDTO.getPhilhealthContributionId(), "Successful to create PhilHealthContribution"));
     }
 
     @GetMapping("/philHealthContribution/get-all")

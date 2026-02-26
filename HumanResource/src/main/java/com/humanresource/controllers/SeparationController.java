@@ -25,7 +25,7 @@ public class SeparationController {
         if(separationDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update Separation"));
+                    .body(new MetadataResponse("Failed to create Separation"));
         }
 
         return ResponseEntity.ok(new MetadataResponse(separationDTO.getSeparationId(), "Successful to create Separation"));

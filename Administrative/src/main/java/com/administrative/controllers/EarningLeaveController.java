@@ -28,10 +28,10 @@ public class EarningLeaveController {
         if(earningLeaveDTOs == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update EarningLeave"));
+                    .body(new MetadataResponse("Failed to create EarningLeave"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(earningLeaveDTOs.get(0).getEffectivityDate().toString(), "Successful to update EarningLeave"));
+        return ResponseEntity.ok(new MetadataResponse(earningLeaveDTOs.get(0).getEffectivityDate().toString(), "Successful to create EarningLeave"));
     }
 
     @GetMapping("/earningLeave/get-all")

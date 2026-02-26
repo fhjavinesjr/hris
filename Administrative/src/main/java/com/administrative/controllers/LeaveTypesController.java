@@ -25,10 +25,10 @@ public class LeaveTypesController {
         if(leaveTypesDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update LeaveTypes"));
+                    .body(new MetadataResponse("Failed to create LeaveTypes"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(leaveTypesDTO.getLeaveTypesId(), "Successful to update LeaveTypes"));
+        return ResponseEntity.ok(new MetadataResponse(leaveTypesDTO.getLeaveTypesId(), "Successful to create LeaveTypes"));
     }
 
     @GetMapping("/leaveTypes/get-all")

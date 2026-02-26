@@ -25,10 +25,10 @@ public class NatureOfSeparationController {
         if(natureOfSeparationDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to update NatureOfSeparation"));
+                    .body(new MetadataResponse("Failed to create NatureOfSeparation"));
         }
 
-        return ResponseEntity.ok(new MetadataResponse(natureOfSeparationDTO.getNatureOfSeparationId(), "Successful to update NatureOfSeparation"));
+        return ResponseEntity.ok(new MetadataResponse(natureOfSeparationDTO.getNatureOfSeparationId(), "Successful to create NatureOfSeparation"));
     }
 
     @GetMapping("/natureOfSeparation/get-all")
