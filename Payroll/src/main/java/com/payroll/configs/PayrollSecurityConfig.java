@@ -1,4 +1,4 @@
-package com.humanresource.configs;
+package com.payroll.configs;
 
 import com.hris.common.utilities.JwtFilter;
 import org.slf4j.Logger;
@@ -22,23 +22,23 @@ import java.util.List;
 @Configuration
 @EnableMethodSecurity
 @EnableWebSecurity
-public class HumanResourceSecurityConfig {
+public class PayrollSecurityConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(HumanResourceSecurityConfig.class);
+    private static final Logger log = LoggerFactory.getLogger(PayrollSecurityConfig.class);
 
     private final JwtFilter jwtFilter;
 
-    public HumanResourceSecurityConfig(JwtFilter jwtFilter) {
+    public PayrollSecurityConfig(JwtFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
     }
 
-    @Bean(name = "humanresourceSecurityFilterChain")
-    public SecurityFilterChain humanresourceSecurityFilterChain(HttpSecurity http) throws Exception {
+    @Bean(name = "payrollSecurityFilterChain")
+    public SecurityFilterChain payrollSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration corsConfiguration = new CorsConfiguration();
-                    corsConfiguration.setAllowedOrigins(List.of("http://localhost:3087","http://localhost:3080","http://localhost:3081","http://localhost:3082","http://localhost:3083","http://localhost:3084","http://localhost:3085","http://192.168.68.128:3082","http://192.168.68.121:3085")); // Frontend URL (React/Next.js)
+                    corsConfiguration.setAllowedOrigins(List.of("http://localhost:3087","http://localhost:3080","http://localhost:3081","http://localhost:3082","http://localhost:3083","http://localhost:3084","http://localhost:3085")); // Frontend URL (React/Next.js)
                     corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
                     corsConfiguration.setAllowCredentials(true); // If you need cookies/session
@@ -66,8 +66,8 @@ public class HumanResourceSecurityConfig {
 
     }
 
-    @Bean(name = "humanresourcePasswordEncoder")
-    public PasswordEncoder humanresourcePasswordEncoder() {
+    @Bean(name = "payrollPasswordEncoder")
+    public PasswordEncoder payrollPasswordEncoder() {
         return new BCryptPasswordEncoder();
     }
 

@@ -16,6 +16,7 @@
     <module>HRISApp</module>
     <module>HumanResource</module>
     <module>EmployeePortal</module>
+    <module>Payroll</module>
   </modules>
 
   <properties>

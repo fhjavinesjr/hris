@@ -7,11 +7,12 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="Administrative" />
+        <module name="Payroll" />
         <module name="TimeKeeping" />
         <module name="HRISApp" />
+        <module name="HumanResource" />
         <module name="EmployeePortal" />
         <module name="Common" />
-        <module name="HumanResource" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

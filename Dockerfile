@@ -8,6 +8,7 @@ COPY Administrative/pom.xml Administrative/
 COPY TimeKeeping/pom.xml TimeKeeping/
 COPY HumanResource/pom.xml HumanResource/
 COPY EmployeePortal/pom.xml EmployeePortal/
+COPY Payroll/pom.xml Payroll/
 
 RUN mvn -B -q dependency:go-offline
 
