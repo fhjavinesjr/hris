@@ -21,6 +21,10 @@ public class TimeShift implements Serializable {
     @Column(name = "tsCode", length = 100, unique = true, nullable = false)
     private String tsCode;
 
+    @NotBlank(message = "Name is mandatory")
+    @Column(name = "tsName", length = 100, unique = true, nullable = false)
+    private String tsName;
+
     @NotNull(message = "Time In is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
     @Column(name = "timeIn")
@@ -39,16 +43,74 @@ public class TimeShift implements Serializable {
     @Column(name = "timeOut")
     private LocalTime timeOut;
 
+    @Column(name = "tsFlexible")
+    private Boolean tsFlexible;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    @Column(name = "monInTimeLimit")
+    private LocalTime monInTimeLimit;
+
+    @Column(name = "tueInTimeLimit")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    private LocalTime tueInTimeLimit;
+
+    @Column(name = "wedInTimeLimit")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    private LocalTime wedInTimeLimit;
+
+    @Column(name = "thuInTimeLimit")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    private LocalTime thuInTimeLimit;
+
+    @Column(name = "friInTimeLimit")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    private LocalTime friInTimeLimit;
+
+    @Column(name = "satInTimeLimit")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    private LocalTime satInTimeLimit;
+
+    @Column(name = "sunInTimeLimit")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    private LocalTime sunInTimeLimit;
+
     public TimeShift() {
 
     }
 
-    public TimeShift(String tsCode, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut) {
+    public TimeShift(Long timeShiftId, String tsCode, String tsName, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut, Boolean tsFlexible, LocalTime monInTimeLimit, LocalTime tueInTimeLimit, LocalTime wedInTimeLimit, LocalTime thuInTimeLimit, LocalTime friInTimeLimit, LocalTime satInTimeLimit, LocalTime sunInTimeLimit) {
+        this.timeShiftId = timeShiftId;
         this.tsCode = tsCode;
+        this.tsName = tsName;
         this.timeIn = timeIn;
         this.breakOut = breakOut;
         this.breakIn = breakIn;
         this.timeOut = timeOut;
+        this.tsFlexible = tsFlexible;
+        this.monInTimeLimit = monInTimeLimit;
+        this.tueInTimeLimit = tueInTimeLimit;
+        this.wedInTimeLimit = wedInTimeLimit;
+        this.thuInTimeLimit = thuInTimeLimit;
+        this.friInTimeLimit = friInTimeLimit;
+        this.satInTimeLimit = satInTimeLimit;
+        this.sunInTimeLimit = sunInTimeLimit;
+    }
+
+    public TimeShift(String tsCode, String tsName, LocalTime timeIn, LocalTime breakOut, LocalTime breakIn, LocalTime timeOut, Boolean tsFlexible, LocalTime monInTimeLimit, LocalTime tueInTimeLimit, LocalTime wedInTimeLimit, LocalTime thuInTimeLimit, LocalTime friInTimeLimit, LocalTime satInTimeLimit, LocalTime sunInTimeLimit) {
+        this.tsCode = tsCode;
+        this.tsName = tsName;
+        this.timeIn = timeIn;
+        this.breakOut = breakOut;
+        this.breakIn = breakIn;
+        this.timeOut = timeOut;
+        this.tsFlexible = tsFlexible;
+        this.monInTimeLimit = monInTimeLimit;
+        this.tueInTimeLimit = tueInTimeLimit;
+        this.wedInTimeLimit = wedInTimeLimit;
+        this.thuInTimeLimit = thuInTimeLimit;
+        this.friInTimeLimit = friInTimeLimit;
+        this.satInTimeLimit = satInTimeLimit;
+        this.sunInTimeLimit = sunInTimeLimit;
     }
 
     public Long getTimeShiftId() {
@@ -65,6 +127,14 @@ public class TimeShift implements Serializable {
 
     public void setTsCode(String tsCode) {
         this.tsCode = tsCode;
+    }
+
+    public String getTsName() {
+        return tsName;
+    }
+
+    public void setTsName(String tsName) {
+        this.tsName = tsName;
     }
 
     public LocalTime getTimeIn() {
@@ -97,5 +167,69 @@ public class TimeShift implements Serializable {
 
     public void setTimeOut(LocalTime timeOut) {
         this.timeOut = timeOut;
+    }
+
+    public Boolean getTsFlexible() {
+        return tsFlexible;
+    }
+
+    public void setTsFlexible(Boolean tsFlexible) {
+        this.tsFlexible = tsFlexible;
+    }
+
+    public LocalTime getMonInTimeLimit() {
+        return monInTimeLimit;
+    }
+
+    public void setMonInTimeLimit(LocalTime monInTimeLimit) {
+        this.monInTimeLimit = monInTimeLimit;
+    }
+
+    public LocalTime getTueInTimeLimit() {
+        return tueInTimeLimit;
+    }
+
+    public void setTueInTimeLimit(LocalTime tueInTimeLimit) {
+        this.tueInTimeLimit = tueInTimeLimit;
+    }
+
+    public LocalTime getWedInTimeLimit() {
+        return wedInTimeLimit;
+    }
+
+    public void setWedInTimeLimit(LocalTime wedInTimeLimit) {
+        this.wedInTimeLimit = wedInTimeLimit;
+    }
+
+    public LocalTime getThuInTimeLimit() {
+        return thuInTimeLimit;
+    }
+
+    public void setThuInTimeLimit(LocalTime thuInTimeLimit) {
+        this.thuInTimeLimit = thuInTimeLimit;
+    }
+
+    public LocalTime getFriInTimeLimit() {
+        return friInTimeLimit;
+    }
+
+    public void setFriInTimeLimit(LocalTime friInTimeLimit) {
+        this.friInTimeLimit = friInTimeLimit;
+    }
+
+    public LocalTime getSatInTimeLimit() {
+        return satInTimeLimit;
+    }
+
+    public void setSatInTimeLimit(LocalTime satInTimeLimit) {
+        this.satInTimeLimit = satInTimeLimit;
+    }
+
+    public LocalTime getSunInTimeLimit() {
+        return sunInTimeLimit;
+    }
+
+    public void setSunInTimeLimit(LocalTime sunInTimeLimit) {
+        this.sunInTimeLimit = sunInTimeLimit;
     }
 }
