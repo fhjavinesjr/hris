@@ -9,12 +9,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-    name = "work_schedule",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"employeeId", "wsDateTime"})
-    }
-)
+@Table(name = "work_schedule")
 public class WorkSchedule implements Serializable {
 
     @Id
