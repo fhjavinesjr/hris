@@ -29,6 +29,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
     public WorkScheduleDTO createWorkSchedule(WorkScheduleDTO workScheduleDTO) throws Exception {
         try {
             WorkSchedule workSchedule = new WorkSchedule(workScheduleDTO.getEmployeeId(), workScheduleDTO.getTsCode(), workScheduleDTO.getWsDateTime());
+            workSchedule.setIsDayOff(workScheduleDTO.getIsDayOff() != null && workScheduleDTO.getIsDayOff());
             WorkSchedule wsSaved = workScheduleRepository.save(workSchedule);
             workScheduleDTO.setWsId(wsSaved.getWsId());
             return workScheduleDTO;
@@ -47,6 +48,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
                 List<WorkSchedule> workSchedules = opWorkSchedules.get();
                 for(WorkSchedule workSchedule : workSchedules) {
                     WorkScheduleDTO workScheduleDTO = new WorkScheduleDTO(workSchedule.getWsId(), workSchedule.getEmployeeId(), workSchedule.getTsCode(), workSchedule.getWsDateTime());
+                    workScheduleDTO.setIsDayOff(workSchedule.getIsDayOff());
                     workScheduleDTOList.add(workScheduleDTO);
                 }
             }
@@ -69,6 +71,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
             WorkSchedule workSchedule = getWorkScheduleById(wsId);
             workSchedule = new WorkSchedule(workScheduleDTO.getEmployeeId(), workScheduleDTO.getTsCode(), workScheduleDTO.getWsDateTime());
             workSchedule.setWsId(wsId);
+            workSchedule.setIsDayOff(workScheduleDTO.getIsDayOff() != null && workScheduleDTO.getIsDayOff());
             workScheduleRepository.save(workSchedule);
             return workScheduleDTO;
         } catch(Exception e) {
@@ -87,5 +90,24 @@ public class WorkScheduleImpl implements WorkScheduleService {
             log.info("Delete Work Schedule Failed: {}", e.getMessage());
             return false;
         }
+    }
+
+    @Transactional
+    @Override
+    public int bulkCreateDayOff(List<WorkScheduleDTO> dtos) throws Exception {
+        int count = 0;
+        for (WorkScheduleDTO dto : dtos) {
+            try {
+                WorkSchedule ws = new WorkSchedule();
+                ws.setEmployeeId(dto.getEmployeeId());
+                ws.setWsDateTime(dto.getWsDateTime());
+                ws.setIsDayOff(true);
+                workScheduleRepository.save(ws);
+                count++;
+            } catch (Exception e) {
+                log.warn("Failed to save day-off for {}: {}", dto.getEmployeeId(), e.getMessage());
+            }
+        }
+        return count;
     }
 }

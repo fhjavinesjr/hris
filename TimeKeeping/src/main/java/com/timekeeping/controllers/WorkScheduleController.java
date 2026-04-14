@@ -68,4 +68,14 @@ public class WorkScheduleController {
         return ResponseEntity.ok(new MetadataResponse(wsId, "Successful to delete work schedule"));
     }
 
+    @PostMapping("/bulk/day-off/work-schedule")
+    public ResponseEntity<MetadataResponse> bulkCreateDayOff(@RequestBody List<WorkScheduleDTO> dtos) throws Exception {
+        if (dtos == null || dtos.isEmpty()) {
+            return ResponseEntity.badRequest().body(new MetadataResponse("No entries provided"));
+        }
+        int count = workScheduleService.bulkCreateDayOff(dtos);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new MetadataResponse((long) count, "Successfully created " + count + " rest day(s)"));
+    }
+
 }

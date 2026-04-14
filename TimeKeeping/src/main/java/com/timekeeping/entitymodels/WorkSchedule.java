@@ -21,9 +21,11 @@ public class WorkSchedule implements Serializable {
     @Column(name = "employeeId")
     private String employeeId;
 
-    @NotBlank(message = "Time Shift Code is mandatory")
     @Column(name = "tsCode")
     private String tsCode;
+
+    @Column(name = "isDayOff", nullable = false)
+    private Boolean isDayOff = false;
 
     @NotNull(message = "Work Schedule Date/Time is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
@@ -70,5 +72,13 @@ public class WorkSchedule implements Serializable {
 
     public void setWsDateTime(LocalDateTime wsDateTime) {
         this.wsDateTime = wsDateTime;
+    }
+
+    public Boolean getIsDayOff() {
+        return isDayOff;
+    }
+
+    public void setIsDayOff(Boolean isDayOff) {
+        this.isDayOff = isDayOff;
     }
 }

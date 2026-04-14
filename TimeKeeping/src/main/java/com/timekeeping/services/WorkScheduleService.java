@@ -17,4 +17,6 @@ public interface WorkScheduleService {
 
     Boolean deleteWorkSchedule(Long wsId) throws Exception;
 
+    int bulkCreateDayOff(List<WorkScheduleDTO> dtos) throws Exception;
+
 }

@@ -14,12 +14,13 @@ public class WorkScheduleDTO implements Serializable {
     @NotBlank(message = "Employee ID is mandatory")
     private String employeeId;
 
-    @NotBlank(message = "Time Shift Code is mandatory")
     private String tsCode;
 
     @NotNull(message = "Work Schedule Date/Time is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     private LocalDateTime wsDateTime;
+
+    private Boolean isDayOff = false;
 
     public WorkScheduleDTO() {
 
@@ -62,5 +63,13 @@ public class WorkScheduleDTO implements Serializable {
 
     public void setWsDateTime(LocalDateTime wsDateTime) {
         this.wsDateTime = wsDateTime;
+    }
+
+    public Boolean getIsDayOff() {
+        return isDayOff;
+    }
+
+    public void setIsDayOff(Boolean isDayOff) {
+        this.isDayOff = isDayOff;
     }
 }
