@@ -62,4 +62,11 @@ public class EmployeeController {
         EmployeeDTO updateEmployee = employeeService.updateEmployeePassword(employeeId, updates);
         return ResponseEntity.ok(updateEmployee);
     }
+
+    @PutMapping("/employee/admin/reset-password/{employeeId}")
+    public ResponseEntity<Void> adminResetPassword(@PathVariable("employeeId") Long employeeId,
+            @RequestBody Map<String, String> body) throws Exception {
+        employeeService.adminResetPassword(employeeId, body.get("newPassword"));
+        return ResponseEntity.ok().build();
+    }
 }

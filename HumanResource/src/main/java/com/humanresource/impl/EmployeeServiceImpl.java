@@ -170,6 +170,18 @@ public class EmployeeServiceImpl implements EmployeeService {
         return buildEmployeeDTO(employee);
     }
 
+    @Override
+    @Transactional
+    public void adminResetPassword(Long employeeId, String newPassword) throws Exception {
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password must not be empty");
+        }
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        employee.setEmployeePassword(passwordEncoder.encode(newPassword));
+        employeeRepository.save(employee);
+    }
+
     private EmployeeDTO buildEmployeeDTO(Employee employee) {
         return new EmployeeDTO(employee.getEmployeeNo(), employee.getBiometricNo(), employee.getEmployeePassword(), employee.getFirstname(),
                 employee.getLastname(), employee.getSuffix(), employee.getEmail(),

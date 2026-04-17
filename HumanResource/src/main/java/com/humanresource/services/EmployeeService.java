@@ -21,4 +21,6 @@ public interface EmployeeService {
 
     EmployeeDTO updateEmployeePassword(Long employeeId, Map<String, Object> updates) throws Exception;
 
+    void adminResetPassword(Long employeeId, String newPassword) throws Exception;
+
 }
