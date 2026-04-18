@@ -101,9 +101,10 @@ public class EmployeeServiceImpl implements EmployeeService {
         existingEmployee.setEmployeeId(employeeId);
 
         // Remove disallowed fields before updating
-        Map<String, Object> filteredUpdates = updates.entrySet().stream()
+        Map<String, Object> filteredUpdates = new java.util.HashMap<>();
+        updates.entrySet().stream()
                 .filter(entrySet -> !NOT_ALLOWED_FIELDS.contains(entrySet.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .forEach(entrySet -> filteredUpdates.put(entrySet.getKey(), entrySet.getValue()));
 
         objectMapper.updateValue(existingEmployee, filteredUpdates);
 
@@ -173,7 +174,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     @Transactional
     public void adminResetPassword(Long employeeId, String newPassword) throws Exception {
-        if (newPassword == null || newPassword.isBlank()) {
+        if (newPassword == null || newPassword.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password must not be empty");
         }
         Employee employee = employeeRepository.findById(employeeId)

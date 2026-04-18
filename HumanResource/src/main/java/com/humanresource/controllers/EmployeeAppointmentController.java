@@ -80,4 +80,10 @@ public class EmployeeAppointmentController {
         return ResponseEntity.ok(employeeAppointmentDTO);
     }
 
+    @GetMapping("/employeeAppointment/is-plantilla-taken/{plantillaId}")
+    public ResponseEntity<Boolean> isPlantillaTaken(@PathVariable Long plantillaId) throws Exception {
+        boolean taken = employeeAppointmentService.isPlantillaTaken(plantillaId);
+        return ResponseEntity.ok(taken);
+    }
+
 }

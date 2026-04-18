@@ -223,12 +223,24 @@ public class PersonalDataImpl implements PersonalDataService {
             PersonalData personalDataExisting = getPersonalDataEntityByEmployeeId(employeeId);
             if(personalDataExisting != null) {
                 objectMapper.updateValue(personalDataExisting, updates);
+
+                // Explicitly set q42 from the map to ensure it is never silently dropped
+                if (updates.containsKey("q42")) {
+                    Object q42Val = updates.get("q42");
+                    if (q42Val instanceof Boolean) {
+                        personalDataExisting.setQ42((Boolean) q42Val);
+                    } else if (q42Val != null) {
+                        personalDataExisting.setQ42(Boolean.parseBoolean(String.valueOf(q42Val)));
+                    }
+                }
+
                 personalDataRepository.save(personalDataExisting);
                 return true;
             }
 
             return false;
         } catch(Exception e) {
+            log.error("Error updating personal data for employeeId {}: {}", employeeId, e.getMessage(), e);
             return false;
         }
     }

@@ -15,4 +15,6 @@ public interface EmployeeAppointmentRepository extends JpaRepository<EmployeeApp
 
     List<EmployeeAppointment> findByEmployeeId(Long employeeId);
 
+    boolean existsByPlantillaIdAndActiveAppointmentTrue(Long plantillaId);
+
 }

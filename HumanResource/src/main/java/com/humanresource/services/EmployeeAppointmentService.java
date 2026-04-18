@@ -22,4 +22,6 @@ public interface EmployeeAppointmentService {
 
     List<EmployeeAppointmentDTO> getByJobPositionId(Long jobPositionId) throws Exception;
 
+    boolean isPlantillaTaken(Long plantillaId) throws Exception;
+
 }

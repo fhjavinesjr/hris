@@ -217,4 +217,9 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
 
         return employeeAppointmentDTOList;
     }
+
+    @Override
+    public boolean isPlantillaTaken(Long plantillaId) throws Exception {
+        return employeeAppointmentRepository.existsByPlantillaIdAndActiveAppointmentTrue(plantillaId);
+    }
 }
