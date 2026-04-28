@@ -36,4 +36,9 @@ public class GlobalExceptionHandler {
         MetadataResponse errorResponse = new MetadataResponse(ex.getReason());
         return new ResponseEntity<>(errorResponse, ex.getStatusCode());
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
 }

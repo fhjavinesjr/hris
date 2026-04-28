@@ -1,0 +1,99 @@
+package com.humanresource.dtos;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.NotNull;
+
+import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.LocalDateTime;
+
+public class PassSlipDTO implements Serializable {
+
+    private Long passSlipId;
+
+    @NotNull(message = "employeeId is mandatory")
+    private Long employeeId;
+
+    @NotNull(message = "dateFiled is mandatory")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate dateFiled;
+
+    @NotNull(message = "passSlipDate is mandatory")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate passSlipDate;
+
+    @NotNull(message = "purpose is mandatory")
+    private String purpose;
+
+    @NotNull(message = "departureTime is mandatory")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    private LocalTime departureTime;
+
+    @NotNull(message = "arrivalTime is mandatory")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    private LocalTime arrivalTime;
+
+    private String details;
+
+    @NotNull(message = "status is mandatory")
+    private String status;
+
+    private Long approvedById;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
+    private LocalDateTime approvedAt;
+
+    private String approvalRemarks;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
+    private LocalDateTime createdAt;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
+    private LocalDateTime updatedAt;
+
+    public PassSlipDTO() {
+    }
+
+    public Long getPassSlipId() { return passSlipId; }
+    public void setPassSlipId(Long passSlipId) { this.passSlipId = passSlipId; }
+
+    public Long getEmployeeId() { return employeeId; }
+    public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+
+    public LocalDate getDateFiled() { return dateFiled; }
+    public void setDateFiled(LocalDate dateFiled) { this.dateFiled = dateFiled; }
+
+    public LocalDate getPassSlipDate() { return passSlipDate; }
+    public void setPassSlipDate(LocalDate passSlipDate) { this.passSlipDate = passSlipDate; }
+
+    public String getPurpose() { return purpose; }
+    public void setPurpose(String purpose) { this.purpose = purpose; }
+
+    public LocalTime getDepartureTime() { return departureTime; }
+    public void setDepartureTime(LocalTime departureTime) { this.departureTime = departureTime; }
+
+    public LocalTime getArrivalTime() { return arrivalTime; }
+    public void setArrivalTime(LocalTime arrivalTime) { this.arrivalTime = arrivalTime; }
+
+    public String getDetails() { return details; }
+    public void setDetails(String details) { this.details = details; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public Long getApprovedById() { return approvedById; }
+    public void setApprovedById(Long approvedById) { this.approvedById = approvedById; }
+
+    public LocalDateTime getApprovedAt() { return approvedAt; }
+    public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
+
+    public String getApprovalRemarks() { return approvalRemarks; }
+    public void setApprovalRemarks(String approvalRemarks) { this.approvalRemarks = approvalRemarks; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+}

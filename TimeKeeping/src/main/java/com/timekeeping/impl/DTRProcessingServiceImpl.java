@@ -155,7 +155,10 @@ public class DTRProcessingServiceImpl implements DTRProcessingService {
         MinuteResult minuteResult = computeVarianceMinutes(
                 workDate,
                 timeInLog.getLogDatetime(),
+                breakOutLog != null ? breakOutLog.getLogDatetime() : null,
+                breakInLog  != null ? breakInLog.getLogDatetime()  : null,
                 timeOutLog.getLogDatetime(),
+                workMinutes,
                 shiftTemplate);
 
         DTRSegment segment = new DTRSegment();
@@ -270,22 +273,80 @@ public class DTRProcessingServiceImpl implements DTRProcessingService {
     private MinuteResult computeVarianceMinutes(
             LocalDate workDate,
             LocalDateTime actualIn,
+            LocalDateTime actualBreakOut,   // null if no BREAK_OUT punch
+            LocalDateTime actualBreakIn,    // null if no BREAK_IN punch
             LocalDateTime actualOut,
+            long actualWorkMinutes,
             ShiftTemplate shiftTemplate) {
 
         if (shiftTemplate == null) {
             return new MinuteResult(0, 0, 0);
         }
 
-        LocalDateTime plannedIn = workDate.atTime(shiftTemplate.timeIn);
+        LocalDateTime plannedIn  = workDate.atTime(shiftTemplate.timeIn);
         LocalDateTime plannedOut = workDate.atTime(shiftTemplate.timeOut);
         if (!shiftTemplate.timeOut.isAfter(shiftTemplate.timeIn)) {
+            // Overnight shift: timeOut wraps to next day
             plannedOut = plannedOut.plusDays(1);
         }
 
+        // LATE: minutes arrived after planned start.
+        // Break punches do not affect late — it is purely TIME_IN vs scheduled start.
         int late = nonNegativeMinutes(plannedIn, actualIn);
-        int undertime = nonNegativeMinutes(actualOut, plannedOut);
+
+        // OVERTIME: raw minutes worked past planned end.
         int overtime = nonNegativeMinutes(plannedOut, actualOut);
+
+        // UNDERTIME: work minutes missed.
+        //
+        // Strategy A — actual break punches exist: use work-minutes comparison.
+        //   plannedWorkMinutes − actualWorkMinutes handles all combinations:
+        //     • Late return from break (BREAK_IN > plannedBreakIn)   → actualWork reduced
+        //     • Early break departure  (BREAK_OUT < plannedBreakOut) → actualWork reduced
+        //     • Early end of day       (TIME_OUT < plannedTimeOut)   → actualWork reduced
+        //     • Any combination of the above — all aggregated in one formula.
+        //
+        // Strategy B — no actual break punches (e.g., half-day, no break taken):
+        //   Positional 3-case logic based on where TIME_OUT falls vs planned break window.
+        int undertime = 0;
+        boolean hasScheduledBreak = shiftTemplate.breakOut != null && shiftTemplate.breakIn != null;
+
+        if (hasScheduledBreak && actualBreakOut != null && actualBreakIn != null) {
+            // Strategy A: break-aware split per business rules.
+            //   - Late break return (actualBreakIn > plannedBreakIn)   → added to LATE
+            //   - Early break departure (actualBreakOut < plannedBreakOut) → UNDERTIME
+            //   - Early clock-out (actualOut < plannedOut)              → UNDERTIME
+            // NOTE: clock-in late is already in `late` above — do NOT include it in undertime.
+            LocalDateTime plannedBreakOut = workDate.atTime(shiftTemplate.breakOut);
+            LocalDateTime plannedBreakIn  = workDate.atTime(shiftTemplate.breakIn);
+            late     += nonNegativeMinutes(plannedBreakIn, actualBreakIn);
+            int earlyBreakUT = nonNegativeMinutes(actualBreakOut, plannedBreakOut);
+            int earlyOutUT   = nonNegativeMinutes(actualOut, plannedOut);
+            undertime = earlyBreakUT + earlyOutUT;
+
+        } else if (actualOut.isBefore(plannedOut)) {
+            // Strategy B: positional 3-case logic
+            if (hasScheduledBreak) {
+                LocalDateTime plannedBreakOut = workDate.atTime(shiftTemplate.breakOut);
+                LocalDateTime plannedBreakIn  = workDate.atTime(shiftTemplate.breakIn);
+
+                if (actualOut.isBefore(plannedBreakOut)) {
+                    // Left before break: AM tail + full PM missed
+                    int amTail = nonNegativeMinutes(actualOut, plannedBreakOut);
+                    int pm     = nonNegativeMinutes(plannedBreakIn, plannedOut);
+                    undertime  = amTail + pm;
+                } else if (actualOut.isBefore(plannedBreakIn)) {
+                    // Left during break window: entire PM missed
+                    undertime = nonNegativeMinutes(plannedBreakIn, plannedOut);
+                } else {
+                    // Left after break: straight diff vs planned end
+                    undertime = nonNegativeMinutes(actualOut, plannedOut);
+                }
+            } else {
+                // No break in schedule: straight diff
+                undertime = nonNegativeMinutes(actualOut, plannedOut);
+            }
+        }
 
         return new MinuteResult(late, undertime, overtime);
     }
@@ -297,9 +358,7 @@ public class DTRProcessingServiceImpl implements DTRProcessingService {
     private static class ShiftTemplate {
         private final LocalTime timeIn;
         private final LocalTime timeOut;
-        @SuppressWarnings("unused")
         private final LocalTime breakOut;
-        @SuppressWarnings("unused")
         private final LocalTime breakIn;
 
         private ShiftTemplate(LocalTime timeIn, LocalTime timeOut, LocalTime breakOut, LocalTime breakIn) {

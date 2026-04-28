@@ -3,6 +3,7 @@ package com.humanresource.impl;
 import com.humanresource.dtos.LeaveApplicationDTO;
 import com.humanresource.entitymodels.LeaveApplication;
 import com.humanresource.repositories.LeaveApplicationRepository;
+import com.humanresource.services.DateConflictChecker;
 import com.humanresource.services.LeaveApplicationService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -18,9 +19,12 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
 
     private static final Logger log = LoggerFactory.getLogger(LeaveApplicationImpl.class);
     private final LeaveApplicationRepository leaveApplicationRepository;
+    private final DateConflictChecker conflictChecker;
 
-    public LeaveApplicationImpl(LeaveApplicationRepository leaveApplicationRepository) {
+    public LeaveApplicationImpl(LeaveApplicationRepository leaveApplicationRepository,
+                                DateConflictChecker conflictChecker) {
         this.leaveApplicationRepository = leaveApplicationRepository;
+        this.conflictChecker = conflictChecker;
     }
 
     private LeaveApplicationDTO toDTO(LeaveApplication entity) {
@@ -49,6 +53,10 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
     @Transactional
     @Override
     public LeaveApplicationDTO createLeaveApplication(LeaveApplicationDTO dto) throws Exception {
+        // Validate BEFORE try-catch so IllegalArgumentException propagates to GlobalExceptionHandler
+        if (dto.getStartDate() != null && dto.getEndDate() != null) {
+            conflictChecker.checkDateRange(dto.getEmployeeId(), dto.getStartDate(), dto.getEndDate());
+        }
         try {
             LeaveApplication entity = new LeaveApplication(
                     null,
