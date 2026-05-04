@@ -46,6 +46,9 @@ public class CompensatoryTimeOffImpl implements CompensatoryTimeOffService {
         dto.setApprovedById(e.getApprovedById());
         dto.setApprovedAt(e.getApprovedAt());
         dto.setApprovalRemarks(e.getApprovalRemarks());
+        dto.setRecommendationStatus(e.getRecommendationStatus());
+        dto.setRecommendedById(e.getRecommendedById());
+        dto.setRecommendationRemarks(e.getRecommendationRemarks());
         dto.setCreatedAt(e.getCreatedAt());
         dto.setUpdatedAt(e.getUpdatedAt());
         return dto;
@@ -74,7 +77,12 @@ public class CompensatoryTimeOffImpl implements CompensatoryTimeOffService {
             entity.setHoursUsed(dto.getHoursUsed());
             entity.setCocBalanceAtFiling(currentBalance);
             entity.setReason(dto.getReason());
-            entity.setStatus("Pending");
+            entity.setStatus(dto.getStatus() != null ? dto.getStatus() : "Pending");
+            entity.setApprovedById(dto.getApprovedById());
+            entity.setApprovalRemarks(dto.getApprovalRemarks());
+            entity.setRecommendationStatus(dto.getRecommendationStatus());
+            entity.setRecommendedById(dto.getRecommendedById());
+            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
             entity = ctoRepository.save(entity);
@@ -148,6 +156,12 @@ public class CompensatoryTimeOffImpl implements CompensatoryTimeOffService {
             entity.setDateOfOffset(dto.getDateOfOffset());
             entity.setHoursUsed(dto.getHoursUsed());
             entity.setReason(dto.getReason());
+            entity.setStatus(dto.getStatus() != null ? dto.getStatus() : entity.getStatus());
+            entity.setApprovedById(dto.getApprovedById());
+            entity.setApprovalRemarks(dto.getApprovalRemarks());
+            entity.setRecommendationStatus(dto.getRecommendationStatus());
+            entity.setRecommendedById(dto.getRecommendedById());
+            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
             entity.setUpdatedAt(LocalDateTime.now());
             entity = ctoRepository.save(entity);
             return toDTO(entity);

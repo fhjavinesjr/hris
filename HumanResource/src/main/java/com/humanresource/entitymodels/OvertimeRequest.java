@@ -9,21 +9,22 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * COC = Compensatory Overtime Credit
- * An employee files a COC after working on a holiday or doing overtime.
- * Once approved by the supervisor, the credited hours are added to the employee's COC balance.
- * COC balance is then the source fund for filing a CTO (Compensatory Time Off).
+ * OvertimeRequest — Step 1 of the CSC MC No. 6, s. 2012 Compensatory Overtime Credit flow.
  *
- * Flow: Holiday/Overtime Work → File COC → Supervisor Approves → COC Balance increases
+ * Before rendering overtime or holiday duty, the supervisor/employee must file and receive
+ * approval for an Overtime/Holiday Duty Order.  Once approved, the employee renders the work
+ * and then files a COC (CompensatoryOvertimeCredit) referencing this approved request.
+ *
+ * Flow: File OT Request → Head-of-Agency Approves → Employee renders work → File COC (Step 2)
  */
 @Entity
-@Table(name = "compensatory_overtime_credit")
-public class CompensatoryOvertimeCredit implements Serializable {
+@Table(name = "overtime_request")
+public class OvertimeRequest implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "cocId")
-    private Long cocId;
+    @Column(name = "overtimeRequestId")
+    private Long overtimeRequestId;
 
     @NotNull(message = "employeeId is mandatory")
     @Column(name = "employeeId", nullable = false)
@@ -34,23 +35,31 @@ public class CompensatoryOvertimeCredit implements Serializable {
     @Column(name = "dateFiled", nullable = false)
     private LocalDate dateFiled;
 
-    @NotNull(message = "dateWorked is mandatory")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    @Column(name = "dateWorked", nullable = false)
-    private LocalDate dateWorked;
+    /** Planned start of overtime / holiday duty work. */
+    @NotNull(message = "dateTimeFrom is mandatory")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "dateTimeFrom", nullable = false)
+    private LocalDateTime dateTimeFrom;
 
-    @NotNull(message = "hoursWorked is mandatory")
-    @Column(name = "hoursWorked", nullable = false)
-    private Double hoursWorked;
+    /** Planned end of overtime / holiday duty work. */
+    @NotNull(message = "dateTimeTo is mandatory")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "dateTimeTo", nullable = false)
+    private LocalDateTime dateTimeTo;
 
-    @Column(name = "reason", length = 500)
-    private String reason;
+    /**
+     * Computed and stored at creation: duration between dateTimeFrom and dateTimeTo in hours.
+     * This becomes the ceiling for COC hoursWorked when the employee files COC for this OT order.
+     */
+    @NotNull(message = "totalHours is mandatory")
+    @Column(name = "totalHours", nullable = false)
+    private Double totalHours;
 
-    // Nature of extra work: HOLIDAY_DUTY, OVERTIME, etc.
-    @Column(name = "workType", length = 100)
-    private String workType;
+    /** Purpose / justification for overtime work. */
+    @Column(name = "purpose", length = 500)
+    private String purpose;
 
-    // Status: Pending, Approved, Disapproved
+    /** Status: Pending, Approved, Disapproved */
     @NotNull(message = "status is mandatory")
     @Column(name = "status", length = 50, nullable = false)
     private String status;
@@ -82,11 +91,10 @@ public class CompensatoryOvertimeCredit implements Serializable {
     @Column(name = "updatedAt")
     private LocalDateTime updatedAt;
 
-    public CompensatoryOvertimeCredit() {
-    }
+    public OvertimeRequest() {}
 
-    public Long getCocId() { return cocId; }
-    public void setCocId(Long cocId) { this.cocId = cocId; }
+    public Long getOvertimeRequestId() { return overtimeRequestId; }
+    public void setOvertimeRequestId(Long overtimeRequestId) { this.overtimeRequestId = overtimeRequestId; }
 
     public Long getEmployeeId() { return employeeId; }
     public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
@@ -94,17 +102,17 @@ public class CompensatoryOvertimeCredit implements Serializable {
     public LocalDate getDateFiled() { return dateFiled; }
     public void setDateFiled(LocalDate dateFiled) { this.dateFiled = dateFiled; }
 
-    public LocalDate getDateWorked() { return dateWorked; }
-    public void setDateWorked(LocalDate dateWorked) { this.dateWorked = dateWorked; }
+    public LocalDateTime getDateTimeFrom() { return dateTimeFrom; }
+    public void setDateTimeFrom(LocalDateTime dateTimeFrom) { this.dateTimeFrom = dateTimeFrom; }
 
-    public Double getHoursWorked() { return hoursWorked; }
-    public void setHoursWorked(Double hoursWorked) { this.hoursWorked = hoursWorked; }
+    public LocalDateTime getDateTimeTo() { return dateTimeTo; }
+    public void setDateTimeTo(LocalDateTime dateTimeTo) { this.dateTimeTo = dateTimeTo; }
 
-    public String getReason() { return reason; }
-    public void setReason(String reason) { this.reason = reason; }
+    public Double getTotalHours() { return totalHours; }
+    public void setTotalHours(Double totalHours) { this.totalHours = totalHours; }
 
-    public String getWorkType() { return workType; }
-    public void setWorkType(String workType) { this.workType = workType; }
+    public String getPurpose() { return purpose; }
+    public void setPurpose(String purpose) { this.purpose = purpose; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

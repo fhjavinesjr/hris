@@ -1,47 +1,28 @@
 package com.humanresource.dtos;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.constraints.NotNull;
 
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
-public class TimeCorrectionDTO implements Serializable {
+public class OvertimeRequestDTO implements Serializable {
 
-    private Long timeCorrectionId;
-
-    @NotNull(message = "employeeId is mandatory")
+    private Long overtimeRequestId;
     private Long employeeId;
 
-    @NotNull(message = "dateFiled is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dateFiled;
 
-    @NotNull(message = "workDate is mandatory")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    private LocalDate workDate;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime dateTimeFrom;
 
-    @NotNull(message = "correctedTimeIn is mandatory")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
-    private LocalTime correctedTimeIn;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime dateTimeTo;
 
-    @NotNull(message = "correctedTimeOut is mandatory")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
-    private LocalTime correctedTimeOut;
-
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
-    private LocalTime correctedBreakOut;
-
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
-    private LocalTime correctedBreakIn;
-
-    private String reason;
-
-    @NotNull(message = "status is mandatory")
+    private Double totalHours;
+    private String purpose;
     private String status;
-
     private Long approvedById;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
@@ -59,10 +40,10 @@ public class TimeCorrectionDTO implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     private LocalDateTime updatedAt;
 
-    public TimeCorrectionDTO() {}
+    public OvertimeRequestDTO() {}
 
-    public Long getTimeCorrectionId() { return timeCorrectionId; }
-    public void setTimeCorrectionId(Long id) { this.timeCorrectionId = id; }
+    public Long getOvertimeRequestId() { return overtimeRequestId; }
+    public void setOvertimeRequestId(Long overtimeRequestId) { this.overtimeRequestId = overtimeRequestId; }
 
     public Long getEmployeeId() { return employeeId; }
     public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
@@ -70,23 +51,17 @@ public class TimeCorrectionDTO implements Serializable {
     public LocalDate getDateFiled() { return dateFiled; }
     public void setDateFiled(LocalDate dateFiled) { this.dateFiled = dateFiled; }
 
-    public LocalDate getWorkDate() { return workDate; }
-    public void setWorkDate(LocalDate workDate) { this.workDate = workDate; }
+    public LocalDateTime getDateTimeFrom() { return dateTimeFrom; }
+    public void setDateTimeFrom(LocalDateTime dateTimeFrom) { this.dateTimeFrom = dateTimeFrom; }
 
-    public LocalTime getCorrectedTimeIn() { return correctedTimeIn; }
-    public void setCorrectedTimeIn(LocalTime correctedTimeIn) { this.correctedTimeIn = correctedTimeIn; }
+    public LocalDateTime getDateTimeTo() { return dateTimeTo; }
+    public void setDateTimeTo(LocalDateTime dateTimeTo) { this.dateTimeTo = dateTimeTo; }
 
-    public LocalTime getCorrectedTimeOut() { return correctedTimeOut; }
-    public void setCorrectedTimeOut(LocalTime correctedTimeOut) { this.correctedTimeOut = correctedTimeOut; }
+    public Double getTotalHours() { return totalHours; }
+    public void setTotalHours(Double totalHours) { this.totalHours = totalHours; }
 
-    public LocalTime getCorrectedBreakOut() { return correctedBreakOut; }
-    public void setCorrectedBreakOut(LocalTime correctedBreakOut) { this.correctedBreakOut = correctedBreakOut; }
-
-    public LocalTime getCorrectedBreakIn() { return correctedBreakIn; }
-    public void setCorrectedBreakIn(LocalTime correctedBreakIn) { this.correctedBreakIn = correctedBreakIn; }
-
-    public String getReason() { return reason; }
-    public void setReason(String reason) { this.reason = reason; }
+    public String getPurpose() { return purpose; }
+    public void setPurpose(String purpose) { this.purpose = purpose; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

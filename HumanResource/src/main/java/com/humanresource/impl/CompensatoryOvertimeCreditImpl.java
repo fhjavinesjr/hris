@@ -48,6 +48,9 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
         dto.setApprovedById(e.getApprovedById());
         dto.setApprovedAt(e.getApprovedAt());
         dto.setApprovalRemarks(e.getApprovalRemarks());
+        dto.setRecommendationStatus(e.getRecommendationStatus());
+        dto.setRecommendedById(e.getRecommendedById());
+        dto.setRecommendationRemarks(e.getRecommendationRemarks());
         dto.setCreatedAt(e.getCreatedAt());
         dto.setUpdatedAt(e.getUpdatedAt());
         return dto;
@@ -89,7 +92,12 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
             entity.setHoursWorked(dto.getHoursWorked());
             entity.setReason(dto.getReason());
             entity.setWorkType(dto.getWorkType());
-            entity.setStatus("Pending");
+            entity.setStatus(dto.getStatus() != null ? dto.getStatus() : "Pending");
+            entity.setApprovedById(dto.getApprovedById());
+            entity.setApprovalRemarks(dto.getApprovalRemarks());
+            entity.setRecommendationStatus(dto.getRecommendationStatus());
+            entity.setRecommendedById(dto.getRecommendedById());
+            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
             entity = cocRepository.save(entity);
@@ -165,6 +173,12 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
             entity.setHoursWorked(dto.getHoursWorked());
             entity.setReason(dto.getReason());
             entity.setWorkType(dto.getWorkType());
+            entity.setStatus(dto.getStatus() != null ? dto.getStatus() : entity.getStatus());
+            entity.setApprovedById(dto.getApprovedById());
+            entity.setApprovalRemarks(dto.getApprovalRemarks());
+            entity.setRecommendationStatus(dto.getRecommendationStatus());
+            entity.setRecommendedById(dto.getRecommendedById());
+            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
             entity.setUpdatedAt(LocalDateTime.now());
             entity = cocRepository.save(entity);
             return toDTO(entity);

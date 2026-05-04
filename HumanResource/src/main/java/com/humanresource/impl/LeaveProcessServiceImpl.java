@@ -255,9 +255,17 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         }
 
         // ── Pre-load approved leave applications for this employee ───────────
+        // Includes leaves that are:
+        //   (a) Approved — standard case, or
+        //   (b) Disapproved WITH dueExigencyService = true — the employee was ready to
+        //       take leave but was recalled for service reasons. Per CSC rules (mirroring
+        //       old HRIS getDaysLeaveWithExigency logic), these days still count against
+        //       the employee's balance even though the leave was technically disapproved.
         List<LeaveApplication> approvedLeaves = leaveApplicationRepository
                 .findByEmployeeId(employeeId).stream()
-                .filter(la -> "Approved".equalsIgnoreCase(la.getApprovedStatus()))
+                .filter(la -> "Approved".equalsIgnoreCase(la.getApprovedStatus())
+                        || (Boolean.TRUE.equals(la.getDueExigencyService())
+                            && "Disapproved".equalsIgnoreCase(la.getApprovedStatus())))
                 .collect(Collectors.toList());
 
         // ── Pre-load approved pass slips for this employee ───────────────────

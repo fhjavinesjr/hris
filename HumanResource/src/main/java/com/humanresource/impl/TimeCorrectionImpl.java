@@ -44,6 +44,9 @@ public class TimeCorrectionImpl implements TimeCorrectionService {
         dto.setApprovedById(e.getApprovedById());
         dto.setApprovedAt(e.getApprovedAt());
         dto.setApprovalRemarks(e.getApprovalRemarks());
+        dto.setRecommendationStatus(e.getRecommendationStatus());
+        dto.setRecommendedById(e.getRecommendedById());
+        dto.setRecommendationRemarks(e.getRecommendationRemarks());
         dto.setCreatedAt(e.getCreatedAt());
         dto.setUpdatedAt(e.getUpdatedAt());
         return dto;
@@ -63,6 +66,9 @@ public class TimeCorrectionImpl implements TimeCorrectionService {
         e.setApprovedById(dto.getApprovedById());
         e.setApprovedAt(dto.getApprovedAt());
         e.setApprovalRemarks(dto.getApprovalRemarks());
+        e.setRecommendationStatus(dto.getRecommendationStatus());
+        e.setRecommendedById(dto.getRecommendedById());
+        e.setRecommendationRemarks(dto.getRecommendationRemarks());
         return e;
     }
 
@@ -73,7 +79,6 @@ public class TimeCorrectionImpl implements TimeCorrectionService {
         conflictChecker.checkSingleDate(dto.getEmployeeId(), dto.getWorkDate());
         try {
             TimeCorrection entity = toEntity(dto);
-            entity.setStatus("Pending");
             entity.setDateFiled(LocalDate.now());
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
@@ -141,6 +146,12 @@ public class TimeCorrectionImpl implements TimeCorrectionService {
             entity.setCorrectedTimeIn(dto.getCorrectedTimeIn());
             entity.setCorrectedTimeOut(dto.getCorrectedTimeOut());
             entity.setReason(dto.getReason());
+            entity.setStatus(dto.getStatus() != null ? dto.getStatus() : entity.getStatus());
+            entity.setApprovedById(dto.getApprovedById());
+            entity.setApprovalRemarks(dto.getApprovalRemarks());
+            entity.setRecommendationStatus(dto.getRecommendationStatus());
+            entity.setRecommendedById(dto.getRecommendedById());
+            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
             entity.setUpdatedAt(LocalDateTime.now());
             entity = repository.save(entity);
             return toDTO(entity);

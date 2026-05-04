@@ -39,6 +39,10 @@ public class CompensatoryTimeOffDTO implements Serializable {
 
     private String approvalRemarks;
 
+    private String recommendationStatus;
+    private Long recommendedById;
+    private String recommendationRemarks;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     private LocalDateTime createdAt;
 
@@ -83,6 +87,15 @@ public class CompensatoryTimeOffDTO implements Serializable {
 
     public String getApprovalRemarks() { return approvalRemarks; }
     public void setApprovalRemarks(String approvalRemarks) { this.approvalRemarks = approvalRemarks; }
+
+    public String getRecommendationStatus() { return recommendationStatus; }
+    public void setRecommendationStatus(String s) { this.recommendationStatus = s; }
+
+    public Long getRecommendedById() { return recommendedById; }
+    public void setRecommendedById(Long id) { this.recommendedById = id; }
+
+    public String getRecommendationRemarks() { return recommendationRemarks; }
+    public void setRecommendationRemarks(String s) { this.recommendationRemarks = s; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

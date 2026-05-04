@@ -66,6 +66,15 @@ public class OfficialEngagementApplication implements Serializable {
     @Column(name = "approvalRemarks", length = 300)
     private String approvalRemarks;
 
+    @Column(name = "recommendationStatus", length = 50)
+    private String recommendationStatus;
+
+    @Column(name = "recommendedById")
+    private Long recommendedById;
+
+    @Column(name = "recommendationRemarks", length = 300)
+    private String recommendationRemarks;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM-dd-yyyy HH:mm:ss")
     @Column(name = "createdAt", updatable = false)
     private LocalDateTime createdAt;
@@ -114,6 +123,15 @@ public class OfficialEngagementApplication implements Serializable {
 
     public String getApprovalRemarks() { return approvalRemarks; }
     public void setApprovalRemarks(String approvalRemarks) { this.approvalRemarks = approvalRemarks; }
+
+    public String getRecommendationStatus() { return recommendationStatus; }
+    public void setRecommendationStatus(String recommendationStatus) { this.recommendationStatus = recommendationStatus; }
+
+    public Long getRecommendedById() { return recommendedById; }
+    public void setRecommendedById(Long recommendedById) { this.recommendedById = recommendedById; }
+
+    public String getRecommendationRemarks() { return recommendationRemarks; }
+    public void setRecommendationRemarks(String recommendationRemarks) { this.recommendationRemarks = recommendationRemarks; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

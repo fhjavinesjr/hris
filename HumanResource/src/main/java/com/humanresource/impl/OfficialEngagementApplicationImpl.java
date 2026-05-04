@@ -45,6 +45,9 @@ public class OfficialEngagementApplicationImpl implements OfficialEngagementAppl
         dto.setApprovedById(e.getApprovedById());
         dto.setApprovedAt(e.getApprovedAt());
         dto.setApprovalRemarks(e.getApprovalRemarks());
+        dto.setRecommendationStatus(e.getRecommendationStatus());
+        dto.setRecommendedById(e.getRecommendedById());
+        dto.setRecommendationRemarks(e.getRecommendationRemarks());
         dto.setCreatedAt(e.getCreatedAt());
         dto.setUpdatedAt(e.getUpdatedAt());
         return dto;
@@ -64,6 +67,9 @@ public class OfficialEngagementApplicationImpl implements OfficialEngagementAppl
         e.setApprovedById(dto.getApprovedById());
         e.setApprovedAt(dto.getApprovedAt());
         e.setApprovalRemarks(dto.getApprovalRemarks());
+        e.setRecommendationStatus(dto.getRecommendationStatus());
+        e.setRecommendedById(dto.getRecommendedById());
+        e.setRecommendationRemarks(dto.getRecommendationRemarks());
         return e;
     }
 
@@ -74,7 +80,6 @@ public class OfficialEngagementApplicationImpl implements OfficialEngagementAppl
         conflictChecker.checkDateRange(dto.getEmployeeId(), dto.getStartDate(), dto.getEndDate());
         try {
             OfficialEngagementApplication entity = toEntity(dto);
-            entity.setStatus("Pending");
             entity.setDateFiled(LocalDate.now());
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
@@ -144,6 +149,12 @@ public class OfficialEngagementApplicationImpl implements OfficialEngagementAppl
             entity.setEndDate(dto.getEndDate());
             entity.setEndTime(dto.getEndTime());
             entity.setDetails(dto.getDetails());
+            entity.setStatus(dto.getStatus() != null ? dto.getStatus() : entity.getStatus());
+            entity.setApprovedById(dto.getApprovedById());
+            entity.setApprovalRemarks(dto.getApprovalRemarks());
+            entity.setRecommendationStatus(dto.getRecommendationStatus());
+            entity.setRecommendedById(dto.getRecommendedById());
+            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
             entity.setUpdatedAt(LocalDateTime.now());
             entity = repository.save(entity);
             return toDTO(entity);
