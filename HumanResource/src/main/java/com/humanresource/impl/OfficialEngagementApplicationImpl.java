@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -73,11 +74,40 @@ public class OfficialEngagementApplicationImpl implements OfficialEngagementAppl
         return e;
     }
 
+    /**
+     * Checks for datetime overlap with existing active OE records for the same employee.
+     * Excludes the record identified by {@code excludeId} (pass null for new records).
+     * Two intervals [A, B) and [C, D) overlap if A < D AND B > C.
+     */
+    private void checkOETimeConflict(Long employeeId, LocalDate startDate, LocalTime startTime,
+                                     LocalDate endDate, LocalTime endTime, Long excludeId) {
+        LocalDateTime newStart = LocalDateTime.of(startDate, startTime);
+        LocalDateTime newEnd   = LocalDateTime.of(endDate, endTime);
+        List<OfficialEngagementApplication> existing = repository.findByEmployeeId(employeeId);
+        for (OfficialEngagementApplication oe : existing) {
+            if (excludeId != null && excludeId.equals(oe.getOfficialEngagementApplicationId())) continue;
+            if (!"Pending".equals(oe.getStatus()) && !"Approved".equals(oe.getStatus())) continue;
+            if (oe.getStartDate() == null || oe.getStartTime() == null
+                    || oe.getEndDate() == null || oe.getEndTime() == null) continue;
+            LocalDateTime exStart = LocalDateTime.of(oe.getStartDate(), oe.getStartTime());
+            LocalDateTime exEnd   = LocalDateTime.of(oe.getEndDate(), oe.getEndTime());
+            if (newStart.isBefore(exEnd) && newEnd.isAfter(exStart)) {
+                throw new IllegalArgumentException(
+                        "An Official Engagement (" + oe.getOfficialType() + ") already exists from "
+                        + oe.getStartDate() + " " + oe.getStartTime().toString().substring(0, 5)
+                        + " to " + oe.getEndDate() + " " + oe.getEndTime().toString().substring(0, 5)
+                        + ". The selected date/time overlaps with an existing filing.");
+            }
+        }
+    }
+
     @Transactional
     @Override
     public OfficialEngagementApplicationDTO create(OfficialEngagementApplicationDTO dto) throws Exception {
-        // Validate date range before persisting — throws IllegalArgumentException on conflict
+        // Validate against cross-type conflicts (PassSlip, CTO, TC, Leave) and OE-to-OE datetime overlap
         conflictChecker.checkDateRange(dto.getEmployeeId(), dto.getStartDate(), dto.getEndDate());
+        checkOETimeConflict(dto.getEmployeeId(), dto.getStartDate(), dto.getStartTime(),
+                dto.getEndDate(), dto.getEndTime(), null);
         try {
             OfficialEngagementApplication entity = toEntity(dto);
             entity.setDateFiled(LocalDate.now());
@@ -139,6 +169,13 @@ public class OfficialEngagementApplicationImpl implements OfficialEngagementAppl
     @Transactional
     @Override
     public OfficialEngagementApplicationDTO update(Long id, OfficialEngagementApplicationDTO dto) throws Exception {
+        // Validate against cross-type conflicts and OE-to-OE datetime overlap (excluding self)
+        if (dto.getStartDate() != null && dto.getStartTime() != null
+                && dto.getEndDate() != null && dto.getEndTime() != null) {
+            conflictChecker.checkDateRange(dto.getEmployeeId(), dto.getStartDate(), dto.getEndDate());
+            checkOETimeConflict(dto.getEmployeeId(), dto.getStartDate(), dto.getStartTime(),
+                    dto.getEndDate(), dto.getEndTime(), id);
+        }
         try {
             Optional<OfficialEngagementApplication> optional = repository.findById(id);
             if (optional.isEmpty()) return null;

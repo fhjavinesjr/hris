@@ -137,7 +137,6 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
         double usedSPL = allApps.stream()
                 .filter(a -> "Special Privilege Leave".equalsIgnoreCase(a.getLeaveType()))
                 .filter(a -> !INACTIVE_STATUSES.contains(a.getStatus()))
-                .filter(a -> "Approved".equalsIgnoreCase(a.getApprovedStatus()))
                 .filter(a -> a.getStartDate() != null && a.getStartDate().getYear() == currentYear)
                 .mapToDouble(a -> {
                     double d = nvl(a.getNoOfDays());
@@ -156,7 +155,6 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
         double usedFL = allApps.stream()
                 .filter(a -> "Forced Leave".equalsIgnoreCase(a.getLeaveType()))
                 .filter(a -> !INACTIVE_STATUSES.contains(a.getStatus()))
-                .filter(a -> "Approved".equalsIgnoreCase(a.getApprovedStatus()))
                 .filter(a -> a.getStartDate() != null && a.getStartDate().getYear() == currentYear)
                 .mapToDouble(a -> {
                     double d = nvl(a.getNoOfDays());

@@ -12,6 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
+@CrossOrigin("*")
 public class CompensatoryOvertimeCreditController {
 
     private final CompensatoryOvertimeCreditService cocService;

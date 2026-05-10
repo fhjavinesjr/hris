@@ -122,14 +122,6 @@ public class DateConflictChecker {
             throw new IllegalArgumentException(
                     "A Time Correction is already filed within the selected dates. Please adjust the date range.");
 
-        // Official Engagement (range overlap: OE.startDate <= endDate AND OE.endDate >= startDate)
-        boolean oeConflict = oeRepo
-                .findByEmployeeIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(employeeId, endDate, startDate)
-                .stream().anyMatch(oe -> ACTIVE.contains(oe.getStatus()));
-        if (oeConflict)
-            throw new IllegalArgumentException(
-                    "An Official Engagement already covers some or all of the selected dates. Please adjust the date range.");
-
         // Leave Application (range overlap: Leave.startDate <= endDate AND Leave.endDate >= startDate)
         boolean leaveConflict = leaveRepo
                 .findByEmployeeIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(employeeId, endDate, startDate)
