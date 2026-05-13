@@ -14,6 +14,11 @@ public class ApprovalWorkflowController {
     @Autowired
     private ApprovalWorkflowService service;
 
+    @GetMapping("/get-all")
+    public List<ApprovalWorkflow> getAll() {
+        return service.getAll();
+    }
+
     @GetMapping("/get-by-unit-and-request")
     public List<ApprovalWorkflow> getByUnitAndRequest(
             @RequestParam Long businessUnitId,

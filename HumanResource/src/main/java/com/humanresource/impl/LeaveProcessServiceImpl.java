@@ -234,25 +234,70 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
             return null;
         }
 
-        // ── Resolve previous balances ────────────────────────────────────────
-        double prevSL;
-        double prevVL;
-
-        // Look up the PREVIOUS period's balance, strictly before this period's end date.
-        // Using cutoffEndDate < periodEnd avoids self-referencing the current period's
-        // own stale record when reprocessing an already-computed period.
+        // ── Check if this is the beginning balance period ─────────────────────
+        // Fetch the most recent prior LeaveInformation record for this employee.
+        // If none exists, this is the very first period — stamp the beginning balance
+        // directly from LeaveBeginningBalance (isBegBalance = true, zero earnings /
+        // deductions). The NEXT period processed will find this record as lastPeriod
+        // and carry its balance forward into normal leave-earning computation.
         Optional<LeaveInformation> lastPeriod =
                 leaveInfoRepository.findTopByEmployeeIdAndCutoffEndDateBeforeOrderByCutoffEndDateDesc(
                         employeeId, periodEnd);
 
-        if (lastPeriod.isPresent()) {
-            prevSL = nvl(lastPeriod.get().getSickLeaveBalance());
-            prevVL = nvl(lastPeriod.get().getVacationLeaveBalance());
-        } else {
-            // First ever period — use beginning balances
-            prevSL = nvl(slBeg.getBalance());
-            prevVL = nvl(vlBeg.getBalance());
+        if (lastPeriod.isEmpty()) {
+            LocalDate begAsOfDate = slBeg.getAsOfDate();
+            String begParticulars = "Beginning Balance as of " +
+                    (begAsOfDate != null ? begAsOfDate.toString() : periodEnd.toString());
+
+            LeaveInformation begEntity;
+            if (existingOpt.isPresent()) {
+                begEntity = existingOpt.get();
+            } else {
+                begEntity = new LeaveInformation();
+                begEntity.setCreatedAt(LocalDateTime.now());
+            }
+
+            begEntity.setEmployeeId(employeeId);
+            begEntity.setSalaryPeriodSettingId(salaryPeriodSettingId);
+            begEntity.setCutoffStartDate(periodStart);
+            begEntity.setCutoffEndDate(periodEnd);
+            begEntity.setProcessDate(LocalDateTime.now());
+            begEntity.setProcessedById(processedById);
+            begEntity.setEarnedSl(0.0);
+            begEntity.setEarnedVl(0.0);
+            begEntity.setSickLeaveUsed(0.0);
+            begEntity.setVacationLeaveUsed(0.0);
+            begEntity.setLeaveWithoutPaySl(0.0);
+            begEntity.setLeaveWithoutPayVl(0.0);
+            begEntity.setPreviousSickLeaveBalance(0.0);
+            begEntity.setPreviousVacationLeaveBalance(0.0);
+            begEntity.setSickLeaveBalance(round3(nvl(slBeg.getBalance())));
+            begEntity.setVacationLeaveBalance(round3(nvl(vlBeg.getBalance())));
+            begEntity.setLateUndertimeMinutes(0);
+            begEntity.setLateUndertimeEquivalent(0.0);
+            begEntity.setLateCount(0);
+            begEntity.setUndertimeCount(0);
+            begEntity.setAbsentCount(0.0);
+            begEntity.setLeaveParticulars(begParticulars);
+            begEntity.setIsBegBalance(true);
+            begEntity.setIsLocked(false);
+            begEntity.setUpdatedAt(LocalDateTime.now());
+
+            begEntity = leaveInfoRepository.save(begEntity);
+
+            log.info("Stamped beginning balance for {}: SL={}, VL={}, asOf={}",
+                    empLabel, slBeg.getBalance(), vlBeg.getBalance(), begAsOfDate);
+
+            LeaveInformationDTO begDto = toDTO(begEntity);
+            begDto.setEmployeeName(emp.getLastname() + ", " + emp.getFirstname());
+            begDto.setEmployeeNo(emp.getEmployeeNo());
+            return begDto;
         }
+
+        // ── Resolve previous balances ────────────────────────────────────────
+        // At this point lastPeriod is always present (isEmpty case returned above).
+        double prevSL = nvl(lastPeriod.get().getSickLeaveBalance());
+        double prevVL = nvl(lastPeriod.get().getVacationLeaveBalance());
 
         // ── Pre-load approved leave applications for this employee ───────────
         // Includes leaves that are:

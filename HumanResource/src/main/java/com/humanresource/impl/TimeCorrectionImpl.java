@@ -117,6 +117,25 @@ public class TimeCorrectionImpl implements TimeCorrectionService {
         return updateApprovalStatus(id, "Disapproved", approvedById, remarks);
     }
 
+    @Transactional
+    @Override
+    public TimeCorrectionDTO recommend(Long id, Long recommendedById, String remarks) throws Exception {
+        try {
+            Optional<TimeCorrection> optional = repository.findById(id);
+            if (optional.isEmpty()) return null;
+            TimeCorrection entity = optional.get();
+            entity.setRecommendationStatus("Recommended");
+            entity.setRecommendedById(recommendedById);
+            entity.setRecommendationRemarks(remarks);
+            entity.setUpdatedAt(LocalDateTime.now());
+            entity = repository.save(entity);
+            return toDTO(entity);
+        } catch (Exception ex) {
+            log.error("Error recommending TimeCorrection for id {}: ", id, ex);
+            return null;
+        }
+    }
+
     private TimeCorrectionDTO updateApprovalStatus(Long id, String newStatus, Long approvedById, String remarks) {
         try {
             Optional<TimeCorrection> optional = repository.findById(id);
@@ -144,6 +163,8 @@ public class TimeCorrectionImpl implements TimeCorrectionService {
             TimeCorrection entity = optional.get();
             entity.setWorkDate(dto.getWorkDate());
             entity.setCorrectedTimeIn(dto.getCorrectedTimeIn());
+            entity.setCorrectedBreakOut(dto.getCorrectedBreakOut());
+            entity.setCorrectedBreakIn(dto.getCorrectedBreakIn());
             entity.setCorrectedTimeOut(dto.getCorrectedTimeOut());
             entity.setReason(dto.getReason());
             entity.setStatus(dto.getStatus() != null ? dto.getStatus() : entity.getStatus());

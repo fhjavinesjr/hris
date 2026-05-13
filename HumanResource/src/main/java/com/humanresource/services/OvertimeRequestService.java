@@ -21,6 +21,8 @@ public interface OvertimeRequestService {
 
     OvertimeRequestDTO disapprove(Long overtimeRequestId, Long approvedById, String remarks) throws Exception;
 
+    OvertimeRequestDTO recommend(Long overtimeRequestId, Long recommendedById, String remarks) throws Exception;
+
     OvertimeRequestDTO update(Long overtimeRequestId, OvertimeRequestDTO dto) throws Exception;
 
     Boolean delete(Long overtimeRequestId) throws Exception;

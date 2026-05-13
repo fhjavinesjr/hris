@@ -18,6 +18,8 @@ public interface CompensatoryOvertimeCreditService {
 
     CompensatoryOvertimeCreditDTO disapprove(Long cocId, Long approvedById, String remarks) throws Exception;
 
+    CompensatoryOvertimeCreditDTO recommend(Long cocId, Long recommendedById, String remarks) throws Exception;
+
     CompensatoryOvertimeCreditDTO update(Long cocId, CompensatoryOvertimeCreditDTO dto) throws Exception;
 
     Boolean delete(Long cocId) throws Exception;

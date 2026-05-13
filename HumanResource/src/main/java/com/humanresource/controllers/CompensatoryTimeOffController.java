@@ -71,6 +71,19 @@ public class CompensatoryTimeOffController {
         return ResponseEntity.ok(new MetadataResponse(ctoId, "CTO disapproved"));
     }
 
+    @PutMapping("/cto/recommend/{ctoId}")
+    public ResponseEntity<MetadataResponse> recommend(@PathVariable Long ctoId,
+                                                       @RequestBody Map<String, Object> body) throws Exception {
+        Long recommendedById = body.get("recommendedById") != null ? Long.valueOf(body.get("recommendedById").toString()) : null;
+        String remarks = body.get("remarks") != null ? body.get("remarks").toString() : "";
+        CompensatoryTimeOffDTO result = ctoService.recommend(ctoId, recommendedById, remarks);
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MetadataResponse("Failed to recommend CTO"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(ctoId, "CTO recommended"));
+    }
+
     @PutMapping("/cto/update/{ctoId}")
     public ResponseEntity<MetadataResponse> update(@PathVariable Long ctoId,
                                                     @RequestBody CompensatoryTimeOffDTO dto) throws Exception {

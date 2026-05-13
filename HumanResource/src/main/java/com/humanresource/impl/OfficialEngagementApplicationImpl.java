@@ -148,6 +148,25 @@ public class OfficialEngagementApplicationImpl implements OfficialEngagementAppl
         return updateApprovalStatus(id, "Disapproved", approvedById, remarks);
     }
 
+    @Transactional
+    @Override
+    public OfficialEngagementApplicationDTO recommend(Long id, Long recommendedById, String remarks) throws Exception {
+        try {
+            Optional<OfficialEngagementApplication> optional = repository.findById(id);
+            if (optional.isEmpty()) return null;
+            OfficialEngagementApplication entity = optional.get();
+            entity.setRecommendationStatus("Recommended");
+            entity.setRecommendedById(recommendedById);
+            entity.setRecommendationRemarks(remarks);
+            entity.setUpdatedAt(LocalDateTime.now());
+            entity = repository.save(entity);
+            return toDTO(entity);
+        } catch (Exception ex) {
+            log.error("Error recommending OfficialEngagement for id {}: ", id, ex);
+            return null;
+        }
+    }
+
     private OfficialEngagementApplicationDTO updateApprovalStatus(Long id, String newStatus, Long approvedById, String remarks) {
         try {
             Optional<OfficialEngagementApplication> optional = repository.findById(id);

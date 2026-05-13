@@ -18,6 +18,8 @@ public interface OfficialEngagementApplicationService {
 
     OfficialEngagementApplicationDTO disapprove(Long id, Long approvedById, String remarks) throws Exception;
 
+    OfficialEngagementApplicationDTO recommend(Long id, Long recommendedById, String remarks) throws Exception;
+
     OfficialEngagementApplicationDTO update(Long id, OfficialEngagementApplicationDTO dto) throws Exception;
 
     Boolean delete(Long id) throws Exception;

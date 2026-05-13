@@ -127,6 +127,25 @@ public class CompensatoryTimeOffImpl implements CompensatoryTimeOffService {
         return updateStatus(ctoId, "Disapproved", approvedById, remarks);
     }
 
+    @Transactional
+    @Override
+    public CompensatoryTimeOffDTO recommend(Long ctoId, Long recommendedById, String remarks) throws Exception {
+        try {
+            Optional<CompensatoryTimeOff> optional = ctoRepository.findById(ctoId);
+            if (optional.isEmpty()) return null;
+            CompensatoryTimeOff entity = optional.get();
+            entity.setRecommendationStatus("Recommended");
+            entity.setRecommendedById(recommendedById);
+            entity.setRecommendationRemarks(remarks);
+            entity.setUpdatedAt(LocalDateTime.now());
+            entity = ctoRepository.save(entity);
+            return toDTO(entity);
+        } catch (Exception ex) {
+            log.error("Error recommending CTO for id {}: ", ctoId, ex);
+            return null;
+        }
+    }
+
     private CompensatoryTimeOffDTO updateStatus(Long ctoId, String newStatus, Long approvedById, String remarks) {
         try {
             Optional<CompensatoryTimeOff> optional = ctoRepository.findById(ctoId);

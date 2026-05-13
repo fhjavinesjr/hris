@@ -83,6 +83,14 @@ public class LeaveInformationImpl implements LeaveInformationService {
     }
 
     @Override
+    public List<LeaveInformationDTO> getByYear(int year) throws Exception {
+        LocalDate from = LocalDate.of(year, 1, 1);
+        LocalDate to   = LocalDate.of(year, 12, 31);
+        return repository.findByCutoffStartDateBetweenOrderByCutoffStartDateAsc(from, to)
+                .stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    @Override
     public List<LeaveInformationDTO> getBySalaryPeriodSettingId(Long salaryPeriodSettingId) throws Exception {
         return repository.findBySalaryPeriodSettingId(salaryPeriodSettingId)
                 .stream().map(this::toDTO).collect(Collectors.toList());

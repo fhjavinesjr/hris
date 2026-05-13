@@ -78,6 +78,19 @@ public class CompensatoryOvertimeCreditController {
         return ResponseEntity.ok(new MetadataResponse(cocId, "COC disapproved"));
     }
 
+    @PutMapping("/coc/recommend/{cocId}")
+    public ResponseEntity<MetadataResponse> recommend(@PathVariable Long cocId,
+                                                       @RequestBody Map<String, Object> body) throws Exception {
+        Long recommendedById = body.get("recommendedById") != null ? Long.valueOf(body.get("recommendedById").toString()) : null;
+        String remarks = body.get("remarks") != null ? body.get("remarks").toString() : "";
+        CompensatoryOvertimeCreditDTO result = cocService.recommend(cocId, recommendedById, remarks);
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MetadataResponse("Failed to recommend COC"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(cocId, "COC recommended"));
+    }
+
     @PutMapping("/coc/update/{cocId}")
     public ResponseEntity<MetadataResponse> update(@PathVariable Long cocId,
                                                     @RequestBody CompensatoryOvertimeCreditDTO dto) throws Exception {

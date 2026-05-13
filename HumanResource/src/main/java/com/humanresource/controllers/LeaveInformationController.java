@@ -52,6 +52,20 @@ public class LeaveInformationController {
     }
 
     /**
+     * GET /api/leave-information/get-by-year?year=2026
+     * Returns all leave information records whose cutoffStartDate falls within the given calendar year.
+     * Used by the "View All Year" feature on the HR Leave Information module.
+     */
+    @GetMapping("/get-by-year")
+    public ResponseEntity<List<LeaveInformationDTO>> getByYear(@RequestParam int year) {
+        try {
+            return ResponseEntity.ok(service.getByYear(year));
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
      * GET /api/leave-information/get-by-salary-period/{salaryPeriodSettingId}
      * Returns all records associated with a salary period setting ID.
      */

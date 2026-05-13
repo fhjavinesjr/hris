@@ -11,6 +11,8 @@ public interface LeaveInformationService {
 
     List<LeaveInformationDTO> getByPeriod(LocalDate cutoffStart, LocalDate cutoffEnd) throws Exception;
 
+    List<LeaveInformationDTO> getByYear(int year) throws Exception;
+
     List<LeaveInformationDTO> getBySalaryPeriodSettingId(Long salaryPeriodSettingId) throws Exception;
 
     LeaveInformationDTO lock(Long leaveInformationId) throws Exception;

@@ -18,6 +18,8 @@ public interface PassSlipService {
 
     PassSlipDTO disapprove(Long passSlipId, Long approvedById, String remarks) throws Exception;
 
+    PassSlipDTO recommend(Long passSlipId, Long recommendedById, String remarks) throws Exception;
+
     PassSlipDTO update(Long passSlipId, PassSlipDTO dto) throws Exception;
 
     Boolean delete(Long passSlipId) throws Exception;

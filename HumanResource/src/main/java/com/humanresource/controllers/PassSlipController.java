@@ -71,6 +71,19 @@ public class PassSlipController {
         return ResponseEntity.ok(new MetadataResponse(passSlipId, "Pass Slip disapproved"));
     }
 
+    @PutMapping("/pass-slip/recommend/{passSlipId}")
+    public ResponseEntity<MetadataResponse> recommend(@PathVariable Long passSlipId,
+                                                       @RequestBody Map<String, Object> body) throws Exception {
+        Long recommendedById = body.get("recommendedById") != null ? Long.valueOf(body.get("recommendedById").toString()) : null;
+        String remarks = body.get("remarks") != null ? body.get("remarks").toString() : "";
+        PassSlipDTO result = passSlipService.recommend(passSlipId, recommendedById, remarks);
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MetadataResponse("Failed to recommend Pass Slip"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(passSlipId, "Pass Slip recommended"));
+    }
+
     @PutMapping("/pass-slip/update/{passSlipId}")
     public ResponseEntity<MetadataResponse> update(@PathVariable Long passSlipId,
                                                     @RequestBody PassSlipDTO dto) throws Exception {

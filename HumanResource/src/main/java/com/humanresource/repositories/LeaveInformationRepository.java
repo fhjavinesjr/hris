@@ -35,4 +35,8 @@ public interface LeaveInformationRepository extends JpaRepository<LeaveInformati
     // Lock / unlock a specific record — service fetches by ID
     Optional<LeaveInformation> findByEmployeeIdAndCutoffStartDateAndCutoffEndDate(
             Long employeeId, LocalDate start, LocalDate end);
+
+    // All records whose cutoffStartDate falls within a calendar year — for the "View All Year" feature
+    List<LeaveInformation> findByCutoffStartDateBetweenOrderByCutoffStartDateAsc(
+            LocalDate from, LocalDate to);
 }

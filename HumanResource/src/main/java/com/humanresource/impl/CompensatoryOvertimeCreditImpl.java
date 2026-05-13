@@ -143,6 +143,25 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
         return updateStatus(cocId, "Disapproved", approvedById, remarks);
     }
 
+    @Transactional
+    @Override
+    public CompensatoryOvertimeCreditDTO recommend(Long cocId, Long recommendedById, String remarks) throws Exception {
+        try {
+            Optional<CompensatoryOvertimeCredit> optional = cocRepository.findById(cocId);
+            if (optional.isEmpty()) return null;
+            CompensatoryOvertimeCredit entity = optional.get();
+            entity.setRecommendationStatus("Recommended");
+            entity.setRecommendedById(recommendedById);
+            entity.setRecommendationRemarks(remarks);
+            entity.setUpdatedAt(LocalDateTime.now());
+            entity = cocRepository.save(entity);
+            return toDTO(entity);
+        } catch (Exception ex) {
+            log.error("Error recommending COC for id {}: ", cocId, ex);
+            return null;
+        }
+    }
+
     private CompensatoryOvertimeCreditDTO updateStatus(Long cocId, String newStatus, Long approvedById, String remarks) {
         try {
             Optional<CompensatoryOvertimeCredit> optional = cocRepository.findById(cocId);

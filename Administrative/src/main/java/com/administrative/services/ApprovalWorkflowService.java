@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface ApprovalWorkflowService {
 
+    List<ApprovalWorkflow> getAll();
+
     List<ApprovalWorkflow> getByUnitAndRequest(Long businessUnitId, Long employeeRequestId);
 
     ApprovalWorkflow save(ApprovalWorkflow approvalWorkflow);

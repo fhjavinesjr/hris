@@ -113,6 +113,25 @@ public class PassSlipImpl implements PassSlipService {
         return updateApprovalStatus(passSlipId, "Disapproved", approvedById, remarks);
     }
 
+    @Transactional
+    @Override
+    public PassSlipDTO recommend(Long passSlipId, Long recommendedById, String remarks) throws Exception {
+        try {
+            Optional<PassSlip> optional = repository.findById(passSlipId);
+            if (optional.isEmpty()) return null;
+            PassSlip entity = optional.get();
+            entity.setRecommendationStatus("Recommended");
+            entity.setRecommendedById(recommendedById);
+            entity.setRecommendationRemarks(remarks);
+            entity.setUpdatedAt(LocalDateTime.now());
+            entity = repository.save(entity);
+            return toDTO(entity);
+        } catch (Exception ex) {
+            log.error("Error recommending PassSlip for id {}: ", passSlipId, ex);
+            return null;
+        }
+    }
+
     private PassSlipDTO updateApprovalStatus(Long passSlipId, String newStatus, Long approvedById, String remarks) {
         try {
             Optional<PassSlip> optional = repository.findById(passSlipId);

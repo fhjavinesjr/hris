@@ -71,6 +71,19 @@ public class TimeCorrectionController {
         return ResponseEntity.ok(new MetadataResponse(id, "Time Correction disapproved"));
     }
 
+    @PutMapping("/time-correction/recommend/{id}")
+    public ResponseEntity<MetadataResponse> recommend(@PathVariable Long id,
+                                                       @RequestBody Map<String, Object> body) throws Exception {
+        Long recommendedById = body.get("recommendedById") != null ? Long.valueOf(body.get("recommendedById").toString()) : null;
+        String remarks = body.get("remarks") != null ? body.get("remarks").toString() : "";
+        TimeCorrectionDTO result = service.recommend(id, recommendedById, remarks);
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MetadataResponse("Failed to recommend Time Correction"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(id, "Time Correction recommended"));
+    }
+
     @PutMapping("/time-correction/update/{id}")
     public ResponseEntity<MetadataResponse> update(@PathVariable Long id,
                                                     @RequestBody TimeCorrectionDTO dto) throws Exception {

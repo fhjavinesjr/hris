@@ -77,6 +77,19 @@ public class OvertimeRequestController {
         return ResponseEntity.ok(new MetadataResponse(id, "Overtime request disapproved"));
     }
 
+    @PutMapping("/overtime-request/recommend/{id}")
+    public ResponseEntity<MetadataResponse> recommend(@PathVariable Long id,
+                                                      @RequestBody Map<String, Object> body) throws Exception {
+        Long recommendedById = body.get("recommendedById") != null ? Long.valueOf(body.get("recommendedById").toString()) : null;
+        String remarks = body.get("remarks") != null ? body.get("remarks").toString() : "";
+        OvertimeRequestDTO result = overtimeRequestService.recommend(id, recommendedById, remarks);
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MetadataResponse("Failed to recommend overtime request"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(id, "Overtime request recommended"));
+    }
+
     @PutMapping("/overtime-request/update/{id}")
     public ResponseEntity<MetadataResponse> update(@PathVariable Long id,
                                                    @RequestBody OvertimeRequestDTO dto) throws Exception {

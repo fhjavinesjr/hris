@@ -128,6 +128,25 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
         return updateStatus(overtimeRequestId, "Disapproved", approvedById, remarks);
     }
 
+    @Transactional
+    @Override
+    public OvertimeRequestDTO recommend(Long overtimeRequestId, Long recommendedById, String remarks) throws Exception {
+        try {
+            Optional<OvertimeRequest> optional = overtimeRequestRepository.findById(overtimeRequestId);
+            if (optional.isEmpty()) return null;
+            OvertimeRequest entity = optional.get();
+            entity.setRecommendationStatus("Recommended");
+            entity.setRecommendedById(recommendedById);
+            entity.setRecommendationRemarks(remarks);
+            entity.setUpdatedAt(LocalDateTime.now());
+            entity = overtimeRequestRepository.save(entity);
+            return toDTO(entity);
+        } catch (Exception ex) {
+            log.error("Error recommending OvertimeRequest for id {}: ", overtimeRequestId, ex);
+            return null;
+        }
+    }
+
     private OvertimeRequestDTO updateStatus(Long id, String newStatus, Long approvedById, String remarks) {
         try {
             Optional<OvertimeRequest> optional = overtimeRequestRepository.findById(id);

@@ -18,6 +18,11 @@ public class ApprovalWorkflowImpl implements ApprovalWorkflowService {
     }
 
     @Override
+    public List<ApprovalWorkflow> getAll() {
+        return approvalWorkflowRepository.findAll();
+    }
+
+    @Override
     public List<ApprovalWorkflow> getByUnitAndRequest(Long businessUnitId, Long employeeRequestId) {
         return approvalWorkflowRepository.findByBusinessUnitIdAndEmployeeRequestId(businessUnitId, employeeRequestId);
     }

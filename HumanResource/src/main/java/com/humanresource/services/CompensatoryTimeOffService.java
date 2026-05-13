@@ -18,6 +18,8 @@ public interface CompensatoryTimeOffService {
 
     CompensatoryTimeOffDTO disapprove(Long ctoId, Long approvedById, String remarks) throws Exception;
 
+    CompensatoryTimeOffDTO recommend(Long ctoId, Long recommendedById, String remarks) throws Exception;
+
     CompensatoryTimeOffDTO update(Long ctoId, CompensatoryTimeOffDTO dto) throws Exception;
 
     Boolean delete(Long ctoId) throws Exception;

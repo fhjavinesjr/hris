@@ -18,6 +18,8 @@ public interface TimeCorrectionService {
 
     TimeCorrectionDTO disapprove(Long id, Long approvedById, String remarks) throws Exception;
 
+    TimeCorrectionDTO recommend(Long id, Long recommendedById, String remarks) throws Exception;
+
     TimeCorrectionDTO update(Long id, TimeCorrectionDTO dto) throws Exception;
 
     Boolean delete(Long id) throws Exception;

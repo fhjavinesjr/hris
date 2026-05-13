@@ -71,6 +71,19 @@ public class OfficialEngagementApplicationController {
         return ResponseEntity.ok(new MetadataResponse(id, "Official Engagement application disapproved"));
     }
 
+    @PutMapping("/official-engagement/recommend/{id}")
+    public ResponseEntity<MetadataResponse> recommend(@PathVariable Long id,
+                                                       @RequestBody Map<String, Object> body) throws Exception {
+        Long recommendedById = body.get("recommendedById") != null ? Long.valueOf(body.get("recommendedById").toString()) : null;
+        String remarks = body.get("remarks") != null ? body.get("remarks").toString() : "";
+        OfficialEngagementApplicationDTO result = service.recommend(id, recommendedById, remarks);
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MetadataResponse("Failed to recommend Official Engagement application"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(id, "Official Engagement application recommended"));
+    }
+
     @PutMapping("/official-engagement/update/{id}")
     public ResponseEntity<MetadataResponse> update(@PathVariable Long id,
                                                     @RequestBody OfficialEngagementApplicationDTO dto) throws Exception {
