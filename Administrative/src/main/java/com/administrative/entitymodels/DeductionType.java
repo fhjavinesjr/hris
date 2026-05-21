@@ -22,6 +22,12 @@ public class DeductionType implements Serializable {
     @Column(name = "mandatoryDeduction")
     private Boolean mandatoryDeduction;
 
+    @Column(name = "agency_mandatory")
+    private Boolean agencyMandatory;
+
+    @Column(name = "voluntary_contribution")
+    private Boolean voluntaryContribution;
+
     @Column(name = "gsis")
     private Boolean gsis;
 
@@ -54,6 +60,12 @@ public class DeductionType implements Serializable {
 
     public Boolean getMandatoryDeduction() { return mandatoryDeduction; }
     public void setMandatoryDeduction(Boolean mandatoryDeduction) { this.mandatoryDeduction = mandatoryDeduction; }
+
+    public Boolean getAgencyMandatory() { return agencyMandatory; }
+    public void setAgencyMandatory(Boolean agencyMandatory) { this.agencyMandatory = agencyMandatory; }
+
+    public Boolean getVoluntaryContribution() { return voluntaryContribution; }
+    public void setVoluntaryContribution(Boolean voluntaryContribution) { this.voluntaryContribution = voluntaryContribution; }
 
     public Boolean getGsis() { return gsis; }
     public void setGsis(Boolean gsis) { this.gsis = gsis; }

@@ -86,4 +86,15 @@ public class EmployeeAppointmentController {
         return ResponseEntity.ok(taken);
     }
 
+    @PutMapping("/employeeAppointment/deactivate/{employeeAppointmentId}")
+    public ResponseEntity<MetadataResponse> deactivateAppointment(@PathVariable Long employeeAppointmentId) throws Exception {
+        Boolean success = employeeAppointmentService.deactivateAppointment(employeeAppointmentId);
+        if (!success) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MetadataResponse("Failed to deactivate appointment"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(employeeAppointmentId, "Appointment deactivated successfully"));
+    }
+
 }

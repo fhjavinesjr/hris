@@ -78,6 +78,8 @@ public class DeductionTypeImpl implements DeductionTypeService {
         entity.setAccountingCode(dto.getAccountingCode());
         entity.setName(dto.getName());
         entity.setMandatoryDeduction(dto.getMandatoryDeduction());
+        entity.setAgencyMandatory(dto.getAgencyMandatory());
+        entity.setVoluntaryContribution(dto.getVoluntaryContribution());
         entity.setGsis(dto.getGsis());
         entity.setPhilHealth(dto.getPhilHealth());
         entity.setPagIbig(dto.getPagIbig());
@@ -92,6 +94,8 @@ public class DeductionTypeImpl implements DeductionTypeService {
         dto.setAccountingCode(entity.getAccountingCode());
         dto.setName(entity.getName());
         dto.setMandatoryDeduction(entity.getMandatoryDeduction());
+        dto.setAgencyMandatory(entity.getAgencyMandatory());
+        dto.setVoluntaryContribution(entity.getVoluntaryContribution());
         dto.setGsis(entity.getGsis());
         dto.setPhilHealth(entity.getPhilHealth());
         dto.setPagIbig(entity.getPagIbig());

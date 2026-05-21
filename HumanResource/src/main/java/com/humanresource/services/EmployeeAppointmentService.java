@@ -24,4 +24,6 @@ public interface EmployeeAppointmentService {
 
     boolean isPlantillaTaken(Long plantillaId) throws Exception;
 
+    Boolean deactivateAppointment(Long employeeAppointmentId) throws Exception;
+
 }

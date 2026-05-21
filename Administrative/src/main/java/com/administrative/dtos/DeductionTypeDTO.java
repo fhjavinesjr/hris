@@ -8,6 +8,8 @@ public class DeductionTypeDTO implements Serializable {
     private String accountingCode;
     private String name;
     private Boolean mandatoryDeduction;
+    private Boolean agencyMandatory;
+    private Boolean voluntaryContribution;
     private Boolean gsis;
     private Boolean philHealth;
     private Boolean pagIbig;
@@ -29,6 +31,12 @@ public class DeductionTypeDTO implements Serializable {
 
     public Boolean getMandatoryDeduction() { return mandatoryDeduction; }
     public void setMandatoryDeduction(Boolean mandatoryDeduction) { this.mandatoryDeduction = mandatoryDeduction; }
+
+    public Boolean getAgencyMandatory() { return agencyMandatory; }
+    public void setAgencyMandatory(Boolean agencyMandatory) { this.agencyMandatory = agencyMandatory; }
+
+    public Boolean getVoluntaryContribution() { return voluntaryContribution; }
+    public void setVoluntaryContribution(Boolean voluntaryContribution) { this.voluntaryContribution = voluntaryContribution; }
 
     public Boolean getGsis() { return gsis; }
     public void setGsis(Boolean gsis) { this.gsis = gsis; }

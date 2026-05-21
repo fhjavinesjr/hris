@@ -222,4 +222,19 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
     public boolean isPlantillaTaken(Long plantillaId) throws Exception {
         return employeeAppointmentRepository.existsByPlantillaIdAndActiveAppointmentTrue(plantillaId);
     }
+
+    @Transactional
+    @Override
+    public Boolean deactivateAppointment(Long employeeAppointmentId) throws Exception {
+        try {
+            EmployeeAppointment appointment = employeeAppointmentRepository.findById(employeeAppointmentId)
+                    .orElseThrow(() -> new RuntimeException("EmployeeAppointment not found with id: " + employeeAppointmentId));
+            appointment.setActiveAppointment(false);
+            employeeAppointmentRepository.save(appointment);
+            return true;
+        } catch (Exception e) {
+            log.error("Error deactivating EmployeeAppointment {}: {}", employeeAppointmentId, e.getMessage());
+            return false;
+        }
+    }
 }
