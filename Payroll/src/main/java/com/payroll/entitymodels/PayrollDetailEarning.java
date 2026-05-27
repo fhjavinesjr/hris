@@ -2,6 +2,7 @@ package com.payroll.entitymodels;
 
 import jakarta.persistence.*;
 import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Single earning line item belonging to a {@link PayrollDetail}.
@@ -16,6 +17,7 @@ public class PayrollDetailEarning implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "payroll_detail_id", nullable = false)
     private PayrollDetail payrollDetail;

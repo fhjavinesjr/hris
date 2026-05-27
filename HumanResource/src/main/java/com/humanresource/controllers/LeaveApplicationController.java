@@ -1,12 +1,15 @@
 package com.humanresource.controllers;
 
 import com.hris.common.dtos.MetadataResponse;
+import com.humanresource.dtos.ApprovedLeaveDTO;
 import com.humanresource.dtos.LeaveApplicationDTO;
 import com.humanresource.services.LeaveApplicationService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -17,6 +20,14 @@ public class LeaveApplicationController {
 
     public LeaveApplicationController(LeaveApplicationService leaveApplicationService) {
         this.leaveApplicationService = leaveApplicationService;
+    }
+
+    @GetMapping("/leave/bulk-approved")
+    public ResponseEntity<List<ApprovedLeaveDTO>> getBulkApprovedLeaves(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) throws Exception {
+        List<ApprovedLeaveDTO> list = leaveApplicationService.getBulkApprovedLeaves(from, to);
+        return ResponseEntity.ok(list);
     }
 
     @PostMapping("/leave-application/create")

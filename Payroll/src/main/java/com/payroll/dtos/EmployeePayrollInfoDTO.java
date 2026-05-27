@@ -40,6 +40,9 @@ public class EmployeePayrollInfoDTO {
     /** Preferred PagIbig additional contribution on top of mandatory (may be 0). */
     private Double pagibigPreferred = 0.0;
 
+    /** true = flag this employee for special-attention display on the last page of the payroll report. */
+    private Boolean displayToLastPage = false;
+
     // Getters / Setters
     public String getEmployeeNo() { return employeeNo; }
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
@@ -67,4 +70,6 @@ public class EmployeePayrollInfoDTO {
     public void setNoHoliday(Boolean noHoliday) { this.noHoliday = noHoliday; }
     public Double getPagibigPreferred() { return pagibigPreferred; }
     public void setPagibigPreferred(Double pagibigPreferred) { this.pagibigPreferred = pagibigPreferred; }
+    public Boolean getDisplayToLastPage() { return displayToLastPage; }
+    public void setDisplayToLastPage(Boolean displayToLastPage) { this.displayToLastPage = displayToLastPage; }
 }

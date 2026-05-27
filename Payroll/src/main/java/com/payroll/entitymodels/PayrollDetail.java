@@ -125,6 +125,14 @@ public class PayrollDetail implements Serializable {
     @Column(length = 500)
     private String absentParticulars;
 
+    /**
+     * Flagged by the payroll officer before computation.
+     * Causes this employee's record to be printed on the last page of the payroll report
+     * for special attention (adjustments, back-pay, etc.).
+     */
+    @Column(nullable = false)
+    private Boolean displayToLastPage = false;
+
     // ── Children ──────────────────────────────────────────────────────────────
     @OneToMany(mappedBy = "payrollDetail", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<PayrollDetailEarning> earnings = new ArrayList<>();
@@ -218,6 +226,8 @@ public class PayrollDetail implements Serializable {
     public void setIsLocked(Boolean isLocked) { this.isLocked = isLocked; }
     public String getAbsentParticulars() { return absentParticulars; }
     public void setAbsentParticulars(String absentParticulars) { this.absentParticulars = absentParticulars; }
+    public Boolean getDisplayToLastPage() { return displayToLastPage; }
+    public void setDisplayToLastPage(Boolean displayToLastPage) { this.displayToLastPage = displayToLastPage; }
     public List<PayrollDetailEarning> getEarnings() { return earnings; }
     public void setEarnings(List<PayrollDetailEarning> earnings) { this.earnings = earnings; }
     public List<PayrollDetailDeduction> getDeductions() { return deductions; }

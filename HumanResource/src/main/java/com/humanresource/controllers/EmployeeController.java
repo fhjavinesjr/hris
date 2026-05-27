@@ -1,6 +1,7 @@
 package com.humanresource.controllers;
 
 import com.humanresource.dtos.EmployeeDTO;
+import com.humanresource.dtos.EmployeePayrollInfoResponse;
 import com.humanresource.services.EmployeeService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -68,5 +69,17 @@ public class EmployeeController {
             @RequestBody Map<String, String> body) throws Exception {
         employeeService.adminResetPassword(employeeId, body.get("newPassword"));
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Bulk payroll info — called by the Payroll batch service before computation.
+     * Returns all employees with an active appointment, including isExcludedFromPayroll
+     * derived from the nature-of-appointment's isContractual flag.
+     */
+    @GetMapping("/employee/payroll-info/bulk")
+    public ResponseEntity<List<EmployeePayrollInfoResponse>> getPayrollInfoBulk(
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String employeeNo) {
+        return ResponseEntity.ok(employeeService.getPayrollInfoBulk(department, employeeNo));
     }
 }

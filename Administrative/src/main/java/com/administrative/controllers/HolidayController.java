@@ -3,10 +3,12 @@ package com.administrative.controllers;
 import com.administrative.dtos.HolidayDTO;
 import com.administrative.services.HolidayService;
 import com.hris.common.dtos.MetadataResponse;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -17,6 +19,14 @@ public class HolidayController {
 
     public HolidayController(HolidayService holidayService) {
         this.holidayService = holidayService;
+    }
+
+    @GetMapping("/holiday/range")
+    public ResponseEntity<List<HolidayDTO>> getHolidaysByRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) throws Exception {
+        List<HolidayDTO> holidays = holidayService.getHolidaysByRange(from, to);
+        return ResponseEntity.ok(holidays);
     }
 
     @PostMapping("/holiday/create")

@@ -19,6 +19,13 @@ public class NatureOfAppointment implements Serializable {
     @Column(name = "nature", length = 100, unique = true, nullable = false)
     private String nature;
 
+    /**
+     * True for non-career / contractual appointment types (e.g. Contract of Service,
+     * Job Order). These employees are typically flagged as "excluded from payroll".
+     */
+    @Column(name = "isContractual", nullable = false)
+    private Boolean isContractual = false;
+
     public NatureOfAppointment() {
 
     }
@@ -27,6 +34,7 @@ public class NatureOfAppointment implements Serializable {
         this.natureOfAppointmentId = natureOfAppointmentId;
         this.code = code;
         this.nature = nature;
+        this.isContractual = false;
     }
 
     public Long getNatureOfAppointmentId() {
@@ -51,5 +59,13 @@ public class NatureOfAppointment implements Serializable {
 
     public void setNature(String nature) {
         this.nature = nature;
+    }
+
+    public Boolean getIsContractual() {
+        return isContractual;
+    }
+
+    public void setIsContractual(Boolean isContractual) {
+        this.isContractual = isContractual;
     }
 }

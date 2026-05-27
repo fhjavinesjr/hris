@@ -81,6 +81,9 @@ public class PayrollDataSnapshot {
     /** GSIS employer share rate (currently 12%). */
     private Double gsisErRate = 0.12;
 
+    /** Leave days earned per cutoff period when the employee had no AWOL (typically 1.25). */
+    private Double earnedLeavePerPeriod = 1.25;
+
     /**
      * PhilHealth brackets: sorted list used to look up the employee's
      * contribution based on their basic monthly salary.
@@ -98,6 +101,52 @@ public class PayrollDataSnapshot {
      * Used for DOH employees when no fixed hazard amount is in allowances.
      */
     private Map<Integer, Double> hazardPayRateByGrade = Collections.emptyMap();
+
+    /**
+     * key: employeeNo  →  hazard pay auto-compute settings for this employee.
+     * Replaces the isDoh flag with a flexible, checkbox-based configuration.
+     * If an employee has autoCompute=true, their hazard pay will be calculated automatically.
+     */
+    private Map<String, HazardPaySettingDTO> hazardPaySettingsMap = Collections.emptyMap();
+
+    /**
+     * Earned-leave lookup table from the EarningLeave administrative table.
+     * key: numberOfAwolDays  →  earnedLeave days credited for that AWOL count.
+     * An employee with 0 AWOL days earns {@link #earnedLeavePerPeriod} (typically 1.25).
+     */
+    private Map<Integer, Double> earnLeaveMap = Collections.emptyMap();
+
+    /**
+     * Active installment loans grouped by employee.
+     * key: employeeNo  →  list of loans where isStopDeduction=false AND paid < toPay.
+     */
+    private Map<String, List<LoanDTO>> loansMap = Collections.emptyMap();
+
+    /**
+     * One-time or period entry deductions grouped by employee.
+     * key: employeeNo  →  list of deductions for the current salary period.
+     */
+    private Map<String, List<EntryDeductionDTO>> entryDeductionsMap = Collections.emptyMap();
+
+    /**
+     * Special/one-time income entries grouped by employee.
+     * key: employeeNo  →  list of income entries for the current month/year.
+     */
+    private Map<String, List<IncomeEntryDTO>> incomeEntriesMap = Collections.emptyMap();
+
+    /**
+     * Number of days used to prorate PERA per absent day.
+     * Typically 22 (same as cutoffDays). Loaded from PayrollSettings.
+     */
+    private Integer peraProrationDivisor = 22;
+
+    /**
+     * Global flag: whether to auto-compute hazard pay for all employees.
+     * Loaded from PayrollSettings.autoComputeHazardPay.
+     * When true, hazard pay is calculated as (basicSalary × hazardPayRate) for applicable employees.
+     * When false, hazard pay is only included if manually entered in earning_allowance table.
+     */
+    private Boolean autoComputeHazardPay = false;
 
     // ═════════════════════════════════════════════════════════════════════════
     //  Inner helper DTOs (kept here to minimise file count)
@@ -157,6 +206,71 @@ public class PayrollDataSnapshot {
         public void setExcessRate(Double excessRate) { this.excessRate = excessRate; }
     }
 
+    public static class LoanDTO {
+        private String loanType;
+        private String reference;
+        private Double amount;
+        private Integer toPay;   // total number of installments
+        private Integer paid;    // installments already paid
+
+        public String getLoanType() { return loanType; }
+        public void setLoanType(String loanType) { this.loanType = loanType; }
+        public String getReference() { return reference; }
+        public void setReference(String reference) { this.reference = reference; }
+        public Double getAmount() { return amount; }
+        public void setAmount(Double amount) { this.amount = amount; }
+        public Integer getToPay() { return toPay; }
+        public void setToPay(Integer toPay) { this.toPay = toPay; }
+        public Integer getPaid() { return paid; }
+        public void setPaid(Integer paid) { this.paid = paid; }
+    }
+
+    public static class EntryDeductionDTO {
+        private String deductionType;
+        private Double amount;
+        private String reference;
+        private Boolean isFixed;
+
+        public String getDeductionType() { return deductionType; }
+        public void setDeductionType(String deductionType) { this.deductionType = deductionType; }
+        public Double getAmount() { return amount; }
+        public void setAmount(Double amount) { this.amount = amount; }
+        public String getReference() { return reference; }
+        public void setReference(String reference) { this.reference = reference; }
+        public Boolean getIsFixed() { return isFixed; }
+        public void setIsFixed(Boolean isFixed) { this.isFixed = isFixed; }
+    }
+
+    public static class IncomeEntryDTO {
+        private String earningType;
+        private String earningTypeName;
+        private Double amount;
+        private Boolean isTaxable;
+
+        public String getEarningType() { return earningType; }
+        public void setEarningType(String earningType) { this.earningType = earningType; }
+        public String getEarningTypeName() { return earningTypeName; }
+        public void setEarningTypeName(String earningTypeName) { this.earningTypeName = earningTypeName; }
+        public Double getAmount() { return amount; }
+        public void setAmount(Double amount) { this.amount = amount; }
+        public Boolean getIsTaxable() { return isTaxable; }
+        public void setIsTaxable(Boolean isTaxable) { this.isTaxable = isTaxable; }
+    }
+
+    /**
+     * Hazard pay auto-compute setting for an employee.
+     * Fetched from hazard_pay_settings table via Administrative service.
+     */
+    public static class HazardPaySettingDTO {
+        private Boolean autoCompute = false;
+        private Double percentage = 25.00;
+
+        public Boolean getAutoCompute() { return autoCompute; }
+        public void setAutoCompute(Boolean autoCompute) { this.autoCompute = autoCompute; }
+        public Double getPercentage() { return percentage; }
+        public void setPercentage(Double percentage) { this.percentage = percentage; }
+    }
+
     // ── Getters / Setters ─────────────────────────────────────────────────────
     public Map<String, EmployeePayrollInfoDTO> getEmployeeMap() { return employeeMap; }
     public void setEmployeeMap(Map<String, EmployeePayrollInfoDTO> employeeMap) { this.employeeMap = employeeMap; }
@@ -180,10 +294,26 @@ public class PayrollDataSnapshot {
     public void setGsisPsRate(Double gsisPsRate) { this.gsisPsRate = gsisPsRate; }
     public Double getGsisErRate() { return gsisErRate; }
     public void setGsisErRate(Double gsisErRate) { this.gsisErRate = gsisErRate; }
+    public Double getEarnedLeavePerPeriod() { return earnedLeavePerPeriod; }
+    public void setEarnedLeavePerPeriod(Double earnedLeavePerPeriod) { this.earnedLeavePerPeriod = earnedLeavePerPeriod; }
     public List<PhilHealthBracketDTO> getPhilHealthBrackets() { return philHealthBrackets; }
     public void setPhilHealthBrackets(List<PhilHealthBracketDTO> philHealthBrackets) { this.philHealthBrackets = philHealthBrackets; }
     public Map<String, List<WHoldingTaxBracketDTO>> getTaxBrackets() { return taxBrackets; }
     public void setTaxBrackets(Map<String, List<WHoldingTaxBracketDTO>> taxBrackets) { this.taxBrackets = taxBrackets; }
     public Map<Integer, Double> getHazardPayRateByGrade() { return hazardPayRateByGrade; }
     public void setHazardPayRateByGrade(Map<Integer, Double> hazardPayRateByGrade) { this.hazardPayRateByGrade = hazardPayRateByGrade; }
+    public Map<String, HazardPaySettingDTO> getHazardPaySettingsMap() { return hazardPaySettingsMap; }
+    public void setHazardPaySettingsMap(Map<String, HazardPaySettingDTO> hazardPaySettingsMap) { this.hazardPaySettingsMap = hazardPaySettingsMap; }
+    public Map<Integer, Double> getEarnLeaveMap() { return earnLeaveMap; }
+    public void setEarnLeaveMap(Map<Integer, Double> earnLeaveMap) { this.earnLeaveMap = earnLeaveMap; }
+    public Map<String, List<LoanDTO>> getLoansMap() { return loansMap; }
+    public void setLoansMap(Map<String, List<LoanDTO>> loansMap) { this.loansMap = loansMap; }
+    public Map<String, List<EntryDeductionDTO>> getEntryDeductionsMap() { return entryDeductionsMap; }
+    public void setEntryDeductionsMap(Map<String, List<EntryDeductionDTO>> entryDeductionsMap) { this.entryDeductionsMap = entryDeductionsMap; }
+    public Map<String, List<IncomeEntryDTO>> getIncomeEntriesMap() { return incomeEntriesMap; }
+    public void setIncomeEntriesMap(Map<String, List<IncomeEntryDTO>> incomeEntriesMap) { this.incomeEntriesMap = incomeEntriesMap; }
+    public Integer getPeraProrationDivisor() { return peraProrationDivisor; }
+    public void setPeraProrationDivisor(Integer peraProrationDivisor) { this.peraProrationDivisor = peraProrationDivisor; }
+    public Boolean getAutoComputeHazardPay() { return autoComputeHazardPay; }
+    public void setAutoComputeHazardPay(Boolean autoComputeHazardPay) { this.autoComputeHazardPay = autoComputeHazardPay; }
 }

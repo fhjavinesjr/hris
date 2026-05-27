@@ -62,6 +62,11 @@ public class SalaryPeriodSetting implements Serializable {
     @Column(name = "salaryReleaseEndDay")
     private Integer salaryReleaseEndDay;
 
+    // Month offset for salary release day; 0 = reference month, -1 = prev. month, +1 = next month
+    // Defaults to 0 (same month as the reference month selected in the UI)
+    @Column(name = "salaryReleaseMonthOffset")
+    private Integer salaryReleaseMonthOffset = 0;
+
     @Column(name = "isActive", nullable = false)
     private Boolean isActive = true;
 
@@ -104,6 +109,9 @@ public class SalaryPeriodSetting implements Serializable {
 
     public Integer getSalaryReleaseEndDay() { return salaryReleaseEndDay; }
     public void setSalaryReleaseEndDay(Integer salaryReleaseEndDay) { this.salaryReleaseEndDay = salaryReleaseEndDay; }
+
+    public Integer getSalaryReleaseMonthOffset() { return salaryReleaseMonthOffset; }
+    public void setSalaryReleaseMonthOffset(Integer salaryReleaseMonthOffset) { this.salaryReleaseMonthOffset = salaryReleaseMonthOffset; }
 
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }

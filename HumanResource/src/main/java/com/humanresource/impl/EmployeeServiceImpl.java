@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hris.common.utilities.JwtUtil;
 import com.hris.common.utilities.UseUtils;
 import com.humanresource.dtos.EmployeeDTO;
+import com.humanresource.dtos.EmployeePayrollInfoResponse;
 import com.humanresource.entitymodels.Employee;
 import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.services.EmployeeService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,11 +34,14 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final JwtUtil jwtUtil;
 
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, @Qualifier("humanresourcePasswordEncoder") PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    private final JdbcTemplate jdbc;
+
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, @Qualifier("humanresourcePasswordEncoder") PasswordEncoder passwordEncoder, JwtUtil jwtUtil, JdbcTemplate jdbc) {
         this.employeeRepository = employeeRepository;
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.jdbc = jdbc;
     }
 
     @Transactional
@@ -181,6 +186,44 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
         employee.setEmployeePassword(passwordEncoder.encode(newPassword));
         employeeRepository.save(employee);
+    }
+
+    @Override
+    public List<EmployeePayrollInfoResponse> getPayrollInfoBulk(String departmentCode, String employeeNo) {
+        StringBuilder sql = new StringBuilder(
+            "SELECT e.employeeNo," +
+            "       CONCAT(COALESCE(e.firstname,''), ' ', COALESCE(e.lastname,'')," +
+            "              CASE WHEN e.suffix IS NOT NULL AND e.suffix <> '' THEN CONCAT(' ', e.suffix) ELSE '' END) AS fullName," +
+            "       COALESCE(jp.jobPositionName, '') AS department," +
+            "       ea.salaryGrade," +
+            "       ea.salaryStep," +
+            "       CAST(ea.salaryPerMonth AS FLOAT) AS basicMonthlySalary," +
+            "       CAST(COALESCE(n.isContractual, 0) AS BIT) AS isExcludedFromPayroll" +
+            " FROM employee e" +
+            " JOIN employeeappointment ea ON ea.employeeId = e.employeeId AND ea.activeAppointment = 1" +
+            " LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId" +
+            " LEFT JOIN natureofappointment n ON n.natureofappointmentId = ea.natureOfAppointmentId" +
+            " WHERE 1=1"
+        );
+
+        List<Object> params = new ArrayList<>();
+        if (employeeNo != null && !employeeNo.isBlank()) {
+            sql.append(" AND e.employeeNo = ?");
+            params.add(employeeNo);
+        }
+        // departmentCode filter can be added here if a department table is linked in future
+
+        return jdbc.query(sql.toString(), params.toArray(), (rs, rowNum) -> {
+            EmployeePayrollInfoResponse dto = new EmployeePayrollInfoResponse();
+            dto.setEmployeeNo(rs.getString("employeeNo"));
+            dto.setFullName(rs.getString("fullName").trim());
+            dto.setDepartment(rs.getString("department"));
+            dto.setSalaryGrade(rs.getObject("salaryGrade") != null ? rs.getInt("salaryGrade") : null);
+            dto.setSalaryStep(rs.getObject("salaryStep") != null ? rs.getInt("salaryStep") : null);
+            dto.setBasicMonthlySalary(rs.getObject("basicMonthlySalary") != null ? rs.getDouble("basicMonthlySalary") : null);
+            dto.setIsExcludedFromPayroll(rs.getBoolean("isExcludedFromPayroll"));
+            return dto;
+        });
     }
 
     private EmployeeDTO buildEmployeeDTO(Employee employee) {

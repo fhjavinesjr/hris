@@ -9,7 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -79,6 +81,38 @@ public class HazardPayController {
         }
 
         return ResponseEntity.ok(new MetadataResponse(0L, "Successful delete of hazardPay by Id"));
+    }
+
+    /**
+     * Returns hazard pay rates by salary grade for payroll computation.
+     * Used by DOH employees when no fixed hazard pay amount is in earning allowances.
+     * 
+     * @return Map where key=salaryGrade (Integer), value=percentage of basic salary (Double)
+     */
+    @GetMapping("/hazard-pay/rates-by-grade")
+    public ResponseEntity<Map<Integer, Double>> getHazardPayRatesByGrade() throws Exception {
+        List<HazardPayDTO> hazardPayList = hazardPayService.getAllHazardPay();
+        Map<Integer, Double> ratesByGrade = new LinkedHashMap<>();
+        
+        for (HazardPayDTO dto : hazardPayList) {
+            try {
+                // Parse salary grade (String) to Integer
+                Integer grade = Integer.parseInt(dto.getSalaryGrade());
+                
+                // Parse percentage (String) to Double
+                Double percentage = 0.0;
+                if (dto.getBasicPayPercentage() != null && !dto.getBasicPayPercentage().isBlank()) {
+                    percentage = Double.parseDouble(dto.getBasicPayPercentage().replace("%", "").trim());
+                }
+                
+                ratesByGrade.put(grade, percentage);
+            } catch (Exception e) {
+                // Skip invalid entries
+                continue;
+            }
+        }
+        
+        return ResponseEntity.ok(ratesByGrade);
     }
 
 }

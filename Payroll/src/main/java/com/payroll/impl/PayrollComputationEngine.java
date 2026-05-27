@@ -75,7 +75,14 @@ public class PayrollComputationEngine {
             double absentDeduction = roundOff(salaryPerDay * attendance.absentDays);
 
             // ── Step 4: Earned leave for this period ──────────────────────────
-            double earnedLeave = attendance.awolDays > 0 ? 0.0 : STANDARD_EARNED_LEAVE;
+            double earnedLeaveRate = snap.getEarnedLeavePerPeriod() != null ? snap.getEarnedLeavePerPeriod() : STANDARD_EARNED_LEAVE;
+            double earnedLeave;
+            if (attendance.awolDays > 0) {
+                // Use the administrative EarningLeave table for AWOL-adjusted leave credit
+                earnedLeave = snap.getEarnLeaveMap().getOrDefault(attendance.awolDays, 0.0);
+            } else {
+                earnedLeave = earnedLeaveRate;
+            }
 
             // ── Step 5: Late / undertime — CSC VL-first rule ──────────────────
             LateUndertimeResult lateResult = applyLateUndertimeCscRule(
@@ -99,11 +106,45 @@ public class PayrollComputationEngine {
             taxableIncome = buildMandatoryDeductions(emp, basicPerSalary, taxableIncome, snap,
                     deductionLines, request.getSalaryType());
 
-            // ── Step 9: Withholding tax ───────────────────────────────────────
+            // ── Step 8b: Add taxable income entries to taxable income ─────────
+            // (income entries were already added to grossAmount in buildEarnings)
+            List<PayrollDataSnapshot.IncomeEntryDTO> incomeEntries = snap.getIncomeEntriesMap()
+                    .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
+            for (PayrollDataSnapshot.IncomeEntryDTO entry : incomeEntries) {
+                if (Boolean.TRUE.equals(entry.getIsTaxable()) && entry.getAmount() != null && entry.getAmount() > 0) {
+                    taxableIncome += entry.getAmount();
+                }
+            }
+
+            // ── Step 9: Withholding tax ──────────────────────────────────────
             double wTax = computeWithholdingTax(taxableIncome, request.getSalaryType(), snap);
             if (wTax > 0) {
                 deductionLines.add(new PayrollDetailDeduction(null,
                         "WTX", "Withholding Tax", roundOff(wTax), 0.0, deductionLines.size()));
+            }
+
+            // ── Step 9b: Loan installment deductions ──────────────────────────
+            List<PayrollDataSnapshot.LoanDTO> loans = snap.getLoansMap()
+                    .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
+            for (PayrollDataSnapshot.LoanDTO loan : loans) {
+                double installment = loan.getAmount() != null ? loan.getAmount() : 0;
+                if (installment > 0) {
+                    String loanLabel = loan.getLoanType() != null ? loan.getLoanType() : "LOAN";
+                    deductionLines.add(new PayrollDetailDeduction(null,
+                            loanLabel, loanLabel, roundOff(installment), 0.0, deductionLines.size()));
+                }
+            }
+
+            // ── Step 9c: Entry deductions ──────────────────────────────────
+            List<PayrollDataSnapshot.EntryDeductionDTO> entryDeductions = snap.getEntryDeductionsMap()
+                    .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
+            for (PayrollDataSnapshot.EntryDeductionDTO ded : entryDeductions) {
+                double amount = ded.getAmount() != null ? ded.getAmount() : 0;
+                if (amount > 0) {
+                    String dedLabel = ded.getDeductionType() != null ? ded.getDeductionType() : "DEDUCTION";
+                    deductionLines.add(new PayrollDetailDeduction(null,
+                            dedLabel, dedLabel, roundOff(amount), 0.0, deductionLines.size()));
+                }
             }
 
             // ── Step 10: Total deductions (mandatory already summed) ──────────
@@ -238,7 +279,10 @@ public class PayrollComputationEngine {
     private boolean dtrHasSpecialApproval(DtrDailySummaryDTO dtr) {
         return Boolean.TRUE.equals(dtr.getHasApprovedOb())
                 || Boolean.TRUE.equals(dtr.getHasApprovedOt())
-                || Boolean.TRUE.equals(dtr.getHasApprovedTa());
+                || Boolean.TRUE.equals(dtr.getHasApprovedPs())
+                || Boolean.TRUE.equals(dtr.getHasApprovedTc())
+                || Boolean.TRUE.equals(dtr.getHasApprovedCto())
+                || Boolean.TRUE.equals(dtr.getHasTraining());
     }
 
     private void tallyLeaveUsed(AttendanceSummary s, ApprovedLeaveDTO leave) {
@@ -346,7 +390,8 @@ public class PayrollComputationEngine {
         boolean hasHazardInAllowances = false;
 
         for (AllowanceDTO a : allowances) {
-            double amount = computeAllowanceAmount(a, attendance, basicPerSalary, emp);
+            double amount = computeAllowanceAmount(a, attendance, basicPerSalary, emp,
+                    snap.getPeraProrationDivisor() != null ? snap.getPeraProrationDivisor() : STANDARD_DAYS_PER_MONTH);
             if (Boolean.TRUE.equals(a.getIsHazardPay())) {
                 hasHazardInAllowances = true;
             }
@@ -357,22 +402,38 @@ public class PayrollComputationEngine {
             gross += line.getAmount();
         }
 
-        // DOH hazard pay from grade table (when not already in allowances)
-        if (Boolean.TRUE.equals(emp.getIsDoh())
-                && !Boolean.TRUE.equals(emp.getNoHazardPay())
-                && !hasHazardInAllowances) {
-            Double hazardRate = snap.getHazardPayRateByGrade().get(emp.getSalaryGrade());
-            if (hazardRate != null && hazardRate > 0) {
+        // Auto-computed hazard pay (when not already in allowances)
+        // Uses global autoComputeHazardPay flag from PayrollSettings
+        if (!hasHazardInAllowances && Boolean.TRUE.equals(snap.getAutoComputeHazardPay())) {
+            // Get hazard rate by salary grade
+            Integer salaryGrade = emp.getSalaryGrade();
+            Double hazardPercentage = snap.getHazardPayRateByGrade().get(salaryGrade);
+            
+            if (hazardPercentage != null && hazardPercentage > 0) {
                 double hazardAmount = 0;
                 // Zeroed if >= 11 absent days or >= 11 leave days
                 if (attendance.absentDays < 11 && attendance.leaveCount < 11) {
-                    hazardAmount = roundOff(basicPerSalary * (hazardRate / 100));
+                    hazardAmount = roundOff(basicPerSalary * (hazardPercentage / 100));
                 }
                 if (Boolean.TRUE.equals(emp.getIsPartTime())) hazardAmount /= 2;
                 PayrollDetailEarning hazardLine = new PayrollDetailEarning(
                         null, "HAZARD", "Hazard Pay", hazardAmount, false, lines.size());
                 lines.add(hazardLine);
                 gross += hazardAmount;
+            }
+        }
+
+        // Special / one-time income entries (bonuses, cash gift, longevity pay, etc.)
+        List<PayrollDataSnapshot.IncomeEntryDTO> incomeEntries = snap.getIncomeEntriesMap()
+                .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
+        for (PayrollDataSnapshot.IncomeEntryDTO entry : incomeEntries) {
+            double amount = entry.getAmount() != null ? entry.getAmount() : 0;
+            if (amount > 0) {
+                PayrollDetailEarning line = new PayrollDetailEarning(
+                        null, entry.getEarningType(), entry.getEarningTypeName(),
+                        roundOff(amount), Boolean.TRUE.equals(entry.getIsTaxable()), lines.size());
+                lines.add(line);
+                gross += line.getAmount();
             }
         }
 
@@ -385,15 +446,16 @@ public class PayrollComputationEngine {
     private double computeAllowanceAmount(AllowanceDTO a,
                                            AttendanceSummary attendance,
                                            double basicPerSalary,
-                                           EmployeePayrollInfoDTO emp) {
+                                           EmployeePayrollInfoDTO emp,
+                                           int peraProrationDivisor) {
         double base = a.getAmountPerSalary() != null ? a.getAmountPerSalary() : 0;
         boolean partTime = Boolean.TRUE.equals(emp.getIsPartTime());
 
         if (Boolean.TRUE.equals(a.getIsPera())) {
-            // PERA: deducted proportionally per absent day
+            // PERA: deducted proportionally per absent day using the configured divisor
             double amount = partTime ? base / 2 : base;
             if (attendance.absentDays > 0) {
-                amount = amount - roundOff(roundOff(amount / STANDARD_DAYS_PER_MONTH) * attendance.absentDays);
+                amount = amount - roundOff(roundOff(amount / peraProrationDivisor) * attendance.absentDays);
             }
             return Math.max(0, amount);
 
@@ -402,7 +464,7 @@ public class PayrollComputationEngine {
             double amount = partTime ? base / 2 : base;
             double dailyRate = partTime ? 25.0 : SUBSISTENCE_DAILY_RATE;
             double countAbsLeave = attendance.absentDays + attendance.leaveCount;
-            if (countAbsLeave >= STANDARD_DAYS_PER_MONTH) {
+            if (countAbsLeave >= peraProrationDivisor) {
                 // When absent almost entire period, pay only for days present
                 return Math.max(0, dailyRate * attendance.workDaysPresent);
             }
@@ -412,9 +474,9 @@ public class PayrollComputationEngine {
             // Laundry: reduced proportionally per (absent + leave) day
             double amount = partTime ? base / 2 : base;
             double countAbsLeave = attendance.absentDays + attendance.leaveCount;
-            double reduced = amount - ((amount / STANDARD_DAYS_PER_MONTH) * countAbsLeave);
-            if (countAbsLeave >= STANDARD_DAYS_PER_MONTH) {
-                reduced = (amount / STANDARD_DAYS_PER_MONTH) * attendance.workDaysPresent;
+            double reduced = amount - ((amount / peraProrationDivisor) * countAbsLeave);
+            if (countAbsLeave >= peraProrationDivisor) {
+                reduced = (amount / peraProrationDivisor) * attendance.workDaysPresent;
             }
             return Math.max(0, reduced);
 
@@ -630,6 +692,7 @@ public class PayrollComputationEngine {
         pd.setStatus(PayrollStatus.COMPUTED);
         pd.setIsLocked(false);
         pd.setComputedAt(LocalDateTime.now());
+        pd.setDisplayToLastPage(Boolean.TRUE.equals(emp.getDisplayToLastPage()));
 
         // Link child records to this PayrollDetail
         for (PayrollDetailEarning e : earningLines) {

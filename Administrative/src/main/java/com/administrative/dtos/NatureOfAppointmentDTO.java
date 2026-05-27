@@ -7,6 +7,7 @@ public class NatureOfAppointmentDTO implements Serializable {
     private Long natureOfAppointmentId;
     private String code;
     private String nature;
+    private Boolean isContractual = false;
 
     public NatureOfAppointmentDTO() {
 
@@ -16,6 +17,7 @@ public class NatureOfAppointmentDTO implements Serializable {
         this.natureOfAppointmentId = natureOfAppointmentId;
         this.code = code;
         this.nature = nature;
+        this.isContractual = false;
     }
 
     public Long getNatureOfAppointmentId() {
@@ -40,5 +42,13 @@ public class NatureOfAppointmentDTO implements Serializable {
 
     public void setNature(String nature) {
         this.nature = nature;
+    }
+
+    public Boolean getIsContractual() {
+        return isContractual;
+    }
+
+    public void setIsContractual(Boolean isContractual) {
+        this.isContractual = isContractual;
     }
 }

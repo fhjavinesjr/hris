@@ -14,6 +14,7 @@ public class SalaryPeriodSettingDTO implements Serializable {
     private Integer cutoffEndMonthOffset;
     private Integer salaryReleaseStartDay;
     private Integer salaryReleaseEndDay;
+    private Integer salaryReleaseMonthOffset;
     private Boolean isActive;
 
     public SalaryPeriodSettingDTO() {}
@@ -47,6 +48,9 @@ public class SalaryPeriodSettingDTO implements Serializable {
 
     public Integer getSalaryReleaseEndDay() { return salaryReleaseEndDay; }
     public void setSalaryReleaseEndDay(Integer salaryReleaseEndDay) { this.salaryReleaseEndDay = salaryReleaseEndDay; }
+
+    public Integer getSalaryReleaseMonthOffset() { return salaryReleaseMonthOffset; }
+    public void setSalaryReleaseMonthOffset(Integer salaryReleaseMonthOffset) { this.salaryReleaseMonthOffset = salaryReleaseMonthOffset; }
 
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }

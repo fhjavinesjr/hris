@@ -1,5 +1,6 @@
 package com.payroll.impl;
 
+import com.payroll.dtos.AllowanceDTO;
 import com.payroll.dtos.EarningAllowanceDTO;
 import com.payroll.entitymodels.EarningAllowance;
 import com.payroll.repositories.EarningAllowanceRepository;
@@ -9,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,6 +110,50 @@ public class EarningAllowanceImpl implements EarningAllowanceService {
         } catch (Exception e) {
             log.error("Error deleting EarningAllowance: ", e);
             return false;
+        }
+    }
+
+    @Override
+    public List<AllowanceDTO> getBulkAllowancesForPayroll(LocalDate from, LocalDate to) throws Exception {
+        try {
+            // Fetch all earning allowances from the database
+            // The payroll computation engine will filter based on effective dates
+            List<EarningAllowance> entities = earningAllowanceRepository.findAll();
+            List<AllowanceDTO> allowances = new ArrayList<>();
+
+            for (EarningAllowance entity : entities) {
+                AllowanceDTO dto = new AllowanceDTO();
+                dto.setEmployeeNo(entity.getEmployeeNo());
+                
+                // Map allowanceType to code and name
+                String allowanceType = entity.getAllowanceType() != null ? entity.getAllowanceType().toUpperCase() : "OTHER";
+                dto.setAllowanceCode(allowanceType);
+                dto.setAllowanceName(entity.getAllowanceType());
+                
+                // Map amounts
+                dto.setAmountPerSalary(entity.getAmountPerSalary() != null ? entity.getAmountPerSalary() : 0.0);
+                dto.setAmountPerDay(entity.getAmountDaily() != null ? entity.getAmountDaily() : 0.0);
+                dto.setRatePerBasic(entity.getPercentage() != null ? entity.getPercentage() / 100.0 : 0.0);
+                
+                // Set type-specific flags based on allowanceType
+                dto.setIsPera(allowanceType.contains("PERA"));
+                dto.setIsSubsistence(allowanceType.contains("SUBSIST"));
+                dto.setIsLaundry(allowanceType.contains("LAUNDRY"));
+                dto.setIsHazardPay(allowanceType.contains("HAZARD"));
+                
+                // Default: non-taxable unless specified otherwise in the future
+                dto.setIsTaxable(false);
+                
+                allowances.add(dto);
+                log.debug("Converted allowance for {}: {} = {}", 
+                    entity.getEmployeeNo(), allowanceType, entity.getAmountPerSalary());
+            }
+            
+            log.info("Fetched {} earning allowances for payroll computation", allowances.size());
+            return allowances;
+        } catch (Exception e) {
+            log.error("Error fetching bulk allowances: ", e);
+            throw e;
         }
     }
 }

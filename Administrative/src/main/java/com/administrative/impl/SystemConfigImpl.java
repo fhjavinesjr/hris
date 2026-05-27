@@ -36,6 +36,8 @@ public class SystemConfigImpl implements SystemConfigService {
 
         seed("security.inactivity.timeout", "1800", "Session inactivity timeout in seconds (default: 1800 = 30 min)", "Security", true);
 
+        seed("payroll.batch.compute-threads", "0", "Parallel worker threads for payroll batch computation. 0 = auto (2 × CPU cores, max 64). Requires Payroll service restart to take effect.", "Payroll", true);
+
         seed("ui.url.administrative", "http://localhost:3082", "URL of the Administrative UI application", "UI Navigation", true);
         seed("ui.url.hrm",            "http://localhost:3085", "URL of the HR Management UI application",  "UI Navigation", true);
         seed("ui.url.timekeeping",    "http://localhost:3083", "URL of the TimeKeeping UI application",    "UI Navigation", true);

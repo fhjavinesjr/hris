@@ -28,6 +28,7 @@ public class NatureOfAppointmentImpl implements NatureOfAppointmentService {
     public NatureOfAppointmentDTO createNatureOfAppointment(NatureOfAppointmentDTO natureOfAppointmentDTO) throws Exception {
         try {
             NatureOfAppointment natureOfAppointment = new NatureOfAppointment(natureOfAppointmentDTO.getNatureOfAppointmentId(), natureOfAppointmentDTO.getCode(), natureOfAppointmentDTO.getNature());
+            natureOfAppointment.setIsContractual(Boolean.TRUE.equals(natureOfAppointmentDTO.getIsContractual()));
             natureOfAppointmentRepository.save(natureOfAppointment);
 
             return natureOfAppointmentDTO;
@@ -47,6 +48,7 @@ public class NatureOfAppointmentImpl implements NatureOfAppointmentService {
             natureOfAppointmentDTO.setNatureOfAppointmentId(natureOfAppointment.getNatureOfAppointmentId());
             natureOfAppointmentDTO.setCode(natureOfAppointment.getCode());
             natureOfAppointmentDTO.setNature(natureOfAppointment.getNature());
+            natureOfAppointmentDTO.setIsContractual(Boolean.TRUE.equals(natureOfAppointment.getIsContractual()));
 
             natureOfAppointmenDTOList.add(natureOfAppointmentDTO);
         }
@@ -67,6 +69,7 @@ public class NatureOfAppointmentImpl implements NatureOfAppointmentService {
             if(natureOfAppointment != null) {
                 natureOfAppointment.setCode(natureOfAppointmentDTO.getCode());
                 natureOfAppointment.setNature(natureOfAppointmentDTO.getNature());
+                natureOfAppointment.setIsContractual(Boolean.TRUE.equals(natureOfAppointmentDTO.getIsContractual()));
 
                 natureOfAppointmentRepository.save(natureOfAppointment);
 

@@ -6,6 +6,8 @@ public class WTAXContributionDTO implements Serializable {
 
     private Long wTaxContributionId;
     private String salaryType;
+    private String incomeFrom;
+    private String incomeTo;
     private String fixedAmount;
     private String percentageOverBase;
     private String taxAmount;
@@ -14,9 +16,12 @@ public class WTAXContributionDTO implements Serializable {
 
     }
 
-    public WTAXContributionDTO(Long wTaxContributionId, String salaryType, String fixedAmount, String percentageOverBase, String taxAmount) {
+    public WTAXContributionDTO(Long wTaxContributionId, String salaryType, String incomeFrom, String incomeTo,
+                               String fixedAmount, String percentageOverBase, String taxAmount) {
         this.wTaxContributionId = wTaxContributionId;
         this.salaryType = salaryType;
+        this.incomeFrom = incomeFrom;
+        this.incomeTo = incomeTo;
         this.fixedAmount = fixedAmount;
         this.percentageOverBase = percentageOverBase;
         this.taxAmount = taxAmount;
@@ -37,6 +42,12 @@ public class WTAXContributionDTO implements Serializable {
     public void setSalaryType(String salaryType) {
         this.salaryType = salaryType;
     }
+
+    public String getIncomeFrom() { return incomeFrom; }
+    public void setIncomeFrom(String incomeFrom) { this.incomeFrom = incomeFrom; }
+
+    public String getIncomeTo() { return incomeTo; }
+    public void setIncomeTo(String incomeTo) { this.incomeTo = incomeTo; }
 
     public String getFixedAmount() {
         return fixedAmount;

@@ -56,6 +56,13 @@ public class PayrollComputationRequest {
      */
     private Boolean includeExcluded = false;
 
+    /**
+     * If true, compute ONLY employees flagged as "excluded from payroll"
+     * (i.e. Contractual / COS / Job Order only). Takes effect only when
+     * {@link #includeExcluded} is also true.
+     */
+    private Boolean excludedOnly = false;
+
     // ── Getters / Setters ─────────────────────────────────────────────────────
     public String getSalaryPeriodKey() { return salaryPeriodKey; }
     public void setSalaryPeriodKey(String salaryPeriodKey) { this.salaryPeriodKey = salaryPeriodKey; }
@@ -77,4 +84,6 @@ public class PayrollComputationRequest {
     public void setLockAfterCompute(Boolean lockAfterCompute) { this.lockAfterCompute = lockAfterCompute; }
     public Boolean getIncludeExcluded() { return includeExcluded; }
     public void setIncludeExcluded(Boolean includeExcluded) { this.includeExcluded = includeExcluded; }
+    public Boolean getExcludedOnly() { return excludedOnly; }
+    public void setExcludedOnly(Boolean excludedOnly) { this.excludedOnly = excludedOnly; }
 }

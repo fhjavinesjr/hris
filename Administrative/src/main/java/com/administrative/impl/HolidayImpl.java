@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -126,6 +127,38 @@ public class HolidayImpl implements HolidayService {
         } catch (Exception e) {
             log.error("Error in deleting Holiday: {}", e.getMessage());
             return false;
+        }
+    }
+
+    @Override
+    public List<HolidayDTO> getHolidaysByRange(LocalDate from, LocalDate to) throws Exception {
+        try {
+            List<Holiday> holidays = holidayRepository.findByHolidayDateBetweenAndIsActiveTrue(from, to);
+            List<HolidayDTO> holidayDTOList = new ArrayList<>();
+
+            for (Holiday holiday : holidays) {
+                HolidayDTO holidayDTO = new HolidayDTO(
+                        holiday.getHolidayId(),
+                        holiday.getCode(),
+                        holiday.getName(),
+                        holiday.getHolidayDate(),
+                        holiday.getObservedDate(),
+                        holiday.getHolidayType(),
+                        holiday.getHolidayScope(),
+                        holiday.getLocalityCode(),
+                        holiday.getSourceReference(),
+                        holiday.getWithPay(),
+                        holiday.getIsWorkingHoliday(),
+                        holiday.getIsActive()
+                );
+                holidayDTOList.add(holidayDTO);
+            }
+
+            log.info("Fetched {} holidays from {} to {}", holidayDTOList.size(), from, to);
+            return holidayDTOList;
+        } catch (Exception e) {
+            log.error("Error in fetching holidays by range: {}", e.getMessage());
+            throw e;
         }
     }
 }

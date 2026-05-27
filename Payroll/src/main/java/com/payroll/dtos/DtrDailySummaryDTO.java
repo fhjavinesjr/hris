@@ -45,6 +45,30 @@ public class DtrDailySummaryDTO {
      */
     private Boolean hasApprovedTa = false;
 
+    /**
+     * true = employee has an approved Pass Slip for this date.
+     * Treated as present.
+     */
+    private Boolean hasApprovedPs = false;
+
+    /**
+     * true = employee has an approved Time Correction for this date.
+     * Treated as present.
+     */
+    private Boolean hasApprovedTc = false;
+
+    /**
+     * true = employee has an approved Compensatory Time Off for this date.
+     * Treated as present.
+     */
+    private Boolean hasApprovedCto = false;
+
+    /**
+     * true = employee has a Learning and Development training on this date.
+     * Treated as present.
+     */
+    private Boolean hasTraining = false;
+
     // Getters / Setters
     public String getEmployeeNo() { return employeeNo; }
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
@@ -64,4 +88,12 @@ public class DtrDailySummaryDTO {
     public void setHasApprovedOt(Boolean hasApprovedOt) { this.hasApprovedOt = hasApprovedOt; }
     public Boolean getHasApprovedTa() { return hasApprovedTa; }
     public void setHasApprovedTa(Boolean hasApprovedTa) { this.hasApprovedTa = hasApprovedTa; }
+    public Boolean getHasApprovedPs() { return hasApprovedPs; }
+    public void setHasApprovedPs(Boolean hasApprovedPs) { this.hasApprovedPs = hasApprovedPs; }
+    public Boolean getHasApprovedTc() { return hasApprovedTc; }
+    public void setHasApprovedTc(Boolean hasApprovedTc) { this.hasApprovedTc = hasApprovedTc; }
+    public Boolean getHasApprovedCto() { return hasApprovedCto; }
+    public void setHasApprovedCto(Boolean hasApprovedCto) { this.hasApprovedCto = hasApprovedCto; }
+    public Boolean getHasTraining() { return hasTraining; }
+    public void setHasTraining(Boolean hasTraining) { this.hasTraining = hasTraining; }
 }

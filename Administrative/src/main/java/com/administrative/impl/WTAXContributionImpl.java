@@ -27,6 +27,7 @@ public class WTAXContributionImpl implements WTAXContributionService {
     public WTAXContributionDTO createWTAXContribution(WTAXContributionDTO wTAXContributionDTO) throws Exception {
         try {
             WTAXContribution wTAXContribution = new WTAXContribution(wTAXContributionDTO.getwTaxContributionId(), wTAXContributionDTO.getSalaryType(),
+                    wTAXContributionDTO.getIncomeFrom(), wTAXContributionDTO.getIncomeTo(),
                     wTAXContributionDTO.getFixedAmount(), wTAXContributionDTO.getPercentageOverBase(), wTAXContributionDTO.getTaxAmount());
 
             wTAXContributionRepository.save(wTAXContribution);
@@ -47,6 +48,8 @@ public class WTAXContributionImpl implements WTAXContributionService {
             WTAXContributionDTO wTAXContributionDTO = new WTAXContributionDTO();
             wTAXContributionDTO.setwTaxContributionId(wTAXContribution.getwTaxContributionId());
             wTAXContributionDTO.setSalaryType(wTAXContribution.getSalaryType());
+            wTAXContributionDTO.setIncomeFrom(wTAXContribution.getIncomeFrom());
+            wTAXContributionDTO.setIncomeTo(wTAXContribution.getIncomeTo());
             wTAXContributionDTO.setFixedAmount(wTAXContribution.getFixedAmount());
             wTAXContributionDTO.setPercentageOverBase(wTAXContribution.getPercentageOverBase());
             wTAXContributionDTO.setTaxAmount(wTAXContribution.getTaxAmount());
@@ -69,6 +72,8 @@ public class WTAXContributionImpl implements WTAXContributionService {
             WTAXContribution wTAXContribution = wTAXContributionRepository.findById(wTAXContributionId).orElseThrow(() -> new RuntimeException("WTAXContribution not found"));
             if(wTAXContribution != null) {
                 wTAXContribution.setSalaryType(wTAXContributionDTO.getSalaryType());
+                wTAXContribution.setIncomeFrom(wTAXContributionDTO.getIncomeFrom());
+                wTAXContribution.setIncomeTo(wTAXContributionDTO.getIncomeTo());
                 wTAXContribution.setFixedAmount(wTAXContributionDTO.getFixedAmount());
                 wTAXContribution.setPercentageOverBase(wTAXContributionDTO.getPercentageOverBase());
                 wTAXContribution.setTaxAmount(wTAXContributionDTO.getTaxAmount());

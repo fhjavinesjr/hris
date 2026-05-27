@@ -72,6 +72,7 @@ public class SalaryPeriodSettingImpl implements SalaryPeriodSettingService {
             entity.setCutoffEndMonthOffset(dto.getCutoffEndMonthOffset());
             entity.setSalaryReleaseStartDay(dto.getSalaryReleaseStartDay());
             entity.setSalaryReleaseEndDay(dto.getSalaryReleaseEndDay());
+            entity.setSalaryReleaseMonthOffset(dto.getSalaryReleaseMonthOffset() != null ? dto.getSalaryReleaseMonthOffset() : 0);
             entity.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
             entity.setUpdatedAt(LocalDateTime.now());
             entity = repository.save(entity);
@@ -106,6 +107,7 @@ public class SalaryPeriodSettingImpl implements SalaryPeriodSettingService {
         dto.setCutoffEndMonthOffset(entity.getCutoffEndMonthOffset());
         dto.setSalaryReleaseStartDay(entity.getSalaryReleaseStartDay());
         dto.setSalaryReleaseEndDay(entity.getSalaryReleaseEndDay());
+        dto.setSalaryReleaseMonthOffset(entity.getSalaryReleaseMonthOffset() != null ? entity.getSalaryReleaseMonthOffset() : 0);
         dto.setIsActive(entity.getIsActive());
         return dto;
     }
@@ -122,6 +124,7 @@ public class SalaryPeriodSettingImpl implements SalaryPeriodSettingService {
         entity.setCutoffEndMonthOffset(dto.getCutoffEndMonthOffset());
         entity.setSalaryReleaseStartDay(dto.getSalaryReleaseStartDay());
         entity.setSalaryReleaseEndDay(dto.getSalaryReleaseEndDay());
+        entity.setSalaryReleaseMonthOffset(dto.getSalaryReleaseMonthOffset() != null ? dto.getSalaryReleaseMonthOffset() : 0);
         entity.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
         return entity;
     }

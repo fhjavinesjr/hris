@@ -16,9 +16,19 @@ public class WTAXContribution implements Serializable {
     @Column(name = "salaryType")
     private String salaryType;
 
+    /** Minimum taxable income for this bracket (inclusive). e.g. "10417.00" */
+    @Column(name = "incomeFrom")
+    private String incomeFrom;
+
+    /** Maximum taxable income for this bracket (inclusive). Null = no upper bound (and above). */
+    @Column(name = "incomeTo")
+    private String incomeTo;
+
+    /** Fixed tax amount at the lower bound of this bracket. e.g. "937.50" */
     @Column(name = "fixedAmount")
     private String fixedAmount;
 
+    /** Rate applied to income exceeding incomeFrom. Store as percentage: "15" = 15%, or decimal "0.15". */
     @Column(name = "percentageOverBase")
     private String percentageOverBase;
 
@@ -29,9 +39,12 @@ public class WTAXContribution implements Serializable {
 
     }
 
-    public WTAXContribution(Long wTaxContributionId, String salaryType, String fixedAmount, String percentageOverBase, String taxAmount) {
+    public WTAXContribution(Long wTaxContributionId, String salaryType, String incomeFrom, String incomeTo,
+                             String fixedAmount, String percentageOverBase, String taxAmount) {
         this.wTaxContributionId = wTaxContributionId;
         this.salaryType = salaryType;
+        this.incomeFrom = incomeFrom;
+        this.incomeTo = incomeTo;
         this.fixedAmount = fixedAmount;
         this.percentageOverBase = percentageOverBase;
         this.taxAmount = taxAmount;
@@ -52,6 +65,12 @@ public class WTAXContribution implements Serializable {
     public void setSalaryType(String salaryType) {
         this.salaryType = salaryType;
     }
+
+    public String getIncomeFrom() { return incomeFrom; }
+    public void setIncomeFrom(String incomeFrom) { this.incomeFrom = incomeFrom; }
+
+    public String getIncomeTo() { return incomeTo; }
+    public void setIncomeTo(String incomeTo) { this.incomeTo = incomeTo; }
 
     public String getFixedAmount() {
         return fixedAmount;
