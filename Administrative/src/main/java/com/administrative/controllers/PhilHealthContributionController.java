@@ -107,22 +107,28 @@ public class PhilHealthContributionController {
             // Parse fixed personal share and employer share (for cap brackets)
             Double psFixed = null;
             Double esFixed = null;
+            // psFixed = personalShareFrom (the floor or cap fixed amount for this bracket)
+            // psTo    = personalShareTo  (>0 means ranged/rate-based bracket; 0 means fixed-amount bracket)
+            Double psTo = null;
+            Double esTo = null;
             try {
-                // Use personalShareFrom or personalShareTo as fixed amount for cap brackets
-                String psStr = dto.getPersonalShareTo() != null && !dto.getPersonalShareTo().isBlank() 
-                    ? dto.getPersonalShareTo() : dto.getPersonalShareFrom();
-                if (psStr != null && !psStr.isBlank()) {
-                    psFixed = Double.parseDouble(psStr.replace(",", ""));
+                if (dto.getPersonalShareFrom() != null && !dto.getPersonalShareFrom().isBlank()) {
+                    psFixed = Double.parseDouble(dto.getPersonalShareFrom().replace(",", ""));
                 }
-                
-                String esStr = dto.getEmployerShareTo() != null && !dto.getEmployerShareTo().isBlank() 
-                    ? dto.getEmployerShareTo() : dto.getEmployerShareFrom();
-                if (esStr != null && !esStr.isBlank()) {
-                    esFixed = Double.parseDouble(esStr.replace(",", ""));
+                if (dto.getPersonalShareTo() != null && !dto.getPersonalShareTo().isBlank()) {
+                    psTo = Double.parseDouble(dto.getPersonalShareTo().replace(",", ""));
+                }
+                if (dto.getEmployerShareFrom() != null && !dto.getEmployerShareFrom().isBlank()) {
+                    esFixed = Double.parseDouble(dto.getEmployerShareFrom().replace(",", ""));
+                }
+                if (dto.getEmployerShareTo() != null && !dto.getEmployerShareTo().isBlank()) {
+                    esTo = Double.parseDouble(dto.getEmployerShareTo().replace(",", ""));
                 }
             } catch (Exception ignored) {}
             bracket.put("psFixed", psFixed);
             bracket.put("esFixed", esFixed);
+            bracket.put("psTo", psTo);
+            bracket.put("esTo", esTo);
             
             brackets.add(bracket);
         }

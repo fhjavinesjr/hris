@@ -1,6 +1,7 @@
 package com.payroll.dtos;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Request to trigger a batch payroll computation.
@@ -28,9 +29,9 @@ public class PayrollComputationRequest {
 
     /**
      * Fixed number of work days used for rate calculations.
-     * ZCMC standard is 22. Configurable for other setups.
+     * Null means: read from Administrative PayrollSettings. Falls back to 22 if unavailable.
      */
-    private Integer cutoffDays = 22;
+    private Integer cutoffDays = null;
 
     /**
      * Optional: restrict computation to a specific department code.
@@ -63,6 +64,13 @@ public class PayrollComputationRequest {
      */
     private Boolean excludedOnly = false;
 
+    /**
+     * Optional allowlist of employee numbers to include in this computation run.
+     * When non-null and non-empty, only employees in this list are processed.
+     * Null or empty means process all eligible employees (default).
+     */
+    private List<String> selectedEmployeeNos;
+
     // ── Getters / Setters ─────────────────────────────────────────────────────
     public String getSalaryPeriodKey() { return salaryPeriodKey; }
     public void setSalaryPeriodKey(String salaryPeriodKey) { this.salaryPeriodKey = salaryPeriodKey; }
@@ -86,4 +94,6 @@ public class PayrollComputationRequest {
     public void setIncludeExcluded(Boolean includeExcluded) { this.includeExcluded = includeExcluded; }
     public Boolean getExcludedOnly() { return excludedOnly; }
     public void setExcludedOnly(Boolean excludedOnly) { this.excludedOnly = excludedOnly; }
+    public List<String> getSelectedEmployeeNos() { return selectedEmployeeNos; }
+    public void setSelectedEmployeeNos(List<String> selectedEmployeeNos) { this.selectedEmployeeNos = selectedEmployeeNos; }
 }

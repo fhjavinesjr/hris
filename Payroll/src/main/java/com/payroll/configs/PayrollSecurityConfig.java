@@ -40,7 +40,7 @@ public class PayrollSecurityConfig {
                     CorsConfiguration corsConfiguration = new CorsConfiguration();
                     corsConfiguration.setAllowedOrigins(List.of("http://localhost:3087","http://localhost:3080","http://localhost:3081","http://localhost:3082","http://localhost:3083","http://localhost:3084","http://localhost:3085")); // Frontend URL (React/Next.js)
                     corsConfiguration.setAllowedOriginPatterns(List.of("https://*.vercel.app")); // Vercel deployments
-                    corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                     corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
                     corsConfiguration.setAllowCredentials(true); // If you need cookies/session
                     return corsConfiguration;

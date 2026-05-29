@@ -135,13 +135,12 @@ public class EarningAllowanceImpl implements EarningAllowanceService {
                 dto.setAmountPerDay(entity.getAmountDaily() != null ? entity.getAmountDaily() : 0.0);
                 dto.setRatePerBasic(entity.getPercentage() != null ? entity.getPercentage() / 100.0 : 0.0);
                 
-                // Set type-specific flags based on allowanceType
-                dto.setIsPera(allowanceType.contains("PERA"));
-                dto.setIsSubsistence(allowanceType.contains("SUBSIST"));
-                dto.setIsLaundry(allowanceType.contains("LAUNDRY"));
-                dto.setIsHazardPay(allowanceType.contains("HAZARD"));
-                
-                // Default: non-taxable unless specified otherwise in the future
+                // Flags are enriched by PayrollBatchServiceImpl using earning type meta
+                // from the Administrative service — do not guess from the name string.
+                dto.setIsPera(false);
+                dto.setIsSubsistence(false);
+                dto.setIsLaundry(false);
+                dto.setIsHazardPay(false);
                 dto.setIsTaxable(false);
                 
                 allowances.add(dto);

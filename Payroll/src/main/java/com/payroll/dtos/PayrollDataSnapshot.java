@@ -173,8 +173,10 @@ public class PayrollDataSnapshot {
         private Double salaryTo;     // null = no upper bound (isAndUp)
         private Boolean isAndUp = false;
         private Double rate = 0.0;   // e.g. 0.05 for 5%
-        private Double psFixed;      // fixed personal share (used when isAndUp=true or range edges)
-        private Double esFixed;      // fixed employer share
+        private Double psFixed;      // fixed personal share — personalShareFrom (floor/cap bracket)
+        private Double esFixed;      // fixed employer share — employerShareFrom (floor/cap bracket)
+        private Double psTo;         // personalShareTo — >0 means ranged bracket (rate-based), 0 means fixed
+        private Double esTo;         // employerShareTo — >0 means ranged bracket (rate-based), 0 means fixed
 
         public Double getSalaryFrom() { return salaryFrom; }
         public void setSalaryFrom(Double salaryFrom) { this.salaryFrom = salaryFrom; }
@@ -188,6 +190,10 @@ public class PayrollDataSnapshot {
         public void setPsFixed(Double psFixed) { this.psFixed = psFixed; }
         public Double getEsFixed() { return esFixed; }
         public void setEsFixed(Double esFixed) { this.esFixed = esFixed; }
+        public Double getPsTo() { return psTo; }
+        public void setPsTo(Double psTo) { this.psTo = psTo; }
+        public Double getEsTo() { return esTo; }
+        public void setEsTo(Double esTo) { this.esTo = esTo; }
     }
 
     public static class WHoldingTaxBracketDTO {
@@ -227,18 +233,29 @@ public class PayrollDataSnapshot {
 
     public static class EntryDeductionDTO {
         private String deductionType;
+        private String deductionTypeName;
         private Double amount;
         private String reference;
         private Boolean isFixed;
+        /** True when the deduction type is flagged as PagIbig in Administrative. */
+        private Boolean isPagibig = false;
+        /** True when the deduction type is flagged as voluntary contribution in Administrative. */
+        private Boolean isVoluntaryContribution = false;
 
         public String getDeductionType() { return deductionType; }
         public void setDeductionType(String deductionType) { this.deductionType = deductionType; }
+        public String getDeductionTypeName() { return deductionTypeName; }
+        public void setDeductionTypeName(String deductionTypeName) { this.deductionTypeName = deductionTypeName; }
         public Double getAmount() { return amount; }
         public void setAmount(Double amount) { this.amount = amount; }
         public String getReference() { return reference; }
         public void setReference(String reference) { this.reference = reference; }
         public Boolean getIsFixed() { return isFixed; }
         public void setIsFixed(Boolean isFixed) { this.isFixed = isFixed; }
+        public Boolean getIsPagibig() { return isPagibig; }
+        public void setIsPagibig(Boolean isPagibig) { this.isPagibig = isPagibig; }
+        public Boolean getIsVoluntaryContribution() { return isVoluntaryContribution; }
+        public void setIsVoluntaryContribution(Boolean isVoluntaryContribution) { this.isVoluntaryContribution = isVoluntaryContribution; }
     }
 
     public static class IncomeEntryDTO {

@@ -103,8 +103,10 @@ public class PayrollComputationEngine {
             // ── Step 8: Mandatory deductions (GSIS, PhilHealth, PagIbig) ─────
             List<PayrollDetailDeduction> deductionLines = new ArrayList<>();
             double taxableIncome = actualBasic;   // adjusted during mandatory deductions
+            List<PayrollDataSnapshot.EntryDeductionDTO> entryDeductions = snap.getEntryDeductionsMap()
+                    .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
             taxableIncome = buildMandatoryDeductions(emp, basicPerSalary, taxableIncome, snap,
-                    deductionLines, request.getSalaryType());
+                    deductionLines, request.getSalaryType(), entryDeductions);
 
             // ── Step 8b: Add taxable income entries to taxable income ─────────
             // (income entries were already added to grossAmount in buildEarnings)
@@ -136,12 +138,17 @@ public class PayrollComputationEngine {
             }
 
             // ── Step 9c: Entry deductions ──────────────────────────────────
-            List<PayrollDataSnapshot.EntryDeductionDTO> entryDeductions = snap.getEntryDeductionsMap()
-                    .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
             for (PayrollDataSnapshot.EntryDeductionDTO ded : entryDeductions) {
+                // Skip voluntary PagIbig — already applied as HDMF in Step 8
+                if (Boolean.TRUE.equals(ded.getIsPagibig()) && Boolean.TRUE.equals(ded.getIsVoluntaryContribution())) {
+                    continue;
+                }
                 double amount = ded.getAmount() != null ? ded.getAmount() : 0;
                 if (amount > 0) {
-                    String dedLabel = ded.getDeductionType() != null ? ded.getDeductionType() : "DEDUCTION";
+                    // Use resolved canonical name; fall back to raw deductionType key
+                    String dedLabel = ded.getDeductionTypeName() != null
+                            ? ded.getDeductionTypeName()
+                            : (ded.getDeductionType() != null ? ded.getDeductionType() : "DEDUCTION");
                     deductionLines.add(new PayrollDetailDeduction(null,
                             dedLabel, dedLabel, roundOff(amount), 0.0, deductionLines.size()));
                 }
@@ -508,7 +515,8 @@ public class PayrollComputationEngine {
                                              double taxableIncome,
                                              PayrollDataSnapshot snap,
                                              List<PayrollDetailDeduction> lines,
-                                             String salaryType) {
+                                             String salaryType,
+                                             List<PayrollDataSnapshot.EntryDeductionDTO> entryDeductions) {
         // GSIS: 9% of basicPerSalary (rounded to nearest centavo)
         double gsisAmount = roundOff(Math.round(basicPerSalary * snap.getGsisPsRate() * 100.0) / 100.0);
         double gsisEr     = roundOff(basicPerSalary * snap.getGsisErRate());
@@ -523,10 +531,23 @@ public class PayrollComputationEngine {
             taxableIncome -= philHealth[0];
         }
 
-        // PagIbig (mandatory + preferred additional)
-        double pagibig = snap.getPagibigMandatoryAmount()
-                + (emp.getPagibigPreferred() != null ? emp.getPagibigPreferred() : 0.0);
-        lines.add(new PayrollDetailDeduction(null, "HDMF", "PagIbig", pagibig, 100.0, lines.size()));
+        // PagIbig: if the employee filed a voluntary PagIbig entry deduction, use it
+        // to override the statutory mandatory amount (preferred contribution replaces, not adds).
+        PayrollDataSnapshot.EntryDeductionDTO preferredPagibig = entryDeductions.stream()
+                .filter(d -> Boolean.TRUE.equals(d.getIsPagibig())
+                        && Boolean.TRUE.equals(d.getIsVoluntaryContribution())
+                        && d.getAmount() != null && d.getAmount() > 0)
+                .findFirst()
+                .orElse(null);
+
+        double pagibig;
+        if (preferredPagibig != null) {
+            pagibig = preferredPagibig.getAmount();
+        } else {
+            pagibig = snap.getPagibigMandatoryAmount()
+                    + (emp.getPagibigPreferred() != null ? emp.getPagibigPreferred() : 0.0);
+        }
+        lines.add(new PayrollDetailDeduction(null, "HDMF", "PagIbig", roundOff(pagibig), 100.0, lines.size()));
         taxableIncome -= pagibig;
 
         return taxableIncome;
@@ -546,15 +567,21 @@ public class PayrollComputationEngine {
 
             if (!inRange) continue;
 
-            if (Boolean.TRUE.equals(b.getIsAndUp()) || b.getSalaryFrom() == null || b.getSalaryTo() == null) {
-                // Fixed cap bracket
-                double ps = b.getPsFixed() != null ? b.getPsFixed() : 0;
-                double es = b.getEsFixed() != null ? b.getEsFixed() : 0;
+            // Determine bracket type via psTo:
+            //   psTo > 0  → ranged/middle bracket: compute salary × rate / 2
+            //   psTo == 0 or null → floor/cap bracket: use psFixed (personalShareFrom) as the fixed amount
+            boolean isRangedBracket = b.getPsTo() != null && b.getPsTo() > 0;
+
+            if (isRangedBracket) {
+                // Middle bracket: rate-based formula, split equally
+                double total = roundOff(basicPerSalary * b.getRate());
+                double ps = roundOff(total / 2);
+                double es = roundOff(total / 2);
                 return new double[]{ps, es};
             } else {
-                // Ranged bracket: rate-based
-                double ps = roundOff(basicPerSalary * b.getRate() * 0.010) / 2;
-                double es = roundOff((roundOff(basicPerSalary * b.getRate()) * 0.010) / 2);
+                // Floor or cap bracket: use the fixed amount stored in psFixed (personalShareFrom)
+                double ps = b.getPsFixed() != null ? b.getPsFixed() : 0;
+                double es = b.getEsFixed() != null ? b.getEsFixed() : 0;
                 return new double[]{ps, es};
             }
         }
@@ -569,8 +596,16 @@ public class PayrollComputationEngine {
                                           String salaryType,
                                           PayrollDataSnapshot snap) {
         if (taxableIncome <= 0) return 0;
+        // DB keys use "Monthly"/"Semi-Monthly"; request may send "MONTHLY"/"SEMI_MONTHLY"
+        // Find the matching key case-insensitively (also handle underscore vs hyphen/space).
+        String matchKey = snap.getTaxBrackets().keySet().stream()
+                .filter(k -> k.equalsIgnoreCase(salaryType)
+                        || k.replace("-", "_").equalsIgnoreCase(salaryType)
+                        || k.replace(" ", "_").equalsIgnoreCase(salaryType))
+                .findFirst()
+                .orElse(salaryType);
         List<PayrollDataSnapshot.WHoldingTaxBracketDTO> brackets =
-                snap.getTaxBrackets().getOrDefault(salaryType, Collections.emptyList());
+                snap.getTaxBrackets().getOrDefault(matchKey, Collections.emptyList());
 
         for (PayrollDataSnapshot.WHoldingTaxBracketDTO b : brackets) {
             boolean inRange = taxableIncome >= b.getIncomeFrom()

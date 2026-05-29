@@ -6,10 +6,13 @@ import com.payroll.repositories.EmployeeDeductionRepository;
 import com.payroll.repositories.EmployeeIncomeRepository;
 import com.payroll.repositories.EmployeeLoanRepository;
 import com.payroll.repositories.PayrollBatchJobRepository;
+import com.payroll.repositories.PayrollAdjustmentHeaderRepository;
+import com.payroll.repositories.PayrollAdjustmentLineRepository;
 import com.payroll.repositories.PayrollDetailRepository;
 import com.payroll.repositories.PayrollEmployeeConfigRepository;
 import com.payroll.services.EarningAllowanceService;
 import com.payroll.services.PayrollBatchService;
+import com.payroll.services.PayrollPeriodLockService;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +64,9 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
     /** Number of employees processed per parallel task. */
     private static final int COMPUTE_CHUNK_SIZE = 100;
 
+    /** Chunk size for IN-list deletes to stay below SQL Server parameter limits. */
+    private static final int ADJUSTMENT_DELETE_CHUNK_SIZE = 800;
+
     // ── Per-employee live queue (in-memory; keyed by jobId) ──────────────────
     /**
      * Stores per-employee computation events for live polling by the UI.
@@ -84,6 +90,9 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
     private final ExecutorService computeExecutor;
     private final ThreadPoolTaskExecutor batchAsyncExecutor;
     private final PayrollEmployeeConfigRepository configRepo;
+    private final PayrollAdjustmentHeaderRepository adjustmentHeaderRepo;
+    private final PayrollAdjustmentLineRepository adjustmentLineRepo;
+    private final PayrollPeriodLockService lockService;
 
     // ── Downstream service URLs (from application.properties, overridden by SystemConfig @PostConstruct) ──
     @Value("${hris.services.administrative.url:http://localhost:8082}")
@@ -105,7 +114,10 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
                                    RestTemplate restTemplate,
                                    @Qualifier("payrollComputeExecutor") ExecutorService computeExecutor,
                                    @Qualifier("payrollBatchAsyncExecutor") ThreadPoolTaskExecutor batchAsyncExecutor,
-                                   PayrollEmployeeConfigRepository configRepo) {
+                                   PayrollEmployeeConfigRepository configRepo,
+                                   PayrollAdjustmentHeaderRepository adjustmentHeaderRepo,
+                                   PayrollAdjustmentLineRepository adjustmentLineRepo,
+                                   PayrollPeriodLockService lockService) {
         this.engine = engine;
         this.detailRepo = detailRepo;
         this.batchJobRepo = batchJobRepo;
@@ -117,6 +129,9 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         this.computeExecutor = computeExecutor;
         this.batchAsyncExecutor = batchAsyncExecutor;
         this.configRepo = configRepo;
+        this.adjustmentHeaderRepo = adjustmentHeaderRepo;
+        this.adjustmentLineRepo = adjustmentLineRepo;
+        this.lockService = lockService;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -216,11 +231,30 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         long startMs = System.currentTimeMillis();
 
         try {
+            // ── Period lock guard ────────────────────────────────────────────
+            if (lockService.isPeriodLocked(request.getSalaryPeriodKey())) {
+                finishJob(job, 0, 0,
+                        "Salary period " + request.getSalaryPeriodKey() + " is LOCKED and cannot be recomputed.");
+                return;
+            }
+
             // ──── PHASE 1: Fetch all data ────────────────────────────────────
             updateJob(job, BatchJobStatus.FETCHING_DATA, 5, null);
             PayrollDataSnapshot snapshot = fetchAllData(request, authToken);
 
             List<EmployeePayrollInfoDTO> employees = resolveEmployeeList(request, snapshot);
+            long deletedPending = clearPendingAdjustmentsForEmployees(
+                    request.getSalaryPeriodKey(),
+                    employees.stream()
+                            .map(EmployeePayrollInfoDTO::getEmployeeNo)
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .collect(Collectors.toList()));
+            if (deletedPending > 0) {
+                log.info("[PayrollBatch {}] Cleared {} PENDING adjustment header(s) for period {} for selected employees only",
+                        jobId, deletedPending, request.getSalaryPeriodKey());
+            }
+
             int total = employees.size();
             if (total == 0) {
                 finishJob(job, 0, 0, "No eligible employees found for " + request.getSalaryPeriodKey());
@@ -438,11 +472,19 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         CompletableFuture<Map<String, List<PayrollDataSnapshot.IncomeEntryDTO>>> incomeFuture =
                 CompletableFuture.supplyAsync(() -> fetchIncomeEntries(batchMonth, batchYear), computeExecutor);
 
+        // Deduction type meta: keyed by name + ID -> DeductionTypeMeta (flags + display name)
+        CompletableFuture<Map<String, DeductionTypeMeta>> deductionMetaFuture =
+                CompletableFuture.supplyAsync(() -> fetchDeductionTypeMeta(headers), computeExecutor);
+
+        // Earning type meta: keyed by name + ID -> EarningTypeMeta (flags + display name)
+        CompletableFuture<Map<String, EarningTypeMeta>> earningMetaFuture =
+                CompletableFuture.supplyAsync(() -> fetchEarningTypeMeta(headers), computeExecutor);
+
         // Wait for all concurrent fetches
         CompletableFuture.allOf(empFuture, dtrFuture, leaveFuture, vlBalFuture, slBalFuture,
                 holidayFuture, allowanceFuture, philHealthFuture, taxFuture, hazardFuture, hazardSettingsFuture,
                 gsisFuture, payrollSettingsFuture, pagibigFuture, earnLeaveFuture,
-                loanFuture, deductionFuture, incomeFuture).join();
+                loanFuture, deductionFuture, incomeFuture, deductionMetaFuture, earningMetaFuture).join();
 
         // Build snapshot — index list results into Maps for O(1) lookup
         PayrollDataSnapshot snap = new PayrollDataSnapshot();
@@ -463,7 +505,23 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         snap.setHolidayMap(holidayFuture.join().stream()
                 .collect(Collectors.toMap(HolidayDTO::getDate, h -> h, (a, b) -> a)));
 
-        snap.setAllowancesMap(allowanceFuture.join().stream()
+        // Enrich allowances with proper flags + names from Administrative
+        // (replaces fragile string-contains guessing in EarningAllowanceImpl)
+        Map<String, EarningTypeMeta> earningMeta = earningMetaFuture.join();
+        List<AllowanceDTO> rawAllowances = allowanceFuture.join();
+        for (AllowanceDTO a : rawAllowances) {
+            EarningTypeMeta etm = earningMeta.get(a.getAllowanceName());
+            if (etm != null) {
+                a.setAllowanceName(etm.name);
+                a.setAllowanceCode(etm.accountingCode);
+                a.setIsPera(etm.pera);
+                a.setIsHazardPay(etm.hazardPay);
+                a.setIsSubsistence(etm.subsistence);
+                a.setIsLaundry(etm.laundry);
+                a.setIsTaxable(etm.taxable);
+            }
+        }
+        snap.setAllowancesMap(rawAllowances.stream()
                 .collect(Collectors.groupingBy(AllowanceDTO::getEmployeeNo)));
 
         snap.setPhilHealthBrackets(philHealthFuture.join());
@@ -493,7 +551,25 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
 
         // Apply local DB fetches
         snap.setLoansMap(loanFuture.join());
-        snap.setEntryDeductionsMap(deductionFuture.join());
+
+        // Enrich entry deductions with deduction type flags + name from Administrative
+        Map<String, DeductionTypeMeta> deductionMeta = deductionMetaFuture.join();
+        Map<String, List<PayrollDataSnapshot.EntryDeductionDTO>> enrichedDeductions = deductionFuture.join();
+        DeductionTypeMeta emptyDed = new DeductionTypeMeta(null, false, false);
+        for (List<PayrollDataSnapshot.EntryDeductionDTO> deds : enrichedDeductions.values()) {
+            for (PayrollDataSnapshot.EntryDeductionDTO ded : deds) {
+                DeductionTypeMeta dtm = deductionMeta.getOrDefault(ded.getDeductionType(), emptyDed);
+                ded.setIsPagibig(dtm.isPagibig);
+                ded.setIsVoluntaryContribution(dtm.isVoluntary);
+                // Use resolved canonical name if available; fall back to the stored key
+                if (dtm.name != null) {
+                    ded.setDeductionTypeName(dtm.name);
+                } else {
+                    ded.setDeductionTypeName(ded.getDeductionType());
+                }
+            }
+        }
+        snap.setEntryDeductionsMap(enrichedDeductions);
         snap.setIncomeEntriesMap(incomeFuture.join());
 
         // Load previous payroll balances from this module's own DB
@@ -591,7 +667,15 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
                     Object holidayDate = item.get("holidayDate");
                     if (holidayDate != null) {
                         if (holidayDate instanceof String) {
-                            dto.setDate(LocalDate.parse((String) holidayDate));
+                            // Administrative returns date as "MM-dd-yyyy" per @JsonFormat
+                            String dateStr = (String) holidayDate;
+                            try {
+                                dto.setDate(LocalDate.parse(dateStr,
+                                        java.time.format.DateTimeFormatter.ofPattern("MM-dd-yyyy")));
+                            } catch (Exception pe) {
+                                // Fallback: try ISO format yyyy-MM-dd
+                                dto.setDate(LocalDate.parse(dateStr));
+                            }
                         } else if (holidayDate instanceof List) {
                             List<?> dateArray = (List<?>) holidayDate;
                             dto.setDate(LocalDate.of((Integer) dateArray.get(0), (Integer) dateArray.get(1), (Integer) dateArray.get(2)));
@@ -633,6 +717,89 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         } catch (Exception ex) {
             log.warn("Failed to fetch PhilHealth brackets: {}", ex.getMessage());
             return Collections.emptyList();
+        }
+    }
+
+    /** Carries the flags and display info for one earning type from Administrative. */
+    private static final class EarningTypeMeta {
+        final String name;
+        final String accountingCode;
+        final boolean pera, hazardPay, subsistence, laundry, taxable;
+        EarningTypeMeta(String n, String c,
+                        boolean pera, boolean hazardPay, boolean subsistence,
+                        boolean laundry, boolean taxable) {
+            this.name = n; this.accountingCode = c;
+            this.pera = pera; this.hazardPay = hazardPay;
+            this.subsistence = subsistence; this.laundry = laundry; this.taxable = taxable;
+        }
+    }
+
+    private Map<String, EarningTypeMeta> fetchEarningTypeMeta(HttpHeaders h) {
+        String url = adminServiceUrl + "/api/earningType/get-all";
+        try {
+            ResponseEntity<List<Map<String, Object>>> resp = restTemplate.exchange(
+                    url, HttpMethod.GET, new HttpEntity<>(h),
+                    new ParameterizedTypeReference<List<Map<String, Object>>>() {});
+            Map<String, EarningTypeMeta> meta = new HashMap<>();
+            if (resp.getBody() != null) {
+                for (Map<String, Object> item : resp.getBody()) {
+                    String name = (String) item.get("name");
+                    String code = (String) item.get("accountingCode");
+                    EarningTypeMeta m = new EarningTypeMeta(
+                            name, code,
+                            Boolean.TRUE.equals(item.get("pera")),
+                            Boolean.TRUE.equals(item.get("hazardPay")),
+                            Boolean.TRUE.equals(item.get("subsistence")),
+                            Boolean.TRUE.equals(item.get("laundry")),
+                            Boolean.TRUE.equals(item.get("taxable")));
+                    // Double-index: old records store the name, new records store the ID
+                    if (name != null) meta.put(name, m);
+                    Object idObj = item.get("earningTypeId");
+                    if (idObj != null) meta.put(String.valueOf(idObj), m);
+                }
+            }
+            log.debug("PayrollBatch: Earning type meta loaded — {} types", meta.size());
+            return meta;
+        } catch (Exception ex) {
+            log.warn("PayrollBatch: Failed to fetch earning type meta: {}", ex.getMessage());
+            return Collections.emptyMap();
+        }
+    }
+
+    private static final class DeductionTypeMeta {
+        final String name;
+        final boolean isPagibig;
+        final boolean isVoluntary;
+        DeductionTypeMeta(String name, boolean isPagibig, boolean isVoluntary) {
+            this.name = name; this.isPagibig = isPagibig; this.isVoluntary = isVoluntary;
+        }
+    }
+
+    private Map<String, DeductionTypeMeta> fetchDeductionTypeMeta(HttpHeaders h) {
+        String url = adminServiceUrl + "/api/deductionType/get-all";
+        try {
+            ResponseEntity<List<Map<String, Object>>> resp = restTemplate.exchange(
+                    url, HttpMethod.GET, new HttpEntity<>(h),
+                    new ParameterizedTypeReference<List<Map<String, Object>>>() {});
+            Map<String, DeductionTypeMeta> meta = new HashMap<>();
+            if (resp.getBody() != null) {
+                for (Map<String, Object> item : resp.getBody()) {
+                    boolean isPagibig   = Boolean.TRUE.equals(item.get("pagIbig"));
+                    boolean isVoluntary = Boolean.TRUE.equals(item.get("voluntaryContribution"));
+                    String name = (String) item.get("name");
+                    DeductionTypeMeta dtm = new DeductionTypeMeta(name, isPagibig, isVoluntary);
+                    // Index by name — matches existing records that stored the name string
+                    if (name != null) meta.put(name, dtm);
+                    // Also index by deductionTypeId string — matches new records that store the ID
+                    Object idObj = item.get("deductionTypeId");
+                    if (idObj != null) meta.put(String.valueOf(idObj), dtm);
+                }
+            }
+            log.debug("PayrollBatch: Deduction type meta loaded — {} types", meta.size());
+            return meta;
+        } catch (Exception ex) {
+            log.warn("PayrollBatch: Failed to fetch deduction type meta: {}", ex.getMessage());
+            return Collections.emptyMap();
         }
     }
 
@@ -784,6 +951,16 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
             }
         }
 
+        // Apply UI-driven employee selection allowlist: if the officer unchecked some employees
+        // in the "Select for this run" column, only the checked ones are included.
+        List<String> selectedNos = req.getSelectedEmployeeNos();
+        if (selectedNos != null && !selectedNos.isEmpty()) {
+            Set<String> allowed = new java.util.HashSet<>(selectedNos);
+            all.removeIf(e -> !allowed.contains(e.getEmployeeNo()));
+            log.debug("PayrollBatch: Selection filter applied — {} / {} employees will be processed",
+                    all.size(), allowed.size());
+        }
+
         return all;
     }
 
@@ -804,6 +981,24 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
             int pct = 75 + (int) ((double) saved / results.size() * 25); // 75%→100%
             updateProgress(jobId, saved, 0, pct);
         }
+    }
+
+    private long clearPendingAdjustmentsForEmployees(String salaryPeriodKey, List<String> employeeNos) {
+        if (employeeNos == null || employeeNos.isEmpty()) return 0;
+
+        long deleted = 0;
+        for (List<String> empChunk : partition(employeeNos, ADJUSTMENT_DELETE_CHUNK_SIZE)) {
+            List<Long> headerIds = adjustmentHeaderRepo.findPendingIdsForPeriodAndEmployees(
+                    salaryPeriodKey,
+                    empChunk);
+            if (headerIds == null || headerIds.isEmpty()) continue;
+
+            for (List<Long> idChunk : partition(headerIds, ADJUSTMENT_DELETE_CHUNK_SIZE)) {
+                adjustmentLineRepo.deleteByHeaderIdIn(idChunk);
+                deleted += adjustmentHeaderRepo.deleteByIdIn(idChunk);
+            }
+        }
+        return deleted;
     }
 
     @Transactional
@@ -994,9 +1189,54 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
      * Loads entry deductions for the given salary period from local DB.
      * Groups by employeeNo.
      */
+    /** Month names used for legacy "June 1 2026" period format conversion. */
+    private static final String[] PERIOD_MONTH_NAMES = {
+            "January","February","March","April","May","June",
+            "July","August","September","October","November","December"
+    };
+
+    /**
+     * Converts "2026-6-1" key format → "June 1 2026" legacy display format.
+     * Returns null if the key cannot be parsed.
+     */
+    private static String toLegacySalaryPeriod(String key) {
+        String[] parts = key.split("-");
+        if (parts.length != 3) return null;
+        try {
+            int year   = Integer.parseInt(parts[0]);
+            int month  = Integer.parseInt(parts[1]);
+            int period = Integer.parseInt(parts[2]);
+            if (month < 1 || month > 12) return null;
+            return PERIOD_MONTH_NAMES[month - 1] + " " + period + " " + year;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private Map<String, List<PayrollDataSnapshot.EntryDeductionDTO>> fetchEntryDeductions(String salaryPeriodKey) {
         try {
-            List<EmployeeDeduction> deductions = deductionRepo.findBySalaryPeriod(salaryPeriodKey);
+            // Primary: key format "2026-6-1" (saved by Deduction.tsx after the format fix)
+            List<EmployeeDeduction> deductions = new ArrayList<>(deductionRepo.findBySalaryPeriod(salaryPeriodKey));
+
+            // Fallback: legacy display format "June 1 2026" (saved before the format fix)
+            // Merge without duplicating the same employee+deductionType combination.
+            String legacyKey = toLegacySalaryPeriod(salaryPeriodKey);
+            if (legacyKey != null) {
+                List<EmployeeDeduction> legacy = deductionRepo.findBySalaryPeriod(legacyKey);
+                if (!legacy.isEmpty()) {
+                    Set<String> seen = deductions.stream()
+                            .map(d -> d.getEmployeeNo() + "|" + d.getDeductionType())
+                            .collect(Collectors.toSet());
+                    for (EmployeeDeduction d : legacy) {
+                        if (seen.add(d.getEmployeeNo() + "|" + d.getDeductionType())) {
+                            deductions.add(d);
+                        }
+                    }
+                    log.debug("PayrollBatch: Merged {} legacy-format deductions for period '{}'",
+                            legacy.size(), legacyKey);
+                }
+            }
+
             Map<String, List<PayrollDataSnapshot.EntryDeductionDTO>> result = new HashMap<>();
             for (EmployeeDeduction ded : deductions) {
                 PayrollDataSnapshot.EntryDeductionDTO dto = new PayrollDataSnapshot.EntryDeductionDTO();
