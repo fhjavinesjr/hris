@@ -46,7 +46,7 @@ public class HumanResourceSecurityConfig {
                     return corsConfiguration;
                 }))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/employee/login", "/api/employee/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/employee/login", "/api/employee/register", "/api/hris/installAuth").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/secure").hasRole("ADMIN")
                         .anyRequest().authenticated()

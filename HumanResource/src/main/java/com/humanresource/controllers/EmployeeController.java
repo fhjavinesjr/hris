@@ -21,7 +21,7 @@ public class EmployeeController {
         this.employeeService = employeeService;
     }
 
-    @GetMapping("/hris/installAuth")
+    @PostMapping("/hris/installAuth")
     public void installAuth() throws Exception {
         employeeService.installAuth();
     }
