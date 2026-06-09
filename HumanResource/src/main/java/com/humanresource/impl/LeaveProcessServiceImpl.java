@@ -31,10 +31,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -376,10 +378,14 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         while (!day.isAfter(periodEnd)) {
             DayOfWeek dow = day.getDayOfWeek();
 
-            // Skip weekends
+            // Skip weekends UNLESS the employee has an explicit work schedule on that day
+            // (isDayOff = 0 means the employee is scheduled to work, even on SAT/SUN).
+            // Dynamic/flexible schedules can assign work days on weekends — we must respect that.
             if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) {
-                day = day.plusDays(1);
-                continue;
+                if (!isScheduledWorkDay(dtrEmployeeId, day)) {
+                    day = day.plusDays(1);
+                    continue;
+                }
             }
 
             // Skip holidays
@@ -580,25 +586,73 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
 
     /**
      * Loads all active holiday dates in the given period from the Administrative module's holiday table.
+     *
+     * Handles two cases:
+     *  1. Non-recurring holidays — matched by their exact holidayDate (or observedDate) within the range.
+     *  2. Recurring holidays (recurringAlways = 1) — their month/day is projected onto every year
+     *     covered by the range, so a holiday saved once (e.g. Dec 25 2024) is automatically
+     *     recognised as Dec 25 2025, Dec 25 2026, etc. without needing yearly re-entry.
      */
     private Set<LocalDate> loadHolidayDates(LocalDate from, LocalDate to) {
-        String sql = "SELECT holidayDate, observedDate FROM holiday " +
-                     "WHERE isActive = 1 AND (" +
-                     "  (holidayDate >= ? AND holidayDate <= ?) OR " +
-                     "  (observedDate >= ? AND observedDate <= ?))";
-        List<Map<String, Object>> rows = jdbc.queryForList(sql,
-                from, to, from, to);
+        // Step 1: non-recurring holidays with exact date in range
+        String sqlNonRecurring =
+                "SELECT holidayDate, observedDate FROM holiday " +
+                "WHERE isActive = 1 AND recurringAlways = 0 AND (" +
+                "  (holidayDate >= ? AND holidayDate <= ?) OR " +
+                "  (observedDate >= ? AND observedDate <= ?))";
+        List<Map<String, Object>> nonRecurringRows =
+                jdbc.queryForList(sqlNonRecurring, from, to, from, to);
 
-        return rows.stream()
-                .flatMap(row -> {
-                    List<LocalDate> dates = new ArrayList<>();
-                    Object hd = row.get("holidayDate");
-                    Object od = row.get("observedDate");
-                    if (hd instanceof java.sql.Date) dates.add(((java.sql.Date) hd).toLocalDate());
-                    if (od instanceof java.sql.Date) dates.add(((java.sql.Date) od).toLocalDate());
-                    return dates.stream();
-                })
-                .collect(Collectors.toSet());
+        Set<LocalDate> result = new HashSet<>();
+        for (Map<String, Object> row : nonRecurringRows) {
+            Object hd = row.get("holidayDate");
+            Object od = row.get("observedDate");
+            if (hd instanceof java.sql.Date) result.add(((java.sql.Date) hd).toLocalDate());
+            if (od instanceof java.sql.Date) result.add(((java.sql.Date) od).toLocalDate());
+        }
+
+        // Step 2: recurring holidays — project month/day onto every year in the range
+        String sqlRecurring =
+                "SELECT holidayDate, observedDate FROM holiday " +
+                "WHERE isActive = 1 AND recurringAlways = 1";
+        List<Map<String, Object>> recurringRows = jdbc.queryForList(sqlRecurring);
+
+        int fromYear = from.getYear();
+        int toYear   = to.getYear();
+
+        for (Map<String, Object> row : recurringRows) {
+            Object hd = row.get("holidayDate");
+            Object od = row.get("observedDate");
+
+            if (hd instanceof java.sql.Date) {
+                LocalDate base = ((java.sql.Date) hd).toLocalDate();
+                for (int year = fromYear; year <= toYear; year++) {
+                    try {
+                        LocalDate projected = LocalDate.of(year, base.getMonthValue(), base.getDayOfMonth());
+                        if (!projected.isBefore(from) && !projected.isAfter(to)) {
+                            result.add(projected);
+                        }
+                    } catch (DateTimeException ignored) {
+                        // Feb 29 on a non-leap year — skip
+                    }
+                }
+            }
+            if (od instanceof java.sql.Date) {
+                LocalDate base = ((java.sql.Date) od).toLocalDate();
+                for (int year = fromYear; year <= toYear; year++) {
+                    try {
+                        LocalDate projected = LocalDate.of(year, base.getMonthValue(), base.getDayOfMonth());
+                        if (!projected.isBefore(from) && !projected.isAfter(to)) {
+                            result.add(projected);
+                        }
+                    } catch (DateTimeException ignored) {
+                        // Feb 29 on a non-leap year — skip
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -888,6 +942,25 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                 .filter(tc -> day.equals(tc.getWorkDate()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Returns true if the employee has an explicit non-day-off work schedule entry on the given date.
+     * Used to allow weekend processing when a flexible/dynamic schedule assigns a Saturday or Sunday
+     * as a regular work day (isDayOff = 0).
+     */
+    private boolean isScheduledWorkDay(String dtrEmployeeId, LocalDate day) {
+        try {
+            String sql = "SELECT COUNT(*) FROM work_schedule " +
+                         "WHERE employeeId = ? AND wsDateTime >= ? AND wsDateTime < ? " +
+                         "  AND (isDayOff IS NULL OR isDayOff = 0)";
+            Integer count = jdbc.queryForObject(sql, Integer.class,
+                    dtrEmployeeId, day.atStartOfDay(), day.plusDays(1).atStartOfDay());
+            return count != null && count > 0;
+        } catch (Exception ex) {
+            log.warn("Could not check scheduled work day for employee {} on {}: {}", dtrEmployeeId, day, ex.getMessage());
+            return false;
+        }
     }
 
     /**

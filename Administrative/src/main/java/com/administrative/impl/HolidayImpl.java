@@ -10,8 +10,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.DateTimeException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class HolidayImpl implements HolidayService {
@@ -43,7 +46,8 @@ public class HolidayImpl implements HolidayService {
                     holidayDTO.getSourceReference(),
                     holidayDTO.getWithPay(),
                     holidayDTO.getIsWorkingHoliday(),
-                    holidayDTO.getIsActive()
+                    holidayDTO.getIsActive(),
+                    holidayDTO.getRecurringAlways() != null && holidayDTO.getRecurringAlways()
             );
             holidayRepository.save(holiday);
 
@@ -73,7 +77,8 @@ public class HolidayImpl implements HolidayService {
                         holiday.getSourceReference(),
                         holiday.getWithPay(),
                         holiday.getIsWorkingHoliday(),
-                        holiday.getIsActive()
+                        holiday.getIsActive(),
+                        holiday.getRecurringAlways()
                 );
 
                 holidayDTOList.add(holidayDTO);
@@ -108,6 +113,7 @@ public class HolidayImpl implements HolidayService {
             holiday.setWithPay(holidayDTO.getWithPay());
             holiday.setIsWorkingHoliday(holidayDTO.getIsWorkingHoliday());
             holiday.setIsActive(holidayDTO.getIsActive());
+            holiday.setRecurringAlways(holidayDTO.getRecurringAlways() != null && holidayDTO.getRecurringAlways());
 
             holidayRepository.save(holiday);
 
@@ -133,32 +139,67 @@ public class HolidayImpl implements HolidayService {
     @Override
     public List<HolidayDTO> getHolidaysByRange(LocalDate from, LocalDate to) throws Exception {
         try {
-            List<Holiday> holidays = holidayRepository.findByHolidayDateBetweenAndIsActiveTrue(from, to);
-            List<HolidayDTO> holidayDTOList = new ArrayList<>();
+            // 1. Non-recurring holidays with an exact date in the range
+            List<Holiday> nonRecurring = holidayRepository.findByHolidayDateBetweenAndIsActiveTrue(from, to);
+            List<HolidayDTO> result = new ArrayList<>();
+            Set<Long> addedIds = new HashSet<>();
 
-            for (Holiday holiday : holidays) {
-                HolidayDTO holidayDTO = new HolidayDTO(
-                        holiday.getHolidayId(),
-                        holiday.getCode(),
-                        holiday.getName(),
-                        holiday.getHolidayDate(),
-                        holiday.getObservedDate(),
-                        holiday.getHolidayType(),
-                        holiday.getHolidayScope(),
-                        holiday.getLocalityCode(),
-                        holiday.getSourceReference(),
-                        holiday.getWithPay(),
-                        holiday.getIsWorkingHoliday(),
-                        holiday.getIsActive()
-                );
-                holidayDTOList.add(holidayDTO);
+            for (Holiday h : nonRecurring) {
+                result.add(toDTO(h, h.getHolidayDate()));
+                addedIds.add(h.getHolidayId());
             }
 
-            log.info("Fetched {} holidays from {} to {}", holidayDTOList.size(), from, to);
-            return holidayDTOList;
+            // 2. Recurring holidays — project their month/day onto every year in the range
+            List<Holiday> recurring = holidayRepository.findByRecurringAlwaysTrueAndIsActiveTrue();
+            int fromYear = from.getYear();
+            int toYear = to.getYear();
+
+            for (Holiday h : recurring) {
+                if (addedIds.contains(h.getHolidayId())) continue;
+
+                int month = h.getHolidayDate().getMonthValue();
+                int day   = h.getHolidayDate().getDayOfMonth();
+
+                for (int year = fromYear; year <= toYear; year++) {
+                    LocalDate projected;
+                    try {
+                        projected = LocalDate.of(year, month, day);
+                    } catch (DateTimeException e) {
+                        // e.g. Feb 29 on a non-leap year — skip
+                        continue;
+                    }
+                    if (!projected.isBefore(from) && !projected.isAfter(to)) {
+                        result.add(toDTO(h, projected));
+                    }
+                }
+            }
+
+            log.info("Fetched {} holidays (incl. recurring) from {} to {}", result.size(), from, to);
+            return result;
         } catch (Exception e) {
             log.error("Error in fetching holidays by range: {}", e.getMessage());
             throw e;
         }
+    }
+
+    // ── helpers ────────────────────────────────────────────────────────────────
+
+    private HolidayDTO toDTO(Holiday h, LocalDate effectiveDate) {
+        HolidayDTO dto = new HolidayDTO(
+                h.getHolidayId(),
+                h.getCode(),
+                h.getName(),
+                effectiveDate,
+                h.getObservedDate(),
+                h.getHolidayType(),
+                h.getHolidayScope(),
+                h.getLocalityCode(),
+                h.getSourceReference(),
+                h.getWithPay(),
+                h.getIsWorkingHoliday(),
+                h.getIsActive(),
+                h.getRecurringAlways()
+        );
+        return dto;
     }
 }

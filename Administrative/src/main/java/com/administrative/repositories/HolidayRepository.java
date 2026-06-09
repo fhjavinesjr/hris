@@ -15,4 +15,6 @@ public interface HolidayRepository extends JpaRepository<Holiday, Long> {
     boolean existsByCodeAndHolidayIdNot(String code, Long holidayId);
 
     List<Holiday> findByHolidayDateBetweenAndIsActiveTrue(LocalDate startDate, LocalDate endDate);
+
+    List<Holiday> findByRecurringAlwaysTrueAndIsActiveTrue();
 }

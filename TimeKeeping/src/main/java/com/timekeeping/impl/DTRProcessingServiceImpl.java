@@ -244,23 +244,39 @@ public class DTRProcessingServiceImpl implements DTRProcessingService {
     private ShiftTemplate shiftTemplateByCode(String tsCode) {
         if (tsCode == null || tsCode.trim().isEmpty()) return null;
 
-        String sql = "SELECT TOP 1 timeIn, timeOut, breakOut, breakIn FROM time_shift WHERE tsCode = ?";
+        String sql = "SELECT TOP 1 timeIn, timeOut, breakOut, breakIn, tsFlexible, " +
+                     "monInTimeLimit, tueInTimeLimit, wedInTimeLimit, thuInTimeLimit, " +
+                     "friInTimeLimit, satInTimeLimit, sunInTimeLimit " +
+                     "FROM time_shift WHERE tsCode = ?";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, tsCode.trim());
         if (rows.isEmpty()) {
             return null;
         }
 
         Map<String, Object> row = rows.get(0);
-        LocalTime timeIn = toLocalTime(row.get("timeIn"));
-        LocalTime timeOut = toLocalTime(row.get("timeOut"));
+        LocalTime timeIn   = toLocalTime(row.get("timeIn"));
+        LocalTime timeOut  = toLocalTime(row.get("timeOut"));
         LocalTime breakOut = toLocalTime(row.get("breakOut"));
-        LocalTime breakIn = toLocalTime(row.get("breakIn"));
+        LocalTime breakIn  = toLocalTime(row.get("breakIn"));
 
         if (timeIn == null || timeOut == null) {
             return null;
         }
 
-        return new ShiftTemplate(timeIn, timeOut, breakOut, breakIn);
+        Object flexObj = row.get("tsFlexible");
+        boolean tsFlexible = flexObj != null && (Boolean.TRUE.equals(flexObj) ||
+                "1".equals(flexObj.toString()) || "true".equalsIgnoreCase(flexObj.toString()));
+
+        LocalTime monLimit = toLocalTime(row.get("monInTimeLimit"));
+        LocalTime tueLimit = toLocalTime(row.get("tueInTimeLimit"));
+        LocalTime wedLimit = toLocalTime(row.get("wedInTimeLimit"));
+        LocalTime thuLimit = toLocalTime(row.get("thuInTimeLimit"));
+        LocalTime friLimit = toLocalTime(row.get("friInTimeLimit"));
+        LocalTime satLimit = toLocalTime(row.get("satInTimeLimit"));
+        LocalTime sunLimit = toLocalTime(row.get("sunInTimeLimit"));
+
+        return new ShiftTemplate(timeIn, timeOut, breakOut, breakIn,
+                tsFlexible, monLimit, tueLimit, wedLimit, thuLimit, friLimit, satLimit, sunLimit);
     }
 
     private LocalTime toLocalTime(Object dbTime) {
@@ -283,7 +299,8 @@ public class DTRProcessingServiceImpl implements DTRProcessingService {
             return new MinuteResult(0, 0, 0);
         }
 
-        LocalDateTime plannedIn  = workDate.atTime(shiftTemplate.timeIn);
+        // Use per-day flexible time-in limit when shift is flexible and a limit is set for this day.
+        LocalDateTime plannedIn  = workDate.atTime(shiftTemplate.effectiveTimeIn(workDate));
         LocalDateTime plannedOut = workDate.atTime(shiftTemplate.timeOut);
         if (!shiftTemplate.timeOut.isAfter(shiftTemplate.timeIn)) {
             // Overnight shift: timeOut wraps to next day
@@ -360,12 +377,53 @@ public class DTRProcessingServiceImpl implements DTRProcessingService {
         private final LocalTime timeOut;
         private final LocalTime breakOut;
         private final LocalTime breakIn;
+        // Dynamic Flexible Schedule — per-day time-in limits (null = not configured for that day)
+        private final boolean tsFlexible;
+        private final LocalTime monLimit;
+        private final LocalTime tueLimit;
+        private final LocalTime wedLimit;
+        private final LocalTime thuLimit;
+        private final LocalTime friLimit;
+        private final LocalTime satLimit;
+        private final LocalTime sunLimit;
 
-        private ShiftTemplate(LocalTime timeIn, LocalTime timeOut, LocalTime breakOut, LocalTime breakIn) {
-            this.timeIn = timeIn;
-            this.timeOut = timeOut;
-            this.breakOut = breakOut;
-            this.breakIn = breakIn;
+        private ShiftTemplate(LocalTime timeIn, LocalTime timeOut, LocalTime breakOut, LocalTime breakIn,
+                              boolean tsFlexible,
+                              LocalTime monLimit, LocalTime tueLimit, LocalTime wedLimit,
+                              LocalTime thuLimit, LocalTime friLimit, LocalTime satLimit, LocalTime sunLimit) {
+            this.timeIn    = timeIn;
+            this.timeOut   = timeOut;
+            this.breakOut  = breakOut;
+            this.breakIn   = breakIn;
+            this.tsFlexible = tsFlexible;
+            this.monLimit  = monLimit;
+            this.tueLimit  = tueLimit;
+            this.wedLimit  = wedLimit;
+            this.thuLimit  = thuLimit;
+            this.friLimit  = friLimit;
+            this.satLimit  = satLimit;
+            this.sunLimit  = sunLimit;
+        }
+
+        /**
+         * Returns the effective planned time-in for the given date.
+         * If this is a flexible shift and a per-day limit is configured, that limit is
+         * used instead of the standard timeIn — the employee is not late until they
+         * clock in after the limit for that day of week.
+         */
+        LocalTime effectiveTimeIn(LocalDate workDate) {
+            if (!tsFlexible) return timeIn;
+            LocalTime dayLimit = null;
+            switch (workDate.getDayOfWeek()) {
+                case MONDAY:    dayLimit = monLimit; break;
+                case TUESDAY:   dayLimit = tueLimit; break;
+                case WEDNESDAY: dayLimit = wedLimit; break;
+                case THURSDAY:  dayLimit = thuLimit; break;
+                case FRIDAY:    dayLimit = friLimit; break;
+                case SATURDAY:  dayLimit = satLimit; break;
+                case SUNDAY:    dayLimit = sunLimit; break;
+            }
+            return (dayLimit != null) ? dayLimit : timeIn;
         }
     }
 

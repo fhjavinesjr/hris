@@ -50,12 +50,15 @@ public class Holiday implements Serializable {
     @Column(name = "isActive", nullable = false)
     private Boolean isActive = true;
 
+    @Column(name = "recurringAlways", nullable = false)
+    private Boolean recurringAlways = false;
+
     public Holiday() {
     }
 
     public Holiday(Long holidayId, String code, String name, LocalDate holidayDate, LocalDate observedDate,
                    String holidayType, String holidayScope, String localityCode, String sourceReference,
-                   Boolean withPay, Boolean isWorkingHoliday, Boolean isActive) {
+                   Boolean withPay, Boolean isWorkingHoliday, Boolean isActive, Boolean recurringAlways) {
         this.holidayId = holidayId;
         this.code = code;
         this.name = name;
@@ -68,6 +71,7 @@ public class Holiday implements Serializable {
         this.withPay = withPay;
         this.isWorkingHoliday = isWorkingHoliday;
         this.isActive = isActive;
+        this.recurringAlways = recurringAlways;
     }
 
     public Long getHolidayId() {
@@ -164,5 +168,13 @@ public class Holiday implements Serializable {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public Boolean getRecurringAlways() {
+        return recurringAlways;
+    }
+
+    public void setRecurringAlways(Boolean recurringAlways) {
+        this.recurringAlways = recurringAlways;
     }
 }
