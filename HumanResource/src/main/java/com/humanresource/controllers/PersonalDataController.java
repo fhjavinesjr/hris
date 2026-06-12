@@ -26,7 +26,7 @@ public class PersonalDataController {
         if(personalDataDTO == null) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to create work schedule"));
+                    .body(new MetadataResponse("Failed to create personal data"));
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(new MetadataResponse(personalDataDTO.getEmployeeId(), "Successful to create personal data"));
