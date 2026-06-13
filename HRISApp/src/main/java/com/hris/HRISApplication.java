@@ -16,9 +16,11 @@ import org.springframework.context.annotation.FilterType;
 )
 @ComponentScan(
         basePackages = {
-                "com.timekeeping",
+                "com.emloyeeportal",
                 "com.administrative",
                 "com.humanresource",
+                "com.timekeeping",
+                "com.payroll",
                 "com.hris.common"
         },
         excludeFilters = @ComponentScan.Filter(
