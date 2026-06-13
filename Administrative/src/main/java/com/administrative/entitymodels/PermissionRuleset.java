@@ -22,7 +22,8 @@ public class PermissionRuleset implements Serializable {
      * JSON string holding the full module-permission map.
      * Structure: { "moduleKey": { "canAccess": bool, "canAdd": bool, "canEdit": bool, "canDelete": bool }, ... }
      */
-    @Column(name = "permissionData", columnDefinition = "NVARCHAR(MAX)")
+    @Lob
+    @Column(name = "permissionData")
     private String permissionData;
 
     public PermissionRuleset() {}
