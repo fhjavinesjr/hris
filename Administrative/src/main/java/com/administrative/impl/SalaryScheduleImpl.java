@@ -121,7 +121,12 @@ public class SalaryScheduleImpl implements SalaryScheduleService {
 
     @Override
     public SalaryScheduleDTO getSalaryScheduleByDateAssumptionAndSalaryGradeAndSalaryStep(LocalDateTime assumptionToDutyDate, Long salaryGrade, Long salaryStep) {
-        SalarySchedule salarySchedule = salaryScheduleRepository.findByEffectivityDateAndSalaryGradeAndSalaryStep(assumptionToDutyDate, salaryGrade, salaryStep);
+        SalarySchedule salarySchedule = salaryScheduleRepository
+            .findFirstByEffectivityDateLessThanEqualAndSalaryGradeAndSalaryStepOrderByEffectivityDateDesc(
+                assumptionToDutyDate,
+                salaryGrade,
+                salaryStep
+            );
 
         if (salarySchedule == null) {
             throw new RuntimeException("No SalarySchedule found for the given date and grade/step.");
