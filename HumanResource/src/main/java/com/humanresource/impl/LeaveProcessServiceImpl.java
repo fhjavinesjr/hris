@@ -166,7 +166,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
     //  Per-employee processing
     // ─────────────────────────────────────────────────────────────────────────
 
-    private LeaveInformationDTO processEmployee(
+    LeaveInformationDTO processEmployee(
             Employee emp,
             LocalDate periodStart, LocalDate periodEnd,
             Long salaryPeriodSettingId, Long processedById,
@@ -593,7 +593,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
      *     covered by the range, so a holiday saved once (e.g. Dec 25 2024) is automatically
      *     recognised as Dec 25 2025, Dec 25 2026, etc. without needing yearly re-entry.
      */
-    private Set<LocalDate> loadHolidayDates(LocalDate from, LocalDate to) {
+    Set<LocalDate> loadHolidayDates(LocalDate from, LocalDate to) {
         // Step 1: non-recurring holidays with exact date in range
         String sqlNonRecurring =
                 "SELECT holidayDate, observedDate FROM holiday " +

@@ -1,10 +1,16 @@
 package com.humanresource.controllers;
 
+import com.humanresource.dtos.LeaveProcessBatchStartResponseDTO;
+import com.humanresource.dtos.LeaveProcessJobStatusDTO;
+import com.humanresource.dtos.LeaveProcessQueueItemDTO;
 import com.humanresource.dtos.LeaveProcessRequestDTO;
 import com.humanresource.dtos.LeaveProcessResultDTO;
+import com.humanresource.services.LeaveProcessBatchService;
 import com.humanresource.services.LeaveProcessService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Trigger endpoint for the Leave Information computation engine.
@@ -30,9 +36,65 @@ import org.springframework.web.bind.annotation.*;
 public class LeaveProcessController {
 
     private final LeaveProcessService processService;
+    private final LeaveProcessBatchService batchService;
 
-    public LeaveProcessController(LeaveProcessService processService) {
+    public LeaveProcessController(LeaveProcessService processService, LeaveProcessBatchService batchService) {
         this.processService = processService;
+        this.batchService = batchService;
+    }
+
+    @PostMapping("/process-batch")
+    public ResponseEntity<LeaveProcessBatchStartResponseDTO> startProcessBatch(
+            @RequestBody LeaveProcessRequestDTO request) {
+        try {
+            if (request.getCutoffStartDate() == null || request.getCutoffEndDate() == null) {
+                return ResponseEntity.badRequest().body(
+                        new LeaveProcessBatchStartResponseDTO(null, "cutoffStartDate and cutoffEndDate are required")
+                );
+            }
+            LeaveProcessBatchStartResponseDTO response = batchService.startBatch(request);
+            return ResponseEntity.accepted().body(response);
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError()
+                    .body(new LeaveProcessBatchStartResponseDTO(null, "Server error: " + ex.getMessage()));
+        }
+    }
+
+    @GetMapping("/process-status/{jobId}")
+    public ResponseEntity<LeaveProcessJobStatusDTO> getProcessStatus(@PathVariable String jobId) {
+        try {
+            return ResponseEntity.ok(batchService.getJobStatus(jobId));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/process-queue/{jobId}")
+    public ResponseEntity<List<LeaveProcessQueueItemDTO>> getProcessQueue(
+            @PathVariable String jobId,
+            @RequestParam(defaultValue = "0") int from) {
+        try {
+            return ResponseEntity.ok(batchService.getJobQueue(jobId, from));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/process-result/{jobId}")
+    public ResponseEntity<LeaveProcessResultDTO> getProcessResult(@PathVariable String jobId) {
+        try {
+            return ResponseEntity.ok(batchService.getJobResult(jobId));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException ex) {
+            LeaveProcessResultDTO pending = new LeaveProcessResultDTO(
+                    0,
+                    0,
+                    java.util.List.of("Job is still running"),
+                    java.util.List.of()
+            );
+            return ResponseEntity.status(409).body(pending);
+        }
     }
 
     @PostMapping("/process")
