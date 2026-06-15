@@ -589,46 +589,41 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
      *
      * Handles two cases:
      *  1. Non-recurring holidays — matched by their exact holidayDate (or observedDate) within the range.
-     *  2. Recurring holidays (recurringAlways = 1) — their month/day is projected onto every year
-     *     covered by the range, so a holiday saved once (e.g. Dec 25 2024) is automatically
-     *     recognised as Dec 25 2025, Dec 25 2026, etc. without needing yearly re-entry.
+     *  2. Recurring holidays — their month/day is projected onto every year covered by the range,
+     *     so a holiday saved once (e.g. Dec 25 2024) is automatically recognised as Dec 25 2025,
+     *     Dec 25 2026, etc. without needing yearly re-entry.
      */
     Set<LocalDate> loadHolidayDates(LocalDate from, LocalDate to) {
-        // Step 1: non-recurring holidays with exact date in range
-        String sqlNonRecurring =
-                "SELECT holidayDate, observedDate FROM holiday " +
-                "WHERE isActive = 1 AND recurringAlways = 0 AND (" +
-                "  (holidayDate >= ? AND holidayDate <= ?) OR " +
-                "  (observedDate >= ? AND observedDate <= ?))";
-        List<Map<String, Object>> nonRecurringRows =
-                jdbc.queryForList(sqlNonRecurring, from, to, from, to);
+        String sql = "SELECT holidayDate, observedDate, isActive, recurringAlways FROM holiday";
+        List<Map<String, Object>> rows = jdbc.queryForList(sql);
 
         Set<LocalDate> result = new HashSet<>();
-        for (Map<String, Object> row : nonRecurringRows) {
-            Object hd = row.get("holidayDate");
-            Object od = row.get("observedDate");
-            if (hd instanceof java.sql.Date) result.add(((java.sql.Date) hd).toLocalDate());
-            if (od instanceof java.sql.Date) result.add(((java.sql.Date) od).toLocalDate());
-        }
-
-        // Step 2: recurring holidays — project month/day onto every year in the range
-        String sqlRecurring =
-                "SELECT holidayDate, observedDate FROM holiday " +
-                "WHERE isActive = 1 AND recurringAlways = 1";
-        List<Map<String, Object>> recurringRows = jdbc.queryForList(sqlRecurring);
-
         int fromYear = from.getYear();
-        int toYear   = to.getYear();
+        int toYear = to.getYear();
 
-        for (Map<String, Object> row : recurringRows) {
-            Object hd = row.get("holidayDate");
-            Object od = row.get("observedDate");
+        for (Map<String, Object> row : rows) {
+            if (!isDbTrue(row.get("isActive"))) {
+                continue;
+            }
 
-            if (hd instanceof java.sql.Date) {
-                LocalDate base = ((java.sql.Date) hd).toLocalDate();
+            LocalDate holidayDate = toLocalDateFromDb(row.get("holidayDate"));
+            LocalDate observedDate = toLocalDateFromDb(row.get("observedDate"));
+            boolean recurring = isDbTrue(row.get("recurringAlways"));
+
+            if (!recurring) {
+                if (holidayDate != null && !holidayDate.isBefore(from) && !holidayDate.isAfter(to)) {
+                    result.add(holidayDate);
+                }
+                if (observedDate != null && !observedDate.isBefore(from) && !observedDate.isAfter(to)) {
+                    result.add(observedDate);
+                }
+                continue;
+            }
+
+            if (holidayDate != null) {
                 for (int year = fromYear; year <= toYear; year++) {
                     try {
-                        LocalDate projected = LocalDate.of(year, base.getMonthValue(), base.getDayOfMonth());
+                        LocalDate projected = LocalDate.of(year, holidayDate.getMonthValue(), holidayDate.getDayOfMonth());
                         if (!projected.isBefore(from) && !projected.isAfter(to)) {
                             result.add(projected);
                         }
@@ -637,11 +632,10 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                     }
                 }
             }
-            if (od instanceof java.sql.Date) {
-                LocalDate base = ((java.sql.Date) od).toLocalDate();
+            if (observedDate != null) {
                 for (int year = fromYear; year <= toYear; year++) {
                     try {
-                        LocalDate projected = LocalDate.of(year, base.getMonthValue(), base.getDayOfMonth());
+                        LocalDate projected = LocalDate.of(year, observedDate.getMonthValue(), observedDate.getDayOfMonth());
                         if (!projected.isBefore(from) && !projected.isAfter(to)) {
                             result.add(projected);
                         }
@@ -687,12 +681,20 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
      */
     private double lookupVlEarnRate(int absentDays, LocalDate cutoffEndDate) {
         try {
-            String sql = "SELECT TOP 1 earn FROM earningleave " +
+            String sql = "SELECT earn, effectivityDate FROM earningleave " +
                          "WHERE day = ? AND effectivityDate <= ? " +
                          "ORDER BY effectivityDate DESC";
-            List<Map<String, Object>> rows = jdbc.queryForList(sql,
-                    String.valueOf(absentDays), cutoffEndDate.atStartOfDay());
+            List<Map<String, Object>> rows = jdbc.queryForList(sql, absentDays, cutoffEndDate.atStartOfDay());
             if (!rows.isEmpty() && rows.get(0).get("earn") != null) {
+                return Double.parseDouble(rows.get(0).get("earn").toString());
+            }
+
+            String fallbackSql = "SELECT earn, effectivityDate FROM earningleave " +
+                                 "WHERE day = ? ORDER BY effectivityDate ASC";
+            rows = jdbc.queryForList(fallbackSql, absentDays);
+            if (!rows.isEmpty() && rows.get(0).get("earn") != null) {
+                log.debug("EarningLeave: using earliest available rate for absentDays={} (no rate effective on {})",
+                        absentDays, cutoffEndDate);
                 return Double.parseDouble(rows.get(0).get("earn").toString());
             }
         } catch (Exception ex) {
@@ -721,17 +723,16 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
 
             if (hours > 0) {
                 // Primary: find the rate effective on or before the cutoff date
-                String sqlH = "SELECT TOP 1 hoursEquivalent FROM dayequivalenthours " +
+                String sqlH = "SELECT hoursEquivalent, effectivityDate FROM dayequivalenthours " +
                               "WHERE hours = ? AND effectivityDate <= ? " +
                               "ORDER BY effectivityDate DESC";
-                List<Map<String, Object>> hRows = jdbc.queryForList(sqlH,
-                        String.valueOf(hours), cutoffEndDate.atStartOfDay());
+                List<Map<String, Object>> hRows = jdbc.queryForList(sqlH, hours, cutoffEndDate.atStartOfDay());
 
                 // Fallback: no rate was effective yet — use the earliest rate in the table
                 if (hRows.isEmpty() || hRows.get(0).get("hoursEquivalent") == null) {
-                    String sqlHFallback = "SELECT TOP 1 hoursEquivalent FROM dayequivalenthours " +
+                    String sqlHFallback = "SELECT hoursEquivalent, effectivityDate FROM dayequivalenthours " +
                                          "WHERE hours = ? ORDER BY effectivityDate ASC";
-                    hRows = jdbc.queryForList(sqlHFallback, String.valueOf(hours));
+                    hRows = jdbc.queryForList(sqlHFallback, hours);
                     if (!hRows.isEmpty()) {
                         log.debug("DayEquivalentHours: using earliest available rate for hours={} (no rate effective on {})",
                                 hours, cutoffEndDate);
@@ -747,17 +748,16 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
 
             if (remainingMinutes > 0) {
                 // Primary: find the rate effective on or before the cutoff date
-                String sqlM = "SELECT TOP 1 minutesEquivalent FROM dayequivalentminutes " +
+                String sqlM = "SELECT minutesEquivalent, effectivityDate FROM dayequivalentminutes " +
                               "WHERE minutes = ? AND effectivityDate <= ? " +
                               "ORDER BY effectivityDate DESC";
-                List<Map<String, Object>> mRows = jdbc.queryForList(sqlM,
-                        String.valueOf(remainingMinutes), cutoffEndDate.atStartOfDay());
+                List<Map<String, Object>> mRows = jdbc.queryForList(sqlM, remainingMinutes, cutoffEndDate.atStartOfDay());
 
                 // Fallback: no rate was effective yet — use the earliest rate in the table
                 if (mRows.isEmpty() || mRows.get(0).get("minutesEquivalent") == null) {
-                    String sqlMFallback = "SELECT TOP 1 minutesEquivalent FROM dayequivalentminutes " +
+                    String sqlMFallback = "SELECT minutesEquivalent, effectivityDate FROM dayequivalentminutes " +
                                          "WHERE minutes = ? ORDER BY effectivityDate ASC";
-                    mRows = jdbc.queryForList(sqlMFallback, String.valueOf(remainingMinutes));
+                    mRows = jdbc.queryForList(sqlMFallback, remainingMinutes);
                     if (!mRows.isEmpty()) {
                         log.debug("DayEquivalentMinutes: using earliest available rate for minutes={} (no rate effective on {})",
                                 remainingMinutes, cutoffEndDate);
@@ -951,12 +951,16 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
      */
     private boolean isScheduledWorkDay(String dtrEmployeeId, LocalDate day) {
         try {
-            String sql = "SELECT COUNT(*) FROM work_schedule " +
-                         "WHERE employeeId = ? AND wsDateTime >= ? AND wsDateTime < ? " +
-                         "  AND (isDayOff IS NULL OR isDayOff = 0)";
-            Integer count = jdbc.queryForObject(sql, Integer.class,
+            String sql = "SELECT isDayOff FROM work_schedule " +
+                         "WHERE employeeId = ? AND wsDateTime >= ? AND wsDateTime < ?";
+            List<Map<String, Object>> rows = jdbc.queryForList(sql,
                     dtrEmployeeId, day.atStartOfDay(), day.plusDays(1).atStartOfDay());
-            return count != null && count > 0;
+            for (Map<String, Object> row : rows) {
+                if (!isDbTrue(row.get("isDayOff"))) {
+                    return true;
+                }
+            }
+            return false;
         } catch (Exception ex) {
             log.warn("Could not check scheduled work day for employee {} on {}: {}", dtrEmployeeId, day, ex.getMessage());
             return false;
@@ -970,26 +974,55 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
      */
     private ScheduledShift loadScheduledShiftForDay(String dtrEmployeeId, LocalDate day) {
         try {
-            String sql = "SELECT TOP 1 ts.timeIn, ts.timeOut, ts.breakOut, ts.breakIn " +
+            String sql = "SELECT ts.timeIn, ts.timeOut, ts.breakOut, ts.breakIn, ws.isDayOff " +
                          "FROM work_schedule ws " +
                          "JOIN time_shift ts ON ws.tsCode = ts.tsCode " +
                          "WHERE ws.employeeId = ? AND ws.wsDateTime >= ? AND ws.wsDateTime < ? " +
-                         "  AND (ws.isDayOff IS NULL OR ws.isDayOff = 0) " +
                          "ORDER BY ws.wsId ASC";
             List<Map<String, Object>> rows = jdbc.queryForList(sql,
                     dtrEmployeeId, day.atStartOfDay(), day.plusDays(1).atStartOfDay());
-            if (rows.isEmpty()) return null;
-            Map<String, Object> row = rows.get(0);
-            java.time.LocalTime ti = toLocalTimeFromDb(row.get("timeIn"));
-            java.time.LocalTime to = toLocalTimeFromDb(row.get("timeOut"));
-            if (ti == null || to == null) return null;
-            return new ScheduledShift(ti, to,
-                    toLocalTimeFromDb(row.get("breakOut")),
-                    toLocalTimeFromDb(row.get("breakIn")));
+            for (Map<String, Object> row : rows) {
+                if (isDbTrue(row.get("isDayOff"))) {
+                    continue;
+                }
+                java.time.LocalTime ti = toLocalTimeFromDb(row.get("timeIn"));
+                java.time.LocalTime to = toLocalTimeFromDb(row.get("timeOut"));
+                if (ti == null || to == null) {
+                    continue;
+                }
+                return new ScheduledShift(ti, to,
+                        toLocalTimeFromDb(row.get("breakOut")),
+                        toLocalTimeFromDb(row.get("breakIn")));
+            }
+            return null;
         } catch (Exception ex) {
             log.warn("Could not load scheduled shift for employee {} on {}: {}", dtrEmployeeId, day, ex.getMessage());
             return null;
         }
+    }
+
+    private boolean isDbTrue(Object value) {
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue() != 0;
+        }
+        if (value == null) {
+            return false;
+        }
+        String text = value.toString().trim();
+        return "true".equalsIgnoreCase(text) || "t".equalsIgnoreCase(text)
+                || "yes".equalsIgnoreCase(text) || "y".equalsIgnoreCase(text)
+                || "1".equals(text);
+    }
+
+    private LocalDate toLocalDateFromDb(Object dbVal) {
+        if (dbVal == null) return null;
+        if (dbVal instanceof LocalDate) return (LocalDate) dbVal;
+        if (dbVal instanceof java.sql.Date) return ((java.sql.Date) dbVal).toLocalDate();
+        if (dbVal instanceof java.sql.Timestamp) return ((java.sql.Timestamp) dbVal).toLocalDateTime().toLocalDate();
+        return null;
     }
 
     private java.time.LocalTime toLocalTimeFromDb(Object dbVal) {
