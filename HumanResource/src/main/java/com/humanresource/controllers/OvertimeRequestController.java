@@ -106,7 +106,7 @@ public class OvertimeRequestController {
         Boolean deleted = overtimeRequestService.delete(id);
         if (!deleted) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MetadataResponse("Failed to delete overtime request — it may already be Approved"));
+                    .body(new MetadataResponse("Failed to delete overtime request"));
         }
         return ResponseEntity.ok(new MetadataResponse(id, "Overtime request deleted successfully"));
     }

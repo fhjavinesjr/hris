@@ -202,11 +202,6 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
         try {
             Optional<OvertimeRequest> optional = overtimeRequestRepository.findById(overtimeRequestId);
             if (optional.isEmpty()) return false;
-            // Cannot delete an approved overtime order
-            if ("Approved".equals(optional.get().getStatus())) {
-                log.warn("OvertimeRequest delete rejected: cannot delete an Approved OT order (id {})", overtimeRequestId);
-                return false;
-            }
             overtimeRequestRepository.deleteById(overtimeRequestId);
             return true;
         } catch (Exception ex) {
