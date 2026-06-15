@@ -18,4 +18,8 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
     List<LeaveApplication> findByEmployeeIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
             Long employeeId, LocalDate periodEnd, LocalDate periodStart);
 
+        // Approved leaves overlapping a period across all employees.
+        List<LeaveApplication> findByStatusAndApprovedStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            String status, String approvedStatus, LocalDate periodEnd, LocalDate periodStart);
+
 }

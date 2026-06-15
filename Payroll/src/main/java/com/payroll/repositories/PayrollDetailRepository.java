@@ -22,18 +22,16 @@ public interface PayrollDetailRepository extends JpaRepository<PayrollDetail, Lo
     /** Delete child earnings before deleting parent (FK constraint). */
     @Modifying
     @Transactional
-    @Query(value = "DELETE FROM payroll_detail_earning WHERE payroll_detail_id IN " +
-                   "(SELECT id FROM payroll_detail WHERE employeeNo = :empNo AND salaryPeriodKey = :periodKey)",
-           nativeQuery = true)
+    @Query("DELETE FROM PayrollDetailEarning e WHERE e.payrollDetail.id IN (" +
+            "SELECT pd.id FROM PayrollDetail pd WHERE pd.employeeNo = :empNo AND pd.salaryPeriodKey = :periodKey)")
     void deleteEarningsByEmployeeNoAndSalaryPeriodKey(@Param("empNo") String employeeNo,
                                                       @Param("periodKey") String salaryPeriodKey);
 
     /** Delete child deductions before deleting parent (FK constraint). */
     @Modifying
     @Transactional
-    @Query(value = "DELETE FROM payroll_detail_deduction WHERE payroll_detail_id IN " +
-                   "(SELECT id FROM payroll_detail WHERE employeeNo = :empNo AND salaryPeriodKey = :periodKey)",
-           nativeQuery = true)
+    @Query("DELETE FROM PayrollDetailDeduction d WHERE d.payrollDetail.id IN (" +
+            "SELECT pd.id FROM PayrollDetail pd WHERE pd.employeeNo = :empNo AND pd.salaryPeriodKey = :periodKey)")
     void deleteDeductionsByEmployeeNoAndSalaryPeriodKey(@Param("empNo") String employeeNo,
                                                         @Param("periodKey") String salaryPeriodKey);
 

@@ -52,18 +52,18 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "    SELECT " +
                 "        e.employeeNo, " +
                 "        e.employeeId, " +
-                "        COALESCE(d.work_date, CONVERT(DATE, ws.wsDateTime)) AS dtrDate, " +
+            "        COALESCE(d.work_date, CAST(ws.wsDateTime AS DATE)) AS dtrDate, " +
                 "        COALESCE(d.attendance_status, 'REST DAY') AS status, " +
                 "        COALESCE(d.total_work_minutes, 0) AS workMinutes, " +
                 "        COALESCE(d.total_late_minutes, 0) AS lateMinutes, " +
                 "        COALESCE(d.total_undertime_minutes, 0) AS undertimeMinutes, " +
                 "        COALESCE(d.total_overtime_minutes, 0) AS overtimeMinutes, " +
-                "        CASE WHEN ws.isDayOff = 1 THEN 1 ELSE 0 END AS isRestDay " +
+            "        ws.isDayOff AS isRestDay " +
                 "    FROM work_schedule ws " +
                 "    INNER JOIN employee e ON e.employeeId = ws.employeeId " +
                 "    LEFT JOIN dtr_daily d ON d.employee_id = CAST(ws.employeeId AS VARCHAR) " +
-                "        AND d.work_date = CONVERT(DATE, ws.wsDateTime) " +
-                "    WHERE CONVERT(DATE, ws.wsDateTime) BETWEEN ? AND ? " +
+            "        AND d.work_date = CAST(ws.wsDateTime AS DATE) " +
+            "    WHERE CAST(ws.wsDateTime AS DATE) BETWEEN ? AND ? " +
                 "    UNION " +
                 "    SELECT " +
                 "        e.employeeNo, " +
@@ -81,7 +81,7 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "        AND NOT EXISTS ( " +
                 "            SELECT 1 FROM work_schedule ws2 " +
                 "            WHERE ws2.employeeId = CAST(d.employee_id AS INT) " +
-                "            AND CONVERT(DATE, ws2.wsDateTime) = d.work_date " +
+                "            AND CAST(ws2.wsDateTime AS DATE) = d.work_date " +
                 "        ) " +
                 ") " +
                 "SELECT " +
@@ -107,7 +107,7 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "LEFT JOIN overtime_request ot " +
                 "    ON ot.employeeId = ad.employeeId " +
                 "    AND ot.status = 'Approved' " +
-                "    AND ad.dtrDate = CONVERT(DATE, ot.dateTimeFrom) " +
+                "    AND ad.dtrDate = CAST(ot.dateTimeFrom AS DATE) " +
                 "LEFT JOIN pass_slip ps " +
                 "    ON ps.employeeId = ad.employeeId " +
                 "    AND ps.status = 'Approved' " +
@@ -141,7 +141,8 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                     
                     String status = rs.getString("status");
                     Integer workMin = rs.getInt("workMinutes");
-                    Integer isRestDayFlag = rs.getInt("isRestDay");
+                    Object isRestDayRaw = rs.getObject("isRestDay");
+                    boolean isRestDayFlag = isDbTrue(isRestDayRaw);
                     
                     // Get approval flags from database
                     Integer hasOb = rs.getInt("hasApprovedOb");
@@ -155,11 +156,11 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                     // But NOT if it's a rest day
                     boolean present = ("PRESENT".equalsIgnoreCase(status) || 
                                       "Present".equalsIgnoreCase(status) ||
-                                      (workMin != null && workMin > 0)) && isRestDayFlag != 1;
+                                      (workMin != null && workMin > 0)) && !isRestDayFlag;
                     row.put("present", present);
                     
                     // Check if rest day (from work_schedule isDayOff flag)
-                    boolean restDay = isRestDayFlag == 1 || 
+                    boolean restDay = isRestDayFlag || 
                                       "REST DAY".equalsIgnoreCase(status) || 
                                       "RESTDAY".equalsIgnoreCase(status);
                     row.put("restDay", restDay);
@@ -178,6 +179,22 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                     
                     return row;
                 });
+    }
+
+    private boolean isDbTrue(Object value) {
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue() != 0;
+        }
+        if (value == null) {
+            return false;
+        }
+        String text = value.toString().trim();
+        return "true".equalsIgnoreCase(text) || "t".equalsIgnoreCase(text)
+                || "yes".equalsIgnoreCase(text) || "y".equalsIgnoreCase(text)
+                || "1".equals(text);
     }
 
     private DTRDailyDTO toDTO(DTRDaily entity) {

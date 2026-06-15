@@ -244,7 +244,7 @@ public class DTRProcessingServiceImpl implements DTRProcessingService {
     private ShiftTemplate shiftTemplateByCode(String tsCode) {
         if (tsCode == null || tsCode.trim().isEmpty()) return null;
 
-        String sql = "SELECT TOP 1 timeIn, timeOut, breakOut, breakIn, tsFlexible, " +
+        String sql = "SELECT timeIn, timeOut, breakOut, breakIn, tsFlexible, " +
                      "monInTimeLimit, tueInTimeLimit, wedInTimeLimit, thuInTimeLimit, " +
                      "friInTimeLimit, satInTimeLimit, sunInTimeLimit " +
                      "FROM time_shift WHERE tsCode = ?";

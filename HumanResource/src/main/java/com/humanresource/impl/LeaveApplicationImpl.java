@@ -2,35 +2,40 @@ package com.humanresource.impl;
 
 import com.humanresource.dtos.ApprovedLeaveDTO;
 import com.humanresource.dtos.LeaveApplicationDTO;
+import com.humanresource.entitymodels.Employee;
 import com.humanresource.entitymodels.LeaveApplication;
+import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.repositories.LeaveApplicationRepository;
 import com.humanresource.services.DateConflictChecker;
 import com.humanresource.services.LeaveApplicationService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class LeaveApplicationImpl implements LeaveApplicationService {
 
     private static final Logger log = LoggerFactory.getLogger(LeaveApplicationImpl.class);
     private final LeaveApplicationRepository leaveApplicationRepository;
+    private final EmployeeRepository employeeRepository;
     private final DateConflictChecker conflictChecker;
-    private final JdbcTemplate jdbcTemplate;
 
     public LeaveApplicationImpl(LeaveApplicationRepository leaveApplicationRepository,
-                                DateConflictChecker conflictChecker,
-                                JdbcTemplate jdbcTemplate) {
+                                EmployeeRepository employeeRepository,
+                                DateConflictChecker conflictChecker) {
         this.leaveApplicationRepository = leaveApplicationRepository;
+        this.employeeRepository = employeeRepository;
         this.conflictChecker = conflictChecker;
-        this.jdbcTemplate = jdbcTemplate;
     }
 
     private LeaveApplicationDTO toDTO(LeaveApplication entity) {
@@ -176,62 +181,46 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
 
     @Override
     public List<ApprovedLeaveDTO> getBulkApprovedLeaves(LocalDate from, LocalDate to) throws Exception {
-        // SQL query to get approved leaves and expand date ranges into individual dates
-        String sql = """
-            WITH DateSequence AS (
-                SELECT 
-                    la.leaveApplicationId,
-                    la.employeeId,
-                    la.leaveType,
-                    la.startDate,
-                    la.endDate,
-                    la.noOfDays,
-                    la.startDate AS leaveDate
-                FROM leave_application la
-                WHERE la.status = 'Approved'
-                  AND la.approvedStatus = 'Approved'
-                  AND la.startDate <= ?
-                  AND la.endDate >= ?
-                
-                UNION ALL
-                
-                SELECT 
-                    ds.leaveApplicationId,
-                    ds.employeeId,
-                    ds.leaveType,
-                    ds.startDate,
-                    ds.endDate,
-                    ds.noOfDays,
-                    DATEADD(day, 1, ds.leaveDate)
-                FROM DateSequence ds
-                WHERE ds.leaveDate < ds.endDate
-            )
-            SELECT 
-                e.employeeNo,
-                ds.leaveDate,
-                ds.leaveType,
-                CAST(1 AS BIT) AS withPay,
-                'WHOLEDAY' AS workDayType,
-                ds.noOfDays
-            FROM DateSequence ds
-            INNER JOIN employee e ON e.employeeId = ds.employeeId
-            WHERE ds.leaveDate BETWEEN ? AND ?
-            ORDER BY e.employeeNo, ds.leaveDate
-            OPTION (MAXRECURSION 365)
-            """;
-
         List<ApprovedLeaveDTO> result = new ArrayList<>();
         try {
-            jdbcTemplate.query(sql, rs -> {
-                ApprovedLeaveDTO dto = new ApprovedLeaveDTO();
-                dto.setEmployeeNo(rs.getString("employeeNo"));
-                dto.setLeaveDate(rs.getDate("leaveDate").toLocalDate());
-                dto.setLeaveType(rs.getString("leaveType"));
-                dto.setWithPay(rs.getBoolean("withPay"));
-                dto.setWorkDayType(rs.getString("workDayType"));
-                dto.setNoOfDaysApplied(rs.getDouble("noOfDays"));
-                result.add(dto);
-            }, to, from, from, to);
+            List<LeaveApplication> approvedLeaves = leaveApplicationRepository
+                    .findByStatusAndApprovedStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                            "Approved", "Approved", to, from);
+
+            Set<Long> employeeIds = approvedLeaves.stream()
+                    .map(LeaveApplication::getEmployeeId)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            Map<Long, String> employeeNoById = employeeRepository.findAllById(employeeIds).stream()
+                    .collect(Collectors.toMap(Employee::getEmployeeId, Employee::getEmployeeNo));
+
+            for (LeaveApplication leave : approvedLeaves) {
+                if (leave.getStartDate() == null || leave.getEndDate() == null) {
+                    continue;
+                }
+
+                LocalDate effectiveStart = leave.getStartDate().isBefore(from) ? from : leave.getStartDate();
+                LocalDate effectiveEnd = leave.getEndDate().isAfter(to) ? to : leave.getEndDate();
+
+                for (LocalDate day = effectiveStart; !day.isAfter(effectiveEnd); day = day.plusDays(1)) {
+                    ApprovedLeaveDTO dto = new ApprovedLeaveDTO();
+                    dto.setEmployeeNo(employeeNoById.get(leave.getEmployeeId()));
+                    dto.setLeaveDate(day);
+                    dto.setLeaveType(leave.getLeaveType());
+                    dto.setWithPay(true);
+                    dto.setWorkDayType("WHOLEDAY");
+                    dto.setNoOfDaysApplied(leave.getNoOfDays());
+                    result.add(dto);
+                }
+            }
+
+            result.sort(
+                    Comparator.comparing(ApprovedLeaveDTO::getEmployeeNo,
+                                    Comparator.nullsLast(String::compareTo))
+                            .thenComparing(ApprovedLeaveDTO::getLeaveDate,
+                                    Comparator.nullsLast(LocalDate::compareTo))
+            );
             
             log.info("Fetched {} approved leave records from {} to {}", result.size(), from, to);
             return result;
