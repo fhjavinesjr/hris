@@ -149,7 +149,7 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
             entity.setNoOfDays(dto.getNoOfDays());
             entity.setCommutation(dto.getCommutation());
             entity.setDetails(dto.getDetails());
-            entity.setStatus(dto.getStatus());
+            entity.setStatus(dto.getApprovedStatus());
             entity.setRecommendingApprovalById(dto.getRecommendingApprovalById());
             entity.setAuthorizedOfficialId(dto.getAuthorizedOfficialId());
             entity.setApprovedById(dto.getApprovedById());
