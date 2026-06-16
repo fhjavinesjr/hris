@@ -191,22 +191,28 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public List<EmployeePayrollInfoResponse> getPayrollInfoBulk(String departmentCode, String employeeNo) {
         StringBuilder sql = new StringBuilder(
-            "SELECT e.employeeNo," +
-            "       CONCAT(COALESCE(e.firstname,''), ' ', COALESCE(e.lastname,'')," +
-            "              CASE WHEN e.suffix IS NOT NULL AND e.suffix <> '' THEN CONCAT(' ', e.suffix) ELSE '' END) AS fullName," +
-            "       COALESCE(jp.jobPositionName, '') AS department," +
-            "       ea.salaryGrade," +
-            "       ea.salaryStep," +
-            "       CAST(ea.salaryPerMonth AS FLOAT) AS basicMonthlySalary," +
-            "       CAST(COALESCE(n.isContractual, 0) AS BIT) AS isExcludedFromPayroll" +
-            " FROM employee e" +
-            " JOIN employeeappointment ea ON ea.employeeId = e.employeeId AND ea.activeAppointment = 1" +
-            " LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId" +
-            " LEFT JOIN natureofappointment n ON n.natureofappointmentId = ea.natureOfAppointmentId" +
-            " WHERE 1=1"
+                "SELECT e.employeeNo," +
+                        "       CONCAT(COALESCE(e.firstname,''), ' ', COALESCE(e.lastname,'')," +
+                        "              CASE WHEN e.suffix IS NOT NULL AND e.suffix <> '' THEN CONCAT(' ', e.suffix) ELSE '' END) AS fullName," +
+                        "       COALESCE(jp.jobPositionName, '') AS department," +
+                        "       ea.salaryGrade," +
+                        "       ea.salaryStep," +
+                        "       CAST(ea.salaryPerMonth AS FLOAT) AS basicMonthlySalary," +
+                        // Removed CAST and COALESCE. rs.getBoolean() will safely default NULLs to false.
+                        "       n.isContractual AS isExcludedFromPayroll" +
+                        " FROM employee e" +
+                        // Parameterized activeAppointment to let JDBC handle the dialect (1 vs true)
+                        " JOIN employeeappointment ea ON ea.employeeId = e.employeeId AND ea.activeAppointment = ?" +
+                        " LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId" +
+                        " LEFT JOIN natureofappointment n ON n.natureofappointmentId = ea.natureOfAppointmentId" +
+                        " WHERE 1=1"
         );
 
         List<Object> params = new ArrayList<>();
+
+        // Pass Boolean.TRUE so the driver translates it correctly for whichever DB is active
+        params.add(Boolean.TRUE);
+
         if (employeeNo != null && !employeeNo.isBlank()) {
             sql.append(" AND e.employeeNo = ?");
             params.add(employeeNo);
@@ -221,7 +227,10 @@ public class EmployeeServiceImpl implements EmployeeService {
             dto.setSalaryGrade(rs.getObject("salaryGrade") != null ? rs.getInt("salaryGrade") : null);
             dto.setSalaryStep(rs.getObject("salaryStep") != null ? rs.getInt("salaryStep") : null);
             dto.setBasicMonthlySalary(rs.getObject("basicMonthlySalary") != null ? rs.getDouble("basicMonthlySalary") : null);
+
+            // rs.getBoolean natively handles SQL NULL by returning false
             dto.setIsExcludedFromPayroll(rs.getBoolean("isExcludedFromPayroll"));
+
             return dto;
         });
     }
