@@ -1,0 +1,155 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="pds_c4" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="61e9ff6a-9bb1-4c7b-b514-cdc8ecc58ba0">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
+	<query language="sql"><![CDATA[SELECT
+            ISNULL(e.employeeNo, '')  AS employeeNo,
+            ISNULL(pd.surname, '')    AS surname,
+            ISNULL(pd.firstname, '')  AS firstname,
+            ISNULL(pd.middlename, '') AS middlename,
+            ISNULL(pd.q34a, '')       AS q34a,
+            ISNULL(pd.q34aDetails, '') AS q34aDetails,
+            ISNULL(pd.q34b, '')       AS q34b,
+            ISNULL(pd.q34bDetails, '') AS q34bDetails,
+            ISNULL(pd.q35a, '')       AS q35a,
+            ISNULL(pd.q35aDetails, '') AS q35aDetails,
+            ISNULL(pd.q35b, '')       AS q35b,
+            ISNULL(pd.q35bDetails, '') AS q35bDetails,
+            ISNULL(CONVERT(varchar(10), CAST(pd.q35bDateFiled AS date), 101), '') AS q35bDateFiled,
+            ISNULL(pd.q35bStatus, '') AS q35bStatus,
+            ISNULL(pd.q36, '')        AS q36,
+            ISNULL(pd.q36Details, '') AS q36Details,
+            ISNULL(pd.q37a, '')       AS q37a,
+            ISNULL(pd.q37aDetails, '') AS q37aDetails,
+            ISNULL(pd.q37b, '')       AS q37b,
+            ISNULL(pd.q37bDetails, '') AS q37bDetails,
+            ISNULL(pd.q37c, '')       AS q37c,
+            ISNULL(pd.q37cDetails, '') AS q37cDetails,
+            ISNULL(pd.q38, '')        AS q38,
+            ISNULL(pd.q38Details, '') AS q38Details,
+            ISNULL(pd.q39a, '')       AS q39a,
+            ISNULL(pd.q39aDetails, '') AS q39aDetails,
+            ISNULL(pd.q39b, '')       AS q39b,
+            ISNULL(pd.q39bDetails, '') AS q39bDetails,
+            ISNULL(pd.q39c, '')       AS q39c,
+            ISNULL(pd.q39cDetails, '') AS q39cDetails,
+            ISNULL(pd.govIdType, '')   AS govIdType,
+            ISNULL(pd.govIdNumber, '') AS govIdNumber,
+            ISNULL(CONVERT(varchar(10), CAST(pd.govIdDate AS date), 101), '') AS govIdDate,
+            ISNULL(pd.govIdPlace, '')  AS govIdPlace,
+            ISNULL(STUFF((
+                SELECT CHAR(10) +
+                       ISNULL(r.refName, '') +
+                       ' | ' + ISNULL(r.address, '') +
+                       ' | Tel: ' + ISNULL(r.contactNo, '')
+                FROM characterreferences r
+                WHERE r.personalDataId = pd.personalDataId
+                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS referencesList
+        FROM personaldata pd
+        JOIN employee e ON pd.employeeId = e.employeeId
+        WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
+	<field name="employeeNo" class="java.lang.String"/>
+	<field name="surname" class="java.lang.String"/>
+	<field name="firstname" class="java.lang.String"/>
+	<field name="middlename" class="java.lang.String"/>
+	<field name="q34a" class="java.lang.String"/>
+	<field name="q34aDetails" class="java.lang.String"/>
+	<field name="q34b" class="java.lang.String"/>
+	<field name="q34bDetails" class="java.lang.String"/>
+	<field name="q35a" class="java.lang.String"/>
+	<field name="q35aDetails" class="java.lang.String"/>
+	<field name="q35b" class="java.lang.String"/>
+	<field name="q35bDetails" class="java.lang.String"/>
+	<field name="q35bDateFiled" class="java.lang.String"/>
+	<field name="q35bStatus" class="java.lang.String"/>
+	<field name="q36" class="java.lang.String"/>
+	<field name="q36Details" class="java.lang.String"/>
+	<field name="q37a" class="java.lang.String"/>
+	<field name="q37aDetails" class="java.lang.String"/>
+	<field name="q37b" class="java.lang.String"/>
+	<field name="q37bDetails" class="java.lang.String"/>
+	<field name="q37c" class="java.lang.String"/>
+	<field name="q37cDetails" class="java.lang.String"/>
+	<field name="q38" class="java.lang.String"/>
+	<field name="q38Details" class="java.lang.String"/>
+	<field name="q39a" class="java.lang.String"/>
+	<field name="q39aDetails" class="java.lang.String"/>
+	<field name="q39b" class="java.lang.String"/>
+	<field name="q39bDetails" class="java.lang.String"/>
+	<field name="q39c" class="java.lang.String"/>
+	<field name="q39cDetails" class="java.lang.String"/>
+	<field name="govIdType" class="java.lang.String"/>
+	<field name="govIdNumber" class="java.lang.String"/>
+	<field name="govIdDate" class="java.lang.String"/>
+	<field name="govIdPlace" class="java.lang.String"/>
+	<field name="referencesList" class="java.lang.String"/>
+	<title height="52">
+		<element kind="staticText" uuid="d7d6bbbf-e666-45a8-8c93-da8241b9f739" x="0" y="0" width="555" height="18" fontName="SansSerif" fontSize="12.0" bold="true" hTextAlign="Center">
+			<text><![CDATA[CS Form 212 (Revised 2017) â€” PERSONAL DATA SHEET]]></text>
+		</element>
+		<element kind="staticText" uuid="563d9974-9751-40be-89d1-e68462dbbd64" x="0" y="20" width="555" height="14" fontName="SansSerif" fontSize="9.0" hTextAlign="Center">
+			<text><![CDATA[Sheet C4: Questions, References & Government ID]]></text>
+		</element>
+		<element kind="textField" uuid="9c55bf47-d256-4b4a-b7ac-085890542fd4" x="0" y="36" width="555" height="14" fontName="SansSerif" fontSize="9.0" bold="true" hTextAlign="Center">
+			<expression><![CDATA["Employee No: " + $F{employeeNo} + "   Name: " + $F{surname} + ", " + $F{firstname} + " " + $F{middlename}]]></expression>
+		</element>
+	</title>
+	<detail>
+		<band height="16">
+			<element kind="staticText" uuid="4459e69c-36ba-4369-9574-7e10d5499998" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[QUESTIONS (Mark YES or NO)]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="75a6724d-8293-446c-8fc9-eb749d8e71bb" x="0" y="0" width="555" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA["34a. Are you related by consanguinity or affinity to the appointing authority?\n" +
+"     Answer: [" + $F{q34a}.toUpperCase() + "]" + (($F{q34aDetails} != null && !$F{q34aDetails}.isEmpty()) ? "  Details: " + $F{q34aDetails} : "") + "\n\n" +
+"34b. Have you ever been found guilty of any administrative offense?\n" +
+"     Answer: [" + $F{q34b}.toUpperCase() + "]" + (($F{q34bDetails} != null && !$F{q34bDetails}.isEmpty()) ? "  Details: " + $F{q34bDetails} : "") + "\n\n" +
+"35a. Have you ever been charged before any court or tribunal?\n" +
+"     Answer: [" + $F{q35a}.toUpperCase() + "]" + (($F{q35aDetails} != null && !$F{q35aDetails}.isEmpty()) ? "  Details: " + $F{q35aDetails} : "") + "\n\n" +
+"35b. Have you ever been convicted of any crime or violation of any law?\n" +
+"     Answer: [" + $F{q35b}.toUpperCase() + "]" + (($F{q35bDetails} != null && !$F{q35bDetails}.isEmpty()) ? "  Details: " + $F{q35bDetails} : "") +
+     ((!$F{q35bDateFiled}.isEmpty() || !$F{q35bStatus}.isEmpty()) ? "  Date Filed: " + $F{q35bDateFiled} + "  Status: " + $F{q35bStatus} : "") + "\n\n" +
+"36.  Have you ever been separated from the service in any of the following modes: resignation, etc.?\n" +
+"     Answer: [" + $F{q36}.toUpperCase() + "]" + (($F{q36Details} != null && !$F{q36Details}.isEmpty()) ? "  Details: " + $F{q36Details} : "") + "\n\n" +
+"37a. Have you ever been a candidate in a national or local election (last 3 years)?\n" +
+"     Answer: [" + $F{q37a}.toUpperCase() + "]" + (($F{q37aDetails} != null && !$F{q37aDetails}.isEmpty()) ? "  Details: " + $F{q37aDetails} : "") + "\n\n" +
+"37b. Have you resigned from the Government service during the 3-month period before filing a candidacy?\n" +
+"     Answer: [" + $F{q37b}.toUpperCase() + "]" + (($F{q37bDetails} != null && !$F{q37bDetails}.isEmpty()) ? "  Details: " + $F{q37bDetails} : "") + "\n\n" +
+"37c. Have you acquired the status of an immigrant or permanent resident of another country?\n" +
+"     Answer: [" + $F{q37c}.toUpperCase() + "]" + (($F{q37cDetails} != null && !$F{q37cDetails}.isEmpty()) ? "  Details: " + $F{q37cDetails} : "") + "\n\n" +
+"38.  Are you a member of any indigenous group?\n" +
+"     Answer: [" + $F{q38}.toUpperCase() + "]" + (($F{q38Details} != null && !$F{q38Details}.isEmpty()) ? "  Details: " + $F{q38Details} : "") + "\n\n" +
+"39a. Are you a person with disability (PWD)?\n" +
+"     Answer: [" + $F{q39a}.toUpperCase() + "]" + (($F{q39aDetails} != null && !$F{q39aDetails}.isEmpty()) ? "  Details: " + $F{q39aDetails} : "") + "\n\n" +
+"39b. Are you a solo parent (R.A. 8972)?\n" +
+"     Answer: [" + $F{q39b}.toUpperCase() + "]" + (($F{q39bDetails} != null && !$F{q39bDetails}.isEmpty()) ? "  Details: " + $F{q39bDetails} : "") + "\n\n" +
+"39c. Other (R.A. 8371 / R.A. 7277)?\n" +
+"     Answer: [" + $F{q39c}.toUpperCase() + "]" + (($F{q39cDetails} != null && !$F{q39cDetails}.isEmpty()) ? "  Details: " + $F{q39cDetails} : "")]]></expression>
+			</element>
+		</band>
+		<band height="16">
+			<element kind="staticText" uuid="23795ce9-0351-4b7e-a46a-ebb13d6c54cb" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[XI.  REFERENCES (Person not related by consanguinity or affinity to applicant)]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="b5a8b22f-fcb7-4ed5-a655-4bf49605a005" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA[$F{referencesList}]]></expression>
+			</element>
+		</band>
+		<band height="16">
+			<element kind="staticText" uuid="60c3dc74-33b9-4dfe-a9ca-bc3273ea4bff" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[XII.  GOVERNMENT-ISSUED ID]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="4abfa8a1-9d7b-41f7-9bea-fd57c5dacade" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA["Government-Issued ID Type: " + $F{govIdType} + "\n" +
+"ID Number: " + $F{govIdNumber} + "\n" +
+"Date / Place of Issue: " + $F{govIdDate} + "  /  " + $F{govIdPlace}]]></expression>
+			</element>
+		</band>
+	</detail>
+</jasperReport>

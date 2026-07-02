@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+                http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="pds_c3_voluntarywork_sub" pageWidth="802" pageHeight="595"
+              columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0"
+              uuid="c3ab0001-0000-4000-8000-000000000001">
+
+  <field name="organizationName" class="java.lang.String"/>
+  <field name="fromDate"         class="java.lang.String"/>
+  <field name="toDate"           class="java.lang.String"/>
+  <field name="voluntaryHrs"     class="java.lang.String"/>
+  <field name="positionTitle"    class="java.lang.String"/>
+
+  <detail>
+    <band height="11" splitType="Stretch">
+      <textField isStretchWithOverflow="true">
+        <reportElement x="0"   y="0" width="220" height="11" uuid="c3ab0001-0000-4000-8000-000000000002"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{organizationName} != null ? $F{organizationName} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="220"  y="0" width="90"  height="11" uuid="c3ab0001-0000-4000-8000-000000000003"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{fromDate} != null ? $F{fromDate} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="310"  y="0" width="90"  height="11" uuid="c3ab0001-0000-4000-8000-000000000004"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{toDate} != null ? $F{toDate} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="400"  y="0" width="80"  height="11" uuid="c3ab0001-0000-4000-8000-000000000005"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{voluntaryHrs} != null ? $F{voluntaryHrs} : ""]]></textFieldExpression>
+      </textField>
+      <textField isStretchWithOverflow="true">
+        <reportElement x="480"  y="0" width="322" height="11" uuid="c3ab0001-0000-4000-8000-000000000006"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{positionTitle} != null ? $F{positionTitle} : ""]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+
+  <noData>
+    <band height="11">
+      <staticText>
+        <reportElement x="0" y="0" width="802" height="11" uuid="c3ab0001-0000-4000-8000-000000000007"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <text><![CDATA[N/A]]></text>
+      </staticText>
+    </band>
+  </noData>
+
+</jasperReport>

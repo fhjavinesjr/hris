@@ -1,0 +1,90 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="pds_c2" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="081ca7e8-1300-4351-99eb-855fc6aed4bf">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
+	<query language="sql"><![CDATA[SELECT
+            ISNULL(e.employeeNo, '')  AS employeeNo,
+            ISNULL(pd.surname, '')    AS surname,
+            ISNULL(pd.firstname, '')  AS firstname,
+            ISNULL(pd.middlename, '') AS middlename,
+            ISNULL(STUFF((
+                SELECT CHAR(10) +
+                       ISNULL(cs.careerServiceName, '') +
+                       CASE WHEN cs.civilServiceRating IS NOT NULL
+                            THEN ' | Rating: ' + CAST(CAST(cs.civilServiceRating AS decimal(10,2)) AS varchar)
+                            ELSE '' END +
+                       CASE WHEN cs.dateOfExamination IS NOT NULL
+                            THEN ' | Date: ' + CONVERT(varchar(10), CAST(cs.dateOfExamination AS date), 101)
+                            ELSE '' END +
+                       CASE WHEN cs.placeOfExamination IS NOT NULL
+                            THEN ' | Place: ' + cs.placeOfExamination ELSE '' END +
+                       CASE WHEN cs.licenseNumber IS NOT NULL
+                            THEN ' | Lic.No: ' + cs.licenseNumber ELSE '' END +
+                       CASE WHEN cs.licenseValidityDate IS NOT NULL
+                            THEN ' (Valid: ' + CONVERT(varchar(10), CAST(cs.licenseValidityDate AS date), 101) + ')'
+                            ELSE '' END
+                FROM civilserviceeligibility cs
+                WHERE cs.personalDataId = pd.personalDataId
+                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS civilServiceList,
+            ISNULL(STUFF((
+                SELECT CHAR(10) +
+                       ISNULL(CONVERT(varchar(10), CAST(w.fromDate AS date), 101), '?') + ' - ' +
+                       CASE WHEN w.toDate IS NOT NULL
+                            THEN CONVERT(varchar(10), CAST(w.toDate AS date), 101)
+                            ELSE 'Present' END +
+                       ' | ' + ISNULL(w.positionTitle, '') +
+                       ' | ' + ISNULL(w.agencyName, '') +
+                       CASE WHEN w.monthlySalary IS NOT NULL
+                            THEN ' | Sal: ' + CAST(CAST(w.monthlySalary AS decimal(12,2)) AS varchar)
+                            ELSE '' END +
+                       CASE WHEN w.payGrade IS NOT NULL
+                            THEN ' | SG: ' + CAST(w.payGrade AS varchar)
+                            ELSE '' END +
+                       ' | Status: ' + ISNULL(w.workStatus, '') +
+                       ' | Gov: ' + ISNULL(w.boolGovernmentService, '')
+                FROM workexperience w
+                WHERE w.personalDataId = pd.personalDataId
+                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS workExpList
+        FROM personaldata pd
+        JOIN employee e ON pd.employeeId = e.employeeId
+        WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
+	<field name="employeeNo" class="java.lang.String"/>
+	<field name="surname" class="java.lang.String"/>
+	<field name="firstname" class="java.lang.String"/>
+	<field name="middlename" class="java.lang.String"/>
+	<field name="civilServiceList" class="java.lang.String"/>
+	<field name="workExpList" class="java.lang.String"/>
+	<title height="52">
+		<element kind="staticText" uuid="d8b69ea6-73a6-428b-a957-84e547a80563" x="0" y="0" width="555" height="18" fontName="SansSerif" fontSize="12.0" bold="true" hTextAlign="Center">
+			<text><![CDATA[CS Form 212 (Revised 2017) â€” PERSONAL DATA SHEET]]></text>
+		</element>
+		<element kind="staticText" uuid="c01e4dc0-482f-4b54-8fbe-6f19fb042819" x="0" y="20" width="555" height="14" fontName="SansSerif" fontSize="9.0" hTextAlign="Center">
+			<text><![CDATA[Sheet C2: Civil Service Eligibility & Work Experience]]></text>
+		</element>
+		<element kind="textField" uuid="177abd43-1862-49e7-b7a1-10250b32115f" x="0" y="36" width="555" height="14" fontName="SansSerif" fontSize="9.0" bold="true" hTextAlign="Center">
+			<expression><![CDATA["Employee No: " + $F{employeeNo} + "   Name: " + $F{surname} + ", " + $F{firstname} + " " + $F{middlename}]]></expression>
+		</element>
+	</title>
+	<detail>
+		<band height="16">
+			<element kind="staticText" uuid="5fce6fbf-8a33-4e7d-8dde-e344aa63bc7f" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[IV.  CIVIL SERVICE ELIGIBILITY]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="71f5f1d5-f423-4739-b99a-d43e7067adf4" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA[$F{civilServiceList}]]></expression>
+			</element>
+		</band>
+		<band height="16">
+			<element kind="staticText" uuid="2fdab57c-65f4-4db3-b21e-52b375231de4" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[V.  WORK EXPERIENCE (Include private employment; start from most recent)]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="ae5ed1ff-2c38-41f3-9cd3-d33309e6bba8" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA[$F{workExpList}]]></expression>
+			</element>
+		</band>
+	</detail>
+</jasperReport>

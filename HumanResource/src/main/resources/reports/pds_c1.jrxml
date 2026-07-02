@@ -1,0 +1,162 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="pds_c1" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="5066bf5b-5f0d-4129-9022-73ce21684212">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
+	<query language="sql"><![CDATA[SELECT
+            ISNULL(e.employeeNo, '')                         AS employeeNo,
+            ISNULL(pd.surname, '')                           AS surname,
+            ISNULL(pd.firstname, '')                         AS firstname,
+            ISNULL(pd.middlename, '')                        AS middlename,
+            ISNULL(pd.extname, '')                           AS extname,
+            ISNULL(CONVERT(varchar(10), CAST(pd.dob AS date), 101), '') AS dob,
+            ISNULL(pd.pob, '')                               AS pob,
+            CASE pd.sex_id WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' ELSE '' END AS sex,
+            CASE pd.civilStatus_id
+                WHEN 1 THEN 'Single' WHEN 2 THEN 'Married'
+                WHEN 3 THEN 'Widowed' WHEN 4 THEN 'Separated'
+                WHEN 5 THEN 'Divorced' ELSE ''
+            END AS civilStatus,
+            ISNULL(CAST(pd.height AS varchar(10)), '')       AS height,
+            ISNULL(CAST(pd.weight AS varchar(10)), '')       AS weight,
+            ISNULL(pd.bloodType, '')                         AS bloodType,
+            ISNULL(pd.gsisId, '')                            AS gsisId,
+            ISNULL(pd.pagibigId, '')                         AS pagibigId,
+            ISNULL(pd.philhealthNo, '')                      AS philhealthNo,
+            ISNULL(pd.sssNo, '')                             AS sssNo,
+            ISNULL(pd.tinNo, '')                             AS tinNo,
+            ISNULL(pd.agencyEmpNo, '')                       AS agencyEmpNo,
+            ISNULL(pd.citizenship, '')                       AS citizenship,
+            ISNULL(pd.resAddress, '') + CASE WHEN pd.resZip IS NOT NULL THEN '  ZIP: ' + pd.resZip ELSE '' END AS resAddress,
+            ISNULL(pd.permAddress, '') + CASE WHEN pd.permZip IS NOT NULL THEN '  ZIP: ' + pd.permZip ELSE '' END AS permAddress,
+            ISNULL(pd.telNo, '')                             AS telNo,
+            ISNULL(pd.mobileNo, '')                          AS mobileNo,
+            ISNULL(pd.email, '')                             AS email,
+            ISNULL(pd.spouseSurname, '')                     AS spouseSurname,
+            ISNULL(pd.spouseFirstname, '')                   AS spouseFirstname,
+            ISNULL(pd.spouseMiddlename, '')                  AS spouseMiddlename,
+            ISNULL(pd.spouseOccupation, '')                  AS spouseOccupation,
+            ISNULL(pd.spouseEmployer, '')                    AS spouseEmployer,
+            ISNULL(pd.spouseTelNo, '')                       AS spouseTelNo,
+            ISNULL(pd.fatherSurname, '') + ', ' + ISNULL(pd.fatherFirstname, '') + ' ' + ISNULL(pd.fatherMiddlename, '') AS fatherName,
+            ISNULL(pd.motherSurname, '') + ', ' + ISNULL(pd.motherFirstname, '') + ' ' + ISNULL(pd.motherMiddlename, '') AS motherName,
+            ISNULL(STUFF((
+                SELECT CHAR(10) + ISNULL(c.childFullname, '') +
+                       CASE WHEN c.dob IS NOT NULL THEN ' (DOB: ' + CONVERT(varchar(10), CAST(c.dob AS date), 101) + ')' ELSE '' END
+                FROM children c WHERE c.personalDataId = pd.personalDataId
+                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS childrenList,
+            ISNULL(STUFF((
+                SELECT CHAR(10) + ISNULL(eb.levelOfEducation, '') + ': ' + ISNULL(eb.nameOfSchool, '') +
+                       CASE WHEN eb.degreeCourse IS NOT NULL THEN ' | ' + eb.degreeCourse ELSE '' END +
+                       CASE WHEN eb.yearGraduated IS NOT NULL THEN ' (Yr. Grad: ' + CAST(eb.yearGraduated AS varchar) + ')' ELSE '' END +
+                       CASE WHEN eb.honorsReceived IS NOT NULL THEN ' | Honors: ' + eb.honorsReceived ELSE '' END
+                FROM educationalbackground eb WHERE eb.personalDataId = pd.personalDataId
+                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS educationList
+        FROM personaldata pd
+        JOIN employee e ON pd.employeeId = e.employeeId
+        WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
+	<field name="employeeNo" class="java.lang.String"/>
+	<field name="surname" class="java.lang.String"/>
+	<field name="firstname" class="java.lang.String"/>
+	<field name="middlename" class="java.lang.String"/>
+	<field name="extname" class="java.lang.String"/>
+	<field name="dob" class="java.lang.String"/>
+	<field name="pob" class="java.lang.String"/>
+	<field name="sex" class="java.lang.String"/>
+	<field name="civilStatus" class="java.lang.String"/>
+	<field name="height" class="java.lang.String"/>
+	<field name="weight" class="java.lang.String"/>
+	<field name="bloodType" class="java.lang.String"/>
+	<field name="gsisId" class="java.lang.String"/>
+	<field name="pagibigId" class="java.lang.String"/>
+	<field name="philhealthNo" class="java.lang.String"/>
+	<field name="sssNo" class="java.lang.String"/>
+	<field name="tinNo" class="java.lang.String"/>
+	<field name="agencyEmpNo" class="java.lang.String"/>
+	<field name="citizenship" class="java.lang.String"/>
+	<field name="resAddress" class="java.lang.String"/>
+	<field name="permAddress" class="java.lang.String"/>
+	<field name="telNo" class="java.lang.String"/>
+	<field name="mobileNo" class="java.lang.String"/>
+	<field name="email" class="java.lang.String"/>
+	<field name="spouseSurname" class="java.lang.String"/>
+	<field name="spouseFirstname" class="java.lang.String"/>
+	<field name="spouseMiddlename" class="java.lang.String"/>
+	<field name="spouseOccupation" class="java.lang.String"/>
+	<field name="spouseEmployer" class="java.lang.String"/>
+	<field name="spouseTelNo" class="java.lang.String"/>
+	<field name="fatherName" class="java.lang.String"/>
+	<field name="motherName" class="java.lang.String"/>
+	<field name="childrenList" class="java.lang.String"/>
+	<field name="educationList" class="java.lang.String"/>
+	<title height="52">
+		<element kind="staticText" uuid="744881d7-fae5-4a2c-8d79-05af3029f8b7" x="0" y="0" width="555" height="18" fontName="SansSerif" fontSize="12.0" bold="true" hTextAlign="Center">
+			<text><![CDATA[CS Form 212 (Revised 2017) â€” PERSONAL DATA SHEET]]></text>
+		</element>
+		<element kind="staticText" uuid="e67ef85e-8d7a-43ec-af86-31d05908fef0" x="0" y="20" width="555" height="14" fontName="SansSerif" fontSize="9.0" hTextAlign="Center">
+			<text><![CDATA[Sheet C1: Personal Information, Family Background & Educational Background]]></text>
+		</element>
+		<element kind="textField" uuid="4f28fdb0-3bcd-4008-b416-e096a40df54d" x="0" y="36" width="555" height="14" fontName="SansSerif" fontSize="9.0" bold="true" hTextAlign="Center">
+			<expression><![CDATA["Employee No: " + $F{employeeNo} + "   Name: " + $F{surname} + ", " + $F{firstname} + " " + $F{middlename}]]></expression>
+		</element>
+	</title>
+	<detail>
+		<band height="16">
+			<element kind="staticText" uuid="4f79d50f-21ca-4a0d-b684-a9c6c848cfbc" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[I.  PERSONAL INFORMATION]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="f950aa63-89ba-469c-a2c3-30ddb44e783f" x="0" y="0" width="555" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA["1.  Surname: " + $F{surname} + "  First Name: " + $F{firstname} + "  Middle Name: " + $F{middlename} + "  Ext: " + $F{extname} + "\n" +
+"2.  Date of Birth: " + $F{dob} + "  Place of Birth: " + $F{pob} + "\n" +
+"3.  Sex: " + $F{sex} + "  Civil Status: " + $F{civilStatus} + "\n" +
+"4.  Height (m): " + $F{height} + "  Weight (kg): " + $F{weight} + "  Blood Type: " + $F{bloodType} + "\n" +
+"5.  GSIS ID No.: " + $F{gsisId} + "\n" +
+"6.  PAG-IBIG ID No.: " + $F{pagibigId} + "\n" +
+"7.  PhilHealth No.: " + $F{philhealthNo} + "\n" +
+"8.  SSS No.: " + $F{sssNo} + "\n" +
+"9.  TIN No.: " + $F{tinNo} + "\n" +
+"10. Agency Employee No.: " + $F{agencyEmpNo} + "\n" +
+"11. Citizenship: " + $F{citizenship} + "\n" +
+"12. Residential Address: " + $F{resAddress} + "\n" +
+"13. Permanent Address: " + $F{permAddress} + "\n" +
+"14. Telephone No.: " + $F{telNo} + "\n" +
+"15. Mobile No.: " + $F{mobileNo} + "\n" +
+"16. E-mail Address: " + $F{email}]]></expression>
+			</element>
+		</band>
+		<band height="16">
+			<element kind="staticText" uuid="e2bd895c-69f6-46d5-98a7-7b86d4835915" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[II.  FAMILY BACKGROUND]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="2528aec2-fc28-4309-b189-8deb354843bc" x="0" y="0" width="555" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA["Spouse Surname: " + $F{spouseSurname} + "  First Name: " + $F{spouseFirstname} + "  Middle Name: " + $F{spouseMiddlename} + "\n" +
+"Spouse Occupation: " + $F{spouseOccupation} + "  Employer: " + $F{spouseEmployer} + "  Tel. No.: " + $F{spouseTelNo} + "\n" +
+"Father's Name: " + $F{fatherName} + "\n" +
+"Mother's Maiden Name: " + $F{motherName}]]></expression>
+			</element>
+		</band>
+		<band height="14">
+			<element kind="staticText" uuid="e0dde251-677a-47d9-ac6c-b5278cc0207c" x="0" y="0" width="555" height="14" fontName="SansSerif" fontSize="9.0" bold="true">
+				<text><![CDATA[Children (Name / Date of Birth):]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="b238447a-ab92-48d0-8e40-abceff91c4a9" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA[$F{childrenList}]]></expression>
+			</element>
+		</band>
+		<band height="16">
+			<element kind="staticText" uuid="fa8c5d28-3fea-49a2-b8a7-d091f34e1034" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[III.  EDUCATIONAL BACKGROUND]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="521aee8e-f964-4e92-879a-b19cfe5afab4" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA[$F{educationList}]]></expression>
+			</element>
+		</band>
+	</detail>
+</jasperReport>

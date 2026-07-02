@@ -1,0 +1,103 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="pds_c3" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="e6a56e89-4729-43b4-9b4e-b84dff039d8c">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
+	<query language="sql"><![CDATA[SELECT
+            ISNULL(e.employeeNo, '')  AS employeeNo,
+            ISNULL(pd.surname, '')    AS surname,
+            ISNULL(pd.firstname, '')  AS firstname,
+            ISNULL(pd.middlename, '') AS middlename,
+            ISNULL(pd.skillOrHobby, 'N/A') AS skillOrHobby,
+            ISNULL(pd.distinction, 'N/A')  AS distinction,
+            ISNULL(pd.association, 'N/A')  AS association,
+            ISNULL(STUFF((
+                SELECT CHAR(10) +
+                       ISNULL(v.organizationName, '') +
+                       CASE WHEN v.fromDate IS NOT NULL
+                            THEN ' | ' + CONVERT(varchar(10), CAST(v.fromDate AS date), 101) +
+                                 ' - ' + CASE WHEN v.toDate IS NOT NULL
+                                              THEN CONVERT(varchar(10), CAST(v.toDate AS date), 101)
+                                              ELSE 'Present' END
+                            ELSE '' END +
+                       CASE WHEN v.voluntaryHrs IS NOT NULL
+                            THEN ' | ' + CAST(v.voluntaryHrs AS varchar) + ' hrs'
+                            ELSE '' END +
+                       ' | ' + ISNULL(v.positionTitle, '')
+                FROM voluntarywork v
+                WHERE v.personalDataId = pd.personalDataId
+                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS voluntaryWorkList,
+            ISNULL(STUFF((
+                SELECT CHAR(10) +
+                       ISNULL(l.programName, '') +
+                       CASE WHEN l.fromDate IS NOT NULL
+                            THEN ' | ' + CONVERT(varchar(10), CAST(l.fromDate AS date), 101) +
+                                 ' - ' + CASE WHEN l.toDate IS NOT NULL
+                                              THEN CONVERT(varchar(10), CAST(l.toDate AS date), 101)
+                                              ELSE '' END
+                            ELSE '' END +
+                       CASE WHEN l.lndHrs IS NOT NULL
+                            THEN ' | ' + CAST(l.lndHrs AS varchar) + ' hrs'
+                            ELSE '' END +
+                       ' | ' + ISNULL(l.lndType, '') +
+                       ' | ' + ISNULL(l.conductedBy, '')
+                FROM learninganddevelopment l
+                WHERE l.personalDataId = pd.personalDataId
+                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS lndList
+        FROM personaldata pd
+        JOIN employee e ON pd.employeeId = e.employeeId
+        WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
+	<field name="employeeNo" class="java.lang.String"/>
+	<field name="surname" class="java.lang.String"/>
+	<field name="firstname" class="java.lang.String"/>
+	<field name="middlename" class="java.lang.String"/>
+	<field name="skillOrHobby" class="java.lang.String"/>
+	<field name="distinction" class="java.lang.String"/>
+	<field name="association" class="java.lang.String"/>
+	<field name="voluntaryWorkList" class="java.lang.String"/>
+	<field name="lndList" class="java.lang.String"/>
+	<title height="52">
+		<element kind="staticText" uuid="5e4eb88f-4227-4d43-ae12-4da3e334bc0c" x="0" y="0" width="555" height="18" fontName="SansSerif" fontSize="12.0" bold="true" hTextAlign="Center">
+			<text><![CDATA[CS Form 212 (Revised 2017) â€” PERSONAL DATA SHEET]]></text>
+		</element>
+		<element kind="staticText" uuid="394ff2bf-3af0-45d2-bd5f-c6ef68f62d53" x="0" y="20" width="555" height="14" fontName="SansSerif" fontSize="9.0" hTextAlign="Center">
+			<text><![CDATA[Sheet C3: Voluntary Work, Learning & Development & Other Information]]></text>
+		</element>
+		<element kind="textField" uuid="fc94c2fe-306f-4a53-8938-f52658c5ba26" x="0" y="36" width="555" height="14" fontName="SansSerif" fontSize="9.0" bold="true" hTextAlign="Center">
+			<expression><![CDATA["Employee No: " + $F{employeeNo} + "   Name: " + $F{surname} + ", " + $F{firstname} + " " + $F{middlename}]]></expression>
+		</element>
+	</title>
+	<detail>
+		<band height="16">
+			<element kind="staticText" uuid="677204c3-021c-4aa7-a432-07c533ded538" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[VI.  VOLUNTARY WORK OR INVOLVEMENT IN CIVIC / NON-GOVERNMENT / PEOPLE / VOLUNTARY ORGANIZATION/S]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="d0165d6f-0991-41fd-834d-10a71b35830b" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA[$F{voluntaryWorkList}]]></expression>
+			</element>
+		</band>
+		<band height="16">
+			<element kind="staticText" uuid="7ee54520-e1ab-47cd-b455-5720528b6e65" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[VII.  LEARNING AND DEVELOPMENT (L&D) INTERVENTIONS / TRAINING PROGRAMS ATTENDED]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="d81d49a0-aca0-464b-abf0-7d0a42446a5f" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA[$F{lndList}]]></expression>
+			</element>
+		</band>
+		<band height="16">
+			<element kind="staticText" uuid="4e294b7c-6cb0-4c9c-b0b1-5a4cd567ab7a" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
+				<text><![CDATA[VIII.  OTHER INFORMATION]]></text>
+			</element>
+		</band>
+		<band height="20" splitType="Stretch">
+			<element kind="textField" uuid="962a46f0-5bd4-4f09-9729-97a7a9639235" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
+				<expression><![CDATA["Special Skills / Hobbies:\n" + $F{skillOrHobby} + "\n\n" +
+"Non-Academic Distinctions / Recognition:\n" + $F{distinction} + "\n\n" +
+"Membership in Association/s:\n" + $F{association}]]></expression>
+			</element>
+		</band>
+	</detail>
+</jasperReport>

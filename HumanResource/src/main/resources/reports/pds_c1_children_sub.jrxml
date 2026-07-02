@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+                http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="pds_c1_children_sub" pageWidth="802" pageHeight="595"
+              columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0"
+              uuid="c1c10001-0000-4000-8000-000000000001">
+
+  <field name="childFullname" class="java.lang.String"/>
+  <field name="dob"           class="java.lang.String"/>
+
+  <detail>
+    <band height="11" splitType="Stretch">
+      <textField>
+        <reportElement x="0"   y="0" width="400" height="11" uuid="c1c10001-0000-4000-8000-000000000002"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{childFullname}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="400" y="0" width="402" height="11" uuid="c1c10001-0000-4000-8000-000000000003"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{dob}]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+
+  <noData>
+    <band height="11">
+      <staticText>
+        <reportElement x="0" y="0" width="802" height="11" uuid="c1c10001-0000-4000-8000-000000000004"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <text><![CDATA[N/A]]></text>
+      </staticText>
+    </band>
+  </noData>
+
+</jasperReport>

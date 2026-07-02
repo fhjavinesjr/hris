@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+                http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="pds_c1_education_sub" pageWidth="802" pageHeight="595"
+              columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0"
+              uuid="c1ed0001-0000-4000-8000-000000000001">
+
+  <field name="levelOfEducation" class="java.lang.String"/>
+  <field name="nameOfSchool"     class="java.lang.String"/>
+  <field name="degreeCourse"     class="java.lang.String"/>
+  <field name="fromDate"         class="java.lang.String"/>
+  <field name="toDate"           class="java.lang.String"/>
+  <field name="scoreGrade"       class="java.lang.String"/>
+  <field name="yearGraduated"    class="java.lang.String"/>
+  <field name="honorsReceived"   class="java.lang.String"/>
+
+  <detail>
+    <band height="11" splitType="Stretch">
+      <textField isStretchWithOverflow="true">
+        <reportElement x="0"   y="0" width="100" height="11" uuid="c1ed0001-0000-4000-8000-000000000002"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{levelOfEducation} != null ? $F{levelOfEducation} : ""]]></textFieldExpression>
+      </textField>
+      <textField isStretchWithOverflow="true">
+        <reportElement x="100"  y="0" width="130" height="11" uuid="c1ed0001-0000-4000-8000-000000000003"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{nameOfSchool} != null ? $F{nameOfSchool} : ""]]></textFieldExpression>
+      </textField>
+      <textField isStretchWithOverflow="true">
+        <reportElement x="230"  y="0" width="100" height="11" uuid="c1ed0001-0000-4000-8000-000000000004"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{degreeCourse} != null ? $F{degreeCourse} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="330"  y="0" width="50"  height="11" uuid="c1ed0001-0000-4000-8000-000000000005"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{fromDate} != null ? $F{fromDate} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="380"  y="0" width="50"  height="11" uuid="c1ed0001-0000-4000-8000-000000000006"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{toDate} != null ? $F{toDate} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="430"  y="0" width="60"  height="11" uuid="c1ed0001-0000-4000-8000-000000000007"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{scoreGrade} != null ? $F{scoreGrade} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="490"  y="0" width="60"  height="11" uuid="c1ed0001-0000-4000-8000-000000000008"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{yearGraduated} != null ? $F{yearGraduated} : ""]]></textFieldExpression>
+      </textField>
+      <textField isStretchWithOverflow="true">
+        <reportElement x="550"  y="0" width="252" height="11" uuid="c1ed0001-0000-4000-8000-000000000009"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{honorsReceived} != null ? $F{honorsReceived} : ""]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+
+  <noData>
+    <band height="11">
+      <staticText>
+        <reportElement x="0" y="0" width="802" height="11" uuid="c1ed0001-0000-4000-8000-00000000000a"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <text><![CDATA[N/A]]></text>
+      </staticText>
+    </band>
+  </noData>
+
+</jasperReport>

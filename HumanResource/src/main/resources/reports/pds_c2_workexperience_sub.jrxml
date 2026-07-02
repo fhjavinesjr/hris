@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+                http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="pds_c2_workexperience_sub" pageWidth="802" pageHeight="595"
+              columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0"
+              uuid="c2ee0001-0000-4000-8000-000000000001">
+
+  <field name="fromDate"             class="java.lang.String"/>
+  <field name="toDate"               class="java.lang.String"/>
+  <field name="positionTitle"        class="java.lang.String"/>
+  <field name="agencyName"           class="java.lang.String"/>
+  <field name="monthlySalary"        class="java.lang.String"/>
+  <field name="payGrade"             class="java.lang.String"/>
+  <field name="workStatus"           class="java.lang.String"/>
+  <field name="boolGovernmentService" class="java.lang.String"/>
+
+  <detail>
+    <band height="11" splitType="Stretch">
+      <textField>
+        <reportElement x="0"   y="0" width="80"  height="11" uuid="c2ee0001-0000-4000-8000-000000000002"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{fromDate} != null ? $F{fromDate} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="80"  y="0" width="80"  height="11" uuid="c2ee0001-0000-4000-8000-000000000003"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{toDate} != null ? $F{toDate} : "Present"]]></textFieldExpression>
+      </textField>
+      <textField isStretchWithOverflow="true">
+        <reportElement x="160"  y="0" width="180" height="11" uuid="c2ee0001-0000-4000-8000-000000000004"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{positionTitle} != null ? $F{positionTitle} : ""]]></textFieldExpression>
+      </textField>
+      <textField isStretchWithOverflow="true">
+        <reportElement x="340"  y="0" width="150" height="11" uuid="c2ee0001-0000-4000-8000-000000000005"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{agencyName} != null ? $F{agencyName} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="490"  y="0" width="80"  height="11" uuid="c2ee0001-0000-4000-8000-000000000006"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Right"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{monthlySalary} != null ? $F{monthlySalary} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="570"  y="0" width="80"  height="11" uuid="c2ee0001-0000-4000-8000-000000000007"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{payGrade} != null ? $F{payGrade} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="650"  y="0" width="80"  height="11" uuid="c2ee0001-0000-4000-8000-000000000008"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{workStatus} != null ? $F{workStatus} : ""]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="730"  y="0" width="72"  height="11" uuid="c2ee0001-0000-4000-8000-000000000009"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
+        <textFieldExpression><![CDATA[$F{boolGovernmentService} != null ? $F{boolGovernmentService} : ""]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+
+  <noData>
+    <band height="11">
+      <staticText>
+        <reportElement x="0" y="0" width="802" height="11" uuid="c2ee0001-0000-4000-8000-00000000000a"/>
+        <box><pen lineWidth="0.3"/></box>
+        <textElement><font fontName="Arial" size="7"/></textElement>
+        <text><![CDATA[N/A]]></text>
+      </staticText>
+    </band>
+  </noData>
+
+</jasperReport>
