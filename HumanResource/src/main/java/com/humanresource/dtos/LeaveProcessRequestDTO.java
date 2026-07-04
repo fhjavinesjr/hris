@@ -34,6 +34,12 @@ public class LeaveProcessRequestDTO implements Serializable {
      */
     private Long processedById;
 
+    /**
+     * Optional employee allowlist for ALL scope (pre-setup selection in UI).
+     * If provided, only these employee IDs will be processed.
+     */
+    private List<Long> selectedEmployeeIds;
+
     public LeaveProcessRequestDTO() {
     }
 
@@ -54,4 +60,7 @@ public class LeaveProcessRequestDTO implements Serializable {
 
     public Long getProcessedById() { return processedById; }
     public void setProcessedById(Long processedById) { this.processedById = processedById; }
+
+    public List<Long> getSelectedEmployeeIds() { return selectedEmployeeIds; }
+    public void setSelectedEmployeeIds(List<Long> selectedEmployeeIds) { this.selectedEmployeeIds = selectedEmployeeIds; }
 }

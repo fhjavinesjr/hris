@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -79,6 +80,11 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
     // Nature-of-appointment codes considered non-permanent / non-earning
     private static final Set<String> NON_EARNING_NATURES = Set.of(
             "CONTRACTUAL", "CONTRACT OF SERVICE", "COS", "JO", "JOB ORDER"
+    );
+
+    private static final Set<String> EXCLUDED_SYSTEM_ROLE_MARKERS = Set.of("admin", "super");
+    private static final Set<String> EXCLUDED_SYSTEM_IDENTITY_MARKERS = Set.of(
+            "admin", "super", "superadmin", "adminsuper"
     );
 
     private final EmployeeRepository employeeRepository;
@@ -127,13 +133,11 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         LocalDate periodStart = req.getCutoffStartDate();
         LocalDate periodEnd = req.getCutoffEndDate();
 
-        // Build the working set of employees
-        List<Employee> employees;
-        if ("EMPLOYEE".equalsIgnoreCase(req.getScope()) && req.getEmployeeId() != null) {
-            employees = employeeRepository.findById(req.getEmployeeId())
-                    .map(List::of).orElse(List.of());
-        } else {
-            employees = employeeRepository.findAll();
+        // Build the working set of employees with role-based exclusions and optional selection allowlist.
+        List<Employee> employees = resolveEmployeesForRequest(req);
+
+        if ("EMPLOYEE".equalsIgnoreCase(req.getScope()) && req.getEmployeeId() != null && employees.isEmpty()) {
+            skippedReasons.add("Selected employee is excluded (admin/super) or not found");
         }
 
         // Pre-load holiday dates for the period (JdbcTemplate cross-module query)
@@ -160,6 +164,72 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                 skippedReasons.size(),
                 skippedReasons,
                 processedList);
+    }
+
+    List<Employee> resolveEmployeesForRequest(LeaveProcessRequestDTO req) {
+        List<Employee> employees;
+
+        if ("EMPLOYEE".equalsIgnoreCase(req.getScope()) && req.getEmployeeId() != null) {
+            employees = employeeRepository.findById(req.getEmployeeId())
+                    .map(List::of)
+                    .orElse(Collections.emptyList());
+        } else if (req.getSelectedEmployeeIds() != null && !req.getSelectedEmployeeIds().isEmpty()) {
+            employees = employeeRepository.findAllById(req.getSelectedEmployeeIds());
+        } else {
+            employees = employeeRepository.findAll();
+        }
+
+        return employees.stream()
+                .filter(emp -> !isExcludedSystemUser(emp))
+                .collect(Collectors.toList());
+    }
+
+    private boolean isExcludedSystemUser(Employee emp) {
+        if (emp == null) {
+            return false;
+        }
+
+        if (containsExcludedRoleMarker(emp.getRole())) {
+            return true;
+        }
+
+        return matchesExcludedIdentity(emp.getEmployeeNo())
+                || matchesExcludedIdentity(emp.getFirstname())
+                || matchesExcludedIdentity(emp.getLastname())
+                || matchesExcludedIdentity(emp.getFirstname(), emp.getLastname())
+                || matchesExcludedIdentity(emp.getLastname(), emp.getFirstname());
+    }
+
+    private boolean containsExcludedRoleMarker(String role) {
+        if (role == null) {
+            return false;
+        }
+        String normalized = role.trim().toLowerCase();
+        return EXCLUDED_SYSTEM_ROLE_MARKERS.stream().anyMatch(normalized::contains);
+    }
+
+    private boolean matchesExcludedIdentity(String... parts) {
+        if (parts == null || parts.length == 0) {
+            return false;
+        }
+
+        String joined = String.join("", java.util.Arrays.stream(parts)
+                .filter(p -> p != null && !p.isBlank())
+                .toArray(String[]::new));
+        if (joined.isBlank()) {
+            return false;
+        }
+
+        String normalized = joined.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();
+        if (normalized.isBlank()) {
+            return false;
+        }
+
+        if (EXCLUDED_SYSTEM_IDENTITY_MARKERS.contains(normalized)) {
+            return true;
+        }
+
+        return "admin".equals(normalized) || "super".equals(normalized);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

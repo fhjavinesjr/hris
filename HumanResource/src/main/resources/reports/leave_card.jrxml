@@ -1,0 +1,856 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="leaveinformationreport" language="java" pageWidth="792" pageHeight="612" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="752" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="b1058aa7-70c0-4c3c-b58b-2cf88c8ceb56">
+	<property name="ireport.zoom" value="1.5000000000000209"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<import>net.sf.jasperreports.engine.*</import>
+	<parameter name="vlBalance" class="java.lang.Double"/>
+	<parameter name="slBalance" class="java.lang.Double"/>
+	<parameter name="currentCompany" class="java.lang.String"/>
+	<parameter name="currentCompanyAddress" class="java.lang.String"/>
+	<parameter name="reportDateAsOf" class="java.util.Date"/>
+	<parameter name="lastname" class="java.lang.String"/>
+	<parameter name="firstname" class="java.lang.String"/>
+	<parameter name="mi" class="java.lang.String"/>
+	<parameter name="appOriginalDate" class="java.util.Date"/>
+	<parameter name="designation" class="java.lang.String"/>
+	<parameter name="status" class="java.lang.String"/>
+	<parameter name="service" class="java.lang.String"/>
+	<parameter name="civilstat" class="java.lang.String"/>
+	<parameter name="position" class="java.lang.String"/>
+	<parameter name="datehire" class="java.util.Date"/>
+	<parameter name="tinno" class="java.lang.String"/>
+	<parameter name="gsisno" class="java.lang.String"/>
+	<parameter name="forwardstatus" class="java.lang.String"/>
+	<parameter name="webAppPath" class="java.lang.String"/>
+	<parameter name="logoleft" class="java.lang.Object"/>
+	<parameter name="logoright" class="java.lang.Object"/>
+	<parameter name="isDOH" class="java.lang.Boolean"/>
+	<parameter name="isSeparated" class="java.lang.String"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
+	<parameter name="REPORT_YEAR" class="java.lang.Integer"/>
+	<query language="SQL"><![CDATA[SELECT
+			CAST(li.cutoffStartDate AS date) AS cutOffStartDate,
+			CAST(ISNULL(li.earnedVl, 0) AS float) AS earnedVl,
+			CAST(ISNULL(li.earnedSl, 0) AS float) AS earnedSl,
+			CAST(ISNULL(li.vacationLeaveUsed, 0) AS float) AS vacationLeaveUsed,
+			CAST(ISNULL(li.sickLeaveUsed, 0) AS float) AS sickLeaveUsed,
+			CAST(ISNULL(li.lateUndertimeEquivalent, 0) AS float) AS lateUndertimeEquivalent,
+			ISNULL(li.lateCount, 0) AS lateCount,
+			ISNULL(li.undertimeCount, 0) AS utCount,
+			ISNULL(li.leaveParticulars, '') AS leaveParticulars,
+			CAST(ISNULL(li.absentCount, 0) AS float) AS absentCount,
+			CAST(ISNULL(li.leaveWithoutPaySl, 0) AS float) AS leaveWithoutPaySl,
+			CAST(ISNULL(li.leaveWithoutPayVl, 0) AS float) AS leaveWithoutPayVl,
+			CAST(li.cutoffEndDate AS date) AS cutOffEndDate,
+			CAST(li.processDate AS date) AS processDate,
+			CAST(ISNULL(li.sickLeaveBalance, 0) AS float) AS sickLeaveBalance,
+			CAST(ISNULL(li.vacationLeaveBalance, 0) AS float) AS vacationLeaveBalance,
+			CAST(ISNULL(li.lateUndertimeMinutes, 0) AS float) AS lateUndertimeMin,
+			CAST(CASE WHEN ISNULL(li.isBegBalance, 0) = 1 THEN 'true' ELSE 'false' END AS varchar(5)) AS isBegBalance,
+			CAST(CASE WHEN YEAR(li.cutoffStartDate) < $P{REPORT_YEAR} THEN 'true' ELSE 'false' END AS varchar(5)) AS isPreviousYear,
+			CAST(CASE WHEN ISNULL(li.isLocked, 0) = 1 THEN 'true' ELSE 'false' END AS varchar(5)) AS isLocked,
+			ISNULL(pd.surname, ISNULL(e.lastname, '')) AS lastname,
+			ISNULL(pd.firstname, ISNULL(e.firstname, '')) AS firstname,
+			CASE WHEN ISNULL(pd.middlename, '') = '' THEN '' ELSE LEFT(pd.middlename, 1) + '.' END AS mi,
+			ISNULL(jp.jobPositionName, ISNULL(e.position, '')) AS position,
+			ISNULL(noa.nature, '') AS status,
+			ISNULL(cs.name, '') AS civilstat,
+			ISNULL(bu.businessUnitsName, '') AS unitName,
+			CAST(ap.assumptionToDutyDate AS date) AS datehire,
+			ISNULL(pd.tinNo, '') AS tinno,
+			ISNULL(pd.gsisId, '') AS gsisno,
+			CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
+			ISNULL(st.companyName, '') AS currentCompanySetting,
+			ISNULL(st.address, '') AS currentCompanyAddressSetting,
+			st.leftHeaderLogo AS leftHeaderLogo,
+			st.rightHeaderLogo AS rightHeaderLogo,
+			CAST(ISNULL(li.previousVacationLeaveBalance, 0) AS float) AS previousVacationLeaveBalance,
+			CAST(ISNULL(li.previousSickLeaveBalance, 0) AS float) AS previousSickLeaveBalance,
+			CONCAT('Forwarded balance as of 12/31/', CAST($P{REPORT_YEAR} - 1 AS varchar(4))) AS forwardstatus,
+			CASE
+				WHEN sep.separationDate IS NOT NULL THEN 'Separated effective ' + CONVERT(varchar(10), sep.separationDate, 101)
+				ELSE ''
+			END AS isSeparated
+		FROM leave_information li
+		JOIN employee e ON e.employeeId = li.employeeId
+		LEFT JOIN personaldata pd ON pd.employeeId = li.employeeId
+		OUTER APPLY (
+			SELECT TOP 1
+				ea.assumptionToDutyDate,
+				ea.jobPositionId,
+				ea.natureOfAppointmentId
+			FROM employeeappointment ea
+			WHERE ea.employeeId = li.employeeId
+			ORDER BY CASE WHEN ea.activeAppointment = 1 THEN 0 ELSE 1 END,
+				ea.assumptionToDutyDate DESC,
+				ea.employeeAppointmentId DESC
+		) ap
+		LEFT JOIN job_position jp ON jp.jobPositionId = ap.jobPositionId
+		LEFT JOIN natureofappointment noa ON noa.natureofappointmentId = ap.natureOfAppointmentId
+		LEFT JOIN civilstatus cs ON cs.civilStatusId = pd.civilStatus_id
+		OUTER APPLY (
+			SELECT TOP 1 mp.businessUnitId
+			FROM manage_personnel mp
+			WHERE mp.employeeId = li.employeeId
+			ORDER BY mp.id DESC
+		) mp
+		LEFT JOIN businessunits bu ON bu.businessUnitsId = mp.businessUnitId
+		OUTER APPLY (
+			SELECT TOP 1
+				s.companyName,
+				s.address,
+				s.hospitalAgency,
+				s.leftHeaderLogo,
+				s.rightHeaderLogo
+			FROM settings s
+			ORDER BY s.settingsId DESC
+		) st
+		OUTER APPLY (
+			SELECT TOP 1 s2.separationDate
+			FROM separation s2
+			WHERE s2.employeeId = li.employeeId
+			ORDER BY s2.separationDate DESC
+		) sep
+		WHERE li.employeeId = $P{EMPLOYEE_ID}
+		  AND YEAR(li.cutoffStartDate) = $P{REPORT_YEAR}
+		ORDER BY li.cutoffStartDate ASC, li.leaveInformationId ASC]]></query>
+	<field name="cutOffStartDate" class="java.sql.Date"/>
+	<field name="earnedVl" class="java.lang.Double"/>
+	<field name="earnedSl" class="java.lang.Double"/>
+	<field name="vacationLeaveUsed" class="java.lang.Double"/>
+	<field name="sickLeaveUsed" class="java.lang.Double"/>
+	<field name="lateUndertimeEquivalent" class="java.lang.Double"/>
+	<field name="lateCount" class="java.lang.Integer"/>
+	<field name="utCount" class="java.lang.Integer"/>
+	<field name="leaveParticulars" class="java.lang.String"/>
+	<field name="absentCount" class="java.lang.Double"/>
+	<field name="leaveWithoutPaySl" class="java.lang.Double"/>
+	<field name="leaveWithoutPayVl" class="java.lang.Double"/>
+	<field name="cutOffEndDate" class="java.sql.Date"/>
+	<field name="processDate" class="java.sql.Date"/>
+	<field name="sickLeaveBalance" class="java.lang.Double"/>
+	<field name="vacationLeaveBalance" class="java.lang.Double"/>
+	<field name="lateUndertimeMin" class="java.lang.Double"/>
+	<field name="isBegBalance" class="java.lang.String"/>
+	<field name="isPreviousYear" class="java.lang.String"/>
+	<field name="isLocked" class="java.lang.String"/>
+	<field name="lastname" class="java.lang.String"/>
+	<field name="firstname" class="java.lang.String"/>
+	<field name="mi" class="java.lang.String"/>
+	<field name="position" class="java.lang.String"/>
+	<field name="status" class="java.lang.String"/>
+	<field name="civilstat" class="java.lang.String"/>
+	<field name="unitName" class="java.lang.String"/>
+	<field name="datehire" class="java.sql.Date"/>
+	<field name="tinno" class="java.lang.String"/>
+	<field name="gsisno" class="java.lang.String"/>
+	<field name="hospitalAgency" class="java.lang.Boolean"/>
+	<field name="currentCompanySetting" class="java.lang.String"/>
+	<field name="currentCompanyAddressSetting" class="java.lang.String"/>
+	<field name="leftHeaderLogo" class="java.lang.Object"/>
+	<field name="rightHeaderLogo" class="java.lang.Object"/>
+	<field name="previousVacationLeaveBalance" class="java.lang.Double"/>
+	<field name="previousSickLeaveBalance" class="java.lang.Double"/>
+	<field name="forwardstatus" class="java.lang.String"/>
+	<field name="isSeparated" class="java.lang.String"/>
+	<variable name="hours" class="java.lang.Double">
+		<expression><![CDATA[$F{lateUndertimeMin}/60]]></expression>
+	</variable>
+	<variable name="min" class="java.lang.String"/>
+	<variable name="openingVlBalance" calculation="First" class="java.lang.Double">
+		<expression><![CDATA[$F{previousVacationLeaveBalance}]]></expression>
+	</variable>
+	<variable name="openingSlBalance" calculation="First" class="java.lang.Double">
+		<expression><![CDATA[$F{previousSickLeaveBalance}]]></expression>
+	</variable>
+	<variable name="forwardStatusValue" calculation="First" class="java.lang.String">
+		<expression><![CDATA[$F{forwardstatus}]]></expression>
+	</variable>
+	<variable name="separatedStatusValue" calculation="First" class="java.lang.String">
+		<expression><![CDATA[$F{isSeparated}]]></expression>
+	</variable>
+	<background splitType="Stretch"/>
+	<title height="96" splitType="Stretch">
+		<element kind="staticText" uuid="e8ba5841-d83a-4163-96aa-7b9e98585406" key="staticText-18" mode="Opaque" x="0" y="76" width="752" height="20" fontName="Times New Roman" fontSize="14.0" pdfFontName="Times-Roman" bold="true" hTextAlign="Center">
+			<text><![CDATA[EMPLOYEE'S LEAVE CARD]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="90c31ab2-0d59-4c7c-98fb-69e6050a5731" x="257" y="0" width="256" height="56" markup="styled" fontName="Tahoma" fontSize="8.0" pdfFontName="Helvetica" pdfEmbedded="false" hTextAlign="Center">
+			<printWhenExpression><![CDATA[$F{hospitalAgency} != null && $F{hospitalAgency}]]></printWhenExpression>
+			<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"8\" isBold=\"true\">Department of Health</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $F{currentCompanySetting} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $F{currentCompanyAddressSetting} +  "</style><br />"]]></expression>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="image" uuid="1f191b35-c98b-4812-8ee3-518498b49443" x="513" y="0" width="72" height="56" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{rightHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{rightHeaderLogo})]]></expression>
+		</element>
+		<element kind="image" uuid="47307b54-26e6-4215-bc24-9e49cf396842" x="191" y="0" width="66" height="56" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{leftHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{leftHeaderLogo})]]></expression>
+		</element>
+		<element kind="staticText" uuid="6710d9f7-e16e-47a4-b172-a4be36967a77" key="staticText-18" mode="Transparent" x="0" y="0" width="191" height="56" fontName="Times New Roman" fontSize="14.0" pdfFontName="Times-Roman" bold="true" hTextAlign="Center">
+			<text><![CDATA[]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e697a1cf-72f9-4784-8f76-1bb2aa397f96" key="staticText-18" mode="Transparent" x="585" y="0" width="167" height="56" fontName="Times New Roman" fontSize="14.0" pdfFontName="Times-Roman" bold="true" hTextAlign="Center">
+			<text><![CDATA[]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4f179931-44da-46c0-bee6-97d1f153351e" key="staticText-18" mode="Opaque" x="0" y="56" width="752" height="20" fontName="Times New Roman" fontSize="14.0" pdfFontName="Times-Roman" bold="true" hTextAlign="Center">
+			<text><![CDATA[]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="52f5e02d-968c-47a8-a8ae-5f6e4c930fdf" x="257" y="0" width="256" height="56" markup="styled" fontName="Tahoma" fontSize="8.0" pdfFontName="Helvetica" pdfEmbedded="false" hTextAlign="Center">
+			<printWhenExpression><![CDATA[$F{hospitalAgency} == null || !$F{hospitalAgency}]]></printWhenExpression>
+			<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $F{currentCompanySetting} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $F{currentCompanyAddressSetting} +  "</style><br />"]]></expression>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+	</title>
+	<pageHeader height="42" splitType="Stretch">
+		<element kind="staticText" uuid="3ca9044a-d004-4b5c-ac5a-eb448d45e0e2" key="staticText-18" mode="Opaque" x="0" y="0" width="64" height="14" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false">
+			<text><![CDATA[Name:]]></text>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c2be837f-f174-4ef5-b425-79226d3d200e" key="staticText-18" mode="Opaque" x="0" y="14" width="64" height="14" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false">
+			<text><![CDATA[Position:]]></text>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="09a9f1fc-4afa-40ec-bcf7-c854c8783164" key="staticText-18" mode="Opaque" x="0" y="28" width="64" height="14" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false">
+			<text><![CDATA[Status:]]></text>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a1e18a35-180b-40c3-8338-b5aa9f7dfb2e" key="staticText-18" mode="Opaque" x="207" y="0" width="100" height="14" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false">
+			<text><![CDATA[Civil Status]]></text>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b9fc6034-be88-4c48-997a-205ab8ad3793" key="staticText-18" mode="Opaque" x="207" y="28" width="100" height="14" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false">
+			<text><![CDATA[Unit:]]></text>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="bf78730d-375d-496d-9cf9-e31513a6ab6b" key="staticText-18" mode="Opaque" x="207" y="14" width="100" height="14" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false">
+			<text><![CDATA[Entrance to Duty]]></text>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="da5809ca-3352-47e8-b35b-b5d5cd8ef62b" key="staticText-18" mode="Opaque" x="513" y="0" width="101" height="14" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false">
+			<text><![CDATA[GSIS Policy No.]]></text>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c07d4e4b-5ac5-48f0-a459-7fe380af756c" key="staticText-18" mode="Opaque" x="513" y="14" width="101" height="14" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false">
+			<text><![CDATA[Tin No.]]></text>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b03b8554-04a8-433a-a96e-22445fa1edbf" key="staticText-18" mode="Opaque" x="513" y="28" width="239" height="14" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false">
+			<text><![CDATA[National Reference Card No.]]></text>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="bf8658e0-4285-4801-8478-87d310b8ef64" mode="Opaque" x="64" y="0" width="143" height="14" fontName="SansSerif" fontSize="10.0" vTextAlign="Middle">
+			<expression><![CDATA[$F{lastname}+", " + $F{firstname} +" "+$F{mi}]]></expression>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="afc2413a-e834-4d28-982b-729e900557b1" mode="Opaque" x="64" y="28" width="143" height="14" fontName="SansSerif" fontSize="10.0" vTextAlign="Middle">
+			<expression><![CDATA[$F{status}]]></expression>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="3a0898f5-4225-48c6-b153-cc32256c94f1" mode="Opaque" x="307" y="0" width="206" height="14" fontName="SansSerif" fontSize="10.0" vTextAlign="Middle">
+			<expression><![CDATA[$F{civilstat}]]></expression>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="28268cb7-3c8d-4d26-924f-0fca94599a0c" mode="Opaque" x="64" y="14" width="143" height="14" fontName="SansSerif" fontSize="10.0" vTextAlign="Middle">
+			<expression><![CDATA[$F{position}]]></expression>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="593a3e87-423c-483c-abb9-3e5ad2da14dd" mode="Opaque" x="307" y="14" width="206" height="14" fontName="SansSerif" fontSize="10.0" pattern="MM/dd/yyyy" vTextAlign="Middle">
+			<expression><![CDATA[$F{datehire}]]></expression>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="3aa0b1a2-8f5a-4fde-bb92-b9abcca76fc5" mode="Opaque" x="307" y="28" width="206" height="14" fontName="SansSerif" fontSize="10.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{unitName}]]></expression>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="f9516cf7-c5e6-4979-8c81-47578773b78a" mode="Opaque" x="614" y="14" width="138" height="14" fontName="SansSerif" vTextAlign="Middle">
+			<expression><![CDATA[$F{tinno}]]></expression>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="5458de65-a533-456e-a27d-4c10a1f5f984" mode="Opaque" x="614" y="0" width="138" height="14" fontName="SansSerif" vTextAlign="Middle">
+			<expression><![CDATA[$F{gsisno}]]></expression>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+	</pageHeader>
+	<columnHeader height="76" splitType="Stretch">
+		<element kind="staticText" uuid="890060f3-c8f5-4e09-8475-f1fd68c2a612" key="staticText-18" mode="Opaque" x="0" y="0" width="64" height="59" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[PERIOD]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="de3617d5-5d43-4cc5-b865-e86e4d695441" key="staticText-18" mode="Opaque" x="64" y="0" width="143" height="59" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[PARTICULARS]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="54ebb1e9-c6e1-4db1-9e7d-521c1bef3e4c" key="staticText-18" mode="Opaque" x="207" y="0" width="204" height="16" fontName="Times New Roman" fontSize="12.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Top">
+			<text><![CDATA[VACATION LEAVE]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0cfaa9bc-1191-4608-b27b-f53d89cc74c5" key="staticText-18" mode="Opaque" x="411" y="0" width="203" height="16" fontName="Times New Roman" fontSize="12.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Top">
+			<text><![CDATA[SICK LEAVE]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="dea0e3b1-050e-4754-9099-84509b733bb6" key="staticText-18" mode="Opaque" x="207" y="16" width="50" height="43" fontName="SansSerif" fontSize="9.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Bottom">
+			<text><![CDATA[EARNED]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="da3e8b60-1ac5-4d0e-840d-63255d0047a3" key="staticText-18" mode="Opaque" x="411" y="16" width="52" height="43" fontName="SansSerif" fontSize="9.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Bottom">
+			<text><![CDATA[EARNED]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ce738d74-8b41-40dd-95ca-2467c7a45566" key="staticText-18" mode="Opaque" x="257" y="16" width="48" height="43" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Absences Undertime W/ Pay]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6484b3a9-edd2-4120-80af-d474f984fc6f" key="staticText-18" mode="Opaque" x="463" y="16" width="50" height="43" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Absences Undertime W/ Pay]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3567d0c3-4ce3-413a-a2f7-d8aaa41f7ed0" key="staticText-18" mode="Opaque" x="305" y="16" width="53" height="43" fontName="SansSerif" fontSize="9.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Bottom">
+			<text><![CDATA[BALANCE]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="7329982d-8624-49d2-8abb-7c22e9685662" key="staticText-18" mode="Opaque" x="358" y="16" width="53" height="43" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Absences Undertime W/O Pay]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ee20dc4f-89fd-4bf9-8d06-54b379d6b95a" key="staticText-18" mode="Opaque" x="565" y="16" width="49" height="43" fontName="SansSerif" fontSize="9.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Absences Undertime W/O Pay]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4faeb7b0-4fa9-4dd5-9938-8c350b049c2b" key="staticText-18" mode="Opaque" x="513" y="16" width="52" height="43" fontName="SansSerif" fontSize="9.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Bottom">
+			<text><![CDATA[BALANCE]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="aaf79ebd-07b5-480d-84f5-ccbccb3d3bf1" key="staticText-18" mode="Opaque" x="614" y="16" width="50" height="23" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Tardiness Undertime]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="264fef58-3378-4545-8868-2a679c5ef063" key="staticText-18" mode="Opaque" x="664" y="16" width="50" height="23" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Number Of]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2d12f293-b867-4125-99ae-1f981cbc981f" key="staticText-18" mode="Opaque" x="614" y="39" width="24" height="20" fontName="SansSerif" fontSize="8.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Hrs]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ea9ed594-d5cf-4603-a3a1-7b9a4fa4fd57" key="staticText-18" mode="Opaque" x="638" y="39" width="26" height="20" fontName="SansSerif" fontSize="8.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Mins]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9dfe2601-fb09-4292-9725-c44d3112ca31" key="staticText-18" mode="Opaque" x="664" y="39" width="26" height="20" fontName="SansSerif" fontSize="8.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Tard]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="48f3ac65-d66d-4873-88f3-dc171391a461" key="staticText-18" mode="Opaque" x="690" y="39" width="24" height="20" fontName="SansSerif" fontSize="8.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[U.T]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ccd63e5c-5617-4e58-9f93-af595a536d6e" key="staticText-18" mode="Opaque" x="614" y="0" width="138" height="16" fontName="Times New Roman" fontSize="12.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Top">
+			<text><![CDATA[REMARKS]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9862df08-c434-4def-9d6a-84e1ce577eb3" key="staticText-18" mode="Opaque" x="714" y="16" width="38" height="43" fontName="SansSerif" fontSize="10.0" pdfFontName="Times-Roman" bold="false" underline="false" strikeThrough="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[AWOL]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="23389d7a-d26d-4f45-948b-4c4990e99e1f" mode="Opaque" x="305" y="59" width="53" height="17" evaluationTime="Report" pattern="###0.000" hTextAlign="Center">
+			<expression><![CDATA[$V{openingVlBalance} == null ? 0d : $V{openingVlBalance}]]></expression>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="aee26821-c64f-43d0-9b74-ca0cacea4dc9" mode="Opaque" x="513" y="59" width="52" height="17" evaluationTime="Report" pattern="###0.000" hTextAlign="Center">
+			<expression><![CDATA[$V{openingSlBalance} == null ? 0d : $V{openingSlBalance}]]></expression>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="de7c1d9c-da46-4bf5-bb40-953919483c9d" mode="Opaque" x="0" y="59" width="207" height="17" evaluationTime="Report">
+			<expression><![CDATA[$V{forwardStatusValue}]]></expression>
+			<box leftPadding="5">
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="58a4ac38-a894-4973-bc98-ceebb4cbd362" mode="Opaque" x="207" y="59" width="98" height="17">
+			<expression><![CDATA[""]]></expression>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="adff8f75-569b-4018-a358-4f0041da115f" mode="Opaque" x="358" y="59" width="155" height="17">
+			<expression><![CDATA[""]]></expression>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="25e7663b-4804-44a6-85a5-135ddd1e5c6b" mode="Opaque" x="565" y="59" width="187" height="17">
+			<expression><![CDATA[""]]></expression>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+	</columnHeader>
+	<detail>
+		<band height="39" splitType="Stretch">
+			<element kind="textField" uuid="237527ae-df29-4932-8653-84b569c72517" mode="Opaque" x="0" y="0" width="64" height="39" pattern="" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[new SimpleDateFormat("MMMMM").format($F{cutOffStartDate})]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="4abd046e-8c1c-4ef8-a8ae-c792e498637a" mode="Opaque" x="358" y="0" width="53" height="39" pattern="###0.000" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{leaveWithoutPayVl}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="0e572038-4559-4d5d-ba90-d98a551dab69" mode="Opaque" x="305" y="0" width="53" height="39" pattern="###0.000;-###0.000" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{vacationLeaveBalance}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="f21b6248-72bf-4939-bff0-7081e97ce9b8" mode="Opaque" x="411" y="0" width="52" height="39" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{earnedSl}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="fb39f5df-321c-46f1-bb67-de97cc523dc3" mode="Opaque" x="463" y="0" width="50" height="39" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{sickLeaveUsed}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="7db8d714-d527-4b4d-a70c-0b5cd8afbbf0" mode="Opaque" x="513" y="0" width="52" height="39" pattern="###0.000" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{sickLeaveBalance}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="c0000afd-5bcf-4670-b085-82170e1e35ad" mode="Opaque" x="565" y="0" width="49" height="39" pattern="###0.000" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{leaveWithoutPaySl}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="b16a7092-7178-4dfa-b043-3761f450f788" mode="Opaque" x="638" y="0" width="26" height="39" pattern="###0" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{lateUndertimeMin}%60]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="e99fd3c8-bbb8-4eaf-a7d7-ec71581e73ea" mode="Opaque" x="664" y="0" width="26" height="39" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{lateCount}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="24d4b565-cc92-455d-95bf-d04ba886d660" mode="Opaque" x="690" y="0" width="24" height="39" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{utCount}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="13f46851-5258-473b-bfad-bf924c05906b" mode="Opaque" x="714" y="0" width="38" height="39" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{absentCount}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="94790259-6113-4724-aaf8-5b953e279c89" mode="Opaque" x="614" y="0" width="24" height="39" pattern="###0" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[Math.floor($F{lateUndertimeMin}/60)]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="280c9555-1897-49bf-88b4-61dddb6d11a8" mode="Opaque" x="64" y="0" width="143" height="20" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" vTextAlign="Middle">
+				<expression><![CDATA[$F{leaveParticulars} == null ? "" : ($F{leaveParticulars}.length()>49 ?
+$F{leaveParticulars}.substring(0,49) : $F{leaveParticulars})]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="2e632644-a822-4796-a26c-fc64b946994f" mode="Opaque" x="64" y="20" width="143" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" vTextAlign="Middle">
+				<expression><![CDATA[$F{leaveParticulars} == null ? "" : ($F{leaveParticulars}.length()>49 ?
+$F{leaveParticulars}.substring(49,$F{leaveParticulars}.length()) : "")]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="6eee84ea-9e95-4615-b8bf-5388804dad34" mode="Opaque" x="207" y="0" width="50" height="39" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{earnedVl}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="03e77079-0c2f-491b-a705-da5f230b56f5" mode="Opaque" x="257" y="0" width="48" height="39" pattern="###0.000" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{vacationLeaveUsed}+$F{lateUndertimeEquivalent}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+		</band>
+	</detail>
+	<summary height="40">
+		<element kind="textField" uuid="95498a09-ad63-4a62-9155-581f28148f31" x="0" y="20" width="207" height="20" evaluationTime="Report" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$V{separatedStatusValue}]]></expression>
+		</element>
+		<element kind="textField" uuid="93e8bd35-bdfb-44fa-9fc7-380dea49b794" x="0" y="0" width="752" height="20" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[""]]></expression>
+		</element>
+	</summary>
+</jasperReport>

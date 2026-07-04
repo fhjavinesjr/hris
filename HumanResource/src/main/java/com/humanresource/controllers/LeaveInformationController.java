@@ -2,8 +2,11 @@ package com.humanresource.controllers;
 
 import com.humanresource.dtos.LeaveInformationDTO;
 import com.humanresource.services.LeaveInformationService;
+import com.humanresource.services.LeaveFormReportService;
 import com.hris.common.dtos.MetadataResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +19,12 @@ import java.util.List;
 public class LeaveInformationController {
 
     private final LeaveInformationService service;
+    private final LeaveFormReportService leaveFormReportService;
 
-    public LeaveInformationController(LeaveInformationService service) {
+    public LeaveInformationController(LeaveInformationService service,
+                                      LeaveFormReportService leaveFormReportService) {
         this.service = service;
+        this.leaveFormReportService = leaveFormReportService;
     }
 
     /**
@@ -134,5 +140,19 @@ public class LeaveInformationController {
             return ResponseEntity.internalServerError()
                     .body(new MetadataResponse("Error deleting record: " + ex.getMessage()));
         }
+    }
+
+    /**
+     * GET /api/leave-information/report/{employeeId}?year=2026
+     * Generates the employee leave card for the selected calendar year.
+     */
+    @GetMapping("/report/{employeeId}")
+    public void downloadLeaveCardReport(@PathVariable Long employeeId,
+                                        @RequestParam int year,
+                                        HttpServletResponse response) throws Exception {
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader("Content-Disposition",
+                "attachment; filename=\"LeaveCard_" + employeeId + "_" + year + ".pdf\"");
+        leaveFormReportService.generateLeaveCard(employeeId, year, response.getOutputStream());
     }
 }

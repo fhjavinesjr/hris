@@ -3,11 +3,14 @@ package com.humanresource.controllers;
 import com.hris.common.dtos.MetadataResponse;
 import com.humanresource.dtos.ApprovedLeaveDTO;
 import com.humanresource.dtos.LeaveApplicationDTO;
+import com.humanresource.services.LeaveFormReportService;
 import com.humanresource.services.LeaveApplicationService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,9 +20,12 @@ import java.util.List;
 public class LeaveApplicationController {
 
     private final LeaveApplicationService leaveApplicationService;
+    private final LeaveFormReportService leaveFormReportService;
 
-    public LeaveApplicationController(LeaveApplicationService leaveApplicationService) {
+    public LeaveApplicationController(LeaveApplicationService leaveApplicationService,
+                                      LeaveFormReportService leaveFormReportService) {
         this.leaveApplicationService = leaveApplicationService;
+        this.leaveFormReportService = leaveFormReportService;
     }
 
     @GetMapping("/leave/bulk-approved")
@@ -92,5 +98,13 @@ public class LeaveApplicationController {
                     .body(new MetadataResponse("Failed to delete Leave Application"));
         }
         return ResponseEntity.ok(new MetadataResponse(leaveApplicationId, "Successfully deleted Leave Application"));
+    }
+
+    @GetMapping("/leave-application/report/{leaveApplicationId}")
+    public void downloadLeaveApplicationReport(@PathVariable Long leaveApplicationId,
+                                               HttpServletResponse response) throws Exception {
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader("Content-Disposition", "attachment; filename=\"LeaveForm_" + leaveApplicationId + ".pdf\"");
+        leaveFormReportService.generateLeaveForm(leaveApplicationId, response.getOutputStream());
     }
 }

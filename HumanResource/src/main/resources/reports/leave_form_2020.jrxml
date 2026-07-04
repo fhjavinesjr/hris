@@ -1,0 +1,2472 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="leave" language="java" pageWidth="595" pageHeight="1100" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="10" bottomMargin="20" uuid="e726dd65-9ed6-407c-a1f1-05230f32f781" summaryNewPage="true" floatColumnFooter="true">
+	<property name="ireport.zoom" value="1.650000000000088"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.background.image" value="C:\Users\PaXyBaBee\Documents\out-0025.jpeg"/>
+	<property name="ireport.background.image.properties" value="false,true,0.25,0,0,0,0,0,0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="webAppPath" class="java.lang.String"/>
+	<parameter name="currentCompany" class="java.lang.String"/>
+	<parameter name="currentCompanyAddress" class="java.lang.String"/>
+	<parameter name="logoright" class="java.lang.Object"/>
+	<parameter name="logoleft" class="java.lang.Object"/>
+	<parameter name="isDOH" class="java.lang.Boolean"/>
+	<parameter name="LEAVE_APPLICATION_ID" class="java.lang.Long"/>
+	<query language="sql"><![CDATA[SELECT
+			ISNULL(pd.surname, '') AS lastname,
+			ISNULL(pd.firstname, '') AS firstname,
+			ISNULL(pd.middlename, '') AS middlename,
+			CAST(la.dateFiled AS datetime) AS dateFiling,
+			ISNULL(st.companyName, ISNULL('[' + ISNULL(e.employeeNo, '') + '] ' + ISNULL(pd.firstname, '') + ' ' + ISNULL(pd.surname, ''), '')) AS agency,
+			ISNULL(jp.jobPositionName, ISNULL(e.position, '')) AS jobPosition,
+			CAST(ISNULL(ap.salaryPerMonth, 0) AS float) AS salaryMonthly,
+			CASE WHEN la.leaveType = 'Vacation Leave' THEN la.leaveType ELSE '' END AS otherLeaveA,
+			CASE WHEN la.leaveType <> 'Vacation Leave' THEN la.leaveType ELSE '' END AS otherLeaveB,
+			CASE
+				WHEN la.leaveType = 'Vacation Leave' THEN 1
+				WHEN la.leaveType = 'Sick Leave' THEN 2
+				ELSE 3
+			END AS leaveType,
+			wd.workingDaysApplied AS noOfDaysApplied,
+			CAST(CASE WHEN la.leaveType = 'Vacation Leave' THEN 1 ELSE 0 END AS bit) AS isVlInCountry,
+			ISNULL(la.details, '') AS vlLocationAt,
+			CAST(CASE WHEN la.leaveType = 'Sick Leave' THEN 1 ELSE 0 END AS bit) AS isSlInHospital,
+			ISNULL(la.details, '') AS slLocationAt,
+			ISNULL(CONVERT(varchar(10), la.startDate, 101) + ' - ' + CONVERT(varchar(10), la.endDate, 101), '') AS inclusiveDates,
+			CAST(CASE WHEN LOWER(ISNULL(la.commutation, '')) = 'requested' THEN 1 ELSE 0 END AS bit) AS isCommutation,
+			CAST(CASE WHEN ISNULL(la.approvedStatus, '') = 'Approved' THEN 1 ELSE 0 END AS bit) AS isApproved,
+			CAST(la.dateFiled AS datetime) AS creditDateAsOf,
+			CAST(ISNULL(li.vacationLeaveBalance, 0) AS float) AS vlCredit,
+			CAST(ISNULL(li.sickLeaveBalance, 0) AS float) AS slCredit,
+			CAST(ISNULL(li.vacationLeaveBalance, 0) + ISNULL(li.sickLeaveBalance, 0) AS float) AS totalCredit,
+			CAST(CASE WHEN ISNULL(la.approvedStatus, '') = 'Approved' THEN wd.workingDaysApplied ELSE 0 END AS float) AS daysApprovedWithPay,
+			CAST(0 AS float) AS daysApprovedWithoutPay,
+			CAST(0 AS float) AS daysApprovedOther,
+			CASE WHEN ISNULL(la.approvedStatus, '') = 'Disapproved' THEN ISNULL(la.approvalMessage, '') ELSE '' END AS disapprovedDueTo,
+			ISNULL(auth.firstname + ' ' + auth.lastname, '') AS authorizedOfficial,
+			ISNULL(auth.position, '') AS authorizedOfficialTitle,
+			ISNULL(rec.firstname + ' ' + rec.lastname, '') AS recommendBy,
+			ISNULL(rec.position, '') AS recommendByTitle,
+			ISNULL(app.firstname + ' ' + app.lastname, '') AS approvedBy,
+			ISNULL(app.position, '') AS approvedByTitle,
+			CAST(CASE WHEN ISNULL(la.recommendationStatus, '') = 'Approved' THEN 1 ELSE 0 END AS bit) AS isRecommendApproved,
+			ISNULL(la.recommendationMessage, '') AS recommendationDueTo,
+			'' AS leaveAppHeader1,
+			'' AS leaveAppHeader2,
+			'' AS leaveAppFooter1,
+			'' AS leaveAppFooter2,
+			'' AS leaveAppFooter3,
+			ISNULL(pd.surname, '') + ', ' + ISNULL(pd.firstname, '') + ' ' + ISNULL(pd.middlename, '') AS fullname,
+			CASE WHEN ISNULL(la.approvedStatus, '') = 'Approved' THEN 1 ELSE 2 END AS approvalType,
+			CASE WHEN ISNULL(la.recommendationStatus, '') = 'Approved' THEN 1 ELSE 2 END AS recommendationApproval,
+			CAST(0 AS bit) AS isVlAbroad,
+			CAST(CASE WHEN la.leaveType = 'Sick Leave' THEN 1 ELSE 0 END AS bit) AS isSlOutHospital,
+			'' AS formCode,
+			CAST(la.endDate AS date) AS lastDate,
+			ISNULL(CONVERT(varchar(10), la.startDate, 101) + ' - ' + CONVERT(varchar(10), la.endDate, 101), '') AS combined,
+			'' AS inclusiveDatesWOPay,
+			ISNULL(CAST(wd.workingDaysApplied AS varchar(20)), '0') AS noofDaysApplied,
+			0 AS caseSTL,
+			CAST(0 AS bit) AS isMone,
+			CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
+			ISNULL(st.companyName, '') AS currentCompanySetting,
+			ISNULL(st.address, '') AS currentCompanyAddressSetting,
+			st.leftHeaderLogo AS leftHeaderLogo,
+			st.rightHeaderLogo AS rightHeaderLogo,
+			CAST(CASE WHEN la.leaveType = 'Vacation Leave' THEN wd.workingDaysApplied ELSE 0 END AS float) AS lessVlThisApplication,
+			CAST(CASE WHEN la.leaveType = 'Sick Leave' THEN wd.workingDaysApplied ELSE 0 END AS float) AS lessSlThisApplication,
+			CAST(CASE WHEN la.leaveType IN ('Vacation Leave', 'Sick Leave') THEN wd.workingDaysApplied ELSE 0 END AS float) AS lessTotalThisApplication,
+			CAST(ISNULL(li.vacationLeaveBalance, 0) - CASE WHEN la.leaveType = 'Vacation Leave' THEN wd.workingDaysApplied ELSE 0 END AS float) AS balanceVl,
+			CAST(ISNULL(li.sickLeaveBalance, 0) - CASE WHEN la.leaveType = 'Sick Leave' THEN wd.workingDaysApplied ELSE 0 END AS float) AS balanceSl,
+			CAST((ISNULL(li.vacationLeaveBalance, 0) + ISNULL(li.sickLeaveBalance, 0)) - CASE WHEN la.leaveType IN ('Vacation Leave', 'Sick Leave') THEN wd.workingDaysApplied ELSE 0 END AS float) AS balanceTotal
+		FROM leave_application la
+		LEFT JOIN employee e ON e.employeeId = la.employeeId
+		LEFT JOIN personaldata pd ON pd.employeeId = la.employeeId
+		LEFT JOIN employee rec ON rec.employeeId = la.recommendingApprovalById
+		LEFT JOIN employee auth ON auth.employeeId = la.authorizedOfficialId
+		LEFT JOIN employee app ON app.employeeId = la.approvedById
+		OUTER APPLY (
+			SELECT TOP 1
+				s.companyName,
+				s.address,
+				s.hospitalAgency,
+				s.leftHeaderLogo,
+				s.rightHeaderLogo
+			FROM settings s
+			ORDER BY s.settingsId DESC
+		) st
+		OUTER APPLY (
+			SELECT TOP 1
+				ea.salaryPerMonth,
+				ea.jobPositionId
+			FROM employeeappointment ea
+			WHERE ea.employeeId = la.employeeId
+			ORDER BY ea.assumptionToDutyDate DESC, ea.employeeAppointmentId DESC
+		) ap
+		LEFT JOIN job_position jp ON jp.jobPositionId = ap.jobPositionId
+		OUTER APPLY (
+			SELECT TOP 1
+				lix.vacationLeaveBalance,
+				lix.sickLeaveBalance
+			FROM leave_information lix
+			WHERE lix.employeeId = la.employeeId
+			ORDER BY lix.cutoffEndDate DESC, lix.leaveInformationId DESC
+		) li
+		OUTER APPLY (
+			SELECT CAST(
+				CASE
+					WHEN la.startDate IS NULL OR la.endDate IS NULL OR la.endDate < la.startDate THEN ISNULL(la.noOfDays, 0)
+					ELSE DATEDIFF(DAY, la.startDate, la.endDate) + 1
+				END AS float
+			) AS workingDaysApplied
+		) wd
+		WHERE la.leaveApplicationId = $P{LEAVE_APPLICATION_ID}]]></query>
+	<field name="lastname" class="java.lang.String"/>
+	<field name="firstname" class="java.lang.String"/>
+	<field name="middlename" class="java.lang.String"/>
+	<field name="dateFiling" class="java.util.Date"/>
+	<field name="agency" class="java.lang.String"/>
+	<field name="jobPosition" class="java.lang.String"/>
+	<field name="salaryMonthly" class="java.lang.Double"/>
+	<field name="otherLeaveA" class="java.lang.String"/>
+	<field name="otherLeaveB" class="java.lang.String"/>
+	<field name="leaveType" class="java.lang.Integer"/>
+	<field name="noOfDaysApplied" class="java.lang.Double"/>
+	<field name="isVlInCountry" class="java.lang.Boolean"/>
+	<field name="vlLocationAt" class="java.lang.String"/>
+	<field name="isSlInHospital" class="java.lang.Boolean"/>
+	<field name="slLocationAt" class="java.lang.String"/>
+	<field name="inclusiveDates" class="java.lang.String"/>
+	<field name="isCommutation" class="java.lang.Boolean"/>
+	<field name="isApproved" class="java.lang.Boolean"/>
+	<field name="creditDateAsOf" class="java.util.Date"/>
+	<field name="vlCredit" class="java.lang.Double"/>
+	<field name="slCredit" class="java.lang.Double"/>
+	<field name="totalCredit" class="java.lang.Double"/>
+	<field name="daysApprovedWithPay" class="java.lang.Double"/>
+	<field name="daysApprovedWithoutPay" class="java.lang.Double"/>
+	<field name="daysApprovedOther" class="java.lang.Double"/>
+	<field name="disapprovedDueTo" class="java.lang.String"/>
+	<field name="authorizedOfficial" class="java.lang.String"/>
+	<field name="authorizedOfficialTitle" class="java.lang.String"/>
+	<field name="recommendBy" class="java.lang.String"/>
+	<field name="recommendByTitle" class="java.lang.String"/>
+	<field name="approvedBy" class="java.lang.String"/>
+	<field name="approvedByTitle" class="java.lang.String"/>
+	<field name="isRecommendApproved" class="java.lang.Boolean"/>
+	<field name="recommendationDueTo" class="java.lang.String"/>
+	<field name="leaveAppHeader1" class="java.lang.String"/>
+	<field name="leaveAppHeader2" class="java.lang.String"/>
+	<field name="leaveAppFooter1" class="java.lang.String"/>
+	<field name="leaveAppFooter2" class="java.lang.String"/>
+	<field name="leaveAppFooter3" class="java.lang.String"/>
+	<field name="fullname" class="java.lang.String"/>
+	<field name="approvalType" class="java.lang.Integer"/>
+	<field name="recommendationApproval" class="java.lang.Integer"/>
+	<field name="isVlAbroad" class="java.lang.Boolean"/>
+	<field name="isSlOutHospital" class="java.lang.Boolean"/>
+	<field name="formCode" class="java.lang.String"/>
+	<field name="lastDate" class="java.sql.Date"/>
+	<field name="combined" class="java.lang.String"/>
+	<field name="inclusiveDatesWOPay" class="java.lang.String"/>
+	<field name="noofDaysApplied" class="java.lang.String"/>
+	<field name="caseSTL" class="java.lang.Integer"/>
+	<field name="isMone" class="java.lang.Boolean"/>
+	<field name="hospitalAgency" class="java.lang.Boolean"/>
+	<field name="currentCompanySetting" class="java.lang.String"/>
+	<field name="currentCompanyAddressSetting" class="java.lang.String"/>
+	<field name="leftHeaderLogo" class="java.lang.Object"/>
+	<field name="rightHeaderLogo" class="java.lang.Object"/>
+	<field name="lessVlThisApplication" class="java.lang.Double"/>
+	<field name="lessSlThisApplication" class="java.lang.Double"/>
+	<field name="lessTotalThisApplication" class="java.lang.Double"/>
+	<field name="balanceVl" class="java.lang.Double"/>
+	<field name="balanceSl" class="java.lang.Double"/>
+	<field name="balanceTotal" class="java.lang.Double"/>
+	<variable name="variable1" class="java.lang.String"/>
+	<pageHeader height="115">
+		<element kind="textField" uuid="a46de674-99ee-44bc-9c83-26fa02e9d180" x="129" y="41" width="295" height="50" markup="styled" fontName="Tahoma" fontSize="8.0" pdfEmbedded="false" hTextAlign="Center">
+			<printWhenExpression><![CDATA[$F{hospitalAgency} == null || !$F{hospitalAgency}]]></printWhenExpression>
+			<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $F{currentCompanySetting} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">" + $F{currentCompanyAddressSetting} + "</style><br />"]]></expression>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="image" uuid="b10015bb-fee5-48c2-b683-a49d788c6843" x="424" y="41" width="55" height="50" scaleImage="FillFrame" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{rightHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[])$F{rightHeaderLogo})]]></expression>
+		</element>
+		<element kind="image" uuid="d3cf4be0-ecff-4235-8a20-f2aa49928403" x="74" y="41" width="55" height="50" scaleImage="FillFrame" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{leftHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[])$F{leftHeaderLogo})]]></expression>
+		</element>
+		<element kind="staticText" uuid="5ff9ff00-5c3c-473f-a140-7da76350bba8" x="0" y="41" width="74" height="50" fontSize="14.0" pdfFontName="Helvetica-Bold" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+		</element>
+		<element kind="staticText" uuid="8dab41e6-b726-4ba2-842e-8989ed0acf5e" x="479" y="41" width="76" height="50" fontSize="14.0" pdfFontName="Helvetica-Bold" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+		</element>
+		<element kind="staticText" uuid="b72a6b48-5ec7-4770-ab10-f4d54cae07c7" x="0" y="91" width="555" height="24" fontSize="14.0" pdfFontName="Helvetica-Bold" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[APPLICATION FOR LEAVE]]></text>
+		</element>
+		<element kind="textField" uuid="00ba785c-7c64-4fc4-82d2-4efff64677d1" x="129" y="41" width="295" height="50" markup="styled" fontName="Tahoma" fontSize="8.0" pdfEmbedded="false" hTextAlign="Center">
+			<printWhenExpression><![CDATA[$F{hospitalAgency} != null && $F{hospitalAgency}]]></printWhenExpression>
+			<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"8\" isBold=\"true\">Department of Health</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $F{currentCompanySetting} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">" + $F{currentCompanyAddressSetting} + "</style><br />"]]></expression>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1f5af5d9-243a-414d-bb96-3a7bffbc1754" x="0" y="0" width="555" height="41" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="false" italic="true" hTextAlign="Left" vTextAlign="Top">
+			<text><![CDATA[Civil Service Form No. 6
+Revised 2020]]></text>
+		</element>
+	</pageHeader>
+	<detail>
+		<band height="908" splitType="Stretch">
+			<element kind="staticText" uuid="46954875-22ad-4949-9531-2e96613a235d" x="434" y="382" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[!$F{isCommutation}]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="staticText" uuid="cbd8ec63-a50a-453d-b779-f72762c78b7a" x="375" y="112" width="84" height="15" fontSize="7.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[Within the Philippines]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="6cfc0af0-e65c-45b3-9b45-3b77ac9b7faf" x="479" y="187" width="67" height="15" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="38365e91-64fd-46cd-b312-074917a87a5b" x="479" y="172" width="67" height="15" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="45bd0792-571b-400d-bde6-4835d8fd411e" x="375" y="172" width="104" height="15" fontSize="7.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[In Hospital (Specify Illness)]]></text>
+				<box leftPadding="3">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="2911825c-cb1f-427a-9bdf-9666e11bd8c1" x="375" y="187" width="104" height="15" fontSize="7.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[Out Patient (Specify Illness)]]></text>
+				<box leftPadding="3">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="78e97e6c-40ae-4dc3-90e0-8ecffbdb8020" x="479" y="172" width="67" height="15" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isSlInHospital}]]></printWhenExpression>
+				<expression><![CDATA[$F{slLocationAt}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="3b9aadc4-587a-4f69-afd4-f84edf2bc40d" x="479" y="187" width="67" height="15" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isSlInHospital} == false]]></printWhenExpression>
+				<expression><![CDATA[$F{slLocationAt}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c13f955d-0a2b-4375-bac5-5695c4c073b1" x="360" y="127" width="15" height="15" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="234c5cf3-3bd2-4214-926b-46b8b01f16f8" x="360" y="127" width="15" height="15" markup="none" fontSize="9.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isVlAbroad}]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="356bf787-7ac7-4eb6-a762-66b0b2f7277a" x="35" y="112" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Mandatory/Forced Leave(Sec. 25, Rule XVI, Omnibus Rules Implementing E.O. No. 292)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="601a9081-6071-4bd6-84f3-f026a9fd7cd9" x="35" y="127" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Sick Leave  (Sec. 43, Rule XVI, Omnibus Rules Implementing E.O. No. 292)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c367fc47-648d-44a9-86f9-8ccfa550499b" x="360" y="277" width="15" height="15" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="e33c2d64-e2e4-44a2-b750-b324f6e93450" x="360" y="202" width="186" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c60dfcad-8379-453e-8efe-ec37ad2b3dda" x="360" y="172" width="15" height="15" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="dd712234-fe23-4b24-a505-0f925cc9ebca" x="459" y="112" width="87" height="15" fontSize="10.0">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a521b2a7-63a4-4f92-98b3-3f106ab36b6e" x="150" y="667" width="108" height="15">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="6aa4c000-6346-4e5d-8a52-e39e75d6d858" x="150" y="667" width="108" height="15" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{daysApprovedWithPay} > 0d]]></printWhenExpression>
+				<expression><![CDATA[$F{inclusiveDates}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f92a9c15-06ab-4b1a-a6ac-ef46a92bcfdd" x="150" y="697" width="108" height="15">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="97563b4a-6f3e-47a1-9097-81ee641201ce" x="0" y="712" width="280" height="14" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="1698896c-604c-4f4c-8485-216cd57a9695" x="0" y="652" width="280" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="816ba559-b5af-49f7-9b8b-3b51af912470" x="150" y="682" width="108" height="15">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="9c11f448-a876-4f36-9bea-561ad3d5a498" x="39" y="697" width="35" height="14">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="fbee1f4e-cecf-4134-8b3f-a40f80ee75da" x="39" y="682" width="35" height="15">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f893dd72-8e70-4447-aed6-ce5da2af7e25" x="39" y="667" width="35" height="15">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="5fc37013-240a-4543-98f3-d1fed9bedcb7" x="280" y="517" width="275" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="66796e22-c2a4-4047-a57e-c8be281ad468" x="280" y="532" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="17b67e7f-7fe4-4578-a6bb-8405211282ea" x="280" y="547" width="74" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="5cbb7fb8-c22a-446f-99c0-36d33a64d5a8" x="280" y="562" width="74" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c841f9bd-78ac-4a5e-b019-013ac0a89d7c" x="255" y="0" width="112" height="14" pdfFontName="Helvetica-Bold">
+				<text><![CDATA[(Last)]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="16bb2a67-bdca-4e5b-ae38-14378266b004" x="39" y="382" width="208" height="15" pattern="###0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{noofDaysApplied}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="799c984f-461f-4a9f-aac1-aa3572f402a4" x="39" y="412" width="208" height="15" fontSize="9.0" pattern="" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[!$F{inclusiveDates}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[$F{inclusiveDates}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="5600c515-47a0-4112-935d-e052ac2d85f8" x="360" y="112" width="15" height="15" fontSize="10.0">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="cc81aa61-5c29-417b-8328-0c407a3154ac" x="360" y="112" width="15" height="15" markup="none" fontSize="9.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isVlInCountry}]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="7f950c9e-f5d0-4adf-80d9-43e94c3b3c17" x="459" y="112" width="87" height="15" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isVlInCountry}]]></printWhenExpression>
+				<expression><![CDATA[$F{vlLocationAt}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="e8ec44dd-c754-4d7b-9489-bbdce7397b98" x="0" y="67" width="555" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" italic="false" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[DETAILS OF APPLICATION]]></text>
+				<box leftPadding="10">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="7df043f6-6b6d-44e7-8c96-b10a4664309f" x="0" y="457" width="555" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" italic="false" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[DETAILS OF ACTION ON APPLICATION]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="fcc34f35-7551-4319-933d-813b9d40a3f6" x="0" y="0" width="198" height="14" pdfFontName="Helvetica-Bold">
+				<text><![CDATA[1. OFFICE / AGENCY]]></text>
+				<box leftPadding="2">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="07491884-b637-4cc8-ae0b-43866842b670" x="198" y="0" width="57" height="34" pdfFontName="Helvetica-Bold">
+				<text><![CDATA[2. NAME]]></text>
+				<box leftPadding="2">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d6e38cf8-a8bd-4eba-a6e2-48cf533736d7" x="367" y="0" width="118" height="14" pdfFontName="Helvetica-Bold">
+				<text><![CDATA[(First)]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="fefacad4-def2-46ea-b153-e40a726ed2aa" x="485" y="0" width="70" height="14" pdfFontName="Helvetica-Bold">
+				<text><![CDATA[(Middle)]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d9864379-3130-4a15-98f3-977678052ec9" x="0" y="34" width="198" height="13" pdfFontName="Helvetica-Bold">
+				<text><![CDATA[3. DATE OF FILING]]></text>
+				<box leftPadding="2">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="353eb7a5-92df-44a5-921d-d466c1d8c0b6" x="198" y="34" width="187" height="13" pdfFontName="Helvetica-Bold">
+				<text><![CDATA[4. POSITION]]></text>
+				<box leftPadding="2">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="9c5e8ab9-fcc4-4667-9020-52b687d56de3" x="385" y="34" width="170" height="13" pdfFontName="Helvetica-Bold">
+				<text><![CDATA[5. SALARY]]></text>
+				<box leftPadding="2">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="050a61d1-0046-4f77-9b0c-e39244139bc0" x="0" y="82" width="354" height="15" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[ 6. A.) TYPE OF LEAVE TO BE AVAILED OF]]></text>
+				<box leftPadding="2">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="6f7efcea-0237-4455-b97e-cefd30be7913" x="354" y="82" width="201" height="15" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[ 6. B.) DETAILS OF LEAVE]]></text>
+				<box leftPadding="2">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="66e67650-2eb2-49d8-8675-4c17c06b4c4a" x="354" y="97" width="201" height="15" fontSize="9.0" pdfFontName="Helvetica-Bold" vTextAlign="Middle">
+				<text><![CDATA[In case of Vacation/Special Privilege Leave:]]></text>
+				<box leftPadding="10">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="4764c708-e090-4480-80ab-605c040c7aa4" x="375" y="127" width="84" height="15" fontSize="7.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[Abroad (Specify)]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="daff2d39-a90f-49a0-a0bb-0f64c44a3735" x="354" y="157" width="201" height="15" fontSize="9.0" pdfFontName="Helvetica-Bold" vTextAlign="Middle">
+				<text><![CDATA[In case of Sick Leave:]]></text>
+				<box leftPadding="10">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="48c6c76c-ba32-4856-9900-26f16303244d" x="280" y="367" width="275" height="15" pdfFontName="Helvetica-Bold" bold="true" vTextAlign="Middle">
+				<text><![CDATA[ 6. D.) COMMUTATION]]></text>
+				<box>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="7302e3e5-cc0c-4726-ad14-2c8900424eb3" x="354" y="382" width="70" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[Requested]]></text>
+				<box leftPadding="3"/>
+			</element>
+			<element kind="staticText" uuid="9967599d-fa1c-4fa9-93da-6c6816ac9db6" x="459" y="382" width="96" height="15" pdfFontName="Helvetica-Bold" vTextAlign="Middle">
+				<text><![CDATA[Not Requested]]></text>
+				<box leftPadding="3">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="ab3520ae-e9b8-49a9-a959-e006d161f3fd" x="0" y="367" width="280" height="15" pdfFontName="Helvetica-Bold" bold="true" vTextAlign="Middle">
+				<text><![CDATA[ 6. C.) NUMBER OF WORKING DAY APPLIED FOR:]]></text>
+				<box leftPadding="2">
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="673a27c6-9bba-4c8b-b162-0ecd327c8203" x="39" y="397" width="208" height="15" pdfFontName="Helvetica-Bold" vTextAlign="Bottom">
+				<text><![CDATA[Inclusive Dates]]></text>
+			</element>
+			<element kind="staticText" uuid="01c671d0-32fe-49bf-b836-0591de5528f4" x="0" y="472" width="280" height="15" pdfFontName="Helvetica-Bold" bold="true" vTextAlign="Middle">
+				<text><![CDATA[7. A) CERTIFICATION OF LEAVE CREDITS]]></text>
+				<box leftPadding="2">
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="758d2f18-b0e9-452a-973e-1eec2cac9dfc" x="39" y="487" width="35" height="15" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[As of]]></text>
+			</element>
+			<element kind="textField" uuid="2a1b09fd-0b3e-4647-abcb-5fd602c080e6" x="39" y="592" width="208" height="15" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{authorizedOfficial}.toUpperCase()]]></expression>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid"/>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="54974dca-c6af-44c3-a5c8-4aed45482b45" x="39" y="607" width="208" height="15" fontSize="9.0" italic="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{authorizedOfficialTitle}]]></expression>
+			</element>
+			<element kind="staticText" uuid="3a8736d9-e53a-4cbd-bdb3-3c3a1d0aae9f" x="280" y="472" width="275" height="15" pdfFontName="Helvetica-Bold" bold="true" vTextAlign="Middle">
+				<text><![CDATA[7. B) RECOMMENDATION]]></text>
+				<box leftPadding="2">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d2f72a00-3d00-488b-ba22-bc5cc10ff48b" x="354" y="502" width="201" height="15" pdfFontName="Helvetica-Bold" bold="false" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[Approved]]></text>
+				<box>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="41c643bd-bf50-4f49-90c1-3871b6d47424" x="354" y="532" width="201" height="15" pdfFontName="Helvetica-Bold" bold="false" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[Disapproval due to]]></text>
+				<box>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="89775ae1-b262-4662-b8ff-cf6798eecdb6" x="0" y="637" width="280" height="15" pdfFontName="Helvetica-Bold" bold="true" vTextAlign="Middle">
+				<text><![CDATA[7. C) APPROVED FOR]]></text>
+				<box leftPadding="2">
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="bbbf18a4-3cd6-43e3-9e6a-65d68319a97d" x="74" y="682" width="76" height="15" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="false" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[Days without pay]]></text>
+			</element>
+			<element kind="staticText" uuid="5776b60e-dedc-4a7c-af26-dcce596ee32b" x="74" y="697" width="76" height="15" fontSize="9.0" pdfFontName="Helvetica-Bold" bold="false">
+				<text><![CDATA[Others (Specify)]]></text>
+			</element>
+			<element kind="staticText" uuid="59a7980d-9533-4b54-accd-397ec2b14b7e" x="74" y="667" width="76" height="15" pdfFontName="Helvetica-Bold" bold="false">
+				<text><![CDATA[Days with pay]]></text>
+			</element>
+			<element kind="staticText" uuid="fee14903-4edb-4361-9d09-585d885a9575" x="280" y="637" width="275" height="15" pdfFontName="Helvetica-Bold" bold="true" vTextAlign="Middle">
+				<text><![CDATA[7. D) DISAPPROVED DUE TO:]]></text>
+				<box leftPadding="2">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c9de5e30-4847-4c41-9a95-d6a5e5c0e202" x="321" y="682" width="205" height="15" bold="false">
+				<text><![CDATA[]]></text>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="00ed48fd-9aa3-4110-b7d7-f34906eb4691" x="164" y="807" width="247" height="14" fontSize="9.0" printInFirstWholeBand="true" hTextAlign="Center">
+				<expression><![CDATA[$F{approvedByTitle}]]></expression>
+			</element>
+			<element kind="textField" uuid="7968d69d-8ada-420a-bb3f-ba42c08234cb" x="164" y="794" width="247" height="13" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+				<expression><![CDATA[$F{approvedBy}.toUpperCase()]]></expression>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="b2773acf-c4ba-4cbf-9a06-a569baed6678" x="0" y="14" width="198" height="20" hTextAlign="Center" vTextAlign="Top">
+				<expression><![CDATA[$F{agency}]]></expression>
+				<box>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="37ac93fa-fd3d-4bd8-9481-466aa6e7a6dd" x="255" y="14" width="112" height="20" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{lastname}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="af9bbd1f-a4d2-422a-b262-59b694e8480a" x="367" y="14" width="118" height="20" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{firstname}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="4761f6a0-3e2c-4cc5-86d0-8588be50bee6" x="485" y="14" width="70" height="20" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{middlename}]]></expression>
+				<box leftPadding="2">
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="7ba66e1d-8726-432f-9538-8c1cd21ef7fd" x="39" y="667" width="35" height="15" pattern="###0" blankWhenNull="true" hTextAlign="Center">
+				<printWhenExpression><![CDATA[$F{daysApprovedWithPay} > 0d]]></printWhenExpression>
+				<expression><![CDATA[$F{daysApprovedWithPay}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="453decb1-2a19-4f77-be56-366f9074e169" x="39" y="682" width="35" height="15" pattern="###0" blankWhenNull="true" hTextAlign="Center">
+				<printWhenExpression><![CDATA[$F{daysApprovedWithoutPay} > 0d]]></printWhenExpression>
+				<expression><![CDATA[$F{daysApprovedWithoutPay}]]></expression>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="920612d6-7d4c-4ea1-aa42-46135b6cd982" x="39" y="697" width="35" height="14" pattern="###0" blankWhenNull="true" hTextAlign="Center">
+				<printWhenExpression><![CDATA[$F{daysApprovedOther} > 0d]]></printWhenExpression>
+				<expression><![CDATA[$F{daysApprovedOther}]]></expression>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="0390881f-935c-4e1b-8cde-65c4741ea28e" x="321" y="667" width="205" height="15">
+				<expression><![CDATA[$F{disapprovedDueTo}]]></expression>
+			</element>
+			<element kind="textField" uuid="d9fff6a2-8dfb-4d06-9ff6-bbad5814b6f8" x="0" y="47" width="198" height="20" pattern="MMMMM dd, yyyy" hTextAlign="Center">
+				<expression><![CDATA[new SimpleDateFormat("MMMMM dd, yyyy").format($F{dateFiling})]]></expression>
+				<box>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="1cbed64a-1120-43a4-9528-e39d6acedcf4" x="198" y="47" width="187" height="20" hTextAlign="Center">
+				<expression><![CDATA[$F{jobPosition}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="8bd5d784-9633-4aed-884f-d60706592e02" x="385" y="47" width="170" height="20" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Center">
+				<expression><![CDATA[$F{salaryMonthly}]]></expression>
+				<box leftPadding="2">
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="1b3986d8-9ab8-499c-8faa-099b50db9f66" x="360" y="172" width="15" height="15" markup="none" fontSize="9.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isSlInHospital}]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="b96bde49-9457-4ccc-aa88-53d2bcdab164" x="329" y="382" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isCommutation}]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="textField" uuid="c813e01a-38cc-4f16-97ce-4e38e3e592b8" x="321" y="592" width="205" height="15" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center">
+				<expression><![CDATA[$F{recommendBy}.toUpperCase()]]></expression>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="060e5084-ee7d-4ae4-ae86-69062a4fb146" x="10" y="97" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 1]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="staticText" uuid="c4dfe62e-d734-4d20-8ecc-8e87db0d6ada" x="10" y="127" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 2]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="staticText" uuid="0e5a0f55-2f70-44a6-9856-117fc7acc9fb" x="329" y="502" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isRecommendApproved}]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="staticText" uuid="c3a44f7c-dbe5-45e5-abe5-3466c63e94f6" x="329" y="532" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{recommendationApproval} == 2]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="textField" uuid="bcf7684d-a84b-43bf-9062-c09b4eeaaae9" x="354" y="547" width="170" height="15" hTextAlign="Center" vTextAlign="Bottom">
+				<printWhenExpression><![CDATA[!$F{isRecommendApproved}]]></printWhenExpression>
+				<expression><![CDATA[$F{recommendationDueTo}]]></expression>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f49f8d87-e289-4f3d-9755-a811e8f49cce" key="staticText-18" x="18" y="869" width="262" height="12" markup="styled" fontSize="7.0" bold="false" pdfEmbedded="true" underline="false" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[Adopted from CSC FORM NO. 6 REVISED 1998]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="de93dc57-3f96-4f12-a866-bbb2a404827e" key="staticText-18" x="280" y="881" width="246" height="12" markup="styled" fontSize="7.0" bold="false" pdfEmbedded="true" underline="false" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[Effectivity Date: June 1, 2021]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="545811c2-6abd-40fb-8bbc-092625368d7e" x="280" y="412" width="275" height="15" pdfFontName="Helvetica-Bold" underline="false" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{fullname}]]></expression>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c39359b1-67a0-444a-9b6b-5452f88d09db" x="319" y="427" width="205" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Top">
+				<text><![CDATA[Signature of Applicant]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="e2edd1b9-fe75-4b34-b0d6-b369f75137f0" x="10" y="112" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 5]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="textField" uuid="ff7e77f9-a979-490b-95ce-5fbeb1f6d515" x="10" y="322" width="119" height="15" fontSize="9.0" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{otherLeaveB}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="04bad5c1-c71e-427d-abee-f41f01b77724" x="10" y="142" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 4]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="textField" uuid="1905c693-5072-4255-a076-27f759fc75d8" x="29" y="562" width="80" height="15" pattern="###0.000" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{balanceVl}]]></expression>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="ac92d348-ea41-4329-b66f-aef278ad6aef" x="109" y="562" width="80" height="15" pattern="###0.000" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{balanceSl}]]></expression>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="43ac7204-ab86-46df-8cea-edb178582efd" x="189" y="562" width="80" height="15" pattern="###0.000" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{balanceTotal}]]></expression>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="ff62e380-4985-4dfd-9ab4-5a726fba900f" x="18" y="893" width="262" height="15" fontSize="7.0" blankWhenNull="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{formCode}]]></expression>
+				<box leftPadding="5"/>
+			</element>
+			<element kind="textField" uuid="86efcea4-65f1-4837-85a9-666ca702d2a7" x="247" y="881" width="33" height="12" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[new String($F{formCode}.equals("ZCMC-F-HRMO-02")?"Rev.3":"Rev.1")]]></expression>
+			</element>
+			<element kind="staticText" uuid="3db6b30d-8196-4b5a-81a7-310f31b731da" x="164" y="761" width="247" height="13" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Bottom">
+				<printWhenExpression><![CDATA[!$F{formCode}.equals("ZCMC-F-HRMO-02(E)")]]></printWhenExpression>
+				<text><![CDATA[Signature]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="6b397e4b-a24a-4403-9e76-b17b54aa8378" x="18" y="841" width="30" height="14" fontSize="9.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[Date:]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="57bb599c-4242-490c-b4f6-b1965c9629dd" x="48" y="841" width="199" height="13" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="49e63db7-ea23-4fc8-9169-8c11ba96528d" x="321" y="697" width="205" height="15">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a6ab978e-70be-4267-8714-4e4041db2564" x="321" y="607" width="205" height="15" hTextAlign="Center" vTextAlign="Top">
+				<text><![CDATA[Unit/Section/Department Head]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="2f151184-ad80-4b43-9598-0524eee286c2" x="321" y="622" width="205" height="15" hTextAlign="Center" vTextAlign="Top">
+				<text><![CDATA[(Signature over printed name)]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="752b9828-c247-4642-92bb-38e0a6be6ee1" x="74" y="487" width="173" height="15" fontSize="8.0" vTextAlign="Middle">
+				<expression><![CDATA[$F{combined} == null ? "" : ($F{combined}.contains(" - ") ? $F{combined}.split(" - ")[0] : $F{combined})]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="5c30a184-33b2-4f0f-8ec5-c77c947db5d8" key="staticText-18" x="334" y="807" width="192" height="14" markup="styled" fontSize="8.0" bold="true" pdfEmbedded="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="3cdc3beb-8618-475a-addd-cd4ac84b184d" x="18" y="761" width="199" height="13" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Bottom">
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a9bcf039-b728-4321-9ce5-fa3ef932f515" x="333" y="761" width="193" height="13" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Bottom">
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f48fe450-1ad9-43ce-b744-a044b7381189" key="staticText-18" x="18" y="807" width="199" height="14" markup="styled" fontSize="8.0" bold="true" pdfEmbedded="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="0ccd8082-5690-4c39-b3f8-98f6040922de" key="staticText-18" x="18" y="794" width="199" height="13" markup="styled" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" pdfEmbedded="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="dbb0b54c-1039-4afa-b639-a60a534a4cf8" x="310" y="841" width="216" height="13" hTextAlign="Left" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{formCode}.equals("ZCMC-F-HRMO-02(E)")]]></printWhenExpression>
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="77280beb-ffcb-4d79-aeff-a2cb50b68fcd" x="280" y="841" width="30" height="14" fontSize="9.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{formCode}.equals("ZCMC-F-HRMO-02(E)")]]></printWhenExpression>
+				<text><![CDATA[Date:]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="bb8373ca-e6e8-4839-9d81-3a0706d589c4" x="29" y="517" width="80" height="15" pdfFontName="Helvetica-Bold" bold="false" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[Vacation]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="8cb18fd1-0fda-4d91-bc7d-3758dd32098d" x="109" y="517" width="80" height="15" pdfFontName="Helvetica-Bold" bold="false" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[Sick]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="2d3723c5-bff5-499d-a89e-7d432c0106b6" x="189" y="517" width="80" height="15" pdfFontName="Helvetica-Bold" bold="false" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[TOTAL]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="285634a7-0e38-41f7-8cee-c3935f13becb" x="150" y="682" width="108" height="15" fontSize="7.0" blankWhenNull="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{daysApprovedWithoutPay} > 0d]]></printWhenExpression>
+				<expression><![CDATA[$F{inclusiveDatesWOPay}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="rectangle" uuid="4c86365a-3a37-4ef0-afb0-b44e41a75db2" x="109" y="532" width="80" height="15"/>
+			<element kind="rectangle" uuid="ec35cc8c-1789-4d56-b356-3767d686892e" x="29" y="532" width="80" height="15"/>
+			<element kind="rectangle" uuid="4f1a8622-810b-4724-ba28-0330fa849392" x="189" y="532" width="80" height="15"/>
+			<element kind="rectangle" uuid="069320e2-82c7-488d-aab4-bb6216392cf6" x="109" y="547" width="80" height="15"/>
+			<element kind="rectangle" uuid="c35b717a-3be2-4415-a265-856f15153345" x="29" y="547" width="80" height="15"/>
+			<element kind="rectangle" uuid="018a730c-9002-44e6-ac81-c20534caa463" x="189" y="547" width="80" height="15"/>
+			<element kind="textField" uuid="2bb0b0e2-3395-4ec8-b6fe-2d5f6fdbd341" x="29" y="532" width="80" height="15" pattern="###0.000" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{vlCredit}]]></expression>
+				<box rightPadding="5"/>
+			</element>
+			<element kind="textField" uuid="4f099de8-9f66-4e8d-bdd3-9d326f07f8c5" x="109" y="532" width="80" height="15" pattern="###0.000" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{slCredit}]]></expression>
+				<box rightPadding="5"/>
+			</element>
+			<element kind="textField" uuid="03522f27-f7f7-40df-a078-b74e17d3639a" x="189" y="532" width="80" height="15" pattern="###0.000" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{totalCredit}]]></expression>
+				<box rightPadding="5"/>
+			</element>
+			<element kind="textField" uuid="8956df72-e9d5-4887-b857-9ab741f3a8fd" x="29" y="547" width="80" height="15" pattern="###0.000" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{lessVlThisApplication}]]></expression>
+				<box rightPadding="5"/>
+			</element>
+			<element kind="textField" uuid="6d95cf99-cb66-44d0-998b-3c4f8bccf3d5" x="109" y="547" width="80" height="15" pattern="###0.000" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{lessSlThisApplication}]]></expression>
+				<box rightPadding="5"/>
+			</element>
+			<element kind="textField" uuid="7ec8d9de-b0e1-4d19-80f9-78dcb224db0c" x="189" y="547" width="80" height="15" pattern="###0.000" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{lessTotalThisApplication}]]></expression>
+				<box rightPadding="5"/>
+			</element>
+			<element kind="textField" uuid="42f2ae40-b08c-4650-92cc-dde2a21bf413" x="39" y="412" width="208" height="15" fontSize="9.0" blankWhenNull="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[!$F{inclusiveDatesWOPay}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[$F{inclusiveDatesWOPay}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c987c01b-40d7-4337-b3a5-7d17e123b627" x="0" y="97" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="065498da-73f7-462a-8e3b-734bc9be09ca" x="25" y="97" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="b7e05828-8fa9-4e04-a05d-d666f56ed6a8" x="247" y="382" width="33" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="2d8e5b15-1768-4611-b4c6-f366afb0e8ec" x="0" y="382" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="8c12e6b7-c652-4d7b-b38d-5b021f26d0ff" x="247" y="397" width="33" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="29e3c25d-88ce-4dea-94c6-d87cd5bbb632" x="0" y="397" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="822fbcd2-c3b5-4983-a6c8-42326660ac92" x="0" y="412" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="1d31a33f-e5b8-450e-98e8-0ca42dac3ac4" x="247" y="412" width="33" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="fda77528-51f2-4362-b476-71da7101427c" x="0" y="442" width="280" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="0">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a9c80768-9769-4dc8-96c7-6ab7400193e7" x="354" y="142" width="201" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="134ee605-280b-47fe-ae62-118a953e7bdf" x="546" y="112" width="9" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="49111e0e-451b-4e41-b376-06cb1dc5eeb7" x="546" y="172" width="9" height="15" fontSize="7.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="24c47a77-2c1a-4f94-b770-ab04a0339435" x="546" y="187" width="9" height="15" fontSize="7.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="cb7be0ea-99a8-47f8-8ca6-72f4f2c9ea6c" x="280" y="382" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d6acb6f4-d76a-4c43-9e76-267ccd822e17" x="280" y="397" width="275" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="b75856a0-6835-4d8b-8f92-e4251ad831d9" x="280" y="427" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="307e1a7d-f872-420d-a2bc-c4d9bb366c81" x="524" y="427" width="31" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="0">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="e96c3397-ca8b-4a2b-b510-664391fc0fb0" x="0" y="427" width="280" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="e2334165-b921-4efe-abb9-a73c7c1c4ac8" x="280" y="442" width="275" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="0">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c43ff0f7-32a8-4735-8a65-70fc0f6d7ff4" x="247" y="487" width="33" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="954b8353-4698-4efe-b16e-63e579f7c8cf" x="0" y="487" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="b760acfa-a2b9-457e-a110-daaad435023e" x="0" y="502" width="280" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="608a15e5-780a-440d-8cfd-0b1cf03265fd" x="0" y="517" width="29" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="40f8d08b-6929-451c-8518-4969655169ec" x="269" y="517" width="11" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d9ab3101-6bd3-45db-8c6c-2cf610691c95" x="0" y="532" width="29" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="218ec75c-e7d6-46bd-a738-57ba99b6e5d2" x="269" y="532" width="11" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="5874cf02-dade-42e9-8425-7310afc6c123" x="0" y="547" width="29" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d9eb038f-128c-4f87-9a05-9f0e5fa1b5af" x="269" y="547" width="11" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f0a6e37f-12d9-46bc-8a32-41c58940c053" x="269" y="562" width="11" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="6b2865ad-8f8a-4fc3-82c8-f025ad7ef7d0" x="0" y="562" width="29" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="7377ece1-4976-440c-92c9-d5c5771a6a1e" x="0" y="577" width="280" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="1bf202bf-69b4-4daa-89c9-91f313ff75a5" x="0" y="592" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="bdde5809-44fc-450b-b3a2-9196ee3ff06d" x="0" y="607" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c05c42b3-5416-4771-9702-0d0e59c9ea11" x="247" y="592" width="33" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="0">
+					<leftPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f8ba4b95-5199-4033-9d54-50608c5e6405" x="247" y="607" width="33" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="0">
+					<leftPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="6dd1ef89-ad5f-4e66-8aae-f766415f970a" x="0" y="622" width="280" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="0">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="b7aff6a3-644b-41d7-baa7-0bc9a391f56e" x="280" y="487" width="275" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f0018002-b7d4-4750-9a43-2a84d56951a7" x="280" y="502" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="91e1596e-25e1-4e3e-b74b-dfb9b5a7e80a" x="354" y="562" width="170" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="86730c92-9cb9-4115-92c4-d1be785af21f" x="524" y="547" width="31" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a4cb8fc7-8dc5-490a-9c80-672905e63f9b" x="280" y="577" width="275" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="12563a14-f083-4b9a-b795-c9989e63b99a" x="280" y="592" width="41" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="8e32b9b6-4cdb-4d6b-aa27-50f239709385" x="280" y="607" width="41" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="cd51b17f-3585-41cf-9f68-4fdf2aa5c75d" x="280" y="622" width="41" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="2f2c8de7-9295-4563-8924-40f77cdf8b70" x="526" y="592" width="29" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="1caff812-0cfc-4d57-9392-bf38683e2808" x="526" y="607" width="29" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="6d062c30-67b4-4746-99d3-e0a25d54eaa2" x="526" y="622" width="29" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="1f00bddc-ec2e-4946-be5a-d671ea84cd84" x="280" y="652" width="275" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="73a2bb2b-e730-48b5-a47f-113ed6049096" x="0" y="667" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c9ee2689-1ceb-44e4-a51f-bd0996448c2b" x="0" y="682" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a7a1eedb-a821-4d5f-a5fc-874867f5b275" x="0" y="697" width="39" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a9f0415a-1c06-4ac9-9c0e-430cb3b25a60" x="0" y="726" width="18" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c3bbdf6a-b344-4608-ba60-bddf83bcceaa" x="280" y="667" width="41" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="59b54c73-0f12-4135-a9ae-0bd6b7ceea46" x="280" y="682" width="41" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="e36a97a8-51dd-496b-af6b-3a9536e00660" x="280" y="697" width="41" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="4587447e-ac04-46ef-88bb-a2bd8bb1fcf7" x="526" y="667" width="29" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="2652ff91-bd54-498e-acc7-304c3333b0b7" x="526" y="682" width="29" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="b860df23-78ed-4956-9ee2-0003692a934a" x="526" y="697" width="29" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="582b54a3-1736-4621-ab7e-b450e93f1554" x="280" y="712" width="275" height="14" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="698dc132-bb13-4696-9e1d-3d2b6085315a" x="280" y="726" width="275" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="84a47f09-6472-405d-b278-110da981bd0e" x="0" y="741" width="280" height="20" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="9d61b9a9-f6ff-44bd-a863-c268b52960cf" x="280" y="741" width="275" height="20" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="406d278b-b15b-49db-83b0-e89deccd6f35" x="0" y="761" width="18" height="13" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="40bf0162-3713-4b9d-a57b-ce1d3722c854" x="526" y="761" width="29" height="13" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="1395d9e4-cf86-45c3-80d9-64165b8c759e" x="0" y="774" width="280" height="20" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="8025f720-be12-4a6d-b357-7e29567c0418" x="280" y="774" width="275" height="20" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c894caf2-5c64-4d01-9176-78cc929b2da0" x="526" y="794" width="29" height="13" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="fd388d65-fd9f-441a-bd79-d2578fdc3f71" x="526" y="807" width="29" height="14" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="55f5ab27-d7ac-43ec-8f36-eea39f8b391d" x="0" y="821" width="280" height="20" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="ebe11b5b-19bd-46d6-800c-d1e9ac3bd6f6" x="280" y="821" width="275" height="20" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d3646707-0942-4f95-90a5-9524ea7e7ac3" x="0" y="794" width="18" height="13" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="bbcb3479-8201-432b-9c14-b6d4419ae976" x="0" y="807" width="18" height="14" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="fec6195f-6974-4b35-8fb6-c34053d6081f" x="0" y="841" width="18" height="14" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="65c648a8-1b4b-406a-b5c7-391215d150be" x="247" y="841" width="33" height="14" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a02773eb-5a9a-4e8d-adb4-053dfba5a0e8" x="526" y="841" width="29" height="14" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="337eb54b-f1cc-4905-aa1e-f3f1b24391cc" x="0" y="855" width="555" height="14" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="279696d7-a248-41d3-a216-697c2e6592fd" key="staticText-18" x="280" y="869" width="275" height="12" markup="styled" fontSize="7.0" bold="false" pdfEmbedded="true" underline="false" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d639fa88-71ef-41cf-9383-0e484c202c01" x="526" y="881" width="29" height="12" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="988c4816-d67e-46cc-840d-16c10255c577" key="staticText-18" x="280" y="893" width="275" height="15" markup="styled" fontSize="7.0" bold="false" pdfEmbedded="true" underline="false" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="88e1fa5d-bb09-436a-ab6b-3113bad5dd4e" key="staticText-18" x="18" y="881" width="229" height="12" markup="styled" fontSize="7.0" bold="false" pdfEmbedded="true" underline="false" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="71be4ea4-e853-4e10-94de-2ad7de80b6d7" x="0" y="869" width="18" height="12" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="5a5c7a81-6a71-4f14-8d57-07bee3a7179b" x="0" y="881" width="18" height="12" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="b610da7d-16ad-415f-9147-b72685479634" x="0" y="893" width="18" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="7dc72773-901c-47f2-ab99-19e801c6faaa" x="0" y="127" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="20a7745e-cbd5-4d75-b8c0-778596083067" x="25" y="127" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c0123016-3028-407d-8b13-24701d9384ad" x="25" y="112" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="3ba87fa8-878b-4c5d-be0e-7ca68d0926c2" x="0" y="112" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="9099ab56-44f2-45e1-a023-821c4da52888" x="25" y="142" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="91cf7a79-5c08-441a-a538-be20d8c58b28" x="0" y="142" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="25e5a161-cb38-440a-8115-22a7805cb046" x="449" y="382" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d6653b99-390b-4a53-8cd6-1b71af70358d" x="424" y="382" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="be195236-f9f6-4e49-a183-5e32d1ae7b3f" x="319" y="382" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="6971419c-8523-4ea1-9bc1-bf57b6f2ac12" x="344" y="382" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="b2ec7286-0fc7-4c4b-a188-59c34f52fd38" x="344" y="502" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="ed76cff3-ef10-4f27-abc5-6e95256090d1" x="319" y="502" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="1176d01f-2e9f-4883-b301-1876617da1cb" x="319" y="532" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="757789d8-acec-4352-b2ae-af1adb32e588" x="344" y="532" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a12c0608-7803-4662-bfb7-0ba5a608667e" x="524" y="562" width="31" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="2634889c-1e48-4b3d-9b91-472919b0c97b" x="258" y="667" width="22" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="4092e1e7-56a9-4334-93f5-ece39c79eb9b" x="258" y="682" width="22" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f00a0bf2-176a-42ed-b5e4-9a655856b727" x="258" y="697" width="22" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="65f7affb-9e61-4ac6-b15e-115435b2a48c" x="354" y="547" width="170" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="bd572788-1d2b-4761-9dd6-7362fcd3f687" x="150" y="697" width="108" height="15" fontSize="5.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{daysApprovedOther} > 0d]]></printWhenExpression>
+				<expression><![CDATA[$F{otherLeaveB}.equals("COVID-19 TREATMENT LEAVE")?"CSC MC No.10, s.2020 dated May 7, 2020":$F{inclusiveDates}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="e6261631-3af2-451e-a205-a37fb31b4171" x="18" y="726" width="262" height="15" pdfFontName="Helvetica-Bold" bold="true" vTextAlign="Middle">
+				<expression><![CDATA[$F{hospitalAgency} != null && $F{hospitalAgency}?"BY AUTHORITY OF THE SECRETARY OF HEALTH":""]]></expression>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="ba21fccf-1730-441e-9082-5b713b29439a" mode="Opaque" x="29" y="547" width="240" height="15" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{otherLeaveB}.equals("COVID-19 TREATMENT LEAVE")]]></printWhenExpression>
+				<expression><![CDATA["with FULL PAY"]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="65d57078-2dcb-4bdc-8a4a-d35d0a1d925d" x="35" y="97" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Vacation Leave (Sec. 51, Rule XVI, Omnibus Rules Implementing E.O. No. 292)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="8238a634-024c-4b65-9f5e-81cc75eea091" x="35" y="142" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Maternity Leave (R.A. No. 11210 / IRR issued by CSC, DOLE and SSS)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="9d984278-496f-48a7-938a-1f53378df86f" x="35" y="157" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Paternity Leave (R.A. No. 8187 / CSC MC No. 71, s. 1998, as amended)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="b4a903fa-b825-4067-be4d-fea4c61896ea" x="25" y="157" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="460a2e20-6091-4508-a8e0-a69051a9bf8a" x="0" y="157" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="e8162e04-c4e5-4cb2-8418-61d9f5ed0248" x="10" y="157" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 3]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="staticText" uuid="86ca8c5f-ab99-4c41-b1ac-323758d1e9d6" x="10" y="172" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 6]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="staticText" uuid="c4b30412-1cad-417d-bc7e-1643360348ae" x="0" y="172" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="d365b994-f5c7-4572-897d-fc2873681dc7" x="35" y="172" width="319" height="15" fontSize="6.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Special Privilege Leave (Sec. 21, Rule XVI, Omnibus Rules Implementing E.O. No. 292)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f917d8db-ae15-4216-b669-9246bee79ee0" x="25" y="172" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="79aad6be-c09c-4c86-9db4-618c5a7e8c69" x="0" y="187" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="686f815f-67aa-46ef-b163-e90c3da4fe67" x="35" y="187" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Solo Parent Leave (RA No. 8972 / CSC MC No. 8, s. 2004)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="35eeb76d-15c7-430d-a507-835ec5b314d2" x="25" y="187" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="832196a6-a1c7-453b-8b1d-51bbead1c273" x="10" y="187" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 7]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="staticText" uuid="b4defdb8-5894-4640-aae7-9663bf06b859" x="10" y="202" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 10]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="textField" uuid="8a5ff8c3-f17f-45c2-a48c-a0951b3ee9b0" x="35" y="202" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Study Leave (Sec. 68, Rule XVI, Omnibus Rules Implementing E.O. No. 292)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="846e3373-17f8-4c7e-99bd-b9d4e89c2670" x="25" y="202" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="ce814c92-55cc-4563-b484-b8a1fd315a19" x="0" y="202" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="8b435485-150f-4203-8eb2-e0322e12c799" x="0" y="217" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="ed40252f-a9c1-4807-9d7a-1e7f69fd1571" x="10" y="217" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 15]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="textField" uuid="abc818e5-77a0-42a3-a146-7b627f49ca30" x="35" y="217" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["10-Day VAWC Leave (RA No. 9262 / CSC MC No. 15, s. 2005)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="b951e7b8-ec07-4cf0-9074-237e29cc6f01" x="25" y="217" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="2d54a4ec-b3ab-4fb2-8549-20b12656e34d" x="25" y="232" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="e624df27-426d-4003-801f-7a9c372a05ff" x="35" y="232" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Rehabilitation Privilege (Sec. 55, Rule XVI, Omnibus Rules Implementing E.O. No. 292)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="ae210c7d-b225-47df-a7d7-ba2e1dd0d34d" x="10" y="232" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 8]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="staticText" uuid="475555fa-59d0-4d32-909c-21fb4913463e" x="0" y="232" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="a64f1718-c9ee-415b-902b-08244b760ee3" x="35" y="247" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Special Leave Benefits for Women (RA No. 9710 / CSC MC No. 25, s. 2010)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d98b5ca1-84ad-4dee-bc37-b15c7f88a0b1" x="0" y="247" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="1b792c51-31c3-4499-ad1f-0adcd3b41652" x="25" y="247" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="ce0f8e28-9a49-48ff-9298-b33710c8b1c9" x="10" y="247" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 9]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="staticText" uuid="01b189f0-b370-4529-a691-f0641d082cde" x="25" y="262" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a4f5565f-46de-4cfa-b7a3-f4b9e72ebaa5" x="0" y="262" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="07a45b42-9989-4d06-b6fc-037e60132c0b" x="35" y="262" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Special Emergency (Calamity) Leave (CSC MC No. 2, s. 2012, as amended)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f99d8519-8c18-423a-b007-b5a8eee844e1" x="10" y="262" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 16]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="textField" uuid="d7672749-595c-4b01-9de1-113fac13a535" x="35" y="277" width="319" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Adoption Leave (R.A. No. 8552)"]]></expression>
+				<box leftPadding="0">
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="ab1ed08a-9bce-4df5-ae7b-7e62cf883632" x="25" y="277" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[)]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="5ebbfa36-507e-4e07-a56e-ea2decd54a36" x="10" y="277" width="15" height="15" markup="none" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 17]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+			</element>
+			<element kind="staticText" uuid="2dc55475-7812-47cb-a05b-7319ecaf6beb" x="0" y="277" width="10" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+				<text><![CDATA[(]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="b132bbbe-b463-4fe4-b1f3-5699c206ef27" x="0" y="307" width="354" height="15" fontSize="9.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA["Others:"]]></expression>
+				<box leftPadding="10">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="3ffbb368-7ce2-46cc-b206-2836d749d85b" x="0" y="322" width="10" height="15" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="e90d9d73-d4c4-42da-b183-4099b8d0d39b" x="129" y="322" width="225" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[""]]></expression>
+				<box leftPadding="10">
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="0fd3cee4-c57f-4c56-a8cc-832ec8ebe1ca" x="459" y="127" width="87" height="15" fontSize="10.0">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="806db8ca-23f9-4df6-ad25-ca04bba70d56" x="459" y="127" width="87" height="15" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isVlAbroad} == true]]></printWhenExpression>
+				<expression><![CDATA[$F{vlLocationAt}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="6382f5e1-26cb-4b81-8461-df3bf4cd2785" x="546" y="127" width="9" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="148ec7c4-a33c-4823-8459-a7f81664f50f" x="360" y="187" width="15" height="15" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="0a61926c-fa0f-446a-8d77-c428a30cba99" x="360" y="187" width="15" height="15" markup="none" fontSize="9.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isSlInHospital} == false && !$F{slLocationAt}.isEmpty()]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="40e67e23-3a23-49ff-a518-f4509cc658df" x="546" y="202" width="9" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="0d3e663e-6a75-4e3f-b93e-b79b87fbda74" x="354" y="217" width="201" height="15" fontSize="8.0" pdfFontName="Helvetica-Bold" vTextAlign="Middle">
+				<text><![CDATA[In case of Special Leave Benefits for Women:]]></text>
+				<box leftPadding="10">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="9cbb7855-760b-4fac-83c8-6fb50f817b5b" x="354" y="232" width="70" height="15" fontSize="7.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[(Specify Illness)]]></text>
+				<box leftPadding="3">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="4554b22d-2015-499b-b80a-f3e0fae9857e" x="546" y="232" width="9" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="3391015f-5520-4128-842f-795971e95de7" x="424" y="232" width="122" height="15" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{otherLeaveA}]]></expression>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f5e9d23e-1cd0-4bfa-bd4c-b91dc6e14b7b" x="360" y="247" width="186" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="bcf59382-8795-4bb0-bb81-fa01d6865638" x="546" y="247" width="9" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="71c5ccf2-a1c8-4b62-851f-4d83f0de0f4f" x="354" y="262" width="201" height="15" fontSize="9.0" pdfFontName="Helvetica-Bold" vTextAlign="Middle">
+				<text><![CDATA[In case of Study Leave:]]></text>
+				<box leftPadding="10">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="6e790f00-4805-453d-ae47-5ab8e815f9f3" x="360" y="277" width="15" height="15" markup="none" fontSize="9.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{caseSTL} == 1]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="6acc52f0-d037-423b-a6bf-67a10288e35d" x="360" y="292" width="15" height="15" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="380d718d-4070-471e-b515-5311801e6cb4" x="360" y="292" width="15" height="15" markup="none" fontSize="9.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{caseSTL} == 2]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="8ad64942-5f55-4658-82f2-1f99cf608324" x="375" y="277" width="180" height="15" fontSize="8.0" pdfFontName="Helvetica-Bold" vTextAlign="Middle">
+				<text><![CDATA[Completion of Master's Degree]]></text>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="ea60cb5d-3bd0-421d-a64a-c259ed1832c8" x="375" y="292" width="180" height="15" fontSize="8.0" pdfFontName="Helvetica-Bold" vTextAlign="Middle">
+				<text><![CDATA[BAR/Board Examination Review]]></text>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="5e3cd015-a29a-41de-b80c-aa320ac85537" x="354" y="307" width="201" height="15" fontSize="9.0" pdfFontName="Helvetica-Bold" vTextAlign="Middle">
+				<text><![CDATA[Other Purpose:]]></text>
+				<box leftPadding="10">
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="4af9e4b6-ed69-45a9-97c6-29b4861e9dc4" x="360" y="337" width="15" height="15" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a2f6d9ec-07eb-4955-9948-ba93f13401ad" x="360" y="337" width="15" height="15" markup="none" fontSize="9.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} == 11]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d16d4e99-6fdb-4bb4-87c8-e517612286b8" x="375" y="337" width="180" height="15" fontSize="8.0" pdfFontName="Helvetica-Bold" vTextAlign="Middle">
+				<text><![CDATA[Terminal Leave]]></text>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="adcc71cf-5ff9-4463-bc81-6ade1a915397" x="360" y="322" width="15" height="15" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="187c39c5-ee1a-49bf-90ff-08707818e8f7" x="360" y="322" width="15" height="15" markup="none" fontSize="9.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{isMone}]]></printWhenExpression>
+				<text><![CDATA[X]]></text>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="535d09c3-370d-42dc-b983-8ffed988f439" x="375" y="322" width="180" height="15" fontSize="8.0" pdfFontName="Helvetica-Bold" vTextAlign="Middle">
+				<text><![CDATA[Monetization of Leave Credits]]></text>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="362d1f4a-3716-44b1-8e45-c0ec9b8dab94" x="0" y="337" width="354" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[""]]></expression>
+				<box leftPadding="0">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="648ff9db-0a2f-4459-a4ae-36439899e8dc" x="0" y="352" width="354" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[""]]></expression>
+				<box leftPadding="0">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="ab903470-3cec-4f62-8ed1-f12d7da5c461" x="354" y="352" width="201" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[""]]></expression>
+				<box leftPadding="0">
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="27e70e9c-a812-403c-ba9a-d681780dcb30" x="0" y="292" width="354" height="15" fontSize="7.0" bold="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[""]]></expression>
+				<box leftPadding="10">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="ebfd0dde-ded2-4479-aab8-cc1373ef8895" x="354" y="127" width="6" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="2b7519f1-f67a-4154-9a55-4e78ff3897ed" x="354" y="112" width="6" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a9cf8b27-e6e1-464c-98a7-9c6814960e03" x="354" y="172" width="6" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="9ed34f92-7cbf-4661-af8d-af4f10f3512e" x="354" y="187" width="6" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="3a089cb0-69f5-4422-b979-9fefbb7b7bd5" x="354" y="292" width="6" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="afaa35fe-cda4-49a6-b573-591028efd800" x="354" y="277" width="6" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="8df912ce-badd-4a18-a55a-1192f1ed245c" x="354" y="337" width="6" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="99dee72c-28de-452d-a95d-b33d075515ff" x="354" y="322" width="6" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d970504c-a9bc-4fbe-8754-b0908bad68a5" x="354" y="202" width="6" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="abdf4ed0-aa5b-47c5-956c-3aa64cf15b09" x="354" y="247" width="6" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box leftPadding="5">
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="f14eb19a-a79f-4f41-9a95-a7c00ee0e36a" key="staticText-18" x="334" y="793" width="192" height="14" markup="styled" fontSize="8.0" bold="true" pdfEmbedded="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[]]></text>
+				<box>
+					<topPen lineWidth="0.0"/>
+				</box>
+			</element>
+		</band>
+	</detail>
+	<summary height="782">
+		<element kind="staticText" uuid="a631ce1c-fc5c-406b-bcc4-f627d373a49c" x="0" y="0" width="555" height="24" fontSize="14.0" pdfFontName="Helvetica-Bold" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[INSTRUCTIONS AND REQUIREMENTS]]></text>
+		</element>
+		<element kind="textField" uuid="cfb4bcf1-851a-4323-9450-d8f7702c9323" x="0" y="24" width="280" height="43" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["Application for any type of leave shall be made on this Form and "
++ "<style isBold=\"true\">to be accomplished at least in duplicate</style> " + "with documentary requirements, as "
++ "follows:"]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="c4482658-23f3-42f6-be79-1dba74c6d47e" x="0" y="67" width="280" height="60" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">1. Vacation leave*</style> "
++ "\nIt shall be filed five (5) days in advance, whenever possible, of the "
++ "effective date of such leave. Vacation leave within the Philippines or "
++ "abroad shall be indicated in the form for purposes of securing travel "
++ "authority and completing clearance from money and work "
++ "acountabilities."]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="c6412fca-1d54-48d1-9743-ea252bfd67b2" x="0" y="127" width="280" height="80" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">2. Mandatory/Forced leave</style> "
++ "\nAnnual five-day vacation leave shall be forfeited if not taken during the year.  In case the scheduled leave has been cancelled in the exigency of the service by the head of agency, it shall no longer be deducted from the accumulated vacation leave.  Availment of one (1) day or more Vacation Leave (VL) shall be considered for complying the mandatory/forced leave subject to the conditions under Section 25, Rule XVI of the Omnibus Rules Implementing E.O. No. 292."]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="11dc22ac-8186-4f82-bff2-e102cfb296f3" x="0" y="207" width="280" height="80" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">3. Sick leave*</style> "
++ "\n• It shall be filed immediately upon employee's return from such leave. "
++ "\n• If filed in advance or exceeding five (5) days, application shall be accompanied by a <style isUnderline=\"true\">medical certificate</style>.  In case medical consultation was not availed of, an <style isUnderline=\"true\">affidavit</style> should be executed by an applicant. "]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="472c6920-6aa1-47fd-9a91-0f9ff6e757ea" x="0" y="287" width="280" height="80" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">4. Maternity leave* – 105 days</style> "
++ "\n• Proof of pregnancy e.g. ultrasound, doctor’s certificate on the expected date of delivery "
++ "\n• Accomplished Notice of Allocation of Maternity Leave Credits (CS Form No. 6a), if needed "
++ "\n• Seconded female employees shall enjoy maternity leave with full pay in the recipient agency. "]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="11685da3-7533-484d-ad3e-32cb8ba763b2" x="0" y="367" width="280" height="40" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">5. Paternity leave – 7 days</style> "
++ "\nProof of child’s delivery e.g. birth certificate, medical certificate and marriage contract"]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="dde1078c-3e26-4146-ab41-98b3bd0f1d69" x="0" y="407" width="280" height="60" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">6. Special Privilege leave – 3 days</style> "
++ "\nIt shall be filed/approved for at least one (1) week prior to availment, except on emergency cases.  Special privilege leave within the Philippines or abroad shall be indicated in the form for purposes of securing travel authority and completing clearance from money and work accountabilities."]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="3b43ee88-c647-4401-ac3d-0369ce2b3ee6" x="0" y="467" width="280" height="45" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">7. Solo Parent leave – 7 days</style> "
++ "\nIt shall be filed in advance or whenever possible five (5) days before going on such leave with updated Solo Parent Identification Card."]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="487b40c2-6d05-4a0a-af83-9322e8fe126f" x="0" y="512" width="280" height="55" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">8. Study leave* – up to 6 months</style> "
++ "\n• Shall meet the agency’s internal requirements, if any; "
++ "\n• Contract between the agency head or authorized representative and the employee concerned."]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="ee440050-786a-4852-b94b-92dbc9b8e2b8" x="0" y="567" width="280" height="170" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">9. VAWC leave – 10 days</style> "
++ "\n• It shall be filed in advance or immediately upon the woman employee’s return from such leave. "
++ "\n• It shall be accompanied by any of the following supporting documents: "
++ "\na.	Barangay Protection Order (BPO) obtained from the barangay; "
++ "\nb.	Temporary/Permanent Protection Order (TPO/PPO) obtained from the court; "
++ "\nc.	If the protection order is not yet issued by the barangay or the court, a certification issued by the Punong Barangay/Kagawad or Prosecutor or the Clerk of Court that the application for the BPO, TPO or PPO has been filed with the said office shall be sufficient to support the application for the ten-day leave; or "
++ "\nd.	In the absence of the BPO/TPO/PPO or the certification, a police report specifying the details of the occurrence of violence on the victim and a medical certificate may be considered, at the discretion of the immediate supervisor of the woman employee concerned. "]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="d1fa6782-cc47-401b-8df6-3daa578f7a0c" x="280" y="24" width="275" height="125" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">10. Rehabilitation leave* – up to 6 months</style> "
++ "\n• Application shall be made within one (1) week from the time of the accident except when a longer period is warranted. "
++ "\n• Letter request supported by relevant reports such as the police report, if any, "
++ "\n• Medical certificate on the nature of the injuries, the course of treatment involved, and the need to undergo rest, recuperation, and rehabilitation, as the case may be. "
++ "\n• Written concurrence of a government physician should be obtained relative to the recommendation for rehabilitation if the attending physician is a private practitioner, particularly on the duration of the period of rehabilitation. "]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="9f5516ef-e092-4c58-b88f-0ca0c7988c59" x="280" y="149" width="275" height="165" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">11. Special leave benefits for women* – up to 2 months</style> "
++ "\n• The application may be filed in advance, that is, at least five (5) days prior to the scheduled date of the gynecological surgery that will be undergone by the employee.  In case of emergency, the application for special leave shall be filed immediately upon employee’s return but during confinement the agency shall be notified of said surgery. "
++ "\n• The application shall be accompanied by a medical certificate filled out by the proper medical authorities, e.g. the attending surgeon accompanied by a clinical summary reflecting the gynecological disorder which shall be addressed or was addressed by the said surgery; the histopathological report; the operative technique used for the surgery; the duration of the surgery including the peri-operative period (period of confinement around surgery); as well as the employees estimated period of recuperation for the same. "]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="06b54409-f3a8-4802-9ecd-393ce66e4055" x="280" y="314" width="275" height="135" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">12. Special Emergency (Calamity) leave – up to 5 days</style> "
++ "\n• The special emergency leave can be applied for a maximum of five (5) straight working days or staggered basis within thirty (30) days from the actual occurrence of the natural calamity/disaster. Said privilege shall be enjoyed once a year, not in every instance of calamity or disaster. "
++ "\n• The head of office shall take full responsibility for the grant of special emergency leave and verification of the employee’s eligibility to be granted thereof.  Said verification shall include: validation of place of residence based on latest available records of the affected employee; verification that the place of residence is covered in the declaration of calamity area by the proper government agency; and such other proofs as may be necessary. "]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="3286f10a-f66a-49e8-aa51-b0c183caa658" x="280" y="449" width="275" height="55" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">13. Monetization of leave credits</style> "
++ "\nApplication for monetization of fifty percent (50%) or more of the accumulated leave credits shall be accompanied by letter request to the head of the agency stating the valid and justifiable reasons. "]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="31cc95cc-1c30-4671-97a8-84578cd73bba" x="280" y="504" width="275" height="45" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">14. Terminal leave*</style> "
++ "\nProof of employee’s resignation or retirement or separation from the service. "]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="2b462ac5-ed19-4216-8192-e67e4346cec4" x="280" y="549" width="275" height="55" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["<style isBold=\"true\">15. Adoption Leave</style> "
++ "\n• Application for adoption leave shall be filed with an authenticated copy of the Pre-Adoptive Placement Authority issued by the Department of Social Welfare and Development (DSWD). "]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="4d165e3a-28c5-4338-bded-4cce0e451c23" x="0" y="737" width="555" height="10" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA[""]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="785f8ec1-91d1-4b76-a744-54a0aaa2c02b" x="0" y="747" width="555" height="35" markup="styled" fontSize="8.0" bold="false" hTextAlign="Left" vTextAlign="Top">
+			<expression><![CDATA["* For leave of absence for thirty (30) calendar days or more and terminal leave, application shall be accompanied by a <style isBold=\"true\">clearance from money, property and work-related accountabilities</style> (pursuant to CSC Memorandum Circular No. 2, s. 1985)."]]></expression>
+			<box topPadding="5" leftPadding="0">
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+	</summary>
+</jasperReport>

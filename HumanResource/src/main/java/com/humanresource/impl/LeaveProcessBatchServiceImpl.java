@@ -7,7 +7,6 @@ import com.humanresource.dtos.LeaveProcessQueueItemDTO;
 import com.humanresource.dtos.LeaveProcessRequestDTO;
 import com.humanresource.dtos.LeaveProcessResultDTO;
 import com.humanresource.entitymodels.Employee;
-import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.services.LeaveProcessBatchService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
@@ -39,7 +38,6 @@ public class LeaveProcessBatchServiceImpl implements LeaveProcessBatchService {
 
     private static final int COMPUTE_CHUNK_SIZE = 50;
 
-    private final EmployeeRepository employeeRepository;
     private final LeaveProcessServiceImpl leaveProcessService;
     private final ExecutorService computeExecutor;
     private final ThreadPoolTaskExecutor batchAsyncExecutor;
@@ -50,11 +48,9 @@ public class LeaveProcessBatchServiceImpl implements LeaveProcessBatchService {
     private final ConcurrentHashMap<String, LeaveProcessResultDTO> jobResults = new ConcurrentHashMap<>();
 
     public LeaveProcessBatchServiceImpl(
-            EmployeeRepository employeeRepository,
             LeaveProcessServiceImpl leaveProcessService,
             @Qualifier("leaveProcessComputeExecutor") ExecutorService computeExecutor,
             @Qualifier("leaveProcessBatchAsyncExecutor") ThreadPoolTaskExecutor batchAsyncExecutor) {
-        this.employeeRepository = employeeRepository;
         this.leaveProcessService = leaveProcessService;
         this.computeExecutor = computeExecutor;
         this.batchAsyncExecutor = batchAsyncExecutor;
@@ -132,14 +128,7 @@ public class LeaveProcessBatchServiceImpl implements LeaveProcessBatchService {
             final LocalDate periodEnd = req.getCutoffEndDate();
             final Set<LocalDate> holidayDates = leaveProcessService.loadHolidayDates(periodStart, periodEnd);
 
-            List<Employee> employees;
-            if ("EMPLOYEE".equalsIgnoreCase(req.getScope()) && req.getEmployeeId() != null) {
-                employees = employeeRepository.findById(req.getEmployeeId())
-                        .map(List::of)
-                        .orElse(List.of());
-            } else {
-                employees = employeeRepository.findAll();
-            }
+            List<Employee> employees = leaveProcessService.resolveEmployeesForRequest(req);
 
             state.setTotalEmployees(employees.size());
             updateState(state, STATUS_PROCESSING, 10, null, null);
