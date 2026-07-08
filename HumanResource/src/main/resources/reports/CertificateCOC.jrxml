@@ -1,0 +1,214 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="CertificateCOC" language="java" pageWidth="680" pageHeight="480" columnWidth="640" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="f3d55ae9-1e3c-4bbd-8406-5fc31dda5ac2">
+	<property name="ireport.zoom" value="1.9487171000000019"/>
+	<property name="ireport.x" value="334"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="webAppPath" class="java.lang.String"/>
+	<parameter name="logoleft" class="java.lang.Object"/>
+	<parameter name="logoright" class="java.lang.Object"/>
+	<parameter name="currentCompany" class="java.lang.String"/>
+	<parameter name="currentCompanyAddress" class="java.lang.String"/>
+	<parameter name="isDOH" class="java.lang.Boolean"/>
+	<parameter name="COC_ID" class="java.lang.Long"/>
+	<query language="sql"><![CDATA[
+SELECT
+	CONCAT(
+		ISNULL(pd.firstname, ISNULL(e.firstname, '')),
+		CASE WHEN ISNULL(pd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', pd.middlename, ' ') END,
+		ISNULL(pd.surname, ISNULL(e.lastname, ''))
+	) AS employee,
+	ISNULL(jp.jobPositionName, ISNULL(e.position, '')) AS position,
+	CAST(
+		ISNULL(bb.accumulatedHours, 0)
+		+ ISNULL(appr.totalApprovedCocHours, 0)
+		- ISNULL(used.totalApprovedCtoHours, 0)
+	AS float) AS payOffBalance,
+	CONCAT(
+		ISNULL(headPd.firstname, ISNULL(headEmp.firstname, '')),
+		CASE WHEN ISNULL(headPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', headPd.middlename, ' ') END,
+		ISNULL(headPd.surname, ISNULL(headEmp.lastname, ''))
+	) AS deptHead,
+	CAST(c.dateFiled AS date) AS dateFile,
+	CONVERT(varchar(10), DATEADD(YEAR, 1, c.dateFiled), 101) AS validUntil,
+	CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
+	ISNULL(st.companyName, '') AS currentCompanySetting,
+	ISNULL(st.address, '') AS currentCompanyAddressSetting,
+	st.leftHeaderLogo,
+	st.rightHeaderLogo
+FROM compensatory_overtime_credit c
+LEFT JOIN employee e ON e.employeeId = c.employeeId
+LEFT JOIN personaldata pd ON pd.employeeId = c.employeeId
+OUTER APPLY (
+	SELECT TOP 1 ea.jobPositionId
+	FROM employeeappointment ea
+	WHERE ea.employeeId = c.employeeId
+	ORDER BY CASE WHEN ea.activeAppointment = 1 THEN 0 ELSE 1 END,
+		ea.assumptionToDutyDate DESC,
+		ea.employeeAppointmentId DESC
+) ap
+LEFT JOIN job_position jp ON jp.jobPositionId = ap.jobPositionId
+LEFT JOIN employee headEmp ON headEmp.employeeId = c.approvedById
+LEFT JOIN personaldata headPd ON headPd.employeeId = headEmp.employeeId
+LEFT JOIN coc_beginning_balance bb ON bb.employeeId = c.employeeId
+OUTER APPLY (
+	SELECT SUM(ISNULL(c2.hoursWorked, 0)) AS totalApprovedCocHours
+	FROM compensatory_overtime_credit c2
+	WHERE c2.employeeId = c.employeeId
+	  AND c2.status = 'Approved'
+) appr
+OUTER APPLY (
+	SELECT SUM(ISNULL(cto.hoursUsed, 0)) AS totalApprovedCtoHours
+	FROM compensatory_time_off cto
+	WHERE cto.employeeId = c.employeeId
+	  AND cto.status = 'Approved'
+) used
+OUTER APPLY (
+	SELECT TOP 1
+		s.companyName,
+		s.address,
+		s.hospitalAgency,
+		s.leftHeaderLogo,
+		s.rightHeaderLogo
+	FROM settings s
+	ORDER BY s.settingsId DESC
+) st
+WHERE c.cocId = $P{COC_ID}
+]]></query>
+	<field name="employee" class="java.lang.String"/>
+	<field name="position" class="java.lang.String"/>
+	<field name="payOffBalance" class="java.lang.Double"/>
+	<field name="deptHead" class="java.lang.String"/>
+	<field name="dateFile" class="java.sql.Date"/>
+	<field name="validUntil" class="java.lang.String"/>
+	<field name="hospitalAgency" class="java.lang.Boolean"/>
+	<field name="currentCompanySetting" class="java.lang.String"/>
+	<field name="currentCompanyAddressSetting" class="java.lang.String"/>
+	<field name="leftHeaderLogo" class="java.lang.Object"/>
+	<field name="rightHeaderLogo" class="java.lang.Object"/>
+	<title height="52" splitType="Stretch">
+		<element kind="textField" uuid="c1be3749-e4ef-4dd0-96e8-f301e811d5c6" x="0" y="-1" width="640" height="53" markup="styled" fontName="Tahoma" fontSize="8.0" pdfEmbedded="false" hTextAlign="Center">
+			<printWhenExpression><![CDATA[$F{hospitalAgency} != null && $F{hospitalAgency}]]></printWhenExpression>
+			<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"8\" isBold=\"true\">Department of Health</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $F{currentCompanySetting} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $F{currentCompanyAddressSetting} +  "</style><br />"]]></expression>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="image" uuid="b0b6c4be-fa26-442b-8d2c-2790426b972e" x="465" y="-1" width="56" height="53" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{rightHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{rightHeaderLogo})]]></expression>
+		</element>
+		<element kind="image" uuid="6afb33f6-0cd8-484d-85a4-9f01e69fe766" x="131" y="-1" width="55" height="53" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{leftHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{leftHeaderLogo})]]></expression>
+		</element>
+	</title>
+	<pageHeader height="52" splitType="Stretch">
+		<element kind="staticText" uuid="5fa3483b-b710-43d7-a5c5-7513e72d0b42" x="131" y="4" width="390" height="48" fontSize="20.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Certificate of COC Earned]]></text>
+			<box>
+				<topPen lineWidth="4.0"/>
+				<leftPen lineWidth="4.0"/>
+				<bottomPen lineWidth="4.0"/>
+				<rightPen lineWidth="4.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b3183dbe-ac4d-402a-950c-a966bcdbaeac" x="0" y="0" width="640" height="52" hTextAlign="Left" vTextAlign="Bottom">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="54f65abb-fdc1-4457-8b8a-4ab53082f1d6" x="0" y="-53" width="640" height="53" markup="styled" fontName="Tahoma" fontSize="8.0" pdfEmbedded="false" hTextAlign="Center">
+			<printWhenExpression><![CDATA[$F{hospitalAgency} == null || !$F{hospitalAgency}]]></printWhenExpression>
+			<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $F{currentCompanySetting} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $F{currentCompanyAddressSetting} +  "</style><br />"]]></expression>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+	</pageHeader>
+	<columnHeader height="306" splitType="Stretch">
+		<element kind="staticText" uuid="da5ec4be-2b12-49ae-9e1a-f11575a01e96" x="0" y="0" width="640" height="306" hTextAlign="Left" vTextAlign="Bottom">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ea79b450-027f-4657-839e-5213e7ca7d5d" x="31" y="30" width="82" height="14" hTextAlign="Left" vTextAlign="Bottom">
+			<text><![CDATA[This certificate to]]></text>
+		</element>
+		<element kind="textField" uuid="125aaf73-aa3f-45f6-bd7c-5678428e965a" x="113" y="30" width="276" height="14" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{employee}]]></expression>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="dc2112b4-f154-459e-8340-0101a0bc4105" x="399" y="30" width="208" height="14" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{position}]]></expression>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="de04d15b-17cc-44ba-ac28-d72fc602f470" x="389" y="30" width="10" height="14" hTextAlign="Left" vTextAlign="Bottom">
+			<text><![CDATA[,]]></text>
+		</element>
+		<element kind="staticText" uuid="dfb5f76a-f87f-4f7c-9304-f576baefd280" x="113" y="44" width="276" height="14" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[(NAME)]]></text>
+		</element>
+		<element kind="staticText" uuid="d44bf2db-c0f7-401a-a46b-07a56eb6dfb8" x="399" y="44" width="208" height="14" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[(Position)]]></text>
+		</element>
+		<element kind="textField" uuid="a435671d-68c5-4948-b0dc-6c802a2f627b" x="31" y="79" width="241" height="14" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{payOffBalance}]]></expression>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="79b34092-fbd6-4d40-a4ed-b01067660445" x="272" y="79" width="165" height="14" hTextAlign="Left" vTextAlign="Bottom">
+			<text><![CDATA[of Compensatory Overtime Credits.]]></text>
+		</element>
+		<element kind="textField" uuid="cdfec7db-47b1-4f12-9a2b-3d46bb42d1ea" x="376" y="139" width="218" height="14" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{deptHead}]]></expression>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="581c056a-b3fa-4635-8874-92dc1fec9c41" x="376" y="153" width="218" height="14" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Department Head]]></text>
+		</element>
+		<element kind="staticText" uuid="7433123f-2d60-4c8c-b8b4-ddf3dbbc6d9d" x="31" y="206" width="57" height="14" hTextAlign="Left" vTextAlign="Bottom">
+			<text><![CDATA[Date Issued:]]></text>
+		</element>
+		<element kind="staticText" uuid="ad79b192-61d5-483a-8544-bef28fbdff3e" x="31" y="234" width="57" height="14" hTextAlign="Left" vTextAlign="Bottom">
+			<text><![CDATA[Valid Until:]]></text>
+		</element>
+		<element kind="textField" uuid="690eb9ea-ed7f-42c0-9af1-414a9fe0ab77" x="88" y="206" width="140" height="14" pattern="MMMMM dd, yyyy" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{dateFile}]]></expression>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="343ac28d-0ec8-4a7e-83a5-ae413fe9b089" x="31" y="93" width="241" height="14" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[(Number of Hours)]]></text>
+		</element>
+		<element kind="textField" uuid="ad46da10-b850-4628-b3c2-fbf726adbfed" x="88" y="234" width="140" height="14" pattern="MMMMM dd, yyyy" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{validUntil}]]></expression>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+	</columnHeader>
+</jasperReport>

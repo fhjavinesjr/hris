@@ -1,0 +1,946 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="dtr" language="java" pageWidth="680" pageHeight="880" columnWidth="640" leftMargin="20" rightMargin="20" topMargin="0" bottomMargin="0" uuid="5f2fe1a9-3a23-441c-b3f0-7790f2b398bd" summaryWithPageHeaderAndFooter="true">
+	<property name="ireport.scriptlethandling" value="0"/>
+	<property name="ireport.encoding" value="UTF-8"/>
+	<property name="ireport.zoom" value="1.8181818181818306"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="102"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="fromDate" forPrompting="false" class="java.sql.Date"/>
+	<parameter name="toDate" forPrompting="false" class="java.sql.Date"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.String"/>
+	<parameter name="currentCompany" class="java.lang.String"/>
+	<parameter name="currentCompanyAddress" class="java.lang.String"/>
+	<parameter name="webAppPath" class="java.lang.String"/>
+	<parameter name="lastDtrDate" class="java.sql.Date"/>
+	<parameter name="logoleft" class="java.lang.Object"/>
+	<parameter name="logoright" class="java.lang.Object"/>
+	<parameter name="isDOH" class="java.lang.Boolean"/>
+	<query language="sql"><![CDATA[WITH DailyBase AS (
+	SELECT
+		d.work_date AS dtrDate,
+		CONCAT(
+			ISNULL(pd.firstname, ISNULL(e.firstname, '')),
+			CASE WHEN ISNULL(pd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', pd.middlename, ' ') END,
+			ISNULL(pd.surname, ISNULL(e.lastname, ''))
+		) AS fullname,
+		ISNULL(d.total_work_minutes, 0) AS regMin,
+		0 AS excessMin,
+		0.0 AS ndApproved,
+		CAST(ISNULL(d.total_overtime_minutes, 0) / 60.0 AS float) AS otReg,
+		0.0 AS otExcess,
+		CAST(ISNULL(d.total_overtime_minutes, 0) / 60.0 AS float) AS otRegApproved,
+		0.0 AS otExcessApproved,
+		ISNULL(d.total_late_minutes, 0) AS lateMin,
+		CAST((ISNULL(d.total_late_minutes, 0) + ISNULL(d.total_undertime_minutes, 0)) % 60 AS int) AS underMin,
+		CASE WHEN UPPER(ISNULL(d.attendance_status, '')) = 'ABSENT' THEN 480 ELSE 0 END AS absentMin,
+		ISNULL(d.attendance_status, '') AS remarks,
+		DATENAME(WEEKDAY, d.work_date) AS dayDescription,
+		CASE WHEN ISNULL(ws.isDayOff, 0) = 1 THEN 'REST DAY' ELSE '' END AS dayOff,
+		CAST((ISNULL(d.total_late_minutes, 0) + ISNULL(d.total_undertime_minutes, 0)) / 60 AS int) AS underMinHours,
+		ISNULL(la.leaveType, '') AS leaveType,
+		CASE WHEN ob.officialEngagementApplicationId IS NULL THEN '' ELSE 'OB' END AS ob,
+		'' AS ot,
+		CASE WHEN cto.ctoId IS NULL THEN '' ELSE 'CTO' END AS cto,
+		CASE WHEN ob.officialEngagementApplicationId IS NULL THEN NULL ELSE d.work_date END AS obDate,
+		CASE WHEN otx.overtimeRequestId IS NULL THEN NULL ELSE d.work_date END AS otDate,
+		CAST(NULL AS time) AS nextDayholder,
+		CAST(0 AS bit) AS isForNextDay
+	FROM dtr_daily d
+	LEFT JOIN employee e ON e.employeeId = TRY_CAST(d.employee_id AS int)
+	LEFT JOIN personaldata pd ON pd.employeeId = e.employeeId
+	LEFT JOIN work_schedule ws ON CAST(ws.employeeId AS varchar(50)) = d.employee_id AND CAST(ws.wsDateTime AS date) = d.work_date
+	LEFT JOIN official_engagement_application ob ON ob.employeeId = TRY_CAST(d.employee_id AS int) AND ob.status = 'Approved' AND d.work_date BETWEEN ob.startDate AND ob.endDate
+	LEFT JOIN overtime_request otx ON otx.employeeId = TRY_CAST(d.employee_id AS int) AND otx.status = 'Approved' AND d.work_date = CAST(otx.dateTimeFrom AS date)
+	LEFT JOIN compensatory_time_off cto ON cto.employeeId = TRY_CAST(d.employee_id AS int) AND cto.status = 'Approved' AND d.work_date = cto.dateOfOffset
+	OUTER APPLY (
+		SELECT TOP 1 la2.leaveType
+		FROM leave_application la2
+		WHERE la2.employeeId = TRY_CAST(d.employee_id AS int)
+		  AND la2.approvedStatus = 'Approved'
+		  AND d.work_date BETWEEN la2.startDate AND la2.endDate
+		ORDER BY la2.leaveApplicationId DESC
+	) la
+	WHERE d.employee_id = $P{EMPLOYEE_ID}
+	  AND d.work_date BETWEEN $P{fromDate} AND $P{toDate}
+),
+SegRaw AS (
+	SELECT
+		ds.dtr_daily_id,
+		MIN(ds.segment_no) AS firstSegmentNo
+	FROM dtr_segment ds
+	GROUP BY ds.dtr_daily_id
+),
+Seg AS (
+	SELECT
+		ds.dtr_daily_id,
+		CASE
+			WHEN CAST(ds.time_in AS time) < CAST('12:00:00' AS time) THEN CAST(ds.time_in AS time)
+			ELSE NULL
+		END AS in1st,
+		CASE
+			WHEN ds.break_out IS NOT NULL THEN CAST(ds.break_out AS time)
+			WHEN CAST(ds.time_out AS time) <= CAST('13:00:00' AS time) THEN CAST(ds.time_out AS time)
+			ELSE NULL
+		END AS out1st,
+		CASE
+			WHEN ds.break_in IS NOT NULL THEN CAST(ds.break_in AS time)
+			WHEN CAST(ds.time_in AS time) >= CAST('12:00:00' AS time) THEN CAST(ds.time_in AS time)
+			ELSE NULL
+		END AS in2nd,
+		CASE
+			WHEN ds.break_in IS NOT NULL THEN CAST(ds.time_out AS time)
+			WHEN CAST(ds.time_in AS time) >= CAST('12:00:00' AS time) THEN CAST(ds.time_out AS time)
+			WHEN CAST(ds.time_out AS time) > CAST('13:00:00' AS time) THEN CAST(ds.time_out AS time)
+			ELSE NULL
+		END AS out2nd
+	FROM dtr_segment ds
+	INNER JOIN SegRaw sr ON sr.dtr_daily_id = ds.dtr_daily_id AND sr.firstSegmentNo = ds.segment_no
+)
+SELECT
+	b.dtrDate,
+	b.fullname,
+	s.in1st,
+	s.out1st,
+	s.in2nd,
+	s.out2nd,
+	b.regMin,
+	b.excessMin,
+	b.ndApproved,
+	b.otReg,
+	b.otExcess,
+	b.otRegApproved,
+	b.otExcessApproved,
+	b.lateMin,
+	b.underMin,
+	b.absentMin,
+	b.ob,
+	b.ot,
+	b.obDate,
+	b.otDate,
+	b.dayOff,
+	b.underMinHours,
+	b.remarks,
+	b.leaveType,
+	b.nextDayholder,
+	b.isForNextDay,
+	b.cto,
+	b.dayDescription
+FROM DailyBase b
+LEFT JOIN dtr_daily d ON d.employee_id = $P{EMPLOYEE_ID} AND d.work_date = b.dtrDate
+LEFT JOIN Seg s ON s.dtr_daily_id = d.dtr_daily_id
+ORDER BY b.dtrDate]]></query>
+	<field name="dtrDate" class="java.sql.Date"/>
+	<field name="fullname" class="java.lang.String"/>
+	<field name="in1st" class="java.sql.Time"/>
+	<field name="out1st" class="java.sql.Time"/>
+	<field name="in2nd" class="java.sql.Time"/>
+	<field name="out2nd" class="java.sql.Time"/>
+	<field name="regMin" class="java.lang.Integer"/>
+	<field name="excessMin" class="java.lang.Integer"/>
+	<field name="ndApproved" class="java.lang.Double"/>
+	<field name="otReg" class="java.lang.Double"/>
+	<field name="otExcess" class="java.lang.Double"/>
+	<field name="otRegApproved" class="java.lang.Double"/>
+	<field name="otExcessApproved" class="java.lang.Double"/>
+	<field name="lateMin" class="java.lang.Integer"/>
+	<field name="underMin" class="java.lang.Integer"/>
+	<field name="absentMin" class="java.lang.Integer"/>
+	<field name="ob" class="java.lang.String"/>
+	<field name="ot" class="java.lang.String"/>
+	<field name="obDate" class="java.sql.Date"/>
+	<field name="otDate" class="java.sql.Date"/>
+	<field name="dayOff" class="java.lang.String"/>
+	<field name="underMinHours" class="java.lang.Integer"/>
+	<field name="remarks" class="java.lang.String"/>
+	<field name="leaveType" class="java.lang.String"/>
+	<field name="nextDayholder" class="java.sql.Time"/>
+	<field name="isForNextDay" class="java.lang.Boolean"/>
+	<field name="cto" class="java.lang.String"/>
+	<field name="dayDescription" class="java.lang.String"/>
+	<variable name="hoursWorked" class="java.lang.Double">
+		<expression><![CDATA[new Double(Double.valueOf($F{regMin}.intValue() + $F{excessMin}.intValue()).doubleValue()/60)]]></expression>
+		<initialValueExpression><![CDATA[new Double(0.0)]]></initialValueExpression>
+	</variable>
+	<variable name="ot" class="java.lang.Double">
+		<expression><![CDATA[new Double($F{otReg}.doubleValue() + $F{otExcess}.doubleValue())]]></expression>
+		<initialValueExpression><![CDATA[new Double(0.0)]]></initialValueExpression>
+	</variable>
+	<variable name="otApproved" class="java.lang.Double">
+		<expression><![CDATA[new Double($F{otRegApproved}.doubleValue() + $F{otExcessApproved}.doubleValue())]]></expression>
+		<initialValueExpression><![CDATA[new Double(0.0)]]></initialValueExpression>
+	</variable>
+	<group name="byEmployee" startNewPage="true">
+		<expression><![CDATA[$F{fullname}]]></expression>
+		<groupHeader>
+			<band height="197">
+				<element kind="textField" uuid="ad8609d4-3d3a-4063-b7fd-0cc801f6da5c" x="320" y="7" width="319" height="48" markup="styled" fontName="Tahoma" fontSize="8.0" pdfEmbedded="false" hTextAlign="Center">
+					<printWhenExpression><![CDATA[$P{isDOH} == false]]></printWhenExpression>
+					<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $P{currentCompany} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $P{currentCompanyAddress} +  "</style><br />"]]></expression>
+					<box>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="textField" uuid="cdfe1c3d-0c20-400d-be7e-48a118cb1e79" x="0" y="7" width="319" height="48" markup="styled" fontName="Tahoma" fontSize="8.0" pdfEmbedded="false" hTextAlign="Center">
+					<printWhenExpression><![CDATA[$P{isDOH} == false]]></printWhenExpression>
+					<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $P{currentCompany} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $P{currentCompanyAddress} +  "</style><br />"]]></expression>
+					<box>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="textField" uuid="0c650994-c42c-4e7f-80c2-af6c92c33c0c" x="320" y="7" width="319" height="48" markup="styled" fontName="Tahoma" fontSize="8.0" pdfEmbedded="false" hTextAlign="Center">
+					<printWhenExpression><![CDATA[$P{isDOH} == true]]></printWhenExpression>
+					<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"8\" isBold=\"true\">Department of Health</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $P{currentCompany} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $P{currentCompanyAddress} +  "</style><br />"]]></expression>
+					<box>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="textField" uuid="9e16c4a7-42b0-483e-9f94-83f2323cf4e3" x="0" y="7" width="319" height="48" markup="styled" fontName="Tahoma" fontSize="8.0" pdfEmbedded="false" hTextAlign="Center">
+					<printWhenExpression><![CDATA[$P{isDOH} == true]]></printWhenExpression>
+					<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"8\" isBold=\"true\">Department of Health</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $P{currentCompany} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $P{currentCompanyAddress} +  "</style><br />"]]></expression>
+					<box>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="textField" uuid="f334beb9-5e6b-48b1-a83c-fe566b43d0ea" key="textField" x="17" y="79" width="279" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" blankWhenNull="true" underline="false" bold="true" hTextAlign="Center">
+					<expression><![CDATA[new String($F{fullname}.equalsIgnoreCase("Nida C. Tan")?"NIDA CASCO TAN":$F{fullname}.toUpperCase())]]></expression>
+					<box>
+						<bottomPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="d565e663-2d01-4a3b-bacd-210f33292483" key="staticText-26" x="56" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Arrival]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="a67e1f7c-1221-4c8d-84f0-9b0f2c6eb93b" key="staticText-28" x="96" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Departure]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="3ba71096-be4d-4278-b4e6-78a31ce5b823" key="staticText-29" x="136" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Arrival]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="48ac0635-42c9-4770-8d44-6c140ba99721" key="staticText-30" x="176" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Departure]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="6a628b70-d0e0-421f-966c-14695a857fe4" key="staticText-18" x="14" y="55" width="288" height="24" fontSize="12.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center">
+					<text><![CDATA[DAILY TIME RECORD]]></text>
+				</element>
+				<element kind="staticText" uuid="f7e3726c-846e-40ad-bb76-dfc5067e3162" key="staticText-18" x="17" y="94" width="279" height="15" fontSize="10.0" pdfEmbedded="true" bold="true" hTextAlign="Center" vTextAlign="Top">
+					<text><![CDATA[NAME]]></text>
+				</element>
+				<element kind="staticText" uuid="9d97432f-6471-425c-9f93-3e4070a80216" key="staticText-30" x="216" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Hours]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="1a520a24-4c13-4ccc-81c7-055a9b2cd1df" key="staticText-30" x="256" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Minutes]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="2141119f-2994-4e5a-add8-f768d6a65afc" key="staticText-18" x="17" y="109" width="91" height="16" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Left" vTextAlign="Middle">
+					<text><![CDATA[For the month of]]></text>
+				</element>
+				<element kind="staticText" uuid="1583bc88-526f-46da-8185-dbcfbcaf9c5a" key="staticText-18" x="16" y="135" width="142" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Left" vTextAlign="Middle">
+					<text><![CDATA[Official hours for             :]]></text>
+				</element>
+				<element kind="image" onErrorType="Blank" uuid="13d4323c-eee0-44bd-9005-9bc820429a5e" x="263" y="6" width="56" height="44" hImageAlign="Center" vImageAlign="Middle">
+					<expression><![CDATA[$P{logoright}]]></expression>
+				</element>
+				<element kind="image" onErrorType="Blank" uuid="52395253-78ad-428b-9344-1d2fc67fe8ea" x="0" y="6" width="55" height="41" hImageAlign="Center" vImageAlign="Middle">
+					<expression><![CDATA[$P{logoleft}]]></expression>
+				</element>
+				<element kind="staticText" uuid="c2592ea9-ac11-468e-8725-f7fe3d25772f" key="staticText-18" x="16" y="150" width="142" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Left" vTextAlign="Middle">
+					<text><![CDATA[Arrival and Departure     :]]></text>
+				</element>
+				<element kind="staticText" uuid="33754889-3cbf-4af2-83b4-a5343c1035a8" x="305" y="0" width="14" height="197">
+					<text><![CDATA[]]></text>
+					<box>
+						<rightPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="7c9ea144-99de-4fbc-9096-1c9e6397ebbc" x="0" y="0" width="14" height="197">
+					<text><![CDATA[]]></text>
+					<box>
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="textField" uuid="a637704c-4e4c-4a1c-8ff0-b8df61fc7220" x="108" y="109" width="188" height="16" markup="none" italic="false" hTextAlign="Center" vTextAlign="Middle">
+					<expression><![CDATA[new SimpleDateFormat("MMMMM").format($P{fromDate}) + " 1 to " +
+new SimpleDateFormat("dd").format($P{lastDtrDate}) + " " +
+new SimpleDateFormat("yyyy").format($P{fromDate})]]></expression>
+					<box>
+						<bottomPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="a9ef4228-06aa-49c8-9561-81513c27c91d" key="staticText-18" x="108" y="125" width="188" height="14" markup="styled" fontSize="10.0" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[Regular Days]]></text>
+					<box>
+						<topPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="29f314d0-2158-4ef8-9f60-3e935baeb97f" key="staticText-29" x="136" y="165" width="80" height="16" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[P.M]]></text>
+					<box leftPadding="0">
+						<topPen lineWidth="1.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="5f3da774-cf72-47ce-b26e-95ed796589c0" key="staticText-30" x="216" y="165" width="80" height="16" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[UNDERTIME]]></text>
+					<box>
+						<topPen lineWidth="1.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="cdf023ad-8dce-4660-8363-0b5a26343045" key="staticText-25" x="17" y="165" width="119" height="16" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[A.M]]></text>
+					<box leftPadding="35">
+						<topPen lineWidth="1.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="25b54b6b-dfb6-4591-ab26-7b4a5ea2a432" key="staticText-29" x="458" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Arrival]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="9644d15a-60e3-4eed-8c38-aef771f67198" key="staticText-26" x="378" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Arrival]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="6fb2822c-bae4-4ea0-97b2-54e8c6dca270" key="staticText-30" x="538" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Hours]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="bb786d01-8327-4841-afca-bde7afd909d9" key="staticText-28" x="418" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Departure]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="c39d1844-d429-419b-8382-74b9b63c1af3" key="staticText-30" x="498" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Departure]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="037fd37e-d5fa-4930-b590-5dcbe29b2ee0" key="staticText-30" x="578" y="181" width="40" height="16" fontSize="8.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+					<text><![CDATA[Minutes]]></text>
+					<box bottomPadding="1">
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="69e606f7-f1cd-4675-8247-2034af0b464f" key="staticText-25" x="339" y="165" width="119" height="16" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[A.M]]></text>
+					<box leftPadding="35">
+						<topPen lineWidth="1.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="0dcea39c-3607-4e82-9bc5-bab9f796094b" key="staticText-30" x="538" y="165" width="80" height="16" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[UNDERTIME]]></text>
+					<box>
+						<topPen lineWidth="1.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="34168ea3-2eb9-4292-b826-602a05ce496f" key="staticText-29" x="458" y="165" width="80" height="16" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[P.M]]></text>
+					<box leftPadding="0">
+						<topPen lineWidth="1.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="2f4af575-d9e4-41ed-bec4-5fecf25fd09e" key="staticText-18" x="338" y="135" width="142" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Left" vTextAlign="Middle">
+					<text><![CDATA[Official hours for             :]]></text>
+				</element>
+				<element kind="staticText" uuid="9bcc5c95-1276-4803-b5e9-7bc2c4b84e16" key="staticText-18" x="338" y="150" width="142" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Left" vTextAlign="Middle">
+					<text><![CDATA[Arrival and Departure     :]]></text>
+				</element>
+				<element kind="staticText" uuid="5f2c8f36-5136-4c2a-b7ae-5729069221eb" key="staticText-18" x="429" y="125" width="188" height="14" markup="styled" fontSize="10.0" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[Regular Days]]></text>
+					<box>
+						<topPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="textField" uuid="eb5e7255-54eb-4944-beb0-7d63a5db6ecd" x="429" y="109" width="188" height="16" markup="none" italic="false" hTextAlign="Center" vTextAlign="Middle">
+					<expression><![CDATA[new SimpleDateFormat("MMMMM").format($P{fromDate}) + " 1 to " +
+new SimpleDateFormat("dd").format($P{lastDtrDate}) + " " +
+new SimpleDateFormat("yyyy").format($P{fromDate})]]></expression>
+					<box>
+						<bottomPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="98a1accf-4e8a-404f-8685-beb10129a5dd" key="staticText-18" x="339" y="109" width="91" height="16" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Left" vTextAlign="Middle">
+					<text><![CDATA[For the month of]]></text>
+				</element>
+				<element kind="staticText" uuid="67895833-ab0e-44da-aff1-5aafd33e119a" x="319" y="0" width="14" height="197">
+					<text><![CDATA[]]></text>
+					<box>
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="c371f3fc-69cf-4be6-aab8-d2854061c4d9" x="626" y="0" width="14" height="197">
+					<text><![CDATA[]]></text>
+					<box>
+						<rightPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="97952965-e37c-4b97-8e20-845c12fd3b6e" key="staticText-18" x="339" y="94" width="279" height="15" fontSize="10.0" pdfEmbedded="true" bold="true" hTextAlign="Center" vTextAlign="Top">
+					<text><![CDATA[NAME]]></text>
+				</element>
+				<element kind="textField" uuid="a27c7405-8294-4edf-82c7-74a122418bba" key="textField" x="339" y="79" width="279" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" blankWhenNull="true" underline="false" bold="true" hTextAlign="Center">
+					<expression><![CDATA[new String($F{fullname}.equalsIgnoreCase("Nida C. Tan")?"NIDA CASCO TAN":$F{fullname}.toUpperCase())]]></expression>
+					<box>
+						<bottomPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="bd4b7269-e728-4797-bfe5-ab29b839ed7b" key="staticText-18" x="334" y="55" width="288" height="24" fontSize="12.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center">
+					<text><![CDATA[DAILY TIME RECORD]]></text>
+				</element>
+				<element kind="image" onErrorType="Blank" uuid="f9a3a67a-6800-4a35-a19a-9d9a7bb3f050" x="583" y="6" width="56" height="44" hImageAlign="Center" vImageAlign="Middle">
+					<expression><![CDATA[$P{logoright}]]></expression>
+				</element>
+				<element kind="image" onErrorType="Blank" uuid="69b87e71-475c-4c4f-afa3-1985a3d4fad3" x="320" y="6" width="55" height="41" hImageAlign="Center" vImageAlign="Middle">
+					<expression><![CDATA[$P{logoleft}]]></expression>
+				</element>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="186">
+				<element kind="staticText" uuid="58b25c25-bdbf-4d3c-aff7-fa2535243a83" x="16" y="0" width="280" height="42" markup="styled" fontSize="10.0" pdfEmbedded="true">
+					<text><![CDATA[     I certify on my honor that the above is a true and correct
+report of the hours of worked perform record which was made
+daily at the time of arrival and departure from office.]]></text>
+					<box topPadding="2" leftPadding="5">
+						<topPen lineWidth="1.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="0d4fabcf-1728-4f2a-a90a-bf4d29c41633" key="staticText-18" x="56" y="64" width="200" height="14" markup="styled" fontSize="9.0" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[<style size='9'> Verified as to prescribed hours </style>]]></text>
+					<box>
+						<topPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="4e0d6ae7-1091-4086-a72a-d897c097ecdb" x="305" y="0" width="14" height="186">
+					<text><![CDATA[]]></text>
+					<box>
+						<rightPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="80ccdab6-b291-48fc-83e7-a619c2db9f1a" x="0" y="175" width="320" height="11">
+					<text><![CDATA[]]></text>
+					<box>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="eaa7a00c-db9a-463b-8b44-0b6232d6597c" key="staticText-18" x="56" y="110" width="200" height="14" markup="styled" fontName="SansSerif" fontSize="9.0" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[In Charge]]></text>
+					<box>
+						<topPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="5daa898a-436c-459f-bd2d-93a4ea7ebd85" key="staticText-18" x="17" y="132" width="119" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[Adopted from CSC FORM NO. 48]]></text>
+					<box>
+						<topPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="44ebfd19-77d1-41f6-8e93-dd88f831b095" key="staticText-18" x="17" y="154" width="72" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[ZCMC-F-HRMO-01]]></text>
+					<box>
+						<topPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="684ca470-e75b-4100-9b82-18a827febde4" key="staticText-18" x="126" y="154" width="32" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[ReV. 0]]></text>
+					<box>
+						<topPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="f1f49843-18fd-4c20-a0be-0b35307dfc5e" key="staticText-18" x="198" y="154" width="98" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[Effectivity Date: June 2, 2014]]></text>
+					<box>
+						<topPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="33076b8c-2c19-4a1f-b260-c0e192d147ce" x="0" y="0" width="14" height="186">
+					<text><![CDATA[]]></text>
+					<box>
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="ec83539c-bad3-4311-b1b8-9a9a7a7dbcaf" key="staticText-18" x="377" y="64" width="200" height="14" markup="styled" fontSize="9.0" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[<style size='9'> Verified as to prescribed hours </style>]]></text>
+					<box>
+						<topPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="96ace1c0-9eb1-4cd0-870f-a46e3cb61ad2" x="626" y="0" width="14" height="186">
+					<text><![CDATA[]]></text>
+					<box>
+						<rightPen lineWidth="1.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="6038db62-719a-40c7-94b5-93a0d6b69432" key="staticText-18" x="338" y="132" width="119" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[Adopted from CSC FORM NO. 48]]></text>
+					<box>
+						<topPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="f2fab13f-fcad-47a0-a25d-4ec07e227104" x="319" y="175" width="321" height="11">
+					<text><![CDATA[]]></text>
+					<box>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="28eae912-235d-4f8a-99e4-8426da61cc31" x="319" y="0" width="14" height="186">
+					<text><![CDATA[]]></text>
+					<box>
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="85b893d7-074a-4669-84da-504008ce8038" key="staticText-18" x="338" y="154" width="72" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[ZCMC-F-HRMO-01]]></text>
+					<box>
+						<topPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="b3358feb-8d7e-4fa8-8dd2-dc4870adaf34" key="staticText-18" x="456" y="154" width="32" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[ReV. 0]]></text>
+					<box>
+						<topPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="f00da80f-2324-4e34-8c40-d453b3008c0a" key="staticText-18" x="521" y="154" width="98" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[Effectivity Date: June 2, 2014]]></text>
+					<box>
+						<topPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="762b6d7e-7d13-4341-8a6f-52f369f25286" x="339" y="0" width="280" height="42" markup="styled" fontSize="10.0" pdfEmbedded="true">
+					<text><![CDATA[     I certify on my honor that the above is a true and correct
+report of the hours of worked perform record which was made
+daily at the time of arrival and departure from office.]]></text>
+					<box topPadding="2" leftPadding="5">
+						<topPen lineWidth="1.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+				</element>
+				<element kind="staticText" uuid="9847c00d-e8ca-437a-ba69-9e697e58f98b" key="staticText-18" x="377" y="110" width="200" height="14" markup="styled" fontSize="9.0" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+					<text><![CDATA[In Charge]]></text>
+					<box>
+						<topPen lineWidth="1.0"/>
+					</box>
+				</element>
+			</band>
+		</groupFooter>
+	</group>
+	<title splitType="Stretch"/>
+	<pageHeader splitType="Stretch"/>
+	<columnHeader splitType="Stretch"/>
+	<detail>
+		<band height="16" splitType="Stretch">
+			<element kind="textField" uuid="51f89d0e-eef6-437f-ab89-4c7d3e16fcb5" key="textField" mode="Opaque" x="458" y="0" width="80" height="16" fontSize="6.0" textAdjust="StretchHeight" pattern="" blankWhenNull="true" printWhenDetailOverflows="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
+				<expression><![CDATA[$F{dayDescription}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="61fae6ab-7d1e-4121-836b-ae6b2a9955e3" key="textField" mode="Opaque" x="136" y="0" width="80" height="16" fontSize="6.0" textAdjust="StretchHeight" pattern="" blankWhenNull="true" printWhenDetailOverflows="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
+				<expression><![CDATA[$F{dayDescription}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="3a337785-3a29-472a-b262-9df32274c71b" x="256" y="0" width="40" height="16" fontSize="8.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[new Integer($F{underMin}!=0?$F{underMin}:null)]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="5f570f5b-4541-48a5-80bd-00f1a8dcd162" x="578" y="0" width="40" height="16" fontSize="8.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[new Integer($F{underMin}!=0?$F{underMin}:null)]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="4875955b-84c3-4df4-910d-62e0e83f427f" x="319" y="0" width="14" height="16">
+				<text><![CDATA[]]></text>
+				<box>
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="d935ed7d-08f6-4f2a-88f2-528a7f71b92d" x="0" y="0" width="14" height="16">
+				<text><![CDATA[]]></text>
+				<box>
+					<leftPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="0c0cbff2-4150-4c96-9cd6-4af367bae2a8" key="textField" x="15" y="0" width="20" height="16" fontSize="8.0" pattern="dd" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{dtrDate}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="01fd18bf-9999-466d-946b-0d6b40919182" key="textField" x="136" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{in2nd}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="563c702e-e8c2-4c84-a4f2-3d33e199444e" x="305" y="0" width="14" height="16">
+				<text><![CDATA[]]></text>
+				<box>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="f3a2ba9f-b6d7-4f04-a31c-e2c52eaef896" key="textField" x="338" y="0" width="20" height="16" fontSize="8.0" pattern="dd" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{dtrDate}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="0b1f970d-4363-4451-bfec-a0844f0e1443" key="textField" x="498" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{isForNextDay} ? new SimpleDateFormat("h:mm aa").format($F{out2nd}) + "[ ]" : $F{out2nd}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="83656a86-d2b9-4981-b5cf-4843ea29bc03" key="textField" x="458" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{in2nd}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="9846ceba-9544-4bff-ba06-c05dc11be18a" key="textField" x="378" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{in1st}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="28d8395b-be56-4ee6-9d9c-253554c89a30" key="textField" x="418" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{out1st}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="09b3adb5-31a4-47d3-8a95-31c91820acef" x="626" y="0" width="14" height="16">
+				<text><![CDATA[]]></text>
+				<box>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="6f7e0ca6-8dba-4713-b66a-c07e1bd34422" key="textField" x="176" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{isForNextDay} ? new SimpleDateFormat("h:mm aa").format($F{out2nd}) + "[ ]" : $F{out2nd}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="89bb2dfc-897a-4c28-a3ca-47e71e27b93b" x="538" y="0" width="40" height="16" fontSize="8.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[new Integer($F{underMinHours}!=0?$F{underMinHours}:null)]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="d721cec1-1fe1-4000-8b51-439e77f3274c" key="textField" x="56" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{in1st}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="fbda112f-101a-4cd1-b7af-6f1b1aa3b18a" key="textField" x="35" y="0" width="21" height="16" fontSize="8.0" pattern="EEE" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{dtrDate}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="8a07e7c8-7aca-446f-8a06-aa39a7ab4695" key="textField" x="358" y="0" width="20" height="16" fontSize="8.0" pattern="EEE" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{dtrDate}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="5cb4e7cb-7e65-4467-82da-be93cf1ff3de" x="216" y="0" width="40" height="16" fontSize="8.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[new Integer($F{underMinHours}!=0?$F{underMinHours}:null)]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="e64149ae-59f1-442a-b318-e422e618d022" key="textField" x="96" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{out1st}]]></expression>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="313667a9-f355-47f7-ab5b-19abe1102355" key="textField" x="96" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{nextDayholder}]]></expression>
+			</element>
+			<element kind="textField" uuid="96e3500b-e2f1-4b6b-9403-a8ac53754b21" key="textField" x="418" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{nextDayholder}]]></expression>
+			</element>
+			<element kind="textField" uuid="7056e130-bd05-4563-a7ae-4f11d3282d82" x="378" y="0" width="40" height="16" fontSize="6.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[!$F{cto}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[$F{cto}]]></expression>
+				<box topPadding="0" leftPadding="0">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="a66b214c-dce0-4cef-be65-6123e4bd0d08" mode="Opaque" x="378" y="0" width="40" height="16" fontSize="9.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true">
+				<printWhenExpression><![CDATA[!$F{dayOff}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[$F{dayOff}]]></expression>
+				<box topPadding="2" leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="020b924c-de1c-4fbd-b066-cc85528b1fda" mode="Opaque" x="378" y="0" width="40" height="16" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" pdfFontName="Helvetica-Bold" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[!$F{ot}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[$F{otDate} != null ? $F{ot} : ""]]></expression>
+				<box leftPadding="0">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="a65b36f3-3537-43e5-a44a-43a8837a119f" mode="Opaque" x="378" y="0" width="40" height="16" forecolor="#000000" backcolor="#FFFFFF" markup="none" fontSize="6.0" pdfFontName="Helvetica-Bold" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[!$F{ob}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[$F{obDate} != null ? $F{ob} : ""]]></expression>
+				<box leftPadding="0">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="94a745fb-595a-4f72-bd58-eafe5722b6ec" mode="Opaque" x="378" y="0" width="40" height="16" fontSize="4.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} != null && !$F{leaveType}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[new String($F{leaveType}.equals("Special Privilege Leave")?"SPL":$F{leaveType}.equals("Emergency Leave")?"Vacation Leave":$F{leaveType})]]></expression>
+				<box topPadding="0" leftPadding="0">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="d0a57a3e-b757-47d6-8321-402591e770c4" x="56" y="0" width="40" height="16" fontSize="6.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[!$F{cto}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[$F{cto}]]></expression>
+				<box topPadding="0" leftPadding="0">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="6dcafd09-294d-435d-8034-c833be13bfbe" mode="Opaque" x="56" y="0" width="40" height="16" fontSize="9.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true">
+				<printWhenExpression><![CDATA[!$F{dayOff}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[$F{dayOff}]]></expression>
+				<box topPadding="2" leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="edc27589-2326-48ab-8c68-d62c22b3c2ff" mode="Opaque" x="56" y="0" width="40" height="16" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" pdfFontName="Helvetica-Bold" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[!$F{ot}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[$F{otDate} != null ? $F{ot} : ""]]></expression>
+				<box leftPadding="0">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="f113c411-61c8-4901-81dd-aee2b8b8285b" mode="Opaque" x="56" y="0" width="40" height="16" forecolor="#000000" backcolor="#FFFFFF" markup="none" fontSize="6.0" pdfFontName="Helvetica-Bold" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[!$F{ob}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[$F{obDate} != null ? $F{ob} : ""]]></expression>
+				<box leftPadding="0">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="e3c10083-b0bc-4053-adf3-cdaf2d672d73" mode="Opaque" x="56" y="0" width="40" height="16" fontSize="4.0" pdfFontName="Helvetica-Bold" blankWhenNull="false" hTextAlign="Center" vTextAlign="Middle">
+				<printWhenExpression><![CDATA[$F{leaveType} != null && !$F{leaveType}.isEmpty()]]></printWhenExpression>
+				<expression><![CDATA[new String($F{leaveType}.equals("Special Privilege Leave")?"SPL":$F{leaveType}.equals("Emergency Leave")?"Vacation Leave":$F{leaveType})]]></expression>
+				<box topPadding="0" leftPadding="0">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+		</band>
+	</detail>
+	<columnFooter splitType="Stretch"/>
+	<pageFooter splitType="Stretch"/>
+	<summary splitType="Stretch"/>
+</jasperReport>

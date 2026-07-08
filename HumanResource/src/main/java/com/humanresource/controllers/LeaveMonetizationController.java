@@ -2,7 +2,10 @@ package com.humanresource.controllers;
 
 import com.hris.common.dtos.MetadataResponse;
 import com.humanresource.dtos.LeaveMonetizationDTO;
+import com.humanresource.services.LeaveFormReportService;
 import com.humanresource.services.LeaveMonetizationService;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,9 +18,12 @@ import java.util.Map;
 public class LeaveMonetizationController {
 
     private final LeaveMonetizationService leaveMonetizationService;
+    private final LeaveFormReportService leaveFormReportService;
 
-    public LeaveMonetizationController(LeaveMonetizationService leaveMonetizationService) {
+    public LeaveMonetizationController(LeaveMonetizationService leaveMonetizationService,
+                                       LeaveFormReportService leaveFormReportService) {
         this.leaveMonetizationService = leaveMonetizationService;
+        this.leaveFormReportService = leaveFormReportService;
     }
 
     /** File a new leave monetization request. */
@@ -143,5 +149,13 @@ public class LeaveMonetizationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MetadataResponse("Failed to delete leave monetization"));
         }
+    }
+
+    @GetMapping("/leave-monetization/report/{id}")
+    public void downloadLeaveMonetizationReport(@PathVariable Long id,
+                                                HttpServletResponse response) throws Exception {
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader("Content-Disposition", "attachment; filename=\"LeaveMonetization_" + id + ".pdf\"");
+        leaveFormReportService.generateLeaveFormForMonetization(id, response.getOutputStream());
     }
 }

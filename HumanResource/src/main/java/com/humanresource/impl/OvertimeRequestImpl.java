@@ -5,13 +5,25 @@ import com.humanresource.entitymodels.OvertimeRequest;
 import com.humanresource.repositories.OvertimeRequestRepository;
 import com.humanresource.services.OvertimeRequestService;
 import jakarta.transaction.Transactional;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import javax.sql.DataSource;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.sql.Connection;
+import java.util.HashMap;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -21,9 +33,12 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
     private static final Logger log = LoggerFactory.getLogger(OvertimeRequestImpl.class);
 
     private final OvertimeRequestRepository overtimeRequestRepository;
+    private final DataSource dataSource;
 
-    public OvertimeRequestImpl(OvertimeRequestRepository overtimeRequestRepository) {
+    public OvertimeRequestImpl(OvertimeRequestRepository overtimeRequestRepository,
+                               DataSource dataSource) {
         this.overtimeRequestRepository = overtimeRequestRepository;
+        this.dataSource = dataSource;
     }
 
     private OvertimeRequestDTO toDTO(OvertimeRequest e) {
@@ -207,6 +222,26 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
         } catch (Exception ex) {
             log.error("Error deleting OvertimeRequest id {}: ", overtimeRequestId, ex);
             return false;
+        }
+    }
+
+    @Override
+    public void generateOvertimeAuthorization(Long overtimeRequestId, OutputStream out) throws Exception {
+        JasperReport report = compile("reports/OvertimeAuthorization.jrxml");
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("OVERTIME_REQUEST_ID", overtimeRequestId);
+
+        try (Connection conn = dataSource.getConnection()) {
+            JasperPrint print = JasperFillManager.fillReport(report, params, conn);
+            JasperExportManager.exportReportToPdfStream(print, out);
+        }
+    }
+
+    private JasperReport compile(String classpathPath) throws Exception {
+        ClassPathResource resource = new ClassPathResource(classpathPath);
+        try (InputStream is = resource.getInputStream()) {
+            return JasperCompileManager.compileReport(is);
         }
     }
 }

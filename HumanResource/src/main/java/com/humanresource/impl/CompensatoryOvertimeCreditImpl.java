@@ -8,13 +8,25 @@ import com.humanresource.repositories.CompensatoryTimeOffRepository;
 import com.humanresource.repositories.CocBeginningBalanceRepository;
 import com.humanresource.services.CompensatoryOvertimeCreditService;
 import jakarta.transaction.Transactional;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import javax.sql.DataSource;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -26,13 +38,16 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
     private final CompensatoryOvertimeCreditRepository cocRepository;
     private final CompensatoryTimeOffRepository ctoRepository;
     private final CocBeginningBalanceRepository cocBegBalRepository;
+    private final DataSource dataSource;
 
     public CompensatoryOvertimeCreditImpl(CompensatoryOvertimeCreditRepository cocRepository,
                                           CompensatoryTimeOffRepository ctoRepository,
-                                          CocBeginningBalanceRepository cocBegBalRepository) {
+                                          CocBeginningBalanceRepository cocBegBalRepository,
+                                          DataSource dataSource) {
         this.cocRepository = cocRepository;
         this.ctoRepository = ctoRepository;
         this.cocBegBalRepository = cocBegBalRepository;
+        this.dataSource = dataSource;
     }
 
     private CompensatoryOvertimeCreditDTO toDTO(CompensatoryOvertimeCredit e) {
@@ -237,5 +252,25 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
         Double usedHours = ctoRepository.sumApprovedHoursUsedByEmployeeId(employeeId);
         return beginningBalance + (earnedHours != null ? earnedHours : 0.0)
                 - (usedHours != null ? usedHours : 0.0);
+    }
+
+    @Override
+    public void generateCertificateCoc(Long cocId, OutputStream out) throws Exception {
+        JasperReport report = compile("reports/CertificateCOC.jrxml");
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("COC_ID", cocId);
+
+        try (Connection conn = dataSource.getConnection()) {
+            JasperPrint print = JasperFillManager.fillReport(report, params, conn);
+            JasperExportManager.exportReportToPdfStream(print, out);
+        }
+    }
+
+    private JasperReport compile(String classpathPath) throws Exception {
+        ClassPathResource resource = new ClassPathResource(classpathPath);
+        try (InputStream is = resource.getInputStream()) {
+            return JasperCompileManager.compileReport(is);
+        }
     }
 }

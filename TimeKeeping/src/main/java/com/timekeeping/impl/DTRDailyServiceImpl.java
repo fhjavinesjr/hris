@@ -6,10 +6,23 @@ import com.timekeeping.entitymodels.DTRDaily;
 import com.timekeeping.entitymodels.DTRSegment;
 import com.timekeeping.repositories.DTRDailyRepository;
 import com.timekeeping.services.DTRDailyService;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.sql.DataSource;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import javax.imageio.ImageIO;
+import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -19,15 +32,28 @@ import java.util.stream.Collectors;
 public class DTRDailyServiceImpl implements DTRDailyService {
     private final DTRDailyRepository dtrDailyRepository;
     private final JdbcTemplate jdbc;
+    private final DataSource dataSource;
 
-    public DTRDailyServiceImpl(DTRDailyRepository dtrDailyRepository, JdbcTemplate jdbc) {
+    public DTRDailyServiceImpl(DTRDailyRepository dtrDailyRepository, JdbcTemplate jdbc, DataSource dataSource) {
         this.dtrDailyRepository = dtrDailyRepository;
         this.jdbc = jdbc;
+        this.dataSource = dataSource;
     }
 
     @Override
     @Transactional
     public DTRDailyDTO createOrUpdateDTRDaily(DTRDailyDTO dto) {
+        // Manual DTR entries usually come from the UI without dtrDailyId.
+        // If the parent daily row still exists for employeeId + workDate
+        // (for example: segments were deleted but dtr_daily remained),
+        // reuse that existing daily ID so the save becomes an update instead of
+        // failing due to a duplicate employee/date record.
+        if (dto.getDtrDailyId() == null && dto.getEmployeeId() != null && dto.getWorkDate() != null) {
+            dtrDailyRepository
+                    .findByEmployeeIdAndWorkDate(dto.getEmployeeId(), dto.getWorkDate().toLocalDate())
+                    .ifPresent(existing -> dto.setDtrDailyId(existing.getDtrDailyId()));
+        }
+
         DTRDaily entity = toEntity(dto);
         DTRDaily saved = dtrDailyRepository.save(entity);
         return toDTO(saved);
@@ -181,6 +207,62 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 });
     }
 
+    @Override
+    public void generateDtrReport(String employeeId, LocalDate fromDate, LocalDate toDate, OutputStream out) throws Exception {
+        JasperReport report = compile("reports/dtrNew.jrxml");
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("EMPLOYEE_ID", employeeId);
+        params.put("fromDate", java.sql.Date.valueOf(fromDate));
+        params.put("toDate", java.sql.Date.valueOf(toDate));
+        params.put("lastDtrDate", java.sql.Date.valueOf(toDate));
+        params.put("webAppPath", "");
+
+        Map<String, Object> settings = jdbc.query(
+                "SELECT TOP 1 companyName, address, hospitalAgency, leftHeaderLogo, rightHeaderLogo FROM settings ORDER BY settingsId DESC",
+                rs -> {
+                    if (!rs.next()) return Collections.<String, Object>emptyMap();
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("companyName", rs.getString("companyName"));
+                    m.put("address", rs.getString("address"));
+                    m.put("hospitalAgency", rs.getObject("hospitalAgency"));
+                    m.put("leftHeaderLogo", rs.getBytes("leftHeaderLogo"));
+                    m.put("rightHeaderLogo", rs.getBytes("rightHeaderLogo"));
+                    return m;
+                }
+        );
+
+        params.put("currentCompany", settings.getOrDefault("companyName", ""));
+        params.put("currentCompanyAddress", settings.getOrDefault("address", ""));
+        params.put("isDOH", isDbTrue(settings.get("hospitalAgency")));
+
+        byte[] leftLogo = (byte[]) settings.get("leftHeaderLogo");
+        byte[] rightLogo = (byte[]) settings.get("rightHeaderLogo");
+        params.put("logoleft", toValidImageInputStream(leftLogo));
+        params.put("logoright", toValidImageInputStream(rightLogo));
+
+        try (Connection conn = dataSource.getConnection()) {
+            JasperPrint print = JasperFillManager.fillReport(report, params, conn);
+            JasperExportManager.exportReportToPdfStream(print, out);
+        }
+    }
+
+    private InputStream toValidImageInputStream(byte[] imageBytes) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            return null;
+        }
+
+        try (ByteArrayInputStream validationStream = new ByteArrayInputStream(imageBytes)) {
+            BufferedImage image = ImageIO.read(validationStream);
+            if (image == null) {
+                return null;
+            }
+            return new ByteArrayInputStream(imageBytes);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     private boolean isDbTrue(Object value) {
         if (value instanceof Boolean) {
             return (Boolean) value;
@@ -195,6 +277,13 @@ public class DTRDailyServiceImpl implements DTRDailyService {
         return "true".equalsIgnoreCase(text) || "t".equalsIgnoreCase(text)
                 || "yes".equalsIgnoreCase(text) || "y".equalsIgnoreCase(text)
                 || "1".equals(text);
+    }
+
+    private JasperReport compile(String classpathPath) throws Exception {
+        ClassPathResource resource = new ClassPathResource(classpathPath);
+        try (InputStream is = resource.getInputStream()) {
+            return JasperCompileManager.compileReport(is);
+        }
     }
 
     private DTRDailyDTO toDTO(DTRDaily entity) {

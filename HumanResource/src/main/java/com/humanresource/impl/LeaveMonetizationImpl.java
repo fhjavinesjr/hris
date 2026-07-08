@@ -316,10 +316,6 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
         LeaveMonetization entity = leaveMonetizationRepository.findById(leaveMonetizationId)
                 .orElseThrow(() -> new RuntimeException("LeaveMonetization not found with id: " + leaveMonetizationId));
 
-        if ("Approved".equals(entity.getApprovalStatus())) {
-            throw new IllegalStateException("Cannot delete an approved leave monetization");
-        }
-
         try {
             leaveMonetizationRepository.deleteById(leaveMonetizationId);
             return true;

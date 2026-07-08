@@ -2,7 +2,9 @@ package com.timekeeping.controllers;
 
 import com.timekeeping.dtos.DTRDailyDTO;
 import com.timekeeping.services.DTRDailyService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,5 +36,15 @@ public class DTRDailyController {
             @RequestParam @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime toDate) {
         List<DTRDailyDTO> list = dtrDailyService.getEmployeeDTRDaily(employeeId, fromDate, toDate);
         return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/report")
+    public void downloadDtrReport(@RequestParam String employeeId,
+                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+                                  HttpServletResponse response) throws Exception {
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader("Content-Disposition", "attachment; filename=\"DTR_" + employeeId + "_" + fromDate + "_" + toDate + ".pdf\"");
+        dtrDailyService.generateDtrReport(employeeId, fromDate, toDate, response.getOutputStream());
     }
 }

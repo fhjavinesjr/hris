@@ -35,6 +35,21 @@ public class LeaveFormReportServiceImpl implements LeaveFormReportService {
 
         Map<String, Object> params = new HashMap<>();
         params.put("LEAVE_APPLICATION_ID", leaveApplicationId);
+        params.put("LEAVE_MONETIZATION_ID", null);
+
+        try (Connection conn = dataSource.getConnection()) {
+            JasperPrint print = JasperFillManager.fillReport(report, params, conn);
+            JasperExportManager.exportReportToPdfStream(print, out);
+        }
+    }
+
+    @Override
+    public void generateLeaveFormForMonetization(Long leaveMonetizationId, OutputStream out) throws Exception {
+        JasperReport report = compile("reports/leave_form_2020.jrxml");
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("LEAVE_APPLICATION_ID", null);
+        params.put("LEAVE_MONETIZATION_ID", leaveMonetizationId);
 
         try (Connection conn = dataSource.getConnection()) {
             JasperPrint print = JasperFillManager.fillReport(report, params, conn);

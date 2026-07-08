@@ -307,8 +307,11 @@ public class DTRProcessingServiceImpl implements DTRProcessingService {
             plannedOut = plannedOut.plusDays(1);
         }
 
-        // LATE: minutes arrived after planned start.
-        // Break punches do not affect late — it is purely TIME_IN vs scheduled start.
+        // LATE: all late arrivals.
+        // For agency/CSC-style UI separation, this includes:
+        //   1) late TIME_IN vs scheduled time-in
+        //   2) late BREAK_IN vs scheduled break-in
+        // The printed CSC DTR undertime column later combines late + undertime.
         int late = nonNegativeMinutes(plannedIn, actualIn);
 
         // OVERTIME: raw minutes worked past planned end.
@@ -329,17 +332,19 @@ public class DTRProcessingServiceImpl implements DTRProcessingService {
         boolean hasScheduledBreak = shiftTemplate.breakOut != null && shiftTemplate.breakIn != null;
 
         if (hasScheduledBreak && actualBreakOut != null && actualBreakIn != null) {
-            // Strategy A: break-aware split per business rules.
-            //   - Late break return (actualBreakIn > plannedBreakIn)   → added to LATE
-            //   - Early break departure (actualBreakOut < plannedBreakOut) → UNDERTIME
-            //   - Early clock-out (actualOut < plannedOut)              → UNDERTIME
-            // NOTE: clock-in late is already in `late` above — do NOT include it in undertime.
+            // Strategy A: break-aware split per agency business rules.
+            // UI LATE = late TIME_IN + late BREAK_IN.
+            // UI UNDER = early BREAK_OUT + early TIME_OUT.
+            // Printed CSC DTR undertime hours/minutes must use LATE + UNDER.
             LocalDateTime plannedBreakOut = workDate.atTime(shiftTemplate.breakOut);
             LocalDateTime plannedBreakIn  = workDate.atTime(shiftTemplate.breakIn);
-            late     += nonNegativeMinutes(plannedBreakIn, actualBreakIn);
-            int earlyBreakUT = nonNegativeMinutes(actualBreakOut, plannedBreakOut);
-            int earlyOutUT   = nonNegativeMinutes(actualOut, plannedOut);
-            undertime = earlyBreakUT + earlyOutUT;
+
+            int lateBreakIn = nonNegativeMinutes(plannedBreakIn, actualBreakIn);
+            int earlyBreakOutUT = nonNegativeMinutes(actualBreakOut, plannedBreakOut);
+            int earlyTimeOutUT = nonNegativeMinutes(actualOut, plannedOut);
+
+            late += lateBreakIn;
+            undertime = earlyBreakOutUT + earlyTimeOutUT;
 
         } else if (actualOut.isBefore(plannedOut)) {
             // Strategy B: positional 3-case logic

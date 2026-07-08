@@ -1,0 +1,321 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="OvertimeAuthorization" language="java" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="a9324661-f00c-4ff9-8ab7-a0f0dc762247">
+	<property name="ireport.zoom" value="1.9487171000000014"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="currentCompany" class="java.lang.String"/>
+	<parameter name="currentCompanyAddress" class="java.lang.String"/>
+	<parameter name="recommendedBy" class="java.lang.String"/>
+	<parameter name="recommendedByPos" class="java.lang.String"/>
+	<parameter name="approvedBy" class="java.lang.String"/>
+	<parameter name="approvedByPos" class="java.lang.String"/>
+	<parameter name="isJobOrder" class="java.lang.Boolean"/>
+	<parameter name="requestedBy" class="java.lang.String"/>
+	<parameter name="requestedByPos" class="java.lang.String"/>
+	<parameter name="OVERTIME_REQUEST_ID" class="java.lang.Long"/>
+	<query language="sql"><![CDATA[
+SELECT
+	CONCAT(
+		ISNULL(pd.firstname, ISNULL(e.firstname, '')),
+		CASE WHEN ISNULL(pd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', pd.middlename, ' ') END,
+		ISNULL(pd.surname, ISNULL(e.lastname, ''))
+	) AS fullname,
+	ISNULL(bu.businessUnitsName, '') AS businessUnit,
+	CAST(ot.dateTimeFrom AS DATE) AS dateCovered,
+	ISNULL(ot.totalHours, 0) AS noOfHours,
+	ISNULL(ot.purpose, '') AS purpose,
+	CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
+	ISNULL(st.companyName, '') AS currentCompanySetting,
+	ISNULL(st.address, '') AS currentCompanyAddressSetting,
+	st.leftHeaderLogo,
+	st.rightHeaderLogo,
+	CAST(CASE WHEN LOWER(ISNULL(reqNoa.nature, '')) LIKE '%job order%' THEN 1 ELSE 0 END AS bit) AS isJobOrder,
+	CONCAT(
+		ISNULL(reqPd.firstname, ISNULL(reqEmp.firstname, '')),
+		CASE WHEN ISNULL(reqPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', reqPd.middlename, ' ') END,
+		ISNULL(reqPd.surname, ISNULL(reqEmp.lastname, ''))
+	) AS requestedBy,
+	ISNULL(reqPos.jobPositionName, '') AS requestedByPos,
+	CONCAT(
+		ISNULL(recPd.firstname, ISNULL(recEmp.firstname, '')),
+		CASE WHEN ISNULL(recPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', recPd.middlename, ' ') END,
+		ISNULL(recPd.surname, ISNULL(recEmp.lastname, ''))
+	) AS recommendedBy,
+	ISNULL(recPos.jobPositionName, '') AS recommendedByPos,
+	CONCAT(
+		ISNULL(appPd.firstname, ISNULL(appEmp.firstname, '')),
+		CASE WHEN ISNULL(appPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', appPd.middlename, ' ') END,
+		ISNULL(appPd.surname, ISNULL(appEmp.lastname, ''))
+	) AS approvedBy,
+	ISNULL(appPos.jobPositionName, '') AS approvedByPos
+FROM overtime_request ot
+LEFT JOIN employee e ON e.employeeId = ot.employeeId
+LEFT JOIN personaldata pd ON pd.employeeId = ot.employeeId
+LEFT JOIN employee reqEmp ON reqEmp.employeeId = ot.employeeId
+LEFT JOIN personaldata reqPd ON reqPd.employeeId = reqEmp.employeeId
+LEFT JOIN employee recEmp ON recEmp.employeeId = ot.recommendedById
+LEFT JOIN personaldata recPd ON recPd.employeeId = recEmp.employeeId
+LEFT JOIN employee appEmp ON appEmp.employeeId = ot.approvedById
+LEFT JOIN personaldata appPd ON appPd.employeeId = appEmp.employeeId
+OUTER APPLY (
+	SELECT TOP 1 mp.businessUnitId
+	FROM manage_personnel mp
+	WHERE mp.employeeId = ot.employeeId
+	ORDER BY mp.id DESC
+) mp
+LEFT JOIN businessunits bu ON bu.businessUnitsId = mp.businessUnitId
+OUTER APPLY (
+	SELECT TOP 1
+		s.companyName,
+		s.address,
+		s.hospitalAgency,
+		s.leftHeaderLogo,
+		s.rightHeaderLogo
+	FROM settings s
+	ORDER BY s.settingsId DESC
+) st
+OUTER APPLY (
+	SELECT TOP 1 ea.jobPositionId, ea.natureOfAppointmentId
+	FROM employeeappointment ea
+	WHERE ea.employeeId = reqEmp.employeeId
+	ORDER BY CASE WHEN ea.activeAppointment = 1 THEN 0 ELSE 1 END,
+		ea.assumptionToDutyDate DESC,
+		ea.employeeAppointmentId DESC
+) reqAppt
+LEFT JOIN job_position reqPos ON reqPos.jobPositionId = reqAppt.jobPositionId
+LEFT JOIN natureofappointment reqNoa ON reqNoa.natureofappointmentId = reqAppt.natureOfAppointmentId
+OUTER APPLY (
+	SELECT TOP 1 ea.jobPositionId
+	FROM employeeappointment ea
+	WHERE ea.employeeId = recEmp.employeeId
+	ORDER BY CASE WHEN ea.activeAppointment = 1 THEN 0 ELSE 1 END,
+		ea.assumptionToDutyDate DESC,
+		ea.employeeAppointmentId DESC
+) recAppt
+LEFT JOIN job_position recPos ON recPos.jobPositionId = recAppt.jobPositionId
+OUTER APPLY (
+	SELECT TOP 1 ea.jobPositionId
+	FROM employeeappointment ea
+	WHERE ea.employeeId = appEmp.employeeId
+	ORDER BY CASE WHEN ea.activeAppointment = 1 THEN 0 ELSE 1 END,
+		ea.assumptionToDutyDate DESC,
+		ea.employeeAppointmentId DESC
+) appAppt
+LEFT JOIN job_position appPos ON appPos.jobPositionId = appAppt.jobPositionId
+WHERE ot.overtimeRequestId = $P{OVERTIME_REQUEST_ID}
+]]></query>
+	<field name="fullname" class="java.lang.String"/>
+	<field name="businessUnit" class="java.lang.String"/>
+	<field name="dateCovered" class="java.util.Date"/>
+	<field name="noOfHours" class="java.lang.Double"/>
+	<field name="purpose" class="java.lang.String"/>
+	<field name="hospitalAgency" class="java.lang.Boolean"/>
+	<field name="currentCompanySetting" class="java.lang.String"/>
+	<field name="currentCompanyAddressSetting" class="java.lang.String"/>
+	<field name="leftHeaderLogo" class="java.lang.Object"/>
+	<field name="rightHeaderLogo" class="java.lang.Object"/>
+	<field name="isJobOrder" class="java.lang.Boolean"/>
+	<field name="requestedBy" class="java.lang.String"/>
+	<field name="requestedByPos" class="java.lang.String"/>
+	<field name="recommendedBy" class="java.lang.String"/>
+	<field name="recommendedByPos" class="java.lang.String"/>
+	<field name="approvedBy" class="java.lang.String"/>
+	<field name="approvedByPos" class="java.lang.String"/>
+	<pageHeader height="127" splitType="Stretch">
+		<element kind="staticText" uuid="26243875-a72e-4093-82ae-ad6645651617" x="0" y="94" width="555" height="13" fontSize="11.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+		</element>
+		<element kind="staticText" uuid="38601748-a970-4e1f-869f-52fca068517d" x="0" y="96" width="115" height="31" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Employee's Name]]></text>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="490a11f8-7620-4cc7-b0ef-b26c66aa8894" x="115" y="96" width="100" height="31" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Business Unit]]></text>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9962cff7-7a09-46d4-b07e-2116159f9090" x="215" y="96" width="86" height="31" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Date Covered]]></text>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="25b6091c-4ab2-4b78-b266-0c9b4c60a591" x="301" y="96" width="50" height="31" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Number of Hours]]></text>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ec1750b6-2e1e-4fa1-b999-6ff3a8bb4d0a" x="351" y="96" width="204" height="31" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[PURPOSE]]></text>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="9083ac92-ab14-4266-8205-761a75505ca8" x="0" y="56" width="555" height="20" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{isJobOrder} == true?"JOB ORDER WORK AUTHORIZATION":"OVERTIME AUTHORIZATION"]]></expression>
+		</element>
+		<element kind="textField" uuid="9dc308ec-a2c6-4a9a-9b90-fcfe2ebf2653" x="0" y="76" width="555" height="20" pdfFontName="Helvetica-Bold" removeLineWhenBlank="true" hTextAlign="Center" vTextAlign="Middle">
+			<printWhenExpression><![CDATA[$F{isJobOrder} == true]]></printWhenExpression>
+			<expression><![CDATA["The following Job Order worker/s is/are authorized to work on Saturday / Sunday / Holiday, namely :"]]></expression>
+		</element>
+		<element kind="textField" uuid="c487bcca-eb33-4fd9-ab58-be644aee58d5" x="136" y="0" width="274" height="56" markup="styled" fontName="Tahoma" fontSize="8.0" pdfFontName="Helvetica" pdfEmbedded="false" hTextAlign="Center">
+			<printWhenExpression><![CDATA[$F{hospitalAgency} != null && $F{hospitalAgency}]]></printWhenExpression>
+			<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"8\" isBold=\"true\">Department of Health</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $F{currentCompanySetting} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $F{currentCompanyAddressSetting} +  "</style><br />"]]></expression>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="image" uuid="a6154806-3014-4e84-bdab-c41a1a749661" x="410" y="0" width="72" height="56" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{rightHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{rightHeaderLogo})]]></expression>
+		</element>
+		<element kind="image" uuid="b1df21f0-bb5c-45f4-8079-7aea0bd9dfce" x="70" y="0" width="66" height="56" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{leftHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{leftHeaderLogo})]]></expression>
+		</element>
+		<element kind="staticText" uuid="db289fbb-cb14-4bd3-8e40-b12628ab50f4" key="staticText-18" mode="Transparent" x="0" y="0" width="70" height="56" fontName="Times New Roman" fontSize="14.0" pdfFontName="Times-Roman" bold="true" hTextAlign="Center">
+			<text><![CDATA[]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="54b287b6-32aa-448d-852d-8e736042a73c" key="staticText-18" mode="Transparent" x="480" y="0" width="70" height="56" fontName="Times New Roman" fontSize="14.0" pdfFontName="Times-Roman" bold="true" hTextAlign="Center">
+			<text><![CDATA[]]></text>
+			<property name="com.jaspersoft.studio.unit.width" value="px"/>
+			<box>
+				<pen lineWidth="0.5"/>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="78516e29-b7af-4693-bd67-6ea37314fb5d" x="136" y="0" width="274" height="56" markup="styled" fontName="Tahoma" fontSize="8.0" pdfFontName="Helvetica" pdfEmbedded="false" hTextAlign="Center">
+			<printWhenExpression><![CDATA[$F{hospitalAgency} == null || !$F{hospitalAgency}]]></printWhenExpression>
+			<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $F{currentCompanySetting} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $F{currentCompanyAddressSetting} +  "</style><br />"]]></expression>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+	</pageHeader>
+	<detail>
+		<band height="20">
+			<element kind="textField" uuid="c9021db3-c878-4c06-b684-9086f935ae1d" x="0" y="0" width="115" height="20" fontSize="9.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{fullname}]]></expression>
+				<box leftPadding="5">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="e88ada55-d5cc-47bb-8760-26c321972ef7" x="115" y="0" width="100" height="20" fontSize="9.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{businessUnit}]]></expression>
+				<box leftPadding="5">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="c5526541-4bf4-455c-8b23-dbb0db01c0e8" x="215" y="0" width="86" height="20" fontSize="9.0" pattern="MMMMM dd, yyyy" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{dateCovered}]]></expression>
+				<box leftPadding="5">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="7eff70a1-31e2-41c8-909c-af8221dac3d9" x="301" y="0" width="50" height="20" fontSize="9.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{noOfHours}]]></expression>
+				<box leftPadding="5">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="3b739ca4-05d0-4c65-b67b-fcb8595b0e20" x="351" y="0" width="204" height="20" fontSize="9.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{purpose}]]></expression>
+				<box leftPadding="5">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+			</element>
+		</band>
+	</detail>
+	<summary height="71">
+		<element kind="staticText" uuid="e399eaf8-0bb7-4311-9543-12006a308c78" x="0" y="0" width="115" height="20" vTextAlign="Middle">
+			<text><![CDATA[Requested by:]]></text>
+		</element>
+		<element kind="staticText" uuid="523066d5-75d7-410e-bf60-fb1041f11285" x="380" y="0" width="100" height="20" vTextAlign="Middle">
+			<text><![CDATA[Approved by:]]></text>
+		</element>
+		<element kind="textField" uuid="d13c9cac-b185-4a2f-a54b-5df786e806cb" x="189" y="31" width="162" height="20" fontSize="9.0" pdfFontName="Helvetica-Bold" blankWhenNull="true">
+			<expression><![CDATA[$F{recommendedBy}]]></expression>
+		</element>
+		<element kind="textField" uuid="2e83b404-231e-4866-9f99-af86445cc271" x="189" y="51" width="162" height="20" fontSize="9.0" blankWhenNull="true">
+			<expression><![CDATA[$F{recommendedByPos}]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="29107390-ab00-487e-81fb-9f2aeb47e1e0" x="380" y="51" width="175" height="20" fontSize="9.0" blankWhenNull="true">
+			<expression><![CDATA[$F{approvedByPos}]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="2fa5924b-0f5f-4f60-b7e2-c76232dceb33" x="380" y="31" width="175" height="20" fontSize="9.0" pdfFontName="Helvetica-Bold" blankWhenNull="true">
+			<expression><![CDATA[$F{approvedBy}]]></expression>
+		</element>
+		<element kind="staticText" uuid="39cacc9a-a6c5-4d8f-b1bc-70599a08b1d1" x="189" y="0" width="162" height="20" vTextAlign="Middle">
+			<text><![CDATA[Recommended by:]]></text>
+		</element>
+		<element kind="textField" uuid="f70c827f-8464-41b5-8aa2-cf919e4385c1" x="0" y="51" width="162" height="20" fontSize="9.0" blankWhenNull="true">
+			<expression><![CDATA[$F{requestedByPos}]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="4866d33c-c14d-4059-9302-2bcc917f4abf" x="0" y="31" width="162" height="20" fontSize="9.0" pdfFontName="Helvetica-Bold" blankWhenNull="true">
+			<expression><![CDATA[$F{requestedBy}]]></expression>
+		</element>
+	</summary>
+</jasperReport>

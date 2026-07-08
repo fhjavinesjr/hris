@@ -2,6 +2,7 @@ package com.humanresource.services;
 
 import com.humanresource.dtos.OvertimeRequestDTO;
 
+import java.io.OutputStream;
 import java.util.List;
 
 public interface OvertimeRequestService {
@@ -26,4 +27,6 @@ public interface OvertimeRequestService {
     OvertimeRequestDTO update(Long overtimeRequestId, OvertimeRequestDTO dto) throws Exception;
 
     Boolean delete(Long overtimeRequestId) throws Exception;
+
+    void generateOvertimeAuthorization(Long overtimeRequestId, OutputStream out) throws Exception;
 }

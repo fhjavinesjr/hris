@@ -3,6 +3,8 @@ package com.humanresource.controllers;
 import com.hris.common.dtos.MetadataResponse;
 import com.humanresource.dtos.CompensatoryOvertimeCreditDTO;
 import com.humanresource.services.CompensatoryOvertimeCreditService;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -50,6 +52,14 @@ public class CompensatoryOvertimeCreditController {
     public ResponseEntity<Map<String, Double>> getBalance(@PathVariable Long employeeId) throws Exception {
         Double balance = cocService.getAvailableBalance(employeeId);
         return ResponseEntity.ok(Map.of("availableHours", balance));
+    }
+
+    @GetMapping("/coc/report/{cocId}")
+    public void downloadCocCertificate(@PathVariable Long cocId,
+                                       HttpServletResponse response) throws Exception {
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader("Content-Disposition", "attachment; filename=\"CertificateCOC_" + cocId + ".pdf\"");
+        cocService.generateCertificateCoc(cocId, response.getOutputStream());
     }
 
     @PutMapping("/coc/approve/{cocId}")

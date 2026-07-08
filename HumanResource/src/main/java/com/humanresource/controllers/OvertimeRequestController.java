@@ -3,6 +3,8 @@ package com.humanresource.controllers;
 import com.hris.common.dtos.MetadataResponse;
 import com.humanresource.dtos.OvertimeRequestDTO;
 import com.humanresource.services.OvertimeRequestService;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -109,5 +111,13 @@ public class OvertimeRequestController {
                     .body(new MetadataResponse("Failed to delete overtime request"));
         }
         return ResponseEntity.ok(new MetadataResponse(id, "Overtime request deleted successfully"));
+    }
+
+    @GetMapping("/overtime-request/report/{id}")
+    public void downloadOvertimeAuthorization(@PathVariable Long id,
+                                              HttpServletResponse response) throws Exception {
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader("Content-Disposition", "attachment; filename=\"OvertimeAuthorization_" + id + ".pdf\"");
+        overtimeRequestService.generateOvertimeAuthorization(id, response.getOutputStream());
     }
 }

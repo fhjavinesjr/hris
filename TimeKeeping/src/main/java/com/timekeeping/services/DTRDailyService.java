@@ -1,6 +1,7 @@
 package com.timekeeping.services;
 
 import com.timekeeping.dtos.DTRDailyDTO;
+import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,6 +20,8 @@ public interface DTRDailyService {
      * @return List of daily summaries for all employees (format compatible with DtrDailySummaryDTO)
      */
     List<Map<String, Object>> getBulkDtrSummary(LocalDate from, LocalDate to);
+
+    void generateDtrReport(String employeeId, LocalDate fromDate, LocalDate toDate, OutputStream out) throws Exception;
 }
 
 
