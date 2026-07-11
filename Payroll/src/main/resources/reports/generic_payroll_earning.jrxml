@@ -1,0 +1,226 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="generic_payroll_earning" language="java" pageWidth="1230" pageHeight="900" orientation="Landscape" columnWidth="1210" leftMargin="10" rightMargin="10" topMargin="10" bottomMargin="10" uuid="21350616-c744-421e-981c-8c27fd695373">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="SALARY_PERIOD_KEY" class="java.lang.String"/>
+	<parameter name="EARNING_TYPE_ID" class="java.lang.String"/>
+	<parameter name="EARNING_TYPE_NAME" class="java.lang.String"/>
+	<parameter name="EARNING_TYPE_CODE" class="java.lang.String"/>
+	<parameter name="CATEGORY" class="java.lang.String"/>
+	<parameter name="CURRENT_COMPANY" class="java.lang.String"/>
+	<parameter name="REPORT_PERIOD_LABEL" class="java.lang.String"/>
+	<query language="SQL"><![CDATA[SELECT
+    CAST(ROW_NUMBER() OVER (ORDER BY pd.employeeName, pd.employeeNo) AS int) AS no,
+    pd.employeeNo AS employeeNo,
+    pd.employeeName AS fullname,
+    ISNULL(pd.department, '') AS department,
+    pd.salaryGrade AS salaryGrade,
+    pd.salaryStep AS salaryStep,
+    pd.basicPerSalary AS basicPerSalary,
+    CAST(SUM(ISNULL(pde.amount, 0)) AS float) AS grossAmount,
+    CAST(0 AS float) AS tax,
+    CAST(SUM(ISNULL(pde.amount, 0)) AS float) AS netAmount,
+    ISNULL(pd.department, '') AS position,
+    pd.basicPerSalary AS salaryMo
+FROM payroll_detail pd
+INNER JOIN payroll_detail_earning pde ON pde.payroll_detail_id = pd.id
+WHERE pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
+  AND (
+        UPPER(LTRIM(RTRIM(ISNULL(pde.earningCode, '')))) = UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_CODE}, ''))))
+        OR UPPER(LTRIM(RTRIM(ISNULL(pde.earningName, '')))) = UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_NAME}, ''))))
+      )
+GROUP BY
+    pd.employeeNo,
+    pd.employeeName,
+    pd.department,
+    pd.salaryGrade,
+    pd.salaryStep,
+    pd.basicPerSalary
+ORDER BY pd.employeeName, pd.employeeNo]]></query>
+	<field name="no" class="java.lang.Integer"/>
+	<field name="employeeNo" class="java.lang.String"/>
+	<field name="fullname" class="java.lang.String"/>
+	<field name="department" class="java.lang.String"/>
+	<field name="salaryGrade" class="java.lang.Integer"/>
+	<field name="salaryStep" class="java.lang.Integer"/>
+	<field name="basicPerSalary" class="java.lang.Double"/>
+	<field name="grossAmount" class="java.lang.Double"/>
+	<field name="tax" class="java.lang.Double"/>
+	<field name="netAmount" class="java.lang.Double"/>
+	<field name="position" class="java.lang.String"/>
+	<field name="salaryMo" class="java.lang.Double"/>
+	<variable name="TOTAL_AMOUNT" calculation="Sum" class="java.lang.Double">
+		<expression><![CDATA[$F{grossAmount}]]></expression>
+		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
+	</variable>
+	<variable name="TOTAL_NET" calculation="Sum" class="java.lang.Double">
+		<expression><![CDATA[$F{netAmount}]]></expression>
+		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
+	</variable>
+	<title height="70">
+		<element kind="textField" uuid="0ea5c95f-05e4-428b-9603-864c27392dab" x="0" y="0" width="1210" height="18" fontSize="11.0" blankWhenNull="true" bold="true" hTextAlign="Center">
+			<expression><![CDATA[$P{CURRENT_COMPANY} == null || $P{CURRENT_COMPANY}.trim().isEmpty() ? "ISOFT HRIS" : $P{CURRENT_COMPANY}]]></expression>
+		</element>
+		<element kind="staticText" uuid="4f218960-6df0-49a4-89bc-95850d749977" x="0" y="20" width="1210" height="18" fontSize="11.0" bold="true" hTextAlign="Center">
+			<text><![CDATA[EARNINGS / ALLOWANCE REPORT]]></text>
+		</element>
+		<element kind="textField" uuid="a3a7337f-cf3d-48f6-829e-b93a6c974b01" x="0" y="40" width="1210" height="14" fontSize="8.0" blankWhenNull="true" hTextAlign="Center">
+			<expression><![CDATA["Period: " + $P{REPORT_PERIOD_LABEL} + "     Type: " + $P{EARNING_TYPE_NAME} + "     Category: " + $P{CATEGORY}]]></expression>
+		</element>
+		<element kind="line" uuid="fb76de11-ac91-4cb7-a4e8-556d215c141c" x="0" y="60" width="1210" height="1"/>
+	</title>
+	<columnHeader height="24">
+		<element kind="staticText" uuid="5c7823c6-6503-4f86-92c1-cb3ccd07e624" x="0" y="0" width="35" height="24" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[No]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="8542ebef-4f65-4453-b8cb-e399fe32845e" x="35" y="0" width="80" height="24" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Employee No]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="26018c14-b493-4315-bde5-fb61ef6312b2" x="115" y="0" width="260" height="24" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Name]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e3f6fc51-6b94-428f-9e41-a398db3938cd" x="375" y="0" width="210" height="24" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Office]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6311b825-4abe-4207-93ee-cccd3fa02439" x="585" y="0" width="35" height="24" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[SG]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d684e30c-a543-4c07-91f6-302d74ba2620" x="620" y="0" width="35" height="24" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Step]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f30fb6a4-8f9d-4623-91a9-215a4eab596f" x="655" y="0" width="120" height="24" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Basic Salary]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="507873be-dbf0-4943-a163-84d4b7fd3912" x="775" y="0" width="160" height="24" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Earning / Allowance Amount]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="753d8442-5135-4fc8-b35e-fe20993f69dc" x="935" y="0" width="100" height="24" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Deduct/Tax]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="dbcc9b37-170a-42b2-b99e-ffa863256e1f" x="1035" y="0" width="140" height="24" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Net Amount]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<element kind="textField" uuid="178162a5-6924-496b-98e1-297d55489b54" x="0" y="0" width="35" height="22" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{no}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="92dc5177-868a-4ea2-b90c-dfc949f264e9" x="35" y="0" width="80" height="22" fontSize="7.0" blankWhenNull="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{employeeNo}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="ab8b5895-1de8-4de9-8444-c958191500eb" x="115" y="0" width="260" height="22" fontSize="7.0" blankWhenNull="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{fullname}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="65e00973-96fb-4b59-b937-6edfdb05fa30" x="375" y="0" width="210" height="22" fontSize="7.0" blankWhenNull="true" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{department}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="3cb34926-e8d6-4d45-9a22-e667b2d09f53" x="585" y="0" width="35" height="22" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{salaryGrade}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="1af3bd92-f5c6-42c6-a914-08091b8cdec0" x="620" y="0" width="35" height="22" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{salaryStep}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="8164f8e4-06a0-4b2e-9793-ad50c615ce51" x="655" y="0" width="120" height="22" fontSize="7.0" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{basicPerSalary}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="9161a57a-e8a7-40fe-8eac-30fcbca34c2b" x="775" y="0" width="160" height="22" fontSize="7.0" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{grossAmount}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="c9a6f7e4-a510-4278-a8db-aedf09a0b144" x="935" y="0" width="100" height="22" fontSize="7.0" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{tax}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="c49a1eb0-79c0-4f2b-aa80-201bf9bec296" x="1035" y="0" width="140" height="22" fontSize="7.0" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{netAmount}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+		</band>
+	</detail>
+	<summary height="80">
+		<element kind="staticText" uuid="8a16621d-4a06-4dfa-b097-8e1682133b87" x="0" y="0" width="775" height="24" fontSize="8.0" bold="true" hTextAlign="Right" vTextAlign="Middle">
+			<text><![CDATA[GRAND TOTAL]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="d8590af5-5d38-43a5-93a7-cdcab9d42fd9" x="775" y="0" width="160" height="24" fontSize="8.0" pattern="#,##0.00" bold="true" hTextAlign="Right" vTextAlign="Middle">
+			<expression><![CDATA[$V{TOTAL_AMOUNT}]]></expression>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="26912142-fa79-4286-a4aa-64327a7a89b1" x="1035" y="0" width="140" height="24" fontSize="8.0" pattern="#,##0.00" bold="true" hTextAlign="Right" vTextAlign="Middle">
+			<expression><![CDATA[$V{TOTAL_NET}]]></expression>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5244b813-8c7d-4bc4-84ef-020365c3b118" x="0" y="42" width="260" height="16" fontSize="8.0">
+			<text><![CDATA[Prepared by:]]></text>
+		</element>
+		<element kind="staticText" uuid="e1618458-4119-4a17-bc5a-ce293a91970f" x="320" y="42" width="260" height="16" fontSize="8.0">
+			<text><![CDATA[Certified correct:]]></text>
+		</element>
+		<element kind="staticText" uuid="fe621e28-9089-41fa-a571-9527a5a8bfcf" x="640" y="42" width="260" height="16" fontSize="8.0">
+			<text><![CDATA[Approved by:]]></text>
+		</element>
+	</summary>
+</jasperReport>

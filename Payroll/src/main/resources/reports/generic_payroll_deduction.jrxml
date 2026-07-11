@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="payrolldeductionreport" pageWidth="612" pageHeight="980" columnWidth="572" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="22330018-7547-4997-961c-fee60b9db52a">
+	<property name="ireport.zoom" value="1.1000000000000045"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="currentCompany" class="java.lang.String"/>
+	<parameter name="salaryDate" class="java.lang.String"/>
+	<parameter name="payrolltype" class="java.lang.String"/>
+	<parameter name="department" class="java.lang.String"/>
+	<parameter name="preparedBy" class="java.lang.String"/>
+	<parameter name="certifiedBy" class="java.lang.String"/>
+	<parameter name="preparedByPos" class="java.lang.String"/>
+	<parameter name="certifiedByPos" class="java.lang.String"/>
+	<field name="no" class="java.lang.Integer"/>
+	<field name="fullname" class="java.lang.String"/>
+	<field name="employeeShare" class="java.lang.Double"/>
+	<field name="employerShare" class="java.lang.Double"/>
+	<field name="loanTotal" class="java.lang.Double"/>
+	<field name="loanPaid" class="java.lang.Double"/>
+	<variable name="eespage" class="java.lang.Double" resetType="Page" calculation="Sum">
+		<variableExpression><![CDATA[Math.round($F{employeeShare} * 100.0) / 100.0]]></variableExpression>
+	</variable>
+	<variable name="eesall" class="java.lang.Double" calculation="Sum">
+		<variableExpression><![CDATA[Math.round($F{employeeShare} * 100.0) / 100.0]]></variableExpression>
+	</variable>
+	<variable name="erspage" class="java.lang.Double" resetType="Page" calculation="Sum">
+		<variableExpression><![CDATA[Math.round($F{employerShare} * 100.0) / 100.0]]></variableExpression>
+	</variable>
+	<variable name="ersall" class="java.lang.Double" calculation="Sum">
+		<variableExpression><![CDATA[Math.round($F{employerShare} * 100.0) / 100.0]]></variableExpression>
+	</variable>
+	<variable name="lppage" class="java.lang.Double" resetType="Page" calculation="Sum">
+		<variableExpression><![CDATA[$F{loanPaid}]]></variableExpression>
+	</variable>
+	<variable name="lpall" class="java.lang.Double" calculation="Sum">
+		<variableExpression><![CDATA[$F{loanPaid}]]></variableExpression>
+	</variable>
+	<variable name="ltpage" class="java.lang.Double" resetType="Page" calculation="Sum">
+		<variableExpression><![CDATA[$F{loanTotal}]]></variableExpression>
+	</variable>
+	<variable name="ltall" class="java.lang.Double" calculation="Sum">
+		<variableExpression><![CDATA[$F{loanTotal}]]></variableExpression>
+	</variable>
+	<variable name="variable1" class="java.lang.Integer">
+		<variableExpression><![CDATA[336]]></variableExpression>
+	</variable>
+	<variable name="totalpages" class="java.lang.Integer" incrementType="Page" calculation="Sum">
+		<variableExpression><![CDATA[$V{PAGE_NUMBER}]]></variableExpression>
+	</variable>
+	<variable name="h1" class="java.lang.String">
+		<variableExpression><![CDATA[$P{payrolltype}.equals("GSIS Life Insurance") ? "Test" : "Succ"]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="78">
+			<textField>
+				<reportElement uuid="d3f2f668-b043-436a-b5f2-627aa9557a92" x="0" y="0" width="572" height="20"/>
+				<textElement textAlignment="Center">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currentCompany}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement uuid="cf3c1e56-bb1f-4b52-abfb-8a05c3e299d3" x="0" y="40" width="572" height="20"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$P{salaryDate}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="584c50fb-a044-4ac2-8a03-7a6626232d9a" x="0" y="20" width="572" height="20"/>
+				<textElement textAlignment="Center">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{payrolltype}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="2b0a394f-5507-4632-9e63-66bdaaf8d0c2" x="0" y="60" width="572" height="18"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{department}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="17" splitType="Stretch">
+			<staticText>
+				<reportElement uuid="75cd33a3-d6f3-467f-9977-324777c59622" x="210" y="1" width="182" height="16">
+					<printWhenExpression><![CDATA[$F{employerShare}>0]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center"/>
+				<text><![CDATA[Personal Share]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="d9433a5c-5db6-45c7-b651-431190cd7ca2" x="0" y="1" width="30" height="16"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[#]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="0053d91f-aebd-4172-a510-9f8e06a5ff06" x="30" y="1" width="180" height="16"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="f1b2f49c-9728-4384-9d1e-156225cec771" x="392" y="1" width="180" height="16">
+					<printWhenExpression><![CDATA[$F{employerShare}>0]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font isBold="false"/>
+				</textElement>
+				<text><![CDATA[Employer Share]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="3c43d72f-52d3-4e25-920d-d08028db53f3" x="210" y="1" width="182" height="16">
+					<printWhenExpression><![CDATA[$F{employerShare} == 0]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center"/>
+				<text><![CDATA[Amount]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement uuid="cc5d6303-7b40-48ab-98dc-1dd4d7a9f0d8" x="0" y="0" width="30" height="20"/>
+				<box>
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{no}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="a7db0498-3220-49b7-ba74-87fe5d69b1a9" x="30" y="0" width="180" height="20"/>
+				<box>
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{fullname}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement uuid="eef2b171-2ae2-4ae1-a490-096a6e8915fb" x="210" y="0" width="182" height="20"/>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Math.round($F{employeeShare} * 100.0) / 100.0]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement uuid="f7663054-26dc-40a0-ada0-399bf6433aad" x="392" y="0" width="180" height="20">
+					<printWhenExpression><![CDATA[$V{ersall}>0]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font size="9" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Math.round($F{employerShare} * 100.0) / 100.0]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="13">
+			<staticText>
+				<reportElement uuid="5200ee12-8386-4393-9990-f3938e66ceda" x="0" y="0" width="210" height="13">
+					<printWhenExpression><![CDATA[!($V{PAGE_NUMBER}==$V{totalpages})]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement/>
+				<text><![CDATA[Total This Page]]></text>
+			</staticText>
+			<textField pattern="#,##0.00">
+				<reportElement uuid="96dcf115-d0bf-4441-bc6c-2ea6cba8d6d3" x="210" y="0" width="182" height="13">
+					<printWhenExpression><![CDATA[$V{PAGE_NUMBER}!=$V{totalpages}]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Math.round($V{eespage} * 100.0) / 100.0]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement uuid="3c410e99-77c5-45e4-a7df-99fe4afc4d03" x="392" y="0" width="180" height="13">
+					<printWhenExpression><![CDATA[$V{ersall}>0 && !($V{PAGE_NUMBER}==$V{totalpages})]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Math.round($V{erspage} * 100.0) / 100.0]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<lastPageFooter>
+		<band height="189">
+			<staticText>
+				<reportElement uuid="214de56c-774d-4382-ab8e-e1036999521b" x="0" y="0" width="210" height="19"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement/>
+				<text><![CDATA[Grand Total :]]></text>
+			</staticText>
+			<textField pattern="#,##0.00">
+				<reportElement uuid="574898a5-abb2-4517-8fc3-0b02f9df2de0" x="210" y="0" width="182" height="19"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font size="9" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Math.round($V{eesall} * 100.0) / 100.0]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement uuid="5d9a77b4-b2a2-4080-9a7c-5df20d1494bc" x="0" y="32" width="302" height="15"/>
+				<textElement/>
+				<text><![CDATA[Prepared By:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="50ea7c0d-033c-4a9f-a3cd-4a31b937091d" x="302" y="32" width="270" height="15"/>
+				<textElement/>
+				<text><![CDATA[Certified By:]]></text>
+			</staticText>
+			<textField>
+				<reportElement uuid="221dba7a-73fa-4263-ab49-ead85916b3c5" x="0" y="62" width="229" height="16"/>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$P{preparedBy}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="43e972e6-233b-453c-ad82-20a551ac57d1" x="302" y="62" width="134" height="16"/>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$P{certifiedBy}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement uuid="c5be6a01-4bed-4715-93d1-70366899a9a5" x="0" y="93" width="229" height="13"/>
+				<textElement textAlignment="Center">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[(Signature Over Printed Name)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="73e3eb37-5240-499a-a8a0-aa99e0fecb68" x="302" y="93" width="134" height="13"/>
+				<textElement textAlignment="Center">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[(Signature Over Printed Name)]]></text>
+			</staticText>
+			<textField>
+				<reportElement uuid="a0bf7aa6-586f-4413-85f4-da0c9d8e1062" x="302" y="78" width="134" height="15"/>
+				<textElement textAlignment="Center">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{certifiedByPos}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="cadeb21c-1991-4a67-8344-e49f733e5eee" x="0" y="78" width="229" height="15"/>
+				<textElement textAlignment="Center">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{preparedByPos}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement uuid="9554d120-f96d-4921-b32a-412a99fb2ce5" x="0" y="19" width="572" height="13"/>
+				<textElement/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="722dcf04-e28b-4045-8a12-c7b62da2311f" x="0" y="47" width="572" height="15"/>
+				<textElement/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="614e928e-5701-464e-b944-66f9f2091685" x="229" y="62" width="73" height="16"/>
+				<textElement/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="29dcb5e2-4452-460f-9156-08e011fabbba" x="229" y="78" width="73" height="15"/>
+				<textElement/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="03dd4bdf-b95f-4e5a-9abf-d4c2691cc82f" x="229" y="93" width="73" height="13"/>
+				<textElement/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="7e4a9376-c93c-4386-9b8a-96dc5c7e70ff" x="436" y="62" width="136" height="16"/>
+				<textElement/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="d3fcabf4-f33c-4954-91b8-f6fdf9866172" x="436" y="78" width="136" height="15"/>
+				<textElement/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="fa45f6a0-9919-40da-9140-8bffe1f278f1" x="436" y="93" width="136" height="13"/>
+				<textElement/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<textField pattern="#,##0.00">
+				<reportElement uuid="9e7128c0-8b46-45d0-8c95-a05937a596d2" x="392" y="0" width="180" height="19">
+					<printWhenExpression><![CDATA[$V{ersall}>0]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Math.round($V{ersall} * 100.0) / 100.0]]></textFieldExpression>
+			</textField>
+		</band>
+	</lastPageFooter>
+</jasperReport>
