@@ -1069,7 +1069,7 @@ GRADUATED]]></text>
 				<rightPen lineWidth="1.0"/>
 			</box>
 		</element>
-		<element kind="staticText" uuid="9f2369dc-a8d1-4a5b-b728-3b0ccfea6ec5" x="454" y="890" width="123" height="10" fontSize="6.0" bold="true" italic="true">
+		<element kind="staticText" uuid="9f2369dc-a8d1-4a5b-b728-3b0ccfea6ec5" x="431" y="890" width="146" height="10" fontSize="6.0" bold="true" italic="true">
 			<text><![CDATA[CS FORM 212 (Revised 2025), Page 1 of 4]]></text>
 		</element>
 		<element kind="staticText" uuid="bfa94367-691d-4387-8935-de17d04b259d" x="501" y="667" width="76" height="19">
@@ -1324,26 +1324,26 @@ GRADUATED]]></text>
 				<rightPen lineWidth="1.0"/>
 			</box>
 		</element>
-		<element kind="staticText" uuid="838a179a-352f-4497-876f-bd3d7d112ab2" x="2" y="0" width="71" height="12" fontSize="8.0" bold="true" italic="true">
+		<element kind="staticText" uuid="838a179a-352f-4497-876f-bd3d7d112ab2" x="2" y="0" width="84" height="12" fontSize="8.0" bold="true" italic="true">
 			<text><![CDATA[CS Form No. 212]]></text>
 		</element>
-		<element kind="staticText" uuid="23e018c2-2b54-4fec-9bad-619883fcc252" x="2" y="11" width="48" height="12" fontSize="7.0" bold="true" italic="true">
-			<text><![CDATA[Revised 2017]]></text>
+		<element kind="staticText" uuid="23e018c2-2b54-4fec-9bad-619883fcc252" x="2" y="11" width="84" height="12" fontSize="7.0" bold="true" italic="true">
+			<text><![CDATA[Revised 2025]]></text>
 		</element>
 		<element kind="staticText" uuid="451aee44-aeb3-41e6-a404-efbbc5e2e86f" x="178" y="15" width="272" height="34" fontName="SansSerif" fontSize="20.0" bold="true">
 			<text><![CDATA[PERSONAL DATA SHEET]]></text>
 		</element>
-		<element kind="staticText" uuid="92a739f2-1106-422c-b1f4-617432f18579" x="2" y="49" width="509" height="17" fontName="SansSerif" fontSize="6.0" bold="true" italic="true" vTextAlign="Middle">
+		<element kind="staticText" uuid="92a739f2-1106-422c-b1f4-617432f18579" x="2" y="49" width="573" height="17" fontName="SansSerif" fontSize="6.0" bold="true" italic="true" vTextAlign="Middle">
 			<text><![CDATA[WARNING: Any misrepresentation made in the Personal Data Sheet and the Work Experience Sheet shall cause the filling of administrative/criminal case/s against the person
 concerned.]]></text>
 		</element>
-		<element kind="staticText" uuid="5aa33fe9-7ce0-4ae4-a992-20c36accb3f4" x="2" y="66" width="380" height="10" fontSize="6.0" bold="true" italic="true" vTextAlign="Middle">
+		<element kind="staticText" uuid="5aa33fe9-7ce0-4ae4-a992-20c36accb3f4" x="2" y="66" width="428" height="10" fontSize="6.0" bold="true" italic="true" vTextAlign="Middle">
 			<text><![CDATA[READ THE ATTACHED GUIDE TO FILLING OUT THE PRESONAL DATA SHEET (PDS) BEFORE ACCOMPLISHING THE PDS FORM.]]></text>
 		</element>
 		<element kind="staticText" uuid="6593adce-e282-43fd-8026-5d3600e4ea8c" x="2" y="76" width="298" height="10" fontSize="6.0" vTextAlign="Middle">
 			<text><![CDATA[Print legibly. Tick appropriate boxes (□) and use separate sheet if necessary. Indicate N/A if not applicable.]]></text>
 		</element>
-		<element kind="staticText" uuid="73e0cd51-c5b9-42d9-b1c8-51fa1e94bc85" x="294" y="77" width="66" height="9" fontSize="6.0" bold="true">
+		<element kind="staticText" uuid="73e0cd51-c5b9-42d9-b1c8-51fa1e94bc85" x="294" y="77" width="84" height="9" fontSize="6.0" bold="true">
 			<text><![CDATA[DO NOT ABBREVIATE.]]></text>
 		</element>
 		<element kind="staticText" uuid="3287dac8-fc57-43b2-b652-b7aba74357d9" x="414" y="75" width="163" height="10" fontSize="6.0" hTextAlign="Right" vTextAlign="Middle">

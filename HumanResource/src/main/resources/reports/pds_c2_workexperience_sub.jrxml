@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" name="pds_c2_workexperience_sub" pageWidth="612" pageHeight="936" columnWidth="612" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="d07d91b3-fbc4-4bfb-95ea-976c8d8e4d19">
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="pds_c2_workexperience_sub" language="java" pageWidth="612" pageHeight="936" columnWidth="612" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="d07d91b3-fbc4-4bfb-95ea-976c8d8e4d19">
 	<property name="ireport.zoom" value="1.6105100000000012"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
-	<parameter name="EMPLOYEE_ID" class="java.lang.Long"></parameter>
-	
-	<queryString language="SQL"><![CDATA[SELECT
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
+	<query language="SQL"><![CDATA[SELECT
     CAST(fromDate AS date) AS employmentDate,
     CAST(toDate AS date) AS separationDate,
     ISNULL(positionTitle, '') AS position,
@@ -18,8 +17,8 @@
     CASE WHEN payGrade IS NULL THEN '' ELSE CAST(payGrade AS varchar(30)) END AS salaryIncStepString
 FROM workexperience
 WHERE personalDataId = (SELECT TOP 1 personalDataId FROM personaldata WHERE employeeId = $P{EMPLOYEE_ID})
-ORDER BY fromDate DESC]]></queryString>
-<field name="employmentDate" class="java.sql.Date"/>
+ORDER BY fromDate DESC]]></query>
+	<field name="employmentDate" class="java.sql.Date"/>
 	<field name="separationDate" class="java.sql.Date"/>
 	<field name="position" class="java.lang.String"/>
 	<field name="companyAndDepartment" class="java.lang.String"/>
@@ -30,12 +29,12 @@ ORDER BY fromDate DESC]]></queryString>
 	<field name="separationDateTo" class="java.lang.String"/>
 	<field name="salaryIncStepString" class="java.lang.String"/>
 	<variable name="governmentService" class="java.lang.String">
-		<variableExpression><![CDATA[$F{isGovernmentService}? "Yes": "No"]]></variableExpression>
+		<expression><![CDATA[$F{isGovernmentService}? "Yes": "No"]]></expression>
 	</variable>
 	<detail>
 		<band height="19" splitType="Stretch">
-			<textField>
-				<reportElement uuid="9cc5d791-7ae6-4801-9e7a-9c46911fc6cd" x="214" y="0" width="147" height="19"/>
+			<element kind="textField" uuid="9cc5d791-7ae6-4801-9e7a-9c46911fc6cd" x="214" y="0" width="147" height="19" fontSize="8.0" vTextAlign="Middle">
+				<expression><![CDATA[$F{companyAndDepartment}]]></expression>
 				<box leftPadding="5">
 					<pen lineWidth="1.0"/>
 					<topPen lineWidth="0.0"/>
@@ -43,13 +42,9 @@ ORDER BY fromDate DESC]]></queryString>
 					<bottomPen lineWidth="0.0"/>
 					<rightPen lineWidth="0.0"/>
 				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{companyAndDepartment}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="df4b9f38-e878-40cb-8ff6-930b5dc269f5" x="361" y="0" width="37" height="19"/>
+			</element>
+			<element kind="textField" uuid="df4b9f38-e878-40cb-8ff6-930b5dc269f5" x="361" y="0" width="37" height="19" fontSize="5.0" pattern="#,##0.00" vTextAlign="Middle">
+				<expression><![CDATA[$F{salary}]]></expression>
 				<box leftPadding="5">
 					<pen lineWidth="1.0"/>
 					<topPen lineWidth="0.0"/>
@@ -57,13 +52,9 @@ ORDER BY fromDate DESC]]></queryString>
 					<bottomPen lineWidth="0.0"/>
 					<rightPen lineWidth="0.0"/>
 				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{salary}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="06f9068f-190f-473f-ad09-bc90d86b526c" x="398" y="0" width="60" height="19"/>
+			</element>
+			<element kind="textField" uuid="06f9068f-190f-473f-ad09-bc90d86b526c" x="398" y="0" width="60" height="19" fontSize="8.0" vTextAlign="Middle">
+				<expression><![CDATA[$F{salaryIncStepString}]]></expression>
 				<box leftPadding="5">
 					<pen lineWidth="1.0"/>
 					<topPen lineWidth="0.0"/>
@@ -71,13 +62,9 @@ ORDER BY fromDate DESC]]></queryString>
 					<bottomPen lineWidth="0.0"/>
 					<rightPen lineWidth="0.0"/>
 				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{salaryIncStepString}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="679126c2-a724-4b44-8d1e-574c49384d5e" x="518" y="0" width="60" height="19"/>
+			</element>
+			<element kind="textField" uuid="679126c2-a724-4b44-8d1e-574c49384d5e" x="518" y="0" width="60" height="19" fontSize="8.0" vTextAlign="Middle">
+				<expression><![CDATA[$F{isGovernmentService}?"Yes":"No"]]></expression>
 				<box leftPadding="5">
 					<pen lineWidth="1.0"/>
 					<topPen lineWidth="0.0"/>
@@ -85,13 +72,9 @@ ORDER BY fromDate DESC]]></queryString>
 					<bottomPen lineWidth="0.0"/>
 					<rightPen lineWidth="0.0"/>
 				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{isGovernmentService}?"Yes":"No"]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="cdcb8ae1-efaf-402a-ac15-9de4856c9439" x="100" y="0" width="114" height="19"/>
+			</element>
+			<element kind="textField" uuid="cdcb8ae1-efaf-402a-ac15-9de4856c9439" x="100" y="0" width="114" height="19" fontSize="7.0" vTextAlign="Middle">
+				<expression><![CDATA[$F{position}]]></expression>
 				<box leftPadding="5">
 					<pen lineWidth="1.0"/>
 					<topPen lineWidth="0.0"/>
@@ -99,13 +82,9 @@ ORDER BY fromDate DESC]]></queryString>
 					<bottomPen lineWidth="0.0"/>
 					<rightPen lineWidth="0.0"/>
 				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="7"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{position}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="b5a24d21-fd4e-421e-8dc6-ecf5e3439d23" x="458" y="0" width="60" height="19"/>
+			</element>
+			<element kind="textField" uuid="b5a24d21-fd4e-421e-8dc6-ecf5e3439d23" x="458" y="0" width="60" height="19" fontSize="8.0" vTextAlign="Middle">
+				<expression><![CDATA[$F{appointmentStatus}]]></expression>
 				<box leftPadding="5">
 					<pen lineWidth="1.0"/>
 					<topPen lineWidth="0.0"/>
@@ -113,13 +92,9 @@ ORDER BY fromDate DESC]]></queryString>
 					<bottomPen lineWidth="0.0"/>
 					<rightPen lineWidth="0.0"/>
 				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{appointmentStatus}]]></textFieldExpression>
-			</textField>
-			<textField pattern="MM/dd/yyyy" isBlankWhenNull="true">
-				<reportElement uuid="3699d90e-f155-4478-95e9-6d5a08474d06" x="49" y="0" width="51" height="19"/>
+			</element>
+			<element kind="textField" uuid="3699d90e-f155-4478-95e9-6d5a08474d06" x="49" y="0" width="51" height="19" fontSize="8.0" pattern="MM/dd/yyyy" blankWhenNull="true" vTextAlign="Middle">
+				<expression><![CDATA[$F{separationDateTo}]]></expression>
 				<box leftPadding="5">
 					<pen lineWidth="1.0"/>
 					<topPen lineWidth="0.0"/>
@@ -127,13 +102,9 @@ ORDER BY fromDate DESC]]></queryString>
 					<bottomPen lineWidth="0.0"/>
 					<rightPen lineWidth="0.0"/>
 				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{separationDateTo}]]></textFieldExpression>
-			</textField>
-			<textField pattern="MM/dd/yyyy" isBlankWhenNull="true">
-				<reportElement uuid="46ed0d83-2de8-4f69-b901-33b60f1f8871" x="0" y="0" width="49" height="19"/>
+			</element>
+			<element kind="textField" uuid="46ed0d83-2de8-4f69-b901-33b60f1f8871" x="0" y="0" width="49" height="19" fontSize="8.0" pattern="MM/dd/yyyy" blankWhenNull="true" vTextAlign="Middle">
+				<expression><![CDATA[$F{employmentDate}]]></expression>
 				<box leftPadding="5">
 					<pen lineWidth="1.0"/>
 					<topPen lineWidth="0.0"/>
@@ -141,11 +112,7 @@ ORDER BY fromDate DESC]]></queryString>
 					<bottomPen lineWidth="0.0"/>
 					<rightPen lineWidth="0.0"/>
 				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{employmentDate}]]></textFieldExpression>
-			</textField>
+			</element>
 		</band>
 	</detail>
 </jasperReport>

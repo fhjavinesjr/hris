@@ -2345,7 +2345,7 @@ WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
 				<rightPen lineWidth="1.0"/>
 			</box>
 		</element>
-		<element kind="staticText" uuid="62780026-d8f3-4631-8a05-c8b2fdbec900" x="456" y="908" width="123" height="10" fontSize="6.0" bold="true" italic="true">
+		<element kind="staticText" uuid="62780026-d8f3-4631-8a05-c8b2fdbec900" x="430" y="908" width="149" height="10" fontSize="6.0" bold="true" italic="true">
 			<text><![CDATA[CS FORM 212 (Revised 2025), Page 2 of 4]]></text>
 		</element>
 		<element kind="staticText" uuid="4a9ae9a3-6385-41dd-ab6e-0a63de32a9b1" mode="Opaque" x="0" y="249" width="49" height="18" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
@@ -2398,7 +2398,7 @@ APPOINTMENT]]></text>
 				<rightPen lineWidth="1.0"/>
 			</box>
 		</element>
-		<element kind="staticText" uuid="608227dd-6734-4876-9884-1538ee8c6bd8" mode="Opaque" x="0" y="204" width="578" height="22" forecolor="#FFFFFF" backcolor="#666666" fontSize="8.0" bold="true">
+		<element kind="staticText" uuid="608227dd-6734-4876-9884-1538ee8c6bd8" mode="Opaque" x="0" y="204" width="578" height="22" forecolor="#FFFFFF" backcolor="#666666" fontSize="7.0" bold="true">
 			<text><![CDATA[ V. WORK EXPERIENCE
  (Include private employment. Start from your recent work) Description of duties should be indicated in the attached Work Experience  sheet.]]></text>
 			<box>

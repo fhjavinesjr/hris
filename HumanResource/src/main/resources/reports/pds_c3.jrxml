@@ -1049,7 +1049,7 @@ WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
 				<rightPen lineWidth="1.0"/>
 			</box>
 		</element>
-		<element kind="staticText" uuid="e963bf71-3a45-4ea3-981f-c2dc7c297889" x="454" y="890" width="124" height="10" fontSize="6.0" bold="true" italic="true">
+		<element kind="staticText" uuid="e963bf71-3a45-4ea3-981f-c2dc7c297889" x="430" y="890" width="148" height="10" fontSize="6.0" bold="true" italic="true">
 			<text><![CDATA[CS FORM 212 (Revised 2025), Page 3 of 4]]></text>
 		</element>
 		<element kind="staticText" uuid="3ccec273-b0fc-4941-a22c-063942c39a23" x="0" y="709" width="160" height="19">

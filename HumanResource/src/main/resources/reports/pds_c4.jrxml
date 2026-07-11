@@ -137,7 +137,7 @@ is not acceptable]]></text>
 			<text><![CDATA[Are you related by consanguinity or affinity to the appointing or recommending authority, or to the chief of bureau or office or to the person who has immediate supervision over you in the Office, Bureau or Department where you will be appointed,
  a. within the third degree?
 
- b. within the fourth degree (for Local Government Unit - Career Employeed)?]]></text>
+ b. within the fourth degree (for Local Government Unit - Career Employee)?]]></text>
 			<box>
 				<topPen lineWidth="1.0"/>
 				<leftPen lineWidth="0.0"/>
@@ -608,7 +608,7 @@ administrative/criminal case/s against me.]]></text>
 		</element>
 		<element kind="staticText" uuid="0f72fb56-5051-4432-af78-1f39d668b3ee" x="0" y="771" width="578" height="114" fontSize="8.0">
 			<text><![CDATA[
-	SUBCRIBED AND SWORN to before me this __________________ , affiant exhibiting his/her validly issued government ID as indicated above.]]></text>
+SUBCRIBED AND SWORN to before me this __________________ , affiant exhibiting his/her validly issued government ID as indicated above.]]></text>
 			<box>
 				<topPen lineWidth="1.0"/>
 				<leftPen lineWidth="1.0"/>
@@ -733,7 +733,7 @@ administrative/criminal case/s against me.]]></text>
 		<element kind="textField" uuid="12c76d51-be51-4896-bbc9-0a594d1994ce" x="95" y="745" width="79" height="19" pattern="MM/dd/yyyy" blankWhenNull="true">
 			<expression><![CDATA[$F{ctcIssueDate}]]></expression>
 		</element>
-		<element kind="staticText" uuid="b7a3eb62-f551-4560-87b9-68cd7da3eece" x="456" y="885" width="123" height="10" fontSize="6.0" bold="true" italic="true">
+		<element kind="staticText" uuid="b7a3eb62-f551-4560-87b9-68cd7da3eece" x="430" y="885" width="149" height="10" fontSize="6.0" bold="true" italic="true">
 			<text><![CDATA[CS FORM 212 (Revised 2025), Page 4 of 4]]></text>
 		</element>
 		<element kind="staticText" uuid="07bcd710-90ba-4134-8430-cbb9e985a3c3" x="384" y="25" width="10" height="10" fontSize="7.0">
