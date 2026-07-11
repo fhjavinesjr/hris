@@ -1,0 +1,321 @@
+<!-- SQL-only dynamic General Payroll Register for ISOFT HRIS. Dynamic earnings/deductions are rendered as multiline breakdowns so no earning/deduction is lost to a limited Other column. -->
+<jasperReport name="general_payroll" language="java" pageWidth="1230" pageHeight="900" columnWidth="1223" leftMargin="5" rightMargin="2" topMargin="5" bottomMargin="5" uuid="9b7e3792-e1af-4e0f-a346-3d1db14a5cc2">
+	<property name="net.sf.jasperreports.compiler.xml.parser.validation" value="false"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="salaryPeriodKey" class="java.lang.String"/>
+	<parameter name="currentCompany" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA["ISOFT HRIS"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="preparedBy" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="approvedBy" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="cashierBy" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<query language="SQL"><![CDATA[WITH base AS (
+    SELECT
+        pd.id,
+        pd.employeeNo,
+        pd.employeeName,
+        pd.department,
+        pd.salaryGrade,
+        pd.salaryStep,
+        pd.salaryPeriodKey,
+        pd.cutoffStartDate,
+        pd.cutoffEndDate,
+        pd.salaryDate,
+        pd.actualBasic,
+        pd.grossAmount AS computedGrossAmount,
+        pd.totalDeduction AS computedTotalDeduction,
+        pd.netAmount AS computedNetAmount,
+        pd.displayToLastPage,
+        ROW_NUMBER() OVER (
+            ORDER BY
+                CASE WHEN ISNULL(pd.displayToLastPage, 0) = 1 THEN 1 ELSE 0 END,
+                ISNULL(pd.department, ''),
+                pd.employeeName,
+                pd.employeeNo
+        ) AS rowNo
+    FROM payroll_detail pd
+    WHERE pd.salaryPeriodKey = $P{salaryPeriodKey}
+      AND ISNULL(CAST(pd.status AS varchar(30)), 'COMPUTED') <> 'CANCELLED'
+),
+base_earnings AS (
+    SELECT
+        b.employeeNo,
+        pde.earningCode AS code,
+        pde.earningName AS displayName,
+        ISNULL(pde.indexNo, 0) AS indexNo,
+        SUM(ISNULL(pde.amount, 0)) AS amount
+    FROM base b
+    INNER JOIN payroll_detail_earning pde ON pde.payroll_detail_id = b.id
+    GROUP BY b.employeeNo, pde.earningCode, pde.earningName, ISNULL(pde.indexNo, 0)
+),
+adjustment_earnings AS (
+    SELECT
+        pah.employeeNo,
+        pal.code,
+        CONCAT(
+            pal.name,
+            ' [ADJ-', UPPER(ISNULL(pah.status, '')), 
+            CASE WHEN ISNULL(pah.authorityNo, '') <> '' THEN CONCAT(' / ', pah.authorityNo) ELSE '' END,
+            ']'
+        ) AS displayName,
+        9000 + ISNULL(pal.indexNo, 0) AS indexNo,
+        SUM(ISNULL(pal.amount, 0)) AS amount
+    FROM payroll_adjustment_header pah
+    INNER JOIN payroll_adjustment_line pal ON pal.header_id = pah.id
+    WHERE pah.salaryPeriodKey = $P{salaryPeriodKey}
+      AND (
+            UPPER(ISNULL(pah.status, '')) = 'POSTED'
+            OR (
+                UPPER(ISNULL(pah.status, '')) = 'PENDING'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM payroll_period_lock ppl
+                    WHERE ppl.salaryPeriodKey = $P{salaryPeriodKey}
+                )
+            )
+      )
+      AND UPPER(ISNULL(pal.type, '')) = 'EARNING'
+    GROUP BY pah.employeeNo, pal.code, pal.name, UPPER(ISNULL(pah.status, '')), pah.authorityNo, ISNULL(pal.indexNo, 0)
+),
+earning_source AS (
+    SELECT * FROM base_earnings
+    UNION ALL
+    SELECT * FROM adjustment_earnings
+),
+earning_lines AS (
+    SELECT
+        employeeNo,
+        STRING_AGG(
+            CAST(CONCAT(displayName, ' [', code, ']: ', CONVERT(varchar(50), CAST(amount AS money), 1)) AS varchar(max)),
+            CHAR(10)
+        ) WITHIN GROUP (ORDER BY indexNo, displayName, code) AS earningBreakdown,
+        SUM(amount) AS grossAmount
+    FROM earning_source
+    GROUP BY employeeNo
+),
+base_deductions AS (
+    SELECT
+        b.employeeNo,
+        pdd.deductionCode AS code,
+        pdd.deductionName AS displayName,
+        ISNULL(pdd.indexNo, 0) AS indexNo,
+        SUM(ISNULL(pdd.amount, 0)) AS amount
+    FROM base b
+    INNER JOIN payroll_detail_deduction pdd ON pdd.payroll_detail_id = b.id
+    GROUP BY b.employeeNo, pdd.deductionCode, pdd.deductionName, ISNULL(pdd.indexNo, 0)
+),
+adjustment_deductions AS (
+    SELECT
+        pah.employeeNo,
+        pal.code,
+        CONCAT(
+            pal.name,
+            ' [ADJ-', UPPER(ISNULL(pah.status, '')), 
+            CASE WHEN ISNULL(pah.authorityNo, '') <> '' THEN CONCAT(' / ', pah.authorityNo) ELSE '' END,
+            ']'
+        ) AS displayName,
+        9000 + ISNULL(pal.indexNo, 0) AS indexNo,
+        SUM(ISNULL(pal.amount, 0)) AS amount
+    FROM payroll_adjustment_header pah
+    INNER JOIN payroll_adjustment_line pal ON pal.header_id = pah.id
+    WHERE pah.salaryPeriodKey = $P{salaryPeriodKey}
+      AND (
+            UPPER(ISNULL(pah.status, '')) = 'POSTED'
+            OR (
+                UPPER(ISNULL(pah.status, '')) = 'PENDING'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM payroll_period_lock ppl
+                    WHERE ppl.salaryPeriodKey = $P{salaryPeriodKey}
+                )
+            )
+      )
+      AND UPPER(ISNULL(pal.type, '')) = 'DEDUCTION'
+    GROUP BY pah.employeeNo, pal.code, pal.name, UPPER(ISNULL(pah.status, '')), pah.authorityNo, ISNULL(pal.indexNo, 0)
+),
+deduction_source AS (
+    SELECT * FROM base_deductions
+    UNION ALL
+    SELECT * FROM adjustment_deductions
+),
+deduction_lines AS (
+    SELECT
+        employeeNo,
+        STRING_AGG(
+            CAST(CONCAT(displayName, ' [', code, ']: ', CONVERT(varchar(50), CAST(amount AS money), 1)) AS varchar(max)),
+            CHAR(10)
+        ) WITHIN GROUP (ORDER BY indexNo, displayName, code) AS deductionBreakdown,
+        SUM(amount) AS totalDeduction
+    FROM deduction_source
+    GROUP BY employeeNo
+),
+grand_earnings AS (
+    SELECT STRING_AGG(
+        CAST(CONCAT(displayName, ' [', code, ']: ', CONVERT(varchar(50), CAST(amount AS money), 1)) AS varchar(max)),
+        CHAR(10)
+    ) WITHIN GROUP (ORDER BY indexNo, displayName, code) AS grandEarningsBreakdown
+    FROM (
+        SELECT code, displayName, MIN(indexNo) AS indexNo, SUM(amount) AS amount
+        FROM earning_source
+        GROUP BY code, displayName
+    ) x
+),
+grand_deductions AS (
+    SELECT STRING_AGG(
+        CAST(CONCAT(displayName, ' [', code, ']: ', CONVERT(varchar(50), CAST(amount AS money), 1)) AS varchar(max)),
+        CHAR(10)
+    ) WITHIN GROUP (ORDER BY indexNo, displayName, code) AS grandDeductionsBreakdown
+    FROM (
+        SELECT code, displayName, MIN(indexNo) AS indexNo, SUM(amount) AS amount
+        FROM deduction_source
+        GROUP BY code, displayName
+    ) x
+),
+final_rows AS (
+    SELECT
+        b.*,
+        ISNULL(el.earningBreakdown, '') AS earningBreakdown,
+        ISNULL(el.grossAmount, 0) AS grossAmount,
+        ISNULL(dl.deductionBreakdown, '') AS deductionBreakdown,
+        ISNULL(dl.totalDeduction, 0) AS totalDeduction,
+        ISNULL(el.grossAmount, 0) - ISNULL(dl.totalDeduction, 0) AS netAmount
+    FROM base b
+    LEFT JOIN earning_lines el ON el.employeeNo = b.employeeNo
+    LEFT JOIN deduction_lines dl ON dl.employeeNo = b.employeeNo
+)
+SELECT
+    fr.rowNo,
+    fr.employeeNo,
+    fr.employeeName,
+    fr.department,
+    fr.salaryGrade,
+    fr.salaryStep,
+    fr.salaryPeriodKey,
+    fr.cutoffStartDate,
+    fr.cutoffEndDate,
+    fr.salaryDate,
+    fr.actualBasic,
+    fr.earningBreakdown,
+    fr.grossAmount,
+    fr.deductionBreakdown,
+    fr.totalDeduction,
+    fr.netAmount,
+    SUM(fr.actualBasic) OVER () AS grandActualBasic,
+    SUM(fr.grossAmount) OVER () AS grandGrossAmount,
+    SUM(fr.totalDeduction) OVER () AS grandTotalDeduction,
+    SUM(fr.netAmount) OVER () AS grandNetAmount,
+    ISNULL(ge.grandEarningsBreakdown, '') AS grandEarningsBreakdown,
+    ISNULL(gd.grandDeductionsBreakdown, '') AS grandDeductionsBreakdown,
+    CASE WHEN EXISTS (
+        SELECT 1
+        FROM payroll_period_lock ppl
+        WHERE ppl.salaryPeriodKey = $P{salaryPeriodKey}
+    )
+    THEN 'FINAL / LOCKED - POSTED ADJUSTMENTS ONLY'
+    ELSE 'DRAFT / PREVIEW - POSTED + PENDING ADJUSTMENTS INCLUDED'
+    END AS reportMode
+FROM final_rows fr
+CROSS JOIN grand_earnings ge
+CROSS JOIN grand_deductions gd
+ORDER BY fr.rowNo]]></query>
+	<field name="rowNo" class="java.lang.Integer"/>
+	<field name="employeeNo" class="java.lang.String"/>
+	<field name="employeeName" class="java.lang.String"/>
+	<field name="department" class="java.lang.String"/>
+	<field name="salaryGrade" class="java.lang.Integer"/>
+	<field name="salaryStep" class="java.lang.Integer"/>
+	<field name="salaryPeriodKey" class="java.lang.String"/>
+	<field name="cutoffStartDate" class="java.sql.Date"/>
+	<field name="cutoffEndDate" class="java.sql.Date"/>
+	<field name="salaryDate" class="java.sql.Date"/>
+	<field name="actualBasic" class="java.lang.Double"/>
+	<field name="earningBreakdown" class="java.lang.String"/>
+	<field name="grossAmount" class="java.lang.Double"/>
+	<field name="deductionBreakdown" class="java.lang.String"/>
+	<field name="totalDeduction" class="java.lang.Double"/>
+	<field name="netAmount" class="java.lang.Double"/>
+	<field name="grandActualBasic" class="java.lang.Double"/>
+	<field name="grandGrossAmount" class="java.lang.Double"/>
+	<field name="grandTotalDeduction" class="java.lang.Double"/>
+	<field name="grandNetAmount" class="java.lang.Double"/>
+	<field name="grandEarningsBreakdown" class="java.lang.String"/>
+	<field name="grandDeductionsBreakdown" class="java.lang.String"/>
+	<field name="reportMode" class="java.lang.String"/>
+	<group name="PayrollHeader" reprintHeaderOnEachPage="true">
+		<expression><![CDATA["ALL"]]></expression>
+		<groupHeader>
+			<band height="86">
+				<element kind="textField" uuid="37b242d0-57d6-4c83-969c-a0af9b552d8d" x="0" y="0" width="1223" height="18" fontName="Arial" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+					<expression><![CDATA[($P{currentCompany} == null || $P{currentCompany}.trim().isEmpty()) ? "ISOFT HRIS" : $P{currentCompany}]]></expression>
+					<box><pen lineWidth="0.25"/></box>
+				</element>
+				<element kind="textField" uuid="17305bfc-bc5c-4ceb-9f33-288dd6a28926" x="0" y="18" width="1223" height="16" fontName="Arial" fontSize="8.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+					<expression><![CDATA["GENERAL PAYROLL REGISTER - " + $P{salaryPeriodKey} + "  |  " + $F{reportMode}]]></expression>
+					<box><pen lineWidth="0.25"/></box>
+				</element>
+				<element kind="textField" uuid="40955eac-d8b5-4ed5-9e2e-ded8a11a6949" x="0" y="34" width="1223" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+					<expression><![CDATA["Cut-off: " + new java.text.SimpleDateFormat("MMM dd, yyyy").format($F{cutoffStartDate}) + " to " + new java.text.SimpleDateFormat("MMM dd, yyyy").format($F{cutoffEndDate}) + "    Salary Date: " + (($F{salaryDate} == null) ? "" : new java.text.SimpleDateFormat("MMM dd, yyyy").format($F{salaryDate}))]]></expression>
+					<box><pen lineWidth="0.25"/></box>
+				</element>
+				<element kind="staticText" uuid="bfc5e890-3384-49d9-a7de-88c6143666b4" mode="Opaque" x="0" y="50" width="25" height="34" backcolor="#E8E8E8" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[No]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="711e84d7-3374-453e-a82c-53f06c577663" mode="Opaque" x="25" y="50" width="150" height="34" backcolor="#E8E8E8" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Employee]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="c924018e-a2a1-49c3-b058-9507d8c389ac" mode="Opaque" x="175" y="50" width="95" height="34" backcolor="#E8E8E8" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Office]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="6bb5b1b8-983b-4313-a776-c66364ec3f72" mode="Opaque" x="270" y="50" width="30" height="34" backcolor="#E8E8E8" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[SG/SS]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="6da19c3e-4326-4d3a-bb51-e21c3fe2e72f" mode="Opaque" x="300" y="50" width="65" height="34" backcolor="#E8E8E8" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Basic]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="9ab353f0-29c6-4749-86a6-4504daeaef65" mode="Opaque" x="365" y="50" width="280" height="34" backcolor="#E8E8E8" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Earnings + Adjustments (dynamic)]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="cbcd8f74-9f85-4a28-a3ec-95c21c3422df" mode="Opaque" x="645" y="50" width="70" height="34" backcolor="#E8E8E8" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Gross]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="c5459e5d-7f4c-410e-a3df-446d9e672bdc" mode="Opaque" x="715" y="50" width="360" height="34" backcolor="#E8E8E8" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Deductions / Loans / Adjustments (dynamic)]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="92a59488-e443-44da-b4d6-7a0c5944c17a" mode="Opaque" x="1075" y="50" width="70" height="34" backcolor="#E8E8E8" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Total Deduct]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="99fa09c4-51d0-4681-ac66-447bc50bc088" mode="Opaque" x="1145" y="50" width="78" height="34" backcolor="#E8E8E8" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Net]]></text><box><pen lineWidth="0.25"/></box></element>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="210" splitType="Stretch">
+				<element kind="staticText" uuid="4d6f0600-31e1-4623-87b6-187bd31ee74c" mode="Opaque" x="0" y="0" width="300" height="22" backcolor="#E8E8E8" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Right" vTextAlign="Middle"><text><![CDATA[GRAND TOTAL]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="7dab871a-d31a-4745-8968-ec62e7886026" x="300" y="0" width="65" height="22" fontName="Arial" fontSize="6.0" pattern="#,##0.00" bold="true" hTextAlign="Right" vTextAlign="Middle"><expression><![CDATA[$F{grandActualBasic}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="926a0a5e-ddba-477a-a5fc-3f6c840f8beb" mode="Opaque" x="365" y="0" width="280" height="22" backcolor="#E8E8E8" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Right" vTextAlign="Middle"><text><![CDATA[TOTAL GROSS]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="72ddcc1e-ef48-4f11-9131-d884c1f79d15" x="645" y="0" width="70" height="22" fontName="Arial" fontSize="6.0" pattern="#,##0.00" bold="true" hTextAlign="Right" vTextAlign="Middle"><expression><![CDATA[$F{grandGrossAmount}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="0a7b6dd3-6a8c-4e7b-a2e9-d7019c8cf910" mode="Opaque" x="715" y="0" width="360" height="22" backcolor="#E8E8E8" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Right" vTextAlign="Middle"><text><![CDATA[TOTAL DEDUCTIONS / NET]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="a61ddb99-5298-468a-b879-139c79686671" x="1075" y="0" width="70" height="22" fontName="Arial" fontSize="6.0" pattern="#,##0.00" bold="true" hTextAlign="Right" vTextAlign="Middle"><expression><![CDATA[$F{grandTotalDeduction}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="0cd30f94-1958-4c6d-9e7d-dc3dc8377ddc" x="1145" y="0" width="78" height="22" fontName="Arial" fontSize="6.0" pattern="#,##0.00" bold="true" hTextAlign="Right" vTextAlign="Middle"><expression><![CDATA[$F{grandNetAmount}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="44fa6345-0909-4591-86b1-5c38aaf0753d" mode="Opaque" x="365" y="28" width="280" height="14" backcolor="#F0F0F0" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Grand Earnings by Type]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="fc429b38-a556-452f-b8e2-b9bedca318ac" mode="Opaque" x="715" y="28" width="360" height="14" backcolor="#F0F0F0" fontName="Arial" fontSize="6.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Grand Deductions by Type]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="2482f1d7-2851-4970-90c1-2fdb21fd0fe7" x="365" y="42" width="280" height="48" fontName="Arial" fontSize="5.5" textAdjust="StretchHeight" hTextAlign="Left" vTextAlign="Top"><expression><![CDATA[$F{grandEarningsBreakdown}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="c221fef8-175b-4e5d-b80c-dad23851c0de" x="715" y="42" width="360" height="48" fontName="Arial" fontSize="5.5" textAdjust="StretchHeight" hTextAlign="Left" vTextAlign="Top"><expression><![CDATA[$F{grandDeductionsBreakdown}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="6f5b9e71-ebaf-421f-b13b-9d167e175577" x="0" y="115" width="220" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle"><text><![CDATA[Prepared by:]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="e406e673-918d-4388-a617-93626c79844d" x="0" y="150" width="220" height="18" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{preparedBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="ef97fa03-2eef-43b1-ae8e-34b279779eb3" x="260" y="115" width="220" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle"><text><![CDATA[Approved by:]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="d8f03d1a-2cd7-4dbe-a540-30d4aa69f14b" x="260" y="150" width="220" height="18" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{approvedBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="staticText" uuid="a1f3e7ef-df6a-4f73-a79f-27c66ad4d05e" x="520" y="115" width="220" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle"><text><![CDATA[Cashier:]]></text><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="6093a116-e0d9-48d4-94ef-66506be76a19" x="520" y="150" width="220" height="18" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{cashierBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
+			</band>
+		</groupFooter>
+	</group>
+	<detail>
+		<band height="44" splitType="Stretch">
+			<element kind="textField" uuid="ef67800b-4b40-4357-a292-5326bdeed5e2" x="0" y="0" width="25" height="44" fontName="Arial" fontSize="5.5" stretchType="ContainerHeight" hTextAlign="Center" vTextAlign="Top"><expression><![CDATA[$F{rowNo}]]></expression><box><pen lineWidth="0.25"/></box></element>
+			<element kind="textField" uuid="ae3f6045-427a-41b1-b34c-48619f1f0338" x="25" y="0" width="150" height="44" fontName="Arial" fontSize="5.5" textAdjust="StretchHeight" stretchType="ContainerHeight" hTextAlign="Left" vTextAlign="Top"><expression><![CDATA[$F{employeeName} + "\n" + $F{employeeNo}]]></expression><box><pen lineWidth="0.25"/></box></element>
+			<element kind="textField" uuid="d301d6bd-ed49-488b-8d31-004f344a1e45" x="175" y="0" width="95" height="44" fontName="Arial" fontSize="5.5" textAdjust="StretchHeight" stretchType="ContainerHeight" hTextAlign="Left" vTextAlign="Top"><expression><![CDATA[$F{department}]]></expression><box><pen lineWidth="0.25"/></box></element>
+			<element kind="textField" uuid="12c1383e-7fa3-44d4-9ffc-87d1d609e248" x="270" y="0" width="30" height="44" fontName="Arial" fontSize="5.5" stretchType="ContainerHeight" hTextAlign="Center" vTextAlign="Top"><expression><![CDATA[String.valueOf($F{salaryGrade}) + "/" + String.valueOf($F{salaryStep})]]></expression><box><pen lineWidth="0.25"/></box></element>
+			<element kind="textField" uuid="0d16764e-f003-4557-9d99-b27e2c5b0901" x="300" y="0" width="65" height="44" fontName="Arial" fontSize="5.5" pattern="#,##0.00" stretchType="ContainerHeight" hTextAlign="Right" vTextAlign="Top"><expression><![CDATA[$F{actualBasic}]]></expression><box><pen lineWidth="0.25"/></box></element>
+			<element kind="textField" uuid="4093ff1a-a44f-45a7-9944-a703c1218a42" x="365" y="0" width="280" height="44" fontName="Arial" fontSize="5.5" textAdjust="StretchHeight" stretchType="ContainerHeight" hTextAlign="Left" vTextAlign="Top"><expression><![CDATA[$F{earningBreakdown}]]></expression><box><pen lineWidth="0.25"/></box></element>
+			<element kind="textField" uuid="a6f8abda-73ad-4ddb-b883-bf18ddcf1758" x="645" y="0" width="70" height="44" fontName="Arial" fontSize="5.5" pattern="#,##0.00" bold="true" stretchType="ContainerHeight" hTextAlign="Right" vTextAlign="Top"><expression><![CDATA[$F{grossAmount}]]></expression><box><pen lineWidth="0.25"/></box></element>
+			<element kind="textField" uuid="5e0fb65d-3c21-4e9e-b9a1-a127a5ec785a" x="715" y="0" width="360" height="44" fontName="Arial" fontSize="5.5" textAdjust="StretchHeight" stretchType="ContainerHeight" hTextAlign="Left" vTextAlign="Top"><expression><![CDATA[$F{deductionBreakdown}]]></expression><box><pen lineWidth="0.25"/></box></element>
+			<element kind="textField" uuid="4c97ed07-b7fc-4d09-aadf-b6706bb31684" x="1075" y="0" width="70" height="44" fontName="Arial" fontSize="5.5" pattern="#,##0.00" bold="true" stretchType="ContainerHeight" hTextAlign="Right" vTextAlign="Top"><expression><![CDATA[$F{totalDeduction}]]></expression><box><pen lineWidth="0.25"/></box></element>
+			<element kind="textField" uuid="1cac0a65-767a-497b-be96-4b3759578376" x="1145" y="0" width="78" height="44" fontName="Arial" fontSize="5.5" pattern="#,##0.00" bold="true" stretchType="ContainerHeight" hTextAlign="Right" vTextAlign="Top"><expression><![CDATA[$F{netAmount}]]></expression><box><pen lineWidth="0.25"/></box></element>
+		</band>
+	</detail>
+	<pageFooter height="18">
+		<element kind="textField" uuid="3910520d-eddd-443d-9849-5b0eb95f6b45" x="0" y="0" width="300" height="15" fontName="Arial" fontSize="6.0" hTextAlign="Left" vTextAlign="Middle"><expression><![CDATA["Generated: " + new java.text.SimpleDateFormat("MMM dd, yyyy hh:mm a").format(new java.util.Date())]]></expression><box><pen lineWidth="0.25"/></box></element>
+		<element kind="textField" uuid="d80c0d9b-ce8e-4d0f-8ff8-04ab165b41d2" x="1080" y="0" width="140" height="15" fontName="Arial" fontSize="6.0" hTextAlign="Right" vTextAlign="Middle"><expression><![CDATA["Page " + $V{PAGE_NUMBER}]]></expression><box><pen lineWidth="0.25"/></box></element>
+	</pageFooter>
+	<noData height="80">
+		<element kind="staticText" uuid="20b118c7-bd0e-41cb-93e5-ef19800a0a2f" x="0" y="20" width="1220" height="20" fontName="Arial" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[No computed payroll records found for the selected salary period.]]></text><box><pen lineWidth="0.25"/></box></element>
+	</noData>
+</jasperReport>
