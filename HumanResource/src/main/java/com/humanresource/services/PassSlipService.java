@@ -3,6 +3,7 @@ package com.humanresource.services;
 import com.humanresource.dtos.PassSlipDTO;
 
 import java.util.List;
+import java.io.OutputStream;
 
 public interface PassSlipService {
 
@@ -23,4 +24,6 @@ public interface PassSlipService {
     PassSlipDTO update(Long passSlipId, PassSlipDTO dto) throws Exception;
 
     Boolean delete(Long passSlipId) throws Exception;
+
+    void generatePassSlipReport(Long passSlipId, OutputStream outputStream) throws Exception;
 }

@@ -4,9 +4,14 @@ import com.hris.common.dtos.MetadataResponse;
 import com.humanresource.dtos.PassSlipDTO;
 import com.humanresource.services.PassSlipService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -104,4 +109,25 @@ public class PassSlipController {
         }
         return ResponseEntity.ok(new MetadataResponse(passSlipId, "Pass Slip deleted successfully"));
     }
+
+    @GetMapping(value = "/pass-slip/report/{passSlipId}", produces = MediaType.APPLICATION_PDF_VALUE)
+    public void generatePassSlipReport(
+            @PathVariable("passSlipId") Long passSlipId,
+            HttpServletResponse response
+    ) throws Exception {
+        String fileName = "PassSlip_" + passSlipId + ".pdf";
+        String encodedFileName = URLEncoder
+                .encode(fileName, StandardCharsets.UTF_8)
+                .replace("+", "%20");
+
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader(
+                "Content-Disposition",
+                "inline; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName
+        );
+
+        passSlipService.generatePassSlipReport(passSlipId, response.getOutputStream());
+        response.flushBuffer();
+    }
+
 }

@@ -1,155 +1,1344 @@
 <!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
-<jasperReport name="pds_c4" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="61e9ff6a-9bb1-4c7b-b514-cdc8ecc58ba0">
-	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+<jasperReport name="pds_c4" language="java" pageWidth="612" pageHeight="940" columnWidth="578" leftMargin="20" rightMargin="14" topMargin="20" bottomMargin="20" uuid="2ce48daf-cf69-493e-acd9-bf572f4d274c">
+	<property name="ireport.zoom" value="1.6105100000000017"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="902"/>
 	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
-	<query language="sql"><![CDATA[SELECT
-            ISNULL(e.employeeNo, '')  AS employeeNo,
-            ISNULL(pd.surname, '')    AS surname,
-            ISNULL(pd.firstname, '')  AS firstname,
-            ISNULL(pd.middlename, '') AS middlename,
-            ISNULL(pd.q34a, '')       AS q34a,
-            ISNULL(pd.q34aDetails, '') AS q34aDetails,
-            ISNULL(pd.q34b, '')       AS q34b,
-            ISNULL(pd.q34bDetails, '') AS q34bDetails,
-            ISNULL(pd.q35a, '')       AS q35a,
-            ISNULL(pd.q35aDetails, '') AS q35aDetails,
-            ISNULL(pd.q35b, '')       AS q35b,
-            ISNULL(pd.q35bDetails, '') AS q35bDetails,
-            ISNULL(CONVERT(varchar(10), CAST(pd.q35bDateFiled AS date), 101), '') AS q35bDateFiled,
-            ISNULL(pd.q35bStatus, '') AS q35bStatus,
-            ISNULL(pd.q36, '')        AS q36,
-            ISNULL(pd.q36Details, '') AS q36Details,
-            ISNULL(pd.q37a, '')       AS q37a,
-            ISNULL(pd.q37aDetails, '') AS q37aDetails,
-            ISNULL(pd.q37b, '')       AS q37b,
-            ISNULL(pd.q37bDetails, '') AS q37bDetails,
-            ISNULL(pd.q37c, '')       AS q37c,
-            ISNULL(pd.q37cDetails, '') AS q37cDetails,
-            ISNULL(pd.q38, '')        AS q38,
-            ISNULL(pd.q38Details, '') AS q38Details,
-            ISNULL(pd.q39a, '')       AS q39a,
-            ISNULL(pd.q39aDetails, '') AS q39aDetails,
-            ISNULL(pd.q39b, '')       AS q39b,
-            ISNULL(pd.q39bDetails, '') AS q39bDetails,
-            ISNULL(pd.q39c, '')       AS q39c,
-            ISNULL(pd.q39cDetails, '') AS q39cDetails,
-            ISNULL(pd.govIdType, '')   AS govIdType,
-            ISNULL(pd.govIdNumber, '') AS govIdNumber,
-            ISNULL(CONVERT(varchar(10), CAST(pd.govIdDate AS date), 101), '') AS govIdDate,
-            ISNULL(pd.govIdPlace, '')  AS govIdPlace,
-            ISNULL(STUFF((
-                SELECT CHAR(10) +
-                       ISNULL(r.refName, '') +
-                       ' | ' + ISNULL(r.address, '') +
-                       ' | Tel: ' + ISNULL(r.contactNo, '')
-                FROM characterreferences r
-                WHERE r.personalDataId = pd.personalDataId
-                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS referencesList
-        FROM personaldata pd
-        JOIN employee e ON pd.employeeId = e.employeeId
-        WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
-	<field name="employeeNo" class="java.lang.String"/>
-	<field name="surname" class="java.lang.String"/>
+	<parameter name="PDS_C4_REFERENCES_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
+	<query language="SQL"><![CDATA[SELECT TOP 1
+    CASE WHEN LOWER(CAST(ISNULL(pd.q34a, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa1,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q34b, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa2,
+    ISNULL(pd.q34bDetails, '') AS qa2Detail,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q35a, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa3,
+    ISNULL(pd.q35aDetails, '') AS qa3Detail,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q35b, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa4,
+    ISNULL(pd.q35bDetails, '') AS qa4Detail,
+    ISNULL(pd.q35bStatus, '') AS qa4Detail2,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q36, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa5,
+    ISNULL(pd.q36Details, '') AS qa5Detail,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q37a, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa6,
+    ISNULL(pd.q37aDetails, '') AS qa6Detail,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q37b, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa7,
+    ISNULL(pd.q37bDetails, '') AS qa7Detail,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q37c, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa8,
+    ISNULL(pd.q37cDetails, '') AS qa8Detail,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q38, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa9,
+    ISNULL(pd.q38Details, '') AS qa9Detail,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q39a, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa10,
+    ISNULL(pd.q39aDetails, '') AS qa10Detail,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q39b, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa11,
+    ISNULL(pd.q39bDetails, '') AS qa11Detail,
+    CASE WHEN LOWER(CAST(ISNULL(pd.q39c, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa12,
+    ISNULL(pd.q39cDetails, '') AS qa12Detail,
+    pd.employeePicture AS picture,
+    ISNULL(pd.govIdType, '') AS govtIssuedId,
+    ISNULL(pd.govIdNumber, '') AS govtIssuedIdNo,
+    CAST(pd.govIdDate AS date) AS ctcIssueDate,
+    ISNULL(pd.govIdPlace, '') AS ctcIssuePlace,
+    pd.employeeSignature AS signature,
+    '' AS personAdministerOath,
+    CAST(NULL AS date) AS personAdministerOathDate,
+    ISNULL(pd.surname, '') AS lastname,
+    ISNULL(pd.firstname, '') AS firstname,
+    ISNULL(pd.middlename, '') AS middlename,
+    CAST(GETDATE() AS date) AS dateSignature,
+    CAST(NULL AS varchar(max)) AS reference,
+    ISNULL(pd.firstname, '') + ' ' + ISNULL(pd.middlename, '') + ' ' + ISNULL(pd.surname, '') AS fullnameEmp
+FROM personaldata pd
+JOIN employee e ON e.employeeId = pd.employeeId
+WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
+	<field name="qa1" class="java.lang.Boolean"/>
+	<field name="qa2" class="java.lang.Boolean"/>
+	<field name="qa2Detail" class="java.lang.String"/>
+	<field name="qa3" class="java.lang.Boolean"/>
+	<field name="qa3Detail" class="java.lang.String"/>
+	<field name="qa4" class="java.lang.Boolean"/>
+	<field name="qa4Detail" class="java.lang.String"/>
+	<field name="qa4Detail2" class="java.lang.String"/>
+	<field name="qa5" class="java.lang.Boolean"/>
+	<field name="qa5Detail" class="java.lang.String"/>
+	<field name="qa6" class="java.lang.Boolean"/>
+	<field name="qa6Detail" class="java.lang.String"/>
+	<field name="qa7" class="java.lang.Boolean"/>
+	<field name="qa7Detail" class="java.lang.String"/>
+	<field name="qa8" class="java.lang.Boolean"/>
+	<field name="qa8Detail" class="java.lang.String"/>
+	<field name="qa9" class="java.lang.Boolean"/>
+	<field name="qa9Detail" class="java.lang.String"/>
+	<field name="qa10" class="java.lang.Boolean"/>
+	<field name="qa10Detail" class="java.lang.String"/>
+	<field name="qa11" class="java.lang.Boolean"/>
+	<field name="qa11Detail" class="java.lang.String"/>
+	<field name="qa12" class="java.lang.Boolean"/>
+	<field name="qa12Detail" class="java.lang.String"/>
+	<field name="picture" class="java.io.InputStream"/>
+	<field name="govtIssuedId" class="java.lang.String"/>
+	<field name="govtIssuedIdNo" class="java.lang.String"/>
+	<field name="ctcIssueDate" class="java.sql.Date"/>
+	<field name="ctcIssuePlace" class="java.lang.String"/>
+	<field name="signature" class="java.io.InputStream"/>
+	<field name="personAdministerOath" class="java.lang.String"/>
+	<field name="personAdministerOathDate" class="java.sql.Date"/>
+	<field name="lastname" class="java.lang.String"/>
 	<field name="firstname" class="java.lang.String"/>
 	<field name="middlename" class="java.lang.String"/>
-	<field name="q34a" class="java.lang.String"/>
-	<field name="q34aDetails" class="java.lang.String"/>
-	<field name="q34b" class="java.lang.String"/>
-	<field name="q34bDetails" class="java.lang.String"/>
-	<field name="q35a" class="java.lang.String"/>
-	<field name="q35aDetails" class="java.lang.String"/>
-	<field name="q35b" class="java.lang.String"/>
-	<field name="q35bDetails" class="java.lang.String"/>
-	<field name="q35bDateFiled" class="java.lang.String"/>
-	<field name="q35bStatus" class="java.lang.String"/>
-	<field name="q36" class="java.lang.String"/>
-	<field name="q36Details" class="java.lang.String"/>
-	<field name="q37a" class="java.lang.String"/>
-	<field name="q37aDetails" class="java.lang.String"/>
-	<field name="q37b" class="java.lang.String"/>
-	<field name="q37bDetails" class="java.lang.String"/>
-	<field name="q37c" class="java.lang.String"/>
-	<field name="q37cDetails" class="java.lang.String"/>
-	<field name="q38" class="java.lang.String"/>
-	<field name="q38Details" class="java.lang.String"/>
-	<field name="q39a" class="java.lang.String"/>
-	<field name="q39aDetails" class="java.lang.String"/>
-	<field name="q39b" class="java.lang.String"/>
-	<field name="q39bDetails" class="java.lang.String"/>
-	<field name="q39c" class="java.lang.String"/>
-	<field name="q39cDetails" class="java.lang.String"/>
-	<field name="govIdType" class="java.lang.String"/>
-	<field name="govIdNumber" class="java.lang.String"/>
-	<field name="govIdDate" class="java.lang.String"/>
-	<field name="govIdPlace" class="java.lang.String"/>
-	<field name="referencesList" class="java.lang.String"/>
-	<title height="52">
-		<element kind="staticText" uuid="d7d6bbbf-e666-45a8-8c93-da8241b9f739" x="0" y="0" width="555" height="18" fontName="SansSerif" fontSize="12.0" bold="true" hTextAlign="Center">
-			<text><![CDATA[CS Form 212 (Revised 2017) â€” PERSONAL DATA SHEET]]></text>
+	<field name="dateSignature" class="java.sql.Date"/>
+	<field name="reference" class="java.util.List"/>
+	<field name="fullnameEmp" class="java.lang.String"/>
+	<pageHeader height="900">
+		<element kind="staticText" uuid="f3e656e3-e1a6-460e-9608-a8421c17b5cc" x="270" y="683" width="160" height="81">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
 		</element>
-		<element kind="staticText" uuid="563d9974-9751-40be-89d1-e68462dbbd64" x="0" y="20" width="555" height="14" fontName="SansSerif" fontSize="9.0" hTextAlign="Center">
-			<text><![CDATA[Sheet C4: Questions, References & Government ID]]></text>
+		<element kind="staticText" uuid="a4dc940c-4916-40dd-a394-5c40a94c1cdb" x="430" y="490" width="148" height="171">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
 		</element>
-		<element kind="textField" uuid="9c55bf47-d256-4b4a-b7ac-085890542fd4" x="0" y="36" width="555" height="14" fontName="SansSerif" fontSize="9.0" bold="true" hTextAlign="Center">
-			<expression><![CDATA["Employee No: " + $F{employeeNo} + "   Name: " + $F{surname} + ", " + $F{firstname} + " " + $F{middlename}]]></expression>
+		<element kind="staticText" uuid="7515cf31-b0e4-4031-bd73-cbddbb893a5b" x="444" y="516" width="120" height="120" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[ID picture taken wihtin
+the last 6 months
+3.5 cm. X 4.5 cm
+(passport size)
+
+(With full and handwritten
+name tag and signature over
+printed name)
+
+Computer generated
+or photocopied picture
+is not acceptable]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
 		</element>
-	</title>
-	<detail>
-		<band height="16">
-			<element kind="staticText" uuid="4459e69c-36ba-4369-9574-7e10d5499998" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
-				<text><![CDATA[QUESTIONS (Mark YES or NO)]]></text>
-			</element>
-		</band>
-		<band height="20" splitType="Stretch">
-			<element kind="textField" uuid="75a6724d-8293-446c-8fc9-eb749d8e71bb" x="0" y="0" width="555" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
-				<expression><![CDATA["34a. Are you related by consanguinity or affinity to the appointing authority?\n" +
-"     Answer: [" + $F{q34a}.toUpperCase() + "]" + (($F{q34aDetails} != null && !$F{q34aDetails}.isEmpty()) ? "  Details: " + $F{q34aDetails} : "") + "\n\n" +
-"34b. Have you ever been found guilty of any administrative offense?\n" +
-"     Answer: [" + $F{q34b}.toUpperCase() + "]" + (($F{q34bDetails} != null && !$F{q34bDetails}.isEmpty()) ? "  Details: " + $F{q34bDetails} : "") + "\n\n" +
-"35a. Have you ever been charged before any court or tribunal?\n" +
-"     Answer: [" + $F{q35a}.toUpperCase() + "]" + (($F{q35aDetails} != null && !$F{q35aDetails}.isEmpty()) ? "  Details: " + $F{q35aDetails} : "") + "\n\n" +
-"35b. Have you ever been convicted of any crime or violation of any law?\n" +
-"     Answer: [" + $F{q35b}.toUpperCase() + "]" + (($F{q35bDetails} != null && !$F{q35bDetails}.isEmpty()) ? "  Details: " + $F{q35bDetails} : "") +
-     ((!$F{q35bDateFiled}.isEmpty() || !$F{q35bStatus}.isEmpty()) ? "  Date Filed: " + $F{q35bDateFiled} + "  Status: " + $F{q35bStatus} : "") + "\n\n" +
-"36.  Have you ever been separated from the service in any of the following modes: resignation, etc.?\n" +
-"     Answer: [" + $F{q36}.toUpperCase() + "]" + (($F{q36Details} != null && !$F{q36Details}.isEmpty()) ? "  Details: " + $F{q36Details} : "") + "\n\n" +
-"37a. Have you ever been a candidate in a national or local election (last 3 years)?\n" +
-"     Answer: [" + $F{q37a}.toUpperCase() + "]" + (($F{q37aDetails} != null && !$F{q37aDetails}.isEmpty()) ? "  Details: " + $F{q37aDetails} : "") + "\n\n" +
-"37b. Have you resigned from the Government service during the 3-month period before filing a candidacy?\n" +
-"     Answer: [" + $F{q37b}.toUpperCase() + "]" + (($F{q37bDetails} != null && !$F{q37bDetails}.isEmpty()) ? "  Details: " + $F{q37bDetails} : "") + "\n\n" +
-"37c. Have you acquired the status of an immigrant or permanent resident of another country?\n" +
-"     Answer: [" + $F{q37c}.toUpperCase() + "]" + (($F{q37cDetails} != null && !$F{q37cDetails}.isEmpty()) ? "  Details: " + $F{q37cDetails} : "") + "\n\n" +
-"38.  Are you a member of any indigenous group?\n" +
-"     Answer: [" + $F{q38}.toUpperCase() + "]" + (($F{q38Details} != null && !$F{q38Details}.isEmpty()) ? "  Details: " + $F{q38Details} : "") + "\n\n" +
-"39a. Are you a person with disability (PWD)?\n" +
-"     Answer: [" + $F{q39a}.toUpperCase() + "]" + (($F{q39aDetails} != null && !$F{q39aDetails}.isEmpty()) ? "  Details: " + $F{q39aDetails} : "") + "\n\n" +
-"39b. Are you a solo parent (R.A. 8972)?\n" +
-"     Answer: [" + $F{q39b}.toUpperCase() + "]" + (($F{q39bDetails} != null && !$F{q39bDetails}.isEmpty()) ? "  Details: " + $F{q39bDetails} : "") + "\n\n" +
-"39c. Other (R.A. 8371 / R.A. 7277)?\n" +
-"     Answer: [" + $F{q39c}.toUpperCase() + "]" + (($F{q39cDetails} != null && !$F{q39cDetails}.isEmpty()) ? "  Details: " + $F{q39cDetails} : "")]]></expression>
-			</element>
-		</band>
-		<band height="16">
-			<element kind="staticText" uuid="23795ce9-0351-4b7e-a46a-ebb13d6c54cb" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
-				<text><![CDATA[XI.  REFERENCES (Person not related by consanguinity or affinity to applicant)]]></text>
-			</element>
-		</band>
-		<band height="20" splitType="Stretch">
-			<element kind="textField" uuid="b5a8b22f-fcb7-4ed5-a655-4bf49605a005" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
-				<expression><![CDATA[$F{referencesList}]]></expression>
-			</element>
-		</band>
-		<band height="16">
-			<element kind="staticText" uuid="60c3dc74-33b9-4dfe-a9ca-bc3273ea4bff" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
-				<text><![CDATA[XII.  GOVERNMENT-ISSUED ID]]></text>
-			</element>
-		</band>
-		<band height="20" splitType="Stretch">
-			<element kind="textField" uuid="4abfa8a1-9d7b-41f7-9bea-fd57c5dacade" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
-				<expression><![CDATA["Government-Issued ID Type: " + $F{govIdType} + "\n" +
-"ID Number: " + $F{govIdNumber} + "\n" +
-"Date / Place of Issue: " + $F{govIdDate} + "  /  " + $F{govIdPlace}]]></expression>
-			</element>
-		</band>
-	</detail>
+		<element kind="staticText" uuid="1f353c30-41c5-4687-bce0-1675227a728b" mode="Opaque" x="0" y="0" width="24" height="81" backcolor="#CCCCCC" fontSize="7.0">
+			<text><![CDATA[   34.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c0888155-edf2-40d9-8d18-4df3768b04ee" mode="Opaque" x="24" y="0" width="340" height="81" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Left" vTextAlign="Top">
+			<text><![CDATA[Are you related by consanguinity or affinity to the appointing or recommending authority, or to the chief of bureau or office or to the person who has immediate supervision over you in the Office, Bureau or Department where you will be appointed,
+ a. within the third degree?
+
+ b. within the fourth degree (for Local Government Unit - Career Employeed)?]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="58804868-e375-428f-9684-23f42e21f925" x="364" y="0" width="214" height="81">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e8226413-608c-4e23-aae7-daf9d325963f" mode="Opaque" x="24" y="81" width="340" height="102" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Left" vTextAlign="Top">
+			<text><![CDATA[
+ a. Have you ever been found guilty of any administrative offense?
+
+
+
+
+ b. Have you been criminally charged before anu court?]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="599afb17-0058-4166-b780-cdfdeb7435f0" mode="Opaque" x="0" y="81" width="24" height="102" backcolor="#CCCCCC" fontSize="7.0">
+			<text><![CDATA[   35.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1ea74da2-4d35-4e9c-9950-750183ecea1c" mode="Opaque" x="24" y="183" width="340" height="50" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Left" vTextAlign="Top">
+			<text><![CDATA[Have you ever been convinced of any crime or violation of any law, ordinance, or regulation
+by any court or tribunal?]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="8674aead-0978-4a4b-9065-88a6925da720" mode="Opaque" x="0" y="183" width="24" height="50" backcolor="#CCCCCC" fontSize="7.0">
+			<text><![CDATA[   36.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d47e8787-e496-4460-b626-7e9fdb8be342" mode="Opaque" x="24" y="233" width="340" height="50" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Left" vTextAlign="Top">
+			<text><![CDATA[Have you ever been separated from the service in any of the following modes: resignation,
+retirement, dropped from the rolls, dismissal, termination, end of term, finished contract or phased out (abolition) in the public or private sector?]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0643eee1-dfd0-48fb-9b63-c7d0720975c2" mode="Opaque" x="0" y="233" width="24" height="50" backcolor="#CCCCCC" fontSize="7.0">
+			<text><![CDATA[   37.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d2d9e000-a68b-4567-b026-caab083cbeee" mode="Opaque" x="24" y="283" width="340" height="70" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Left" vTextAlign="Top">
+			<text><![CDATA[ a. Have you ever been a candidate in a national or local election held within the last year (except
+Barangay election)?
+
+ b. Have you resigned from the government service during three (3)-month period before the last
+election to promote/actively campaign for a national or local candidate?]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6d4b3766-d56a-45e2-9483-152a9599ad8a" mode="Opaque" x="0" y="283" width="24" height="70" backcolor="#CCCCCC" fontSize="7.0">
+			<text><![CDATA[   38.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4580caa7-eede-4641-827a-03ef1a29eb98" mode="Opaque" x="24" y="353" width="340" height="47" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Left" vTextAlign="Top">
+			<text><![CDATA[Have you acquired the status of an immigrant or permanent resident of another country?]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e98fd333-844a-4ea1-807d-1100106f6543" mode="Opaque" x="0" y="353" width="24" height="47" backcolor="#CCCCCC" fontSize="7.0">
+			<text><![CDATA[   39.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="109ce402-86bf-49b6-9822-3fdf9ee31044" mode="Opaque" x="24" y="400" width="340" height="90" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Left" vTextAlign="Top">
+			<text><![CDATA[Pursuant to: (a) Indigenous People Act (RA 8371); (b) Magna Carta for Disabled Persons (RA
+7277); and (c) Solo Parents Welfare Act of 2000 (RA 8972), please answer the following items:
+
+ a. Are you a member of any indigenous group?
+
+ b. Are you a person with disability?
+
+ c. Are you a solo parent?]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4560cd47-5302-43d9-8e1f-dea51c149eeb" mode="Opaque" x="0" y="400" width="24" height="90" backcolor="#CCCCCC" fontSize="7.0">
+			<text><![CDATA[   40.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d2f538d9-3c1f-43db-8498-524f959f75a7" x="404" y="25" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="c8b530c4-2cd2-4d70-8f36-ed1f9dd26ae7" x="480" y="25" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="9f96ec76-0fea-4947-8705-75dd9ceb30a1" x="404" y="43" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="9124cc35-56bf-44bf-bd25-6bd00f3aeef2" x="480" y="43" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="75b47b4b-9949-47e1-8f77-ea08c4aa81d3" x="384" y="56" width="66" height="10" fontSize="7.0">
+			<text><![CDATA[If YES, give details:]]></text>
+		</element>
+		<element kind="textField" uuid="d0364966-d6f3-4f8a-899d-4b7bb442da8f" x="384" y="66" width="174" height="12" fontSize="8.0" vTextAlign="Bottom">
+			<expression><![CDATA[$F{qa2Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="13a4c05c-76c4-4459-bdaf-6c069bb8d0b5" x="364" y="81" width="214" height="102">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="03c0ca52-a37b-4419-9fe0-47c41724cc30" x="404" y="89" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="cf2a400c-cb1e-4047-886e-b801dd874b36" x="480" y="89" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="cced6b4f-4b96-4794-bdfe-f43132ce4af7" x="364" y="99" width="214" height="29" fontSize="7.0">
+			<text><![CDATA[          If YES, give details:]]></text>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="e63b9418-6201-4be4-9570-3149fb88ad20" x="384" y="112" width="174" height="12" fontSize="7.0">
+			<expression><![CDATA[$F{qa3Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="390e080b-d282-4735-8292-3998a34760a5" x="404" y="134" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="199e8578-4c34-43e8-a823-b73fdf0cd12a" x="480" y="134" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="33c0bc4e-45da-4359-a4a5-96c5bdd7cd4f" x="384" y="147" width="66" height="10" fontSize="7.0">
+			<text><![CDATA[If YES, give details:]]></text>
+		</element>
+		<element kind="staticText" uuid="928ad581-deed-4e31-a507-b7e22f2637e2" x="404" y="156" width="56" height="12" fontSize="7.0" vTextAlign="Middle">
+			<text><![CDATA[Date Filed:]]></text>
+		</element>
+		<element kind="textField" uuid="f2431c54-e399-452b-94c4-a17f19b9e001" x="460" y="156" width="100" height="12" fontSize="7.0" pattern="MM/dd/yyyy" bold="false">
+			<expression><![CDATA[$F{qa4Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d02e08a5-7f79-4982-a6b5-e83cf9206dbd" x="384" y="168" width="76" height="12" fontSize="7.0">
+			<text><![CDATA[Status of Case/s:]]></text>
+		</element>
+		<element kind="textField" uuid="1e0feb97-8548-496d-82fa-6e40f3aa5f74" x="460" y="168" width="100" height="12" fontSize="7.0">
+			<expression><![CDATA[$F{qa4Detail2}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="af34fb7a-5e08-4ad2-8582-605b604d9d03" x="364" y="183" width="214" height="50">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0a1a2854-08c0-4b5c-a150-757df4267632" x="404" y="190" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="e0b772f2-32ce-469c-9408-636ebdc3c7c4" x="480" y="190" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="4b20b2de-31e8-4448-aa67-e8d8295d1734" x="384" y="203" width="66" height="10" fontSize="7.0">
+			<text><![CDATA[If YES, give details:]]></text>
+		</element>
+		<element kind="textField" uuid="011c3adb-afd5-4ca0-89e9-7f71b2e1bcd0" x="384" y="216" width="174" height="11" fontSize="7.0">
+			<expression><![CDATA[$F{qa5Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c1432e95-b06e-4a02-9e03-29361138657f" x="364" y="233" width="214" height="50">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="61b38ba8-0ab7-41f9-b16b-44c16dcafe65" x="404" y="240" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="62d39ea9-2d60-433c-a06f-7fca1f83f432" x="480" y="240" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="0428873d-131f-4200-8967-040701fae9c3" x="384" y="253" width="66" height="10" fontSize="7.0">
+			<text><![CDATA[If YES, give details:]]></text>
+		</element>
+		<element kind="textField" uuid="3b9c383d-25df-46ba-87e5-ad4afb1a077b" x="384" y="266" width="174" height="11" fontSize="7.0">
+			<expression><![CDATA[$F{qa6Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="bea16bc6-54bd-41a0-96df-92b3d6e9d172" x="364" y="283" width="214" height="70">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4aa3120b-e914-4afe-961c-0cbd88e4f34a" x="404" y="290" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="52a21568-b8c5-425d-98ad-1a8fcfdec571" x="480" y="290" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="82eebe27-8e4f-4319-9a0a-fb2d0ca2ffb3" x="384" y="303" width="66" height="10" fontSize="7.0">
+			<text><![CDATA[If YES, give details:]]></text>
+		</element>
+		<element kind="textField" uuid="a667731a-779e-40fc-8753-661ee2c95358" x="458" y="303" width="100" height="10" fontSize="7.0">
+			<expression><![CDATA[$F{qa7Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c748d26e-b2e5-4e20-a25d-1689ccce11e8" x="364" y="353" width="214" height="47">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c539d7b5-4a02-48ae-b8bc-7d5a6540ebed" x="404" y="323" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="b3ab5907-5b21-45dd-bc09-8965bb9c3799" x="480" y="323" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="27d24a19-9b05-4bef-8f6d-0c92af6f84a9" x="384" y="337" width="66" height="10" fontSize="7.0">
+			<text><![CDATA[If YES, give details:]]></text>
+		</element>
+		<element kind="textField" uuid="15e89e81-63e6-494f-a7d1-dda5368ae85c" x="458" y="337" width="100" height="10" fontSize="7.0">
+			<expression><![CDATA[$F{qa8Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f56aecd8-3655-4bca-afaa-5d51daaf2e4f" x="404" y="360" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="fc8fbe50-dec1-495c-a328-45a1945c1cee" x="480" y="360" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="84bbe752-4895-41c6-a50c-411349d2a792" x="384" y="373" width="66" height="10" fontSize="7.0">
+			<text><![CDATA[If YES, give details:]]></text>
+		</element>
+		<element kind="textField" uuid="bc7358cf-0617-4d89-9562-6bc215ce23bc" x="384" y="386" width="174" height="10" fontSize="7.0">
+			<expression><![CDATA[$F{qa9Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="457aaf84-c419-46ff-b156-1ef4826e2ae8" x="364" y="400" width="214" height="90">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c6b088be-ce03-4361-bab9-42cdc5caba43" x="404" y="410" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="cdec481e-00b2-4704-bcd1-b88523bfdeea" x="480" y="410" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="48703812-b558-4834-8712-b45eb29a7bac" x="384" y="423" width="66" height="10" fontSize="7.0">
+			<text><![CDATA[If YES, give details:]]></text>
+		</element>
+		<element kind="textField" uuid="e935977d-c776-479d-a71c-31ef861dea5b" x="458" y="423" width="100" height="10" fontSize="7.0">
+			<expression><![CDATA[$F{qa10Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="54ae5b8f-44d8-4b55-a29f-4e2213879cda" x="404" y="436" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="db9d6f4b-8604-4a4f-b5d0-0da5cb85dee9" x="480" y="436" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="textField" uuid="352e8a0b-f0c7-4238-8cdd-1cda0024e77b" x="458" y="449" width="100" height="10" fontSize="7.0">
+			<expression><![CDATA[$F{qa11Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="8b0bacf5-2f2f-4950-b8d7-54a7bf46bcb6" x="384" y="449" width="66" height="10" fontSize="7.0">
+			<text><![CDATA[If YES, give details:]]></text>
+		</element>
+		<element kind="staticText" uuid="a4ad9a8e-25d2-4efd-9731-ee079c82a198" x="404" y="462" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[YES]]></text>
+		</element>
+		<element kind="staticText" uuid="f605b944-5a56-4254-a719-bb3c5ccb2796" x="480" y="462" width="26" height="10" fontSize="7.0">
+			<text><![CDATA[NO]]></text>
+		</element>
+		<element kind="staticText" uuid="b28e4bf9-f07e-4a66-acfb-7d1be4724955" x="384" y="475" width="66" height="10" fontSize="7.0">
+			<text><![CDATA[If YES, give details:]]></text>
+		</element>
+		<element kind="textField" uuid="c25b24de-d10c-4c56-89de-68d8aa16ff8d" x="458" y="475" width="100" height="10" fontSize="7.0">
+			<expression><![CDATA[$F{qa12Detail}]]></expression>
+			<box leftPadding="3">
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="85c8f79b-7bf0-42e8-a182-74aeb924d76b" mode="Opaque" x="0" y="490" width="430" height="11" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Left" vTextAlign="Top">
+			<text><![CDATA[   41. REFERENCES (Person not related by consanguinity or affinity to applicant / appointee]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="be143fce-63db-4883-8bd8-f4b39e472e19" mode="Opaque" x="0" y="501" width="201" height="15" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[NAME]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="17975154-aefd-4dab-96c8-5f9832704820" mode="Opaque" x="201" y="501" width="163" height="15" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[ADRESS]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="805819f4-054e-47f5-824a-11f76cece4dc" mode="Opaque" x="364" y="501" width="66" height="15" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[TEL. NO.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="470fdaac-1b95-4d59-a62a-1857fe08e7cd" mode="Opaque" x="24" y="611" width="406" height="50" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Justified" vTextAlign="Top">
+			<text><![CDATA[I declare under oath that I have personally accomplished this Personal Data Sheet which is a true, correct and
+complete statement pursuant to the provisions of pertinent laws, rules and regulations of the Republic of the
+Philippines. I authorize the agency head/authorized representative to verify tghe contents stated herein.
+I agree that any misrepresentation made in this document and its attachments shall cause the filing of
+administrative/criminal case/s against me.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="image" uuid="eef6bc68-7e8b-4bbe-920e-0f1243674502" x="437" y="501" width="134" height="147" scaleImage="FillFrame" onErrorType="Blank" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{picture}]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2b2f19b8-2833-46bd-9c57-6d9c4b0613a0" mode="Opaque" x="0" y="611" width="24" height="50" backcolor="#CCCCCC" fontSize="7.0">
+			<text><![CDATA[   42.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="707aaa34-ec4c-4a3a-8802-27fd8de33cfd" x="0" y="661" width="578" height="15">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b86df74a-7027-4fe1-a319-50bd25c25102" x="0" y="676" width="578" height="95">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0f72fb56-5051-4432-af78-1f39d668b3ee" x="0" y="771" width="578" height="114" fontSize="8.0">
+			<text><![CDATA[
+	SUBCRIBED AND SWORN to before me this __________________ , affiant exhibiting his/her validly issued government ID as indicated above.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d1585582-09ea-4f33-a539-f3c13f07feb6" mode="Opaque" x="9" y="683" width="258" height="24" backcolor="#CCCCCC" fontSize="7.0" hTextAlign="Left" vTextAlign="Top">
+			<text><![CDATA[ Government Issued ID (Ii.e Passport, GSIS, SSS, PRC, Driver's License, etc.)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a8552269-997f-4176-a06d-01207781daa0" x="12" y="695" width="176" height="12" fontSize="7.0" italic="true">
+			<text><![CDATA[PLEASE INDICATE ID Number and Date of Issuance]]></text>
+		</element>
+		<element kind="staticText" uuid="db8f20af-a7d1-4599-9936-8f78a15b370b" x="9" y="726" width="258" height="19" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[ Government Issued ID:]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="01493fae-29e2-4520-b0ef-05f5106e0e1d" x="9" y="745" width="258" height="19" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[ Date/Place of Issurance]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1d0437fb-bc42-4712-9a8e-e1776690a9fa" x="9" y="707" width="258" height="19" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[ ID/License/Passport No.:]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="image" uuid="62cd5128-b59a-4cd4-ab92-473be3a9d351" x="270" y="683" width="160" height="43" scaleImage="FillFrame" onErrorType="Blank" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{signature}]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="894421ac-4c8d-4e7e-8aa1-911906ec761d" x="270" y="751" width="160" height="13" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Date Accomplished]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f8fda2e2-74fc-4000-ae74-a5ea85460a87" x="270" y="726" width="160" height="13" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Signature (Sign inside the box)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="42430bda-6b4d-4e57-9234-28f63ca416ae" x="163" y="811" width="258" height="65" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{personAdministerOath}]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="18c49c2a-042e-4f4a-9c62-ce43da02fc26" x="163" y="857" width="258" height="19" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Person Administering Oath]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3d8eff40-5f7c-4eeb-81bc-ce6f7161e69b" x="437" y="751" width="134" height="13" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Right Thumbmark]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="69a5ff9d-c43e-41eb-9970-4e58ac544cf1" x="437" y="683" width="134" height="81">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="46257b0c-62a1-463e-9ab2-b19a674dc83a" x="440" y="686" width="100" height="20">
+			<text><![CDATA[]]></text>
+		</element>
+		<element kind="textField" uuid="a6c98e0e-f366-4845-a0ae-f4f045546e76" x="174" y="745" width="93" height="19" blankWhenNull="true">
+			<expression><![CDATA[$F{ctcIssuePlace}]]></expression>
+		</element>
+		<element kind="textField" uuid="22f43c19-085b-4240-8752-be2678c9bc92" x="95" y="707" width="172" height="19" blankWhenNull="true">
+			<expression><![CDATA[$F{govtIssuedIdNo}]]></expression>
+		</element>
+		<element kind="textField" uuid="18032473-e659-4844-b321-1b00bbd8a321" x="95" y="726" width="172" height="19" blankWhenNull="true">
+			<expression><![CDATA[$F{govtIssuedId}]]></expression>
+		</element>
+		<element kind="textField" uuid="12c76d51-be51-4896-bbc9-0a594d1994ce" x="95" y="745" width="79" height="19" pattern="MM/dd/yyyy" blankWhenNull="true">
+			<expression><![CDATA[$F{ctcIssueDate}]]></expression>
+		</element>
+		<element kind="staticText" uuid="b7a3eb62-f551-4560-87b9-68cd7da3eece" x="456" y="885" width="123" height="10" fontSize="6.0" bold="true" italic="true">
+			<text><![CDATA[CS FORM 212 (Revised 2025), Page 4 of 4]]></text>
+		</element>
+		<element kind="staticText" uuid="07bcd710-90ba-4134-8430-cbb9e985a3c3" x="384" y="25" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa1} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3536b0ad-5cf3-4c71-9df9-24a90d52734c" x="460" y="25" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa1} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="952a8252-a00f-47f8-b308-97eb8e2bd3cd" x="460" y="43" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa2} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4d6cb973-b5f3-49e1-be44-8641571f5244" x="384" y="43" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa2} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="17884342-db49-4a9b-ad0f-c88e98ab0300" x="384" y="89" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa3} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ccc8cc0d-b62b-4b57-8116-bac3086238c0" x="460" y="89" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa3} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5c1c885f-b86c-40cd-a696-f39b43821cad" x="460" y="134" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa4} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ba7ada27-99ed-4d4c-b066-2b339a293304" x="384" y="134" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa4} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="daf91325-45bf-4fc6-97f0-04d3efeee0f5" x="384" y="190" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa5} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fa2c3d88-0f40-4ec6-afa7-d2c4d808b501" x="460" y="190" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa5} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a1fac3a8-8689-4002-b5d6-a3d15827e024" x="384" y="240" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa6} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fca7bcf6-73cd-4a4f-997d-7bbb3d126170" x="460" y="240" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa6} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="33312ef1-38e1-4dbb-a165-d72cae1c3e53" x="460" y="290" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa7} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c7101f64-fe17-4b28-a3d9-44be9e243b45" x="384" y="290" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa7} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="338b485c-e7e9-4850-97e7-d3c893c89888" x="460" y="323" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa8} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0a8521e6-9890-4b9a-b5ea-b65fe8a5825a" x="384" y="323" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa8} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d85d731e-e0f1-4e6b-ae49-7e2a515f29fa" x="460" y="360" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa9} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4c7ee77b-bdb2-4c68-8f63-64574d13d8c5" x="384" y="360" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa9} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d7610074-5af4-422a-91a7-5eb505f53417" x="460" y="410" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa10} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="79b04227-2a3b-44cd-96fd-0d85cd80fa2d" x="384" y="410" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa10} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="849d64d0-fe3e-40ee-bc94-506eebda8fda" x="384" y="436" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa11} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="686892e7-6662-4dd7-94bf-c15454725a21" x="460" y="436" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa11} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1a200263-f8ef-471c-978b-c4c55631136a" x="384" y="462" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa12} == true]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="52dedbed-4439-447a-a53d-b21b4997562a" x="460" y="462" width="10" height="10" fontSize="7.0">
+			<printWhenExpression><![CDATA[$F{qa12} == false]]></printWhenExpression>
+			<text><![CDATA[ X]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="877ed2b2-ea6d-4d7e-87e7-2b02ceecd1ef" x="270" y="739" width="160" height="12" fontSize="7.0" pattern="MM/dd/yyyy" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{dateSignature}]]></expression>
+		</element>
+		<element kind="subreport" uuid="eff6d7d3-494a-4921-95ac-34f0180d95e4" x="0" y="516" width="430" height="95" removeLineWhenBlank="true">
+			<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+			<expression><![CDATA[$P{PDS_C4_REFERENCES_SUBREPORT} != null ? $P{PDS_C4_REFERENCES_SUBREPORT} : "pds_c4_references_sub.jasper"]]></expression>
+			<parameter name="EMPLOYEE_ID">
+				<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>
+			</parameter>
+		</element>
+		<element kind="staticText" uuid="321b2683-c307-4be6-948a-5d19db772149" x="0" y="516" width="201" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4ac756b3-b031-4a55-acd5-264abacce3ee" x="201" y="516" width="163" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b0cfea19-f4fc-45c9-8754-dc811a88b080" x="364" y="516" width="66" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b5c8b7f7-5a61-43cc-b6a4-bc4fd039a825" x="364" y="535" width="66" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ea083079-e44c-44a3-852a-3d1c3859dbae" x="0" y="535" width="201" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ad42ef03-8630-4370-8d3c-1e3aa08a0821" x="201" y="535" width="163" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3f8ed704-d0b1-43e9-a3cf-2b5d4a996214" x="364" y="554" width="66" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c5b4cac8-11c4-4686-8bfe-4b91c26f3197" x="201" y="554" width="163" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c4ab618b-a0f8-4a13-b213-f2b12b800b91" x="0" y="554" width="201" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="dec7307d-ed64-4fe7-bd7d-ac6f239796e1" x="201" y="573" width="163" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3cff19a1-96cb-4a96-9162-f60504339cd8" x="0" y="573" width="201" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c7920380-bf63-4b3f-93e7-cff718bcb9bb" x="364" y="573" width="66" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f593ee74-c64b-4e52-9cf4-02bf508781d8" x="201" y="592" width="163" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="884d303e-d7b1-443a-923c-fbd3e812599c" x="0" y="592" width="201" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="51228efe-19fd-426a-9014-bea0b544e6f2" x="364" y="592" width="66" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="335797ca-3a2e-40f2-be1b-6778a6f5862b" x="384" y="25" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="70b295ec-c2d3-430a-b0f2-175a1a09368c" x="460" y="25" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="963b527c-ab67-4384-9242-1d12f075787e" x="384" y="43" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="311189ef-0ee8-4eb6-bca3-0fce17d2b21e" x="460" y="43" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="902c61d9-0961-4a9c-95e8-e98cb0d837fc" x="460" y="240" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="96030f57-7b60-4e0e-8dc6-ad617977fb2a" x="384" y="240" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="80c395c5-6874-4ec5-80ea-a5bdadb4bc5c" x="460" y="190" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b8de9a4c-6037-4e39-a3aa-89cb1144e35a" x="384" y="190" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="80ca5b56-c99f-45f3-9877-51667e92f3c2" x="460" y="134" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0ef8ed56-cfb4-4a7d-a98b-cbf9b66fb73d" x="384" y="134" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="052a3ed1-8733-44d5-8f3a-71d669ea9d52" x="460" y="89" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="10de2bba-8664-492d-8d2f-dba5ce432c64" x="384" y="89" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1f67596a-ba1e-4b70-b402-6ccd4fc8e7c2" x="460" y="410" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="41cb47d8-d30a-4add-b817-2df18768b2b6" x="384" y="410" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a9c2da57-60c4-4441-a3e4-61fd3f469d90" x="460" y="360" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9907c1e5-5902-4047-b4af-c55e63861778" x="384" y="360" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="344ce8a5-3fdd-4a4f-b651-a29a643a843d" x="460" y="323" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b51e33cc-a5c9-49cd-a242-0f5c99e04984" x="384" y="323" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d28c2f8c-fefa-4d30-a9b1-4df80eadc1d9" x="460" y="290" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f756fb4d-47a9-4d01-83af-48b57008455f" x="384" y="290" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="8f52bcd3-0919-4f1a-8e32-7e74a63fdf87" x="460" y="462" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2a19b745-a120-42be-9b7a-b30b692085be" x="384" y="462" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="99c54266-93e9-4137-bd72-c191a730d6a3" x="460" y="436" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="193a9df3-5853-43b9-9a8a-4a51b89a5c52" x="384" y="436" width="10" height="10">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="725b69f9-db59-4a3c-bd73-f7044a4e223f" x="0" y="885" width="123" height="10" forecolor="#0000FF" fontSize="6.0" pdfFontName="Helvetica-Bold" bold="true" italic="true">
+			<text><![CDATA[ISOFT HRIS System Generated]]></text>
+		</element>
+	</pageHeader>
 </jasperReport>

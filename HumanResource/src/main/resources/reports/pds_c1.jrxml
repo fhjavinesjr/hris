@@ -1,161 +1,2019 @@
 <!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
-<jasperReport name="pds_c1" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="5066bf5b-5f0d-4129-9022-73ce21684212">
-	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+<jasperReport name="pds_c1" language="java" pageWidth="612" pageHeight="940" columnWidth="578" leftMargin="20" rightMargin="14" topMargin="20" bottomMargin="20" uuid="65cb67f0-19f0-4b7c-afb8-d74cf5fbbfc7">
+	<property name="ireport.zoom" value="2.143588810000006"/>
+	<property name="ireport.x" value="108"/>
+	<property name="ireport.y" value="2786"/>
 	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
-	<query language="sql"><![CDATA[SELECT
-            ISNULL(e.employeeNo, '')                         AS employeeNo,
-            ISNULL(pd.surname, '')                           AS surname,
-            ISNULL(pd.firstname, '')                         AS firstname,
-            ISNULL(pd.middlename, '')                        AS middlename,
-            ISNULL(pd.extname, '')                           AS extname,
-            ISNULL(CONVERT(varchar(10), CAST(pd.dob AS date), 101), '') AS dob,
-            ISNULL(pd.pob, '')                               AS pob,
-            CASE pd.sex_id WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' ELSE '' END AS sex,
-            CASE pd.civilStatus_id
-                WHEN 1 THEN 'Single' WHEN 2 THEN 'Married'
-                WHEN 3 THEN 'Widowed' WHEN 4 THEN 'Separated'
-                WHEN 5 THEN 'Divorced' ELSE ''
-            END AS civilStatus,
-            ISNULL(CAST(pd.height AS varchar(10)), '')       AS height,
-            ISNULL(CAST(pd.weight AS varchar(10)), '')       AS weight,
-            ISNULL(pd.bloodType, '')                         AS bloodType,
-            ISNULL(pd.gsisId, '')                            AS gsisId,
-            ISNULL(pd.pagibigId, '')                         AS pagibigId,
-            ISNULL(pd.philhealthNo, '')                      AS philhealthNo,
-            ISNULL(pd.sssNo, '')                             AS sssNo,
-            ISNULL(pd.tinNo, '')                             AS tinNo,
-            ISNULL(pd.agencyEmpNo, '')                       AS agencyEmpNo,
-            ISNULL(pd.citizenship, '')                       AS citizenship,
-            ISNULL(pd.resAddress, '') + CASE WHEN pd.resZip IS NOT NULL THEN '  ZIP: ' + pd.resZip ELSE '' END AS resAddress,
-            ISNULL(pd.permAddress, '') + CASE WHEN pd.permZip IS NOT NULL THEN '  ZIP: ' + pd.permZip ELSE '' END AS permAddress,
-            ISNULL(pd.telNo, '')                             AS telNo,
-            ISNULL(pd.mobileNo, '')                          AS mobileNo,
-            ISNULL(pd.email, '')                             AS email,
-            ISNULL(pd.spouseSurname, '')                     AS spouseSurname,
-            ISNULL(pd.spouseFirstname, '')                   AS spouseFirstname,
-            ISNULL(pd.spouseMiddlename, '')                  AS spouseMiddlename,
-            ISNULL(pd.spouseOccupation, '')                  AS spouseOccupation,
-            ISNULL(pd.spouseEmployer, '')                    AS spouseEmployer,
-            ISNULL(pd.spouseTelNo, '')                       AS spouseTelNo,
-            ISNULL(pd.fatherSurname, '') + ', ' + ISNULL(pd.fatherFirstname, '') + ' ' + ISNULL(pd.fatherMiddlename, '') AS fatherName,
-            ISNULL(pd.motherSurname, '') + ', ' + ISNULL(pd.motherFirstname, '') + ' ' + ISNULL(pd.motherMiddlename, '') AS motherName,
-            ISNULL(STUFF((
-                SELECT CHAR(10) + ISNULL(c.childFullname, '') +
-                       CASE WHEN c.dob IS NOT NULL THEN ' (DOB: ' + CONVERT(varchar(10), CAST(c.dob AS date), 101) + ')' ELSE '' END
-                FROM children c WHERE c.personalDataId = pd.personalDataId
-                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS childrenList,
-            ISNULL(STUFF((
-                SELECT CHAR(10) + ISNULL(eb.levelOfEducation, '') + ': ' + ISNULL(eb.nameOfSchool, '') +
-                       CASE WHEN eb.degreeCourse IS NOT NULL THEN ' | ' + eb.degreeCourse ELSE '' END +
-                       CASE WHEN eb.yearGraduated IS NOT NULL THEN ' (Yr. Grad: ' + CAST(eb.yearGraduated AS varchar) + ')' ELSE '' END +
-                       CASE WHEN eb.honorsReceived IS NOT NULL THEN ' | Honors: ' + eb.honorsReceived ELSE '' END
-                FROM educationalbackground eb WHERE eb.personalDataId = pd.personalDataId
-                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS educationList
-        FROM personaldata pd
-        JOIN employee e ON pd.employeeId = e.employeeId
-        WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
-	<field name="employeeNo" class="java.lang.String"/>
-	<field name="surname" class="java.lang.String"/>
+	<parameter name="PDS_C1_CHILDREN_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
+	<query language="SQL"><![CDATA[SELECT TOP 1
+    ISNULL(pd.surname, '') AS lastname,
+    ISNULL(pd.firstname, '') AS firstname,
+    ISNULL(pd.middlename, '') AS middlename,
+    ISNULL(pd.extname, '') AS nameExtension,
+    CAST(pd.dob AS date) AS birthDate,
+    ISNULL(pd.citizenship, '') AS country,
+    ISNULL(pd.pob, '') AS birthPlace,
+    ISNULL(pd.resAddress, '') AS residentaddress,
+    ISNULL(pd.resZip, '') AS residentzipcode,
+    TRY_CONVERT(float, NULLIF(pd.height, '')) AS height,
+    TRY_CONVERT(float, NULLIF(pd.weight, '')) AS weight,
+    ISNULL(pd.bloodType, '') AS bloodType,
+    ISNULL(pd.gsisId, '') AS gsisNo,
+    ISNULL(pd.pagibigId, '') AS pagibigNo,
+    ISNULL(pd.philhealthNo, '') AS philHealthNo,
+    ISNULL(pd.sssNo, '') AS sssNo,
+    ISNULL(pd.tinNo, '') AS tinNo,
+    ISNULL(pd.agencyEmpNo, '') AS agencyEmployeeNo,
+    ISNULL(pd.telNo, '') AS telNo,
+    ISNULL(pd.mobileNo, '') AS mobileNo,
+    ISNULL(pd.email, '') AS email,
+    ISNULL(pd.spouseSurname, '') AS spLastname,
+    ISNULL(pd.spouseFirstname, '') AS spFirstname,
+    ISNULL(pd.spouseMiddlename, '') AS spMiddlename,
+    CAST(NULL AS varchar(max)) AS children,
+    CAST(NULL AS date) AS chbirthDate,
+    ISNULL(pd.spouseOccupation, '') AS spOccupation,
+    ISNULL(pd.spouseEmployer, '') AS spBusinessName,
+    ISNULL(pd.spouseBusinessAddress, '') AS spBusinessAddress,
+    ISNULL(pd.spouseTelNo, '') AS spBusinessTelNo,
+    ISNULL(pd.fatherSurname, '') AS faLastname,
+    ISNULL(pd.fatherFirstname, '') AS faFirstname,
+    ISNULL(pd.fatherMiddlename, '') AS faMiddlename,
+    ISNULL(pd.motherSurname, '') AS moLastname,
+    ISNULL(pd.motherFirstname, '') AS moFirstname,
+    ISNULL(pd.motherMiddlename, '') AS moMiddlename,
+    '' AS csIdNo,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN eb.nameOfSchool END), '') AS edu1SchoolName,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN eb.degreeCourse END), '') AS edu1DegreeCourse,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN CAST(eb.fromDate AS date) END) AS edu1DateFrom,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN CAST(eb.toDate AS date) END) AS edu1DateTo,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN TRY_CONVERT(float, eb.scoreGrade) END) AS edu1GradesUnits,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN TRY_CONVERT(int, eb.yearGraduated) END) AS edu1YearGraduated,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN eb.honorsReceived END), '') AS edu1ScholarshipHonors,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN eb.nameOfSchool END), '') AS edu2SchoolName,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN eb.degreeCourse END), '') AS edu2DegreeCourse,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN CAST(eb.fromDate AS date) END) AS edu2DateFrom,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN CAST(eb.toDate AS date) END) AS edu2DateTo,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN TRY_CONVERT(float, eb.scoreGrade) END) AS edu2GradesUnits,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN TRY_CONVERT(int, eb.yearGraduated) END) AS edu2YearGraduated,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN eb.honorsReceived END), '') AS edu2ScholarshipHonors,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN eb.nameOfSchool END), '') AS edu3SchoolName,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN eb.degreeCourse END), '') AS edu3DegreeCourse,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN CAST(eb.fromDate AS date) END) AS edu3DateFrom,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN CAST(eb.toDate AS date) END) AS edu3DateTo,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN TRY_CONVERT(float, eb.scoreGrade) END) AS edu3GradesUnits,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN TRY_CONVERT(int, eb.yearGraduated) END) AS edu3YearGraduated,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN eb.honorsReceived END), '') AS edu3ScholarshipHonors,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN eb.nameOfSchool END), '') AS edu4SchoolName,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN eb.degreeCourse END), '') AS edu4DegreeCourse,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN CAST(eb.fromDate AS date) END) AS edu4DateFrom,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN CAST(eb.toDate AS date) END) AS edu4DateTo,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN TRY_CONVERT(float, eb.scoreGrade) END) AS edu4GradesUnits,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN TRY_CONVERT(int, eb.yearGraduated) END) AS edu4YearGraduated,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN eb.honorsReceived END), '') AS edu4ScholarshipHonors,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN eb.nameOfSchool END), '') AS edu5SchoolName,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN eb.degreeCourse END), '') AS edu5DegreeCourse,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN CAST(eb.fromDate AS date) END) AS edu5DateFrom,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN CAST(eb.toDate AS date) END) AS edu5DateTo,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN TRY_CONVERT(float, eb.scoreGrade) END) AS edu5GradesUnits,
+    MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN TRY_CONVERT(int, eb.yearGraduated) END) AS edu5YearGraduated,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN eb.honorsReceived END), '') AS edu5ScholarshipHonors,
+    CASE pd.sex_id WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' ELSE '' END AS gender,
+    CASE WHEN UPPER(ISNULL(pd.citizenship,'')) LIKE '%FILIPINO%' THEN 'Filipino' ELSE ISNULL(pd.citizenship,'') END AS nationality,
+    CASE pd.civilStatus_id WHEN 1 THEN 'Single' WHEN 2 THEN 'Married' WHEN 3 THEN 'Widowed' WHEN 4 THEN 'Separated' WHEN 5 THEN 'Other/s' ELSE '' END AS civilStatus,
+    ISNULL(pd.permAddress, '') AS permanentAddress,
+    ISNULL(pd.permZip, '') AS zipCode,
+    '' AS spnameExtension,
+    '' AS fanameExtenshion,
+    CASE WHEN UPPER(ISNULL(pd.citizenship,'')) LIKE '%DUAL%' THEN 'Dual Citizenship' ELSE '' END AS nationalityDualCitizenship,
+    '' AS nationalityIndicateCountry,
+    '' AS maidenName,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN CONVERT(varchar(10), CAST(eb.toDate AS date), 101) END), '') AS eduDateToString,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN CONVERT(varchar(10), CAST(eb.toDate AS date), 101) END), '') AS eduDateToString2,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN CONVERT(varchar(10), CAST(eb.toDate AS date), 101) END), '') AS eduDateToString3,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN CONVERT(varchar(10), CAST(eb.toDate AS date), 101) END), '') AS eduDateToString4,
+    '' AS eduDateToString5,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN CONVERT(varchar(10), CAST(eb.toDate AS date), 101) END), '') AS eduDateToString6,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN CONVERT(varchar(10), CAST(eb.fromDate AS date), 101) END), '') AS edu1DateFromString,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN CONVERT(varchar(10), CAST(eb.fromDate AS date), 101) END), '') AS edu2DateFromString,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN CONVERT(varchar(10), CAST(eb.fromDate AS date), 101) END), '') AS edu3DateFromString,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN CONVERT(varchar(10), CAST(eb.fromDate AS date), 101) END), '') AS edu4DateFromString,
+    '' AS edu4DateFrom2String,
+    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN CONVERT(varchar(10), CAST(eb.fromDate AS date), 101) END), '') AS edu5DateFromString,
+    '' AS edu5DateFrom2String,
+    '' AS edu5DateFrom3String
+FROM personaldata pd
+JOIN employee e ON e.employeeId = pd.employeeId
+LEFT JOIN educationalbackground eb ON eb.personalDataId = pd.personalDataId
+WHERE e.employeeId = $P{EMPLOYEE_ID}
+GROUP BY pd.personalDataId, pd.surname, pd.firstname, pd.middlename, pd.extname, pd.dob, pd.citizenship, pd.pob, pd.resAddress, pd.resZip, pd.height, pd.weight, pd.bloodType, pd.gsisId, pd.pagibigId, pd.philhealthNo, pd.sssNo, pd.tinNo, pd.agencyEmpNo, pd.telNo, pd.mobileNo, pd.email, pd.spouseSurname, pd.spouseFirstname, pd.spouseMiddlename, pd.spouseOccupation, pd.spouseEmployer, pd.spouseBusinessAddress, pd.spouseTelNo, pd.fatherSurname, pd.fatherFirstname, pd.fatherMiddlename, pd.motherSurname, pd.motherFirstname, pd.motherMiddlename, pd.sex_id, pd.civilStatus_id, pd.permAddress, pd.permZip]]></query>
+	<field name="lastname" class="java.lang.String"/>
 	<field name="firstname" class="java.lang.String"/>
 	<field name="middlename" class="java.lang.String"/>
-	<field name="extname" class="java.lang.String"/>
-	<field name="dob" class="java.lang.String"/>
-	<field name="pob" class="java.lang.String"/>
-	<field name="sex" class="java.lang.String"/>
-	<field name="civilStatus" class="java.lang.String"/>
-	<field name="height" class="java.lang.String"/>
-	<field name="weight" class="java.lang.String"/>
+	<field name="nameExtension" class="java.lang.String"/>
+	<field name="birthDate" class="java.sql.Date"/>
+	<field name="country" class="java.lang.String"/>
+	<field name="birthPlace" class="java.lang.String"/>
+	<field name="residentaddress" class="java.lang.String"/>
+	<field name="residentzipcode" class="java.lang.String"/>
+	<field name="height" class="java.lang.Double"/>
+	<field name="weight" class="java.lang.Double"/>
 	<field name="bloodType" class="java.lang.String"/>
-	<field name="gsisId" class="java.lang.String"/>
-	<field name="pagibigId" class="java.lang.String"/>
-	<field name="philhealthNo" class="java.lang.String"/>
+	<field name="gsisNo" class="java.lang.String"/>
+	<field name="pagibigNo" class="java.lang.String"/>
+	<field name="philHealthNo" class="java.lang.String"/>
 	<field name="sssNo" class="java.lang.String"/>
 	<field name="tinNo" class="java.lang.String"/>
-	<field name="agencyEmpNo" class="java.lang.String"/>
-	<field name="citizenship" class="java.lang.String"/>
-	<field name="resAddress" class="java.lang.String"/>
-	<field name="permAddress" class="java.lang.String"/>
+	<field name="agencyEmployeeNo" class="java.lang.String"/>
 	<field name="telNo" class="java.lang.String"/>
 	<field name="mobileNo" class="java.lang.String"/>
 	<field name="email" class="java.lang.String"/>
-	<field name="spouseSurname" class="java.lang.String"/>
-	<field name="spouseFirstname" class="java.lang.String"/>
-	<field name="spouseMiddlename" class="java.lang.String"/>
-	<field name="spouseOccupation" class="java.lang.String"/>
-	<field name="spouseEmployer" class="java.lang.String"/>
-	<field name="spouseTelNo" class="java.lang.String"/>
-	<field name="fatherName" class="java.lang.String"/>
-	<field name="motherName" class="java.lang.String"/>
-	<field name="childrenList" class="java.lang.String"/>
-	<field name="educationList" class="java.lang.String"/>
-	<title height="52">
-		<element kind="staticText" uuid="744881d7-fae5-4a2c-8d79-05af3029f8b7" x="0" y="0" width="555" height="18" fontName="SansSerif" fontSize="12.0" bold="true" hTextAlign="Center">
-			<text><![CDATA[CS Form 212 (Revised 2017) â€” PERSONAL DATA SHEET]]></text>
+	<field name="spLastname" class="java.lang.String"/>
+	<field name="spFirstname" class="java.lang.String"/>
+	<field name="spMiddlename" class="java.lang.String"/>
+	<field name="children" class="java.util.List"/>
+	<field name="chbirthDate" class="java.sql.Date"/>
+	<field name="spOccupation" class="java.lang.String"/>
+	<field name="spBusinessName" class="java.lang.String"/>
+	<field name="spBusinessAddress" class="java.lang.String"/>
+	<field name="spBusinessTelNo" class="java.lang.String"/>
+	<field name="faLastname" class="java.lang.String"/>
+	<field name="faFirstname" class="java.lang.String"/>
+	<field name="faMiddlename" class="java.lang.String"/>
+	<field name="moLastname" class="java.lang.String"/>
+	<field name="moFirstname" class="java.lang.String"/>
+	<field name="moMiddlename" class="java.lang.String"/>
+	<field name="csIdNo" class="java.lang.String"/>
+	<field name="edu1SchoolName" class="java.lang.String"/>
+	<field name="edu1DegreeCourse" class="java.lang.String"/>
+	<field name="edu1DateFrom" class="java.sql.Date"/>
+	<field name="edu1DateTo" class="java.sql.Date"/>
+	<field name="edu1GradesUnits" class="java.lang.Double"/>
+	<field name="edu1YearGraduated" class="java.lang.Integer"/>
+	<field name="edu1ScholarshipHonors" class="java.lang.String"/>
+	<field name="edu2SchoolName" class="java.lang.String"/>
+	<field name="edu2DegreeCourse" class="java.lang.String"/>
+	<field name="edu2DateFrom" class="java.sql.Date"/>
+	<field name="edu2DateTo" class="java.sql.Date"/>
+	<field name="edu2GradesUnits" class="java.lang.Double"/>
+	<field name="edu2YearGraduated" class="java.lang.Integer"/>
+	<field name="edu2ScholarshipHonors" class="java.lang.String"/>
+	<field name="edu3SchoolName" class="java.lang.String"/>
+	<field name="edu3DegreeCourse" class="java.lang.String"/>
+	<field name="edu3DateFrom" class="java.sql.Date"/>
+	<field name="edu3DateTo" class="java.sql.Date"/>
+	<field name="edu3GradesUnits" class="java.lang.Double"/>
+	<field name="edu3YearGraduated" class="java.lang.Integer"/>
+	<field name="edu3ScholarshipHonors" class="java.lang.String"/>
+	<field name="edu4SchoolName" class="java.lang.String"/>
+	<field name="edu4DegreeCourse" class="java.lang.String"/>
+	<field name="edu4DateFrom" class="java.sql.Date"/>
+	<field name="edu4DateTo" class="java.sql.Date"/>
+	<field name="edu4GradesUnits" class="java.lang.Double"/>
+	<field name="edu4YearGraduated" class="java.lang.Integer"/>
+	<field name="edu4ScholarshipHonors" class="java.lang.String"/>
+	<field name="edu5SchoolName" class="java.lang.String"/>
+	<field name="edu5DegreeCourse" class="java.lang.String"/>
+	<field name="edu5DateFrom" class="java.sql.Date"/>
+	<field name="edu5DateTo" class="java.sql.Date"/>
+	<field name="edu5GradesUnits" class="java.lang.Double"/>
+	<field name="edu5YearGraduated" class="java.lang.Integer"/>
+	<field name="edu5ScholarshipHonors" class="java.lang.String"/>
+	<field name="gender" class="java.lang.String"/>
+	<field name="nationality" class="java.lang.String"/>
+	<field name="civilStatus" class="java.lang.String"/>
+	<field name="permanentAddress" class="java.lang.String"/>
+	<field name="zipCode" class="java.lang.String"/>
+	<field name="spnameExtension" class="java.lang.String"/>
+	<field name="fanameExtenshion" class="java.lang.String"/>
+	<field name="nationalityDualCitizenship" class="java.lang.String"/>
+	<field name="nationalityIndicateCountry" class="java.lang.String"/>
+	<field name="maidenName" class="java.lang.String"/>
+	<field name="eduDateToString" class="java.lang.String"/>
+	<field name="eduDateToString2" class="java.lang.String"/>
+	<field name="eduDateToString3" class="java.lang.String"/>
+	<field name="eduDateToString4" class="java.lang.String"/>
+	<field name="eduDateToString5" class="java.lang.String"/>
+	<field name="eduDateToString6" class="java.lang.String"/>
+	<field name="edu1DateFromString" class="java.lang.String"/>
+	<field name="edu2DateFromString" class="java.lang.String"/>
+	<field name="edu3DateFromString" class="java.lang.String"/>
+	<field name="edu4DateFromString" class="java.lang.String"/>
+	<field name="edu4DateFrom2String" class="java.lang.String"/>
+	<field name="edu5DateFromString" class="java.lang.String"/>
+	<field name="edu5DateFrom2String" class="java.lang.String"/>
+	<field name="edu5DateFrom3String" class="java.lang.String"/>
+	<background height="900">
+		<element kind="textField" uuid="9bee8dab-06b3-4c87-8daf-f4350f7def32" x="211" y="776" width="115" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu2DegreeCourse}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
 		</element>
-		<element kind="staticText" uuid="e67ef85e-8d7a-43ec-af86-31d05908fef0" x="0" y="20" width="555" height="14" fontName="SansSerif" fontSize="9.0" hTextAlign="Center">
-			<text><![CDATA[Sheet C1: Personal Information, Family Background & Educational Background]]></text>
+		<element kind="textField" uuid="2aedb74c-49ed-48f2-b9eb-67020d2090b1" x="366" y="757" width="42" height="19" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{eduDateToString}]]></expression>
+			<box leftPadding="0">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
 		</element>
-		<element kind="textField" uuid="4f28fdb0-3bcd-4008-b416-e096a40df54d" x="0" y="36" width="555" height="14" fontName="SansSerif" fontSize="9.0" bold="true" hTextAlign="Center">
-			<expression><![CDATA["Employee No: " + $F{employeeNo} + "   Name: " + $F{surname} + ", " + $F{firstname} + " " + $F{middlename}]]></expression>
+		<element kind="textField" uuid="05beb737-a7bc-4379-ac1a-b4c624cea5ae" x="504" y="795" width="73" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu3ScholarshipHonors}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="e3502ed6-a071-4c35-9fc5-940bb585834a" x="408" y="833" width="54" height="19" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu5GradesUnits}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="451f9b39-8aa9-4472-a489-e533936fc8a6" x="366" y="795" width="42" height="19" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{eduDateToString3}]]></expression>
+			<box leftPadding="0">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="fcf45680-63d3-4b50-9440-73157e120166" x="408" y="757" width="54" height="19" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu1GradesUnits}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="bfac2a2c-2c3c-4935-a182-9ec52fbd1e63" x="504" y="814" width="73" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu4ScholarshipHonors}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="1601b88a-18bd-4d58-bf3d-62316c26c14e" x="114" y="814" width="97" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu4SchoolName}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="f924b960-a20f-42b7-bc2f-504e18fe00f5" x="114" y="795" width="97" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu3SchoolName}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="95168f97-25f6-47b3-9140-aa6f12eb17f4" mode="Opaque" x="408" y="716" width="54" height="41" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[HIGHEST LEVEL/
+UNITS EARNED
+(if not graduated) ]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="5d413aa0-1f14-45e0-b5ae-17a524aaeab7" x="462" y="833" width="42" height="19" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu5YearGraduated}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fa1bed44-7093-4697-9d28-f2de609793da" mode="Opaque" x="326" y="716" width="82" height="20" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[PERIOD OF ATTENDANCE]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="370dc312-4b1e-4e69-82e1-8642d8015ad4" mode="Opaque" x="504" y="716" width="73" height="41" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[SCHOLARSHIP/
+ACADEMIC
+HONORS
+RECEIVED]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="c6389ee6-c8a0-4591-a467-58729e931abd" x="211" y="795" width="115" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu3DegreeCourse}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="c0823e18-7582-4b16-b29d-4a82221fdd1c" x="326" y="814" width="40" height="19" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu4DateFromString}]]></expression>
+			<box leftPadding="0">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="a416da14-7a9a-4249-80b5-9d6f23baad58" x="462" y="795" width="42" height="19" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu3YearGraduated}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="a18b04d9-78b5-424d-b4f1-213b15a6c38c" x="366" y="814" width="42" height="19" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{eduDateToString4}]]></expression>
+			<box leftPadding="0">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b4049a66-9513-4645-b9bc-be20790265bc" mode="Opaque" x="211" y="716" width="115" height="41" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[BASIC EDUCATION/DEGREE/COURSE
+(Write in full)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="426b6b28-3831-4d2a-876c-6a4e565d4b50" mode="Opaque" x="462" y="716" width="42" height="41" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[YEAR
+GRADUATED]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3dede613-2fd3-4590-967e-dacc7a961083" mode="Opaque" x="366" y="736" width="42" height="21" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[TO]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="517a27b8-c0e5-4cd0-b624-82defdc95851" x="326" y="833" width="40" height="19" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu5DateFromString}]]></expression>
+			<box leftPadding="0">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="fcdd81ea-f17b-48b6-a37e-dfc2e533117a" x="326" y="776" width="40" height="19" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu2DateFromString}]]></expression>
+			<box leftPadding="0">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="f40f1120-f3b2-4bd4-afc4-a1141fdde56a" x="114" y="833" width="97" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu5SchoolName}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="643ad14d-359c-4baa-87e9-e5071ada4e65" x="504" y="776" width="73" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu2ScholarshipHonors}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="7fa44848-bd7a-4077-b6d7-7c92d79fb517" x="408" y="776" width="54" height="19" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu2GradesUnits}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="1beee4ed-8c96-4338-930f-d913461b18d6" x="408" y="814" width="54" height="19" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu4GradesUnits}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d00c69f0-054d-4936-81dd-e8968610870b" mode="Opaque" x="114" y="716" width="97" height="41" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[NAME OF SCHOOL
+(Write in full)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5a69b24e-9b75-46bf-8125-4988be8d5cb8" mode="Opaque" x="0" y="795" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[       VOCATIONAL/
+       TRADE COURSE]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="56a44200-a7e9-4ba0-bb6a-f351ecdb8605" x="366" y="833" width="42" height="19" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{eduDateToString6}]]></expression>
+			<box leftPadding="0">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f75418e7-6f55-417d-b963-7b3f677bc64f" mode="Opaque" x="0" y="757" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[       ELEMENTARY]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6f0a2acf-aee1-42ed-85c2-30133cf618dc" x="326" y="871" width="70" height="19" fontSize="8.0" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[DATE]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="a10ee4e5-0382-4403-a5a4-d65b47d0dc85" x="462" y="776" width="42" height="19" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu2YearGraduated}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c127bf30-1e3e-4973-83ea-e916dd46a0d9" x="114" y="871" width="212" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d85dc308-1265-44e4-98e3-6fdfdf3a5e8b" mode="Opaque" x="0" y="705" width="577" height="11" forecolor="#FFFFFF" backcolor="#666666" fontSize="8.0" bold="true">
+			<text><![CDATA[ III. EDUCATIONAL BACKGROUND]]></text>
+			<box>
+				<topPen lineWidth="1.0" lineColor="#000000"/>
+				<leftPen lineWidth="1.0" lineColor="#000000"/>
+				<bottomPen lineWidth="1.0" lineColor="#000000"/>
+				<rightPen lineWidth="1.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="43fe1707-015c-41c6-8bc0-51afc68d262f" x="114" y="757" width="97" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu1SchoolName}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="cebfb433-8df1-4a39-ab40-1dcb0673ff0f" mode="Opaque" x="0" y="814" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[       COLLEGE]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="bfd68a31-bdc4-43ae-8180-3c71b10608db" x="366" y="776" width="42" height="19" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{eduDateToString2}]]></expression>
+			<box leftPadding="0">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="19c430b4-b3a0-4bd0-9d96-8fe27a3ee103" x="396" y="871" width="181" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="a734750b-0db1-4730-982f-df551d78bf65" x="326" y="795" width="40" height="19" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu3DateFromString}]]></expression>
+			<box leftPadding="0">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fa3a2265-3d64-4e97-825c-edafbca80ca3" x="0" y="871" width="114" height="19" fontSize="8.0" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[SIGNATURE]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="87d22247-24b4-4309-a9a7-57bae47ced3f" x="114" y="776" width="97" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu2SchoolName}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="c0f906c9-9801-4e05-81a1-0b5f1b775cb4" x="326" y="757" width="40" height="19" fontSize="7.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu1DateFromString}]]></expression>
+			<box leftPadding="0">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="06031abb-b354-43f9-840e-ed0a7838ad25" mode="Opaque" x="0" y="716" width="114" height="41" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[
+       26.       LEVEL]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0c09931f-4ba6-4b09-992f-d8671ed4c5b9" mode="Opaque" x="0" y="852" width="577" height="19" forecolor="#000000" backcolor="#CCCCCC" fontSize="7.0" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[(Continue on separate sheet if necessary)]]></text>
+			<box>
+				<topPen lineWidth="1.0" lineColor="#000000"/>
+				<leftPen lineWidth="1.0" lineColor="#000000"/>
+				<bottomPen lineWidth="1.0" lineColor="#000000"/>
+				<rightPen lineWidth="1.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="1139a175-ed33-4534-a746-2bed0df729e2" x="462" y="814" width="42" height="19" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu4YearGraduated}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d6e2f05e-7984-4e73-b76d-6eda74e5bb7a" mode="Opaque" x="0" y="776" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[       SECONDARY]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="e97ffbd2-9ebd-48db-a190-a749dd770cf4" x="211" y="757" width="115" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu1DegreeCourse}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3611efd1-f034-4dce-939d-a044a70ad139" mode="Opaque" x="326" y="736" width="40" height="21" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[FROM]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f86a7216-75a5-44f7-a41e-44c576f8e595" mode="Opaque" x="0" y="833" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[       GRADUATE STUDIES]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="7d28c602-b5bb-471e-9096-7a62891363c8" x="504" y="757" width="73" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu1ScholarshipHonors}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="24865924-0d7e-4794-9877-0373f908d026" x="211" y="833" width="115" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu5DegreeCourse}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="4361cfb3-84d3-42b8-a585-8ebccc8c4904" x="462" y="757" width="42" height="19" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu1YearGraduated}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="01e74ff6-040e-4c35-9d5a-f5ef25d24aa1" x="504" y="833" width="73" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu5ScholarshipHonors}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="9d00e8ad-d68f-4213-8409-3d6bfcda480f" x="211" y="814" width="115" height="19" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu4DegreeCourse}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="36bdda05-8ee2-49d3-8770-2dd105694ca7" x="408" y="795" width="54" height="19" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{edu3GradesUnits}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="18721de9-52c6-4b20-a1e3-0c4cacb301be" x="114" y="477" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{spMiddlename}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="74a0a57e-3258-47b7-9edd-ef673f3727b4" x="114" y="534" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{spBusinessAddress}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="e118f359-a2c9-437f-a436-aa1c73c2855c" x="114" y="496" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{spOccupation}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a9fee7a0-64f7-4486-a154-3ad7c8c1a918" mode="Transparent" x="12" y="613" width="57" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[MIDDLE NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="078587ad-4b56-4cb9-a280-6439dd6771b6" mode="Opaque" x="226" y="458" width="100" height="10" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       NAME EXTENSION (JR., SR)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="0e9eecaf-249e-4ee0-9483-62f98262ac86" x="114" y="686" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{moMiddlename}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c3adae02-caa4-4627-b543-29397108a23d" mode="Transparent" x="11" y="480" width="57" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[MIDDLE NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="3bd2c4df-4aac-4462-a8ce-9b8d4d2a5b27" x="114" y="572" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{faLastname}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b731e7be-f069-4ebd-b422-b6c8178701d1" mode="Opaque" x="0" y="572" width="114" height="57" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="4a3e448a-8c69-4ffe-83fc-7093fa3b0d2e" x="114" y="591" width="112" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{faFirstname}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="b1198b93-9e8b-405d-ace6-bb62f3d64f08" x="114" y="648" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{moLastname}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="743b491d-de52-49b8-95b5-1dccbb1f6126" mode="Opaque" x="0" y="534" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[       BUSINESS ADDRESS]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="b25e8176-6b3e-49f0-b5c9-ddf21f1ecbea" x="226" y="458" width="100" height="19" fontSize="8.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Bottom">
+			<expression><![CDATA[$F{spnameExtension}]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3c032705-820b-457e-bd3f-f037239c490d" mode="Transparent" x="11" y="683" width="57" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[MIDDLE NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="12e57f20-0404-4931-8476-2c432f2e6184" x="226" y="591" width="100" height="19" fontSize="8.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Bottom">
+			<expression><![CDATA[$F{fanameExtenshion}]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="53d400a4-a88b-4c85-a059-311983505e10" mode="Opaque" x="0" y="629" width="114" height="76" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f9b5ba16-08e7-43a9-827d-c33632a08979" mode="Opaque" x="226" y="591" width="100" height="10" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       NAME EXTENSION (JR., SR)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="f9fbbd19-7de8-473c-8795-3bf5f6cdc57c" x="114" y="458" width="112" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{spFirstname}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="0212520b-ed3b-47ea-89fb-469a034adeea" x="114" y="439" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{spLastname}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="f17d8b54-32f6-4080-a15a-0ff288e0a1c3" x="114" y="515" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{spBusinessName}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="137e1f9d-6dc2-457b-8639-163df56f54a8" x="114" y="629" width="212" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="60a04cbd-45ea-4ab2-87d6-0f117ff953a7" mode="Opaque" x="0" y="553" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[       TELEPHONE NO.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4cc90dd2-4cf6-47cd-a741-64e5910fd548" mode="Opaque" x="0" y="496" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[       OCCUPATION]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="8acb10ae-9149-4512-a267-c8cdc391c63c" mode="Transparent" x="11" y="446" width="75" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[22. SPOUSE'S SURNAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="7f5b9f80-0141-42ea-85ac-77b7124a19c9" mode="Opaque" x="0" y="515" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[       EMPLOYER/BUSINESS NAME]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="2d1d542f-b90d-46b5-b700-7b68104d2b47" x="114" y="553" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{spBusinessTelNo}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="276ad0cf-8ec0-4b65-97f2-896bcb84b266" x="114" y="667" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{moFirstname}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="44ea37a1-041d-4d69-bb5e-66c9c8ef132b" mode="Transparent" x="11" y="632" width="92" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[25. MOTHER'S MAIDEN NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="367c404c-63ca-4cf8-9f8e-cb430a488b29" mode="Transparent" x="11" y="577" width="75" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[24. FATHER'S SURNAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="816ea1fd-3d65-4365-b7a6-f8f18de1f226" mode="Opaque" x="0" y="439" width="114" height="57" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="c27d7d2d-d048-4f74-9ec1-a89876d88183" x="114" y="610" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{faMiddlename}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="32a79692-5adc-4f7d-90d9-3e2a7c574f99" mode="Transparent" x="13" y="444" width="75" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[22. SPOUSE'S SURNAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="93cbf7c4-43b2-445d-a62f-a37f0b56241b" mode="Transparent" x="11" y="463" width="38" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[FIRST NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="42221456-b1bb-439e-bcc1-b3c7b4f7a3ec" mode="Transparent" x="11" y="482" width="57" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[MIDDLE NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e225a5b9-0e5d-4663-963d-f5abed239a9e" mode="Transparent" x="11" y="596" width="38" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[FIRST NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f314a845-d01f-4db3-9b63-1c67217ad99e" mode="Transparent" x="13" y="691" width="57" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[MIDDLE NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="7b4ffcb7-d6b1-4ddd-8a0e-11c556603e88" mode="Transparent" x="14" y="672" width="38" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[FIRST NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="164b8f66-7e6d-4a92-9f4d-4ac96108d007" mode="Transparent" x="13" y="654" width="40" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[SURNAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b6308f5d-45ce-4860-b47f-d8b016d9c97f" mode="Transparent" x="11" y="615" width="57" height="10" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[MIDDLE NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fd4fdda4-f532-4b8e-b005-6b0251e8cc5d" mode="Opaque" x="326" y="686" width="251" height="19" backcolor="#CCCCCC" fontSize="7.0" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[(Continue on separate sheet if necessary)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9f2369dc-a8d1-4a5b-b728-3b0ccfea6ec5" x="454" y="890" width="123" height="10" fontSize="6.0" bold="true" italic="true">
+			<text><![CDATA[CS FORM 212 (Revised 2025), Page 1 of 4]]></text>
+		</element>
+		<element kind="staticText" uuid="bfa94367-691d-4387-8935-de17d04b259d" x="501" y="667" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9f7dd064-4d86-4112-8d94-92d00bb631ec" x="326" y="667" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ff38820a-0e14-4415-9eb8-6f1579e0fe52" x="326" y="648" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1d462dfd-ac17-4836-893e-741677803954" x="501" y="648" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="dbf9ce02-86e9-4b64-88ab-760a444a3ede" x="326" y="629" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5dbcb8d1-a5c9-4242-81b7-50ea4dc09daf" x="501" y="629" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="93257bf3-1074-49b5-9929-62255c3a992e" x="326" y="610" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="bcb8cd0b-c995-4dbd-bc1e-5e7356c365eb" x="501" y="610" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="eb3300a9-29ee-4c87-aadc-1e8a7a11e6e5" x="326" y="591" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c38b5f25-b3e6-4ee4-9cce-242c1ee061dd" x="501" y="591" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c829704c-1e19-483b-a305-73b5eae1a411" x="326" y="572" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="59552f86-4b9a-4d3b-b49f-4c008893b11d" x="501" y="572" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="8583d6a8-847d-4d45-a9ac-4ddd3a703acb" x="326" y="553" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e39a9320-81a1-4f56-b593-4e85295b25d4" x="501" y="553" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="70481f88-9942-4279-96a1-0b1346df8900" x="326" y="534" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f7a0443d-35a6-4681-86d6-4ceb2f8f76ee" x="501" y="534" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b05078ff-fe02-424a-b37e-69d34979c51f" x="326" y="515" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="086853ac-e20f-40a5-b6dc-01d7092b4667" x="501" y="515" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="96fd6f56-7800-4f86-8279-affd5e27f036" x="326" y="496" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="410f3aab-c8ce-466c-a047-fc4aae13ef8f" x="501" y="496" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0ede63ec-484f-48f5-84bd-12a6689c649e" x="326" y="477" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2848cb07-d537-4875-a5ff-c38750a6bb97" x="501" y="477" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="25eb587d-cc13-4a22-b5eb-7b7e493346a0" x="326" y="458" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9f535111-4d6a-4de6-8c69-b3b4a127aa21" x="501" y="458" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ce580e9c-f169-4d91-a636-1fc74571734a" x="326" y="439" width="175" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="57fb9a16-da87-493d-a513-037bcd5e02ab" x="501" y="439" width="76" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="896d8ee8-ba34-455b-99d4-13a84df50f43" x="114" y="629" width="212" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{maidenName}]]></expression>
+			<box leftPadding="5"/>
+		</element>
+		<element kind="staticText" uuid="f96085dc-d990-4731-a04f-a99888da6dcf" x="0" y="890" width="123" height="10" forecolor="#0000FF" fontSize="6.0" pdfFontName="Helvetica-Bold" bold="true" italic="true">
+			<text><![CDATA[ISOFT HRIS System Generated]]></text>
+		</element>
+	</background>
+	<title height="88" splitType="Stretch">
+		<element kind="staticText" uuid="8e206094-5d2d-4111-8639-b1cba928281e" x="0" y="0" width="577" height="88">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="838a179a-352f-4497-876f-bd3d7d112ab2" x="2" y="0" width="71" height="12" fontSize="8.0" bold="true" italic="true">
+			<text><![CDATA[CS Form No. 212]]></text>
+		</element>
+		<element kind="staticText" uuid="23e018c2-2b54-4fec-9bad-619883fcc252" x="2" y="11" width="48" height="12" fontSize="7.0" bold="true" italic="true">
+			<text><![CDATA[Revised 2017]]></text>
+		</element>
+		<element kind="staticText" uuid="451aee44-aeb3-41e6-a404-efbbc5e2e86f" x="178" y="15" width="272" height="34" fontName="SansSerif" fontSize="20.0" bold="true">
+			<text><![CDATA[PERSONAL DATA SHEET]]></text>
+		</element>
+		<element kind="staticText" uuid="92a739f2-1106-422c-b1f4-617432f18579" x="2" y="49" width="509" height="17" fontName="SansSerif" fontSize="6.0" bold="true" italic="true" vTextAlign="Middle">
+			<text><![CDATA[WARNING: Any misrepresentation made in the Personal Data Sheet and the Work Experience Sheet shall cause the filling of administrative/criminal case/s against the person
+concerned.]]></text>
+		</element>
+		<element kind="staticText" uuid="5aa33fe9-7ce0-4ae4-a992-20c36accb3f4" x="2" y="66" width="380" height="10" fontSize="6.0" bold="true" italic="true" vTextAlign="Middle">
+			<text><![CDATA[READ THE ATTACHED GUIDE TO FILLING OUT THE PRESONAL DATA SHEET (PDS) BEFORE ACCOMPLISHING THE PDS FORM.]]></text>
+		</element>
+		<element kind="staticText" uuid="6593adce-e282-43fd-8026-5d3600e4ea8c" x="2" y="76" width="298" height="10" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[Print legibly. Tick appropriate boxes (□) and use separate sheet if necessary. Indicate N/A if not applicable.]]></text>
+		</element>
+		<element kind="staticText" uuid="73e0cd51-c5b9-42d9-b1c8-51fa1e94bc85" x="294" y="77" width="66" height="9" fontSize="6.0" bold="true">
+			<text><![CDATA[DO NOT ABBREVIATE.]]></text>
+		</element>
+		<element kind="staticText" uuid="3287dac8-fc57-43b2-b652-b7aba74357d9" x="414" y="75" width="163" height="10" fontSize="6.0" hTextAlign="Right" vTextAlign="Middle">
+			<text><![CDATA[(Do not fill up. For CSC use only)  ]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="465c43a8-c4d5-4ce0-bac3-4eb8fec37554" mode="Opaque" x="379" y="75" width="36" height="10" forecolor="#000000" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[ 1. CS ID No.]]></text>
+			<box>
+				<topPen lineWidth="1.0" lineColor="#000000"/>
+				<leftPen lineWidth="1.0" lineColor="#000000"/>
+				<bottomPen lineWidth="1.0" lineColor="#000000"/>
+				<rightPen lineWidth="1.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="d1cae321-4dac-4a25-9b2d-50f3431a31bd" x="415" y="75" width="70" height="10" fontSize="7.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{csIdNo}]]></expression>
 		</element>
 	</title>
+	<pageHeader height="370" splitType="Stretch">
+		<element kind="staticText" uuid="9b823934-4a2c-4394-8a0b-afdd73a07e9f" mode="Opaque" x="0" y="11" width="114" height="57" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e9688586-58ca-4a79-87e6-6efafd074875" mode="Opaque" x="0" y="0" width="577" height="11" forecolor="#FFFFFF" backcolor="#666666" fontSize="8.0" bold="true">
+			<text><![CDATA[ I. PERSONAL INFORMATION]]></text>
+			<box>
+				<topPen lineWidth="1.0" lineColor="#000000"/>
+				<leftPen lineWidth="1.0" lineColor="#000000"/>
+				<bottomPen lineWidth="1.0" lineColor="#000000"/>
+				<rightPen lineWidth="1.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="c24051e4-dec5-4a4e-9900-857d17319db5" x="114" y="30" width="264" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{firstname}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="aff8c7e6-488f-4a7e-ad5d-2d73f4b45d23" x="114" y="49" width="463" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{middlename}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="83149383-dfd5-42f4-8b69-c747f4fe30cb" x="114" y="11" width="463" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{lastname}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9371cf2d-aa6d-4573-9a30-ead57feeed1a" mode="Opaque" x="378" y="30" width="94" height="19" backcolor="#CCCCCC" fontName="Serif" fontSize="5.0" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[   EXTENSION NAME (JR., SR)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="3fe9e1d6-ba46-4a48-98fe-3a8f595d26e5" x="472" y="30" width="105" height="19" fontSize="9.0" blankWhenNull="true" vTextAlign="Middle">
+			<expression><![CDATA[$F{nameExtension}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ddf2d26d-eb4d-4f88-9874-3d6220c280ee" mode="Opaque" x="0" y="68" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       3. DATE OF BIRTH
+          (mm/dd/yyyy)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="a2352380-cd4a-4717-9063-0be513c42ed5" x="114" y="68" width="100" height="19" fontSize="9.0" pattern="MM/dd/yyyy" blankWhenNull="true" bold="false" hTextAlign="Left" vTextAlign="Middle">
+			<expression><![CDATA[$F{birthDate}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="632c0a14-a1e8-4608-b8b6-dde7b7510e6a" mode="Opaque" x="0" y="87" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       4. PLACE OF BIRTH]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9b388773-5836-43ed-9616-3e30a434ab72" mode="Opaque" x="0" y="106" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       5. SEX]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="6cc9ff8d-1908-472e-8fe5-db6a77347eb0" x="114" y="87" width="100" height="19" fontSize="9.0" blankWhenNull="true" bold="false" hTextAlign="Left" vTextAlign="Middle">
+			<expression><![CDATA[$F{birthPlace}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1512c6aa-8b0f-4dec-ab4f-a292573a6197" x="114" y="106" width="100" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="7d6f5d0f-10c3-4a3b-9b3f-96a5f965cefc" x="121" y="110" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{gender}.toUpperCase().equals("MALE")?"X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d9ba2709-71b1-443a-8647-3180e9e5e793" x="183" y="110" width="28" height="10" fontSize="6.0">
+			<text><![CDATA[Female]]></text>
+		</element>
+		<element kind="staticText" uuid="d382eb84-df2e-46d6-a69a-2cd3606b7130" x="135" y="110" width="18" height="10" fontSize="6.0">
+			<text><![CDATA[Male]]></text>
+		</element>
+		<element kind="textField" uuid="fad7db7b-6065-4403-b3c2-05d7b3087c4c" x="167" y="110" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{gender}.toUpperCase().equals("FEMALE")?"X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="61db03c4-ec58-47ce-9cbc-b88d2f644c46" mode="Opaque" x="214" y="68" width="164" height="57" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Bottom">
+			<text><![CDATA[If holder of dual citizenship,
+
+please indicate the details.
+]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="19527c79-2272-4907-8c34-ea9899e2cf60" x="221" y="71" width="52" height="9" fontSize="6.0">
+			<text><![CDATA[16. CITIZENSHIP]]></text>
+		</element>
+		<element kind="staticText" uuid="28cef540-20f2-4e08-86b9-70d24ea2d8cf" x="378" y="68" width="199" height="57" fontSize="6.0" hTextAlign="Center" vTextAlign="Bottom">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1fc3bdcf-9a06-4fe5-8e4a-8923e67488eb" x="402" y="76" width="29" height="10" fontSize="6.0">
+			<text><![CDATA[FILIPINO]]></text>
+		</element>
+		<element kind="textField" uuid="0d46aac8-49cc-4d5a-9796-b0f58dcdfe38" x="387" y="75" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{nationality}.toUpperCase().equals("FILIPINO")?
+    "X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="07a1e1e9-a0af-4066-9bea-98db9a04cb2d" x="455" y="76" width="58" height="10" fontSize="6.0">
+			<text><![CDATA[DUAL CITIZENSHIP]]></text>
+		</element>
+		<element kind="textField" uuid="f9b45eeb-ca9b-4b9f-b9d9-bea2a23d4965" x="440" y="75" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{nationality}.toUpperCase().equals("DUAL CITIZENSHIP")?
+    "X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="bb207070-5115-4394-b362-d1cfb3ae5911" x="472" y="89" width="29" height="10" fontSize="6.0">
+			<text><![CDATA[by birth]]></text>
+		</element>
+		<element kind="staticText" uuid="0e9edba6-f400-42ed-8abe-f9c71973cee1" x="523" y="89" width="52" height="10" fontSize="6.0">
+			<text><![CDATA[by naturalization]]></text>
+		</element>
+		<element kind="staticText" uuid="54467750-990f-4a58-9e8d-c0ed4183e077" x="450" y="106" width="73" height="10" fontSize="7.0">
+			<text><![CDATA[Pls. Indicate Country:]]></text>
+		</element>
+		<element kind="staticText" uuid="7758ed1c-5704-4f85-9ab4-0f166d4dffe4" mode="Opaque" x="0" y="125" width="114" height="44" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       6. CIVIL STATUS]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0d0463a2-602a-44ad-b4fc-ba5b42acbe73" x="114" y="125" width="100" height="44">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="8d9a1f4a-6697-4a5d-841c-aefc75ebde88" x="121" y="142" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{civilStatus}.toUpperCase().equals("WIDOWED")?"X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e03ae09b-8254-4432-88da-08d4e3a1afe2" x="135" y="129" width="18" height="10" fontSize="6.0">
+			<text><![CDATA[Single]]></text>
+		</element>
+		<element kind="staticText" uuid="f49f9839-013c-4f1e-b776-7ef423fb987f" x="135" y="142" width="29" height="10" fontSize="6.0">
+			<text><![CDATA[Widowed]]></text>
+		</element>
+		<element kind="textField" uuid="7b1ce3e9-7fe8-47ad-8a15-64971a80b26e" x="121" y="129" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{civilStatus}.toUpperCase().equals("SINGLE")?"X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="072d4c73-31e7-4748-91b9-1478089adb4a" x="121" y="155" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{civilStatus}.toUpperCase().equals("")?"X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e8ec3881-dfb4-4073-8d0b-bec7151d4988" x="135" y="155" width="29" height="10" fontSize="6.0">
+			<text><![CDATA[Other/s:]]></text>
+		</element>
+		<element kind="staticText" uuid="520fd5a0-dca2-413a-95ed-87a3e2e73232" x="182" y="142" width="30" height="10" fontSize="6.0">
+			<text><![CDATA[Separated]]></text>
+		</element>
+		<element kind="staticText" uuid="228ea09d-29ec-4015-92ca-20913c069b9b" x="182" y="129" width="29" height="10" fontSize="6.0">
+			<text><![CDATA[Married]]></text>
+		</element>
+		<element kind="textField" uuid="20c0c801-701a-4021-812b-c054382b0a6d" x="167" y="129" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{civilStatus}.toUpperCase().equals("MARRIED")?"X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="1489c0df-d963-4821-a341-d4cddd03c9da" x="167" y="142" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{civilStatus}.toUpperCase().equals("SEPARATED")?"X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="347dfbee-11ff-498d-9bee-57e96c35aae2" mode="Opaque" x="214" y="125" width="112" height="82" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Bottom">
+			<text><![CDATA[ZIP CODE
+]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4eec030c-9fd4-49d5-b7e7-6c4f7794c5b0" x="221" y="128" width="92" height="9" fontSize="6.0">
+			<text><![CDATA[17. RESIDENTIAL ADDRESS]]></text>
+		</element>
+		<element kind="staticText" uuid="b810322d-9734-4572-a6a1-65cc61e6bd2c" mode="Opaque" x="0" y="169" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0" vTextAlign="Top">
+			<text><![CDATA[       7. HEIGHT]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="6031648d-a9c6-481e-8c55-9687bc89a73f" x="114" y="169" width="100" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{height}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="70dbf82c-4563-4883-900f-1b6a357b0133" x="114" y="188" width="100" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{weight}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ff94fe3f-050f-4540-815a-1136cfe0a5ac" mode="Opaque" x="0" y="188" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       8. WEIGHT]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="9c5ee85e-2401-4f19-a6fc-cfa8d7df1df1" mode="Transparent" x="326" y="125" width="251" height="63" fontSize="9.0" blankWhenNull="true" bold="false">
+			<expression><![CDATA[$F{residentaddress}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="4b196694-52f1-4167-9da0-d48a9debcb40" x="326" y="188" width="251" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{residentzipcode}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="194c37d4-9f40-46ac-b34e-c3af3a69f498" x="114" y="207" width="100" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{bloodType}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ff8963da-075e-4479-a2f6-2f40fe501e8c" mode="Opaque" x="0" y="207" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       9. BLOOD TYPE]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1c4c23e2-f753-4a5a-977b-da0a43b654c3" mode="Opaque" x="214" y="207" width="112" height="76" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Bottom">
+			<text><![CDATA[ZIP CODE
+]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b161f947-6896-4c6d-823c-a89f5276d11d" mode="Opaque" x="0" y="226" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       10. GSIS ID NO.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="8c8967f4-440a-448a-9b5a-608e949e358e" x="114" y="226" width="100" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{gsisNo}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2b4e000f-30c2-4855-9a74-3b9d440f579c" mode="Opaque" x="0" y="245" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       11. PAG-IBIG ID NO.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="59ecb84e-eeb1-4850-8091-dc40251ebd00" x="114" y="245" width="100" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{pagibigNo}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1f7e83e1-1e35-4936-a8a7-a0102acbdce8" x="221" y="210" width="92" height="9" fontSize="6.0">
+			<text><![CDATA[18. PERMANENT ADDRESS]]></text>
+		</element>
+		<element kind="staticText" uuid="699aae39-c965-4b3f-b54f-582013a18ede" mode="Opaque" x="0" y="264" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       12. PHILHEALTH NO.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="ef1f7ad0-1530-4f21-8443-588e2ba9fea3" x="114" y="264" width="100" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{philHealthNo}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="ea8944c3-9e3e-4159-b887-3b71faf59458" x="326" y="207" width="251" height="57" fontSize="9.0" blankWhenNull="true" bold="false">
+			<expression><![CDATA[$F{permanentAddress}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="d9d70c91-9a71-4374-8c5c-337f0a597f8b" x="326" y="264" width="251" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{zipCode}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c4ddfb9e-0b3d-43a6-a8a0-1dfc30b363fc" mode="Opaque" x="0" y="283" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       13. SSS NO.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="60516ddd-11b8-4645-917c-b5c866172053" x="114" y="283" width="100" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{sssNo}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="edde1c09-2728-44be-aba5-159eca6d4a22" mode="Opaque" x="214" y="283" width="112" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       19. TELEPHONE NO.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="c28eb215-19bc-47d3-9cad-834e745bd3c9" x="326" y="283" width="251" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{telNo}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="64da4ac5-9782-4377-988b-21661cbd9a24" mode="Opaque" x="0" y="302" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       14. TIN NO.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="187b3d59-00e8-4167-9b15-74582166175d" mode="Opaque" x="0" y="321" width="114" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       15. AGENCY EMPLOYEE NO.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="dba16525-fa05-43da-b558-7e050a0abd1d" x="114" y="302" width="100" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{tinNo}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="887dc9b4-cb54-494b-a185-dad02dc1745b" mode="Opaque" x="214" y="302" width="112" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       20. MOBILE NO.]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="852cb379-0949-477c-8b30-90d44502cbe1" x="326" y="302" width="251" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{mobileNo}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="ab2f2040-4cef-4217-bb0c-1a0c066e3539" x="114" y="321" width="100" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{agencyEmployeeNo}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b36a9933-39b9-4145-9d08-486b73fd7aef" mode="Opaque" x="214" y="321" width="112" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[       21. E-MAIL ADDRESS]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="b4ef6b54-c8e7-4c63-b45a-257bc6a7eadb" x="326" y="321" width="251" height="19" fontSize="9.0" blankWhenNull="true" bold="false" vTextAlign="Middle">
+			<expression><![CDATA[$F{email}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="341b8e5d-e542-4bc4-b95d-2185394228b6" x="455" y="89" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{nationalityDualCitizenship}.toUpperCase().equals("BY BIRTH")?
+    "X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="249bb0ad-a4e3-4fb2-b290-eeeac30be9c0" x="508" y="89" width="10" height="10" fontSize="6.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new String($F{nationalityDualCitizenship}.toUpperCase().equals("BY NATURALIZATION")?
+    "X":"")]]></expression>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="603f427d-4387-43de-a4cd-3bb9f97380d8" x="378" y="113" width="199" height="12" fontSize="9.0" blankWhenNull="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{nationalityIndicateCountry}]]></expression>
+		</element>
+		<element kind="staticText" uuid="642a89ce-0ddb-4224-b30c-ca3f07997625" mode="Opaque" x="326" y="351" width="175" height="19" backcolor="#CCCCCC" fontSize="6.0">
+			<text><![CDATA[
+       23. NAME OF CHILDREN]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2a229351-51d4-43e1-b18b-e36913732842" mode="Opaque" x="0" y="340" width="577" height="11" forecolor="#FFFFFF" backcolor="#666666" fontSize="8.0" bold="true">
+			<text><![CDATA[ II. FAMILY BACKGROUND]]></text>
+			<box>
+				<topPen lineWidth="1.0" lineColor="#000000"/>
+				<leftPen lineWidth="1.0" lineColor="#000000"/>
+				<bottomPen lineWidth="1.0" lineColor="#000000"/>
+				<rightPen lineWidth="1.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="07f46c9b-6c74-4d49-beaf-76dc1abeafd0" mode="Opaque" x="501" y="351" width="76" height="19" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[DATE OF BIRTH
+(mm/dd/yyyy) ]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="85ac5925-8247-4790-b2ea-8e6de6072bdf" mode="Transparent" x="19" y="49" width="83" height="15" forecolor="#000000" backcolor="#FFFFFF" fontName="Serif" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[MIDDLE NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="77fd13d6-4df5-411a-879b-74f0dfae45da" mode="Transparent" x="13" y="13" width="76" height="17" forecolor="#000000" backcolor="#FFFFFF" fontName="Serif" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[2. SURNAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="cdcd12a4-b7e5-45b6-96c5-50a0c03fd96c" mode="Transparent" x="19" y="32" width="61" height="16" forecolor="#000000" backcolor="#FFFFFF" fontName="Serif" fontSize="6.0" vTextAlign="Middle">
+			<text><![CDATA[FIRST NAME]]></text>
+			<box>
+				<topPen lineWidth="0.0" lineColor="#000000"/>
+				<leftPen lineWidth="0.0" lineColor="#000000"/>
+				<bottomPen lineWidth="0.0" lineColor="#000000"/>
+				<rightPen lineWidth="0.0" lineColor="#000000"/>
+			</box>
+		</element>
+	</pageHeader>
 	<detail>
-		<band height="16">
-			<element kind="staticText" uuid="4f79d50f-21ca-4a0d-b684-a9c6c848cfbc" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
-				<text><![CDATA[I.  PERSONAL INFORMATION]]></text>
-			</element>
-		</band>
-		<band height="20" splitType="Stretch">
-			<element kind="textField" uuid="f950aa63-89ba-469c-a2c3-30ddb44e783f" x="0" y="0" width="555" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
-				<expression><![CDATA["1.  Surname: " + $F{surname} + "  First Name: " + $F{firstname} + "  Middle Name: " + $F{middlename} + "  Ext: " + $F{extname} + "\n" +
-"2.  Date of Birth: " + $F{dob} + "  Place of Birth: " + $F{pob} + "\n" +
-"3.  Sex: " + $F{sex} + "  Civil Status: " + $F{civilStatus} + "\n" +
-"4.  Height (m): " + $F{height} + "  Weight (kg): " + $F{weight} + "  Blood Type: " + $F{bloodType} + "\n" +
-"5.  GSIS ID No.: " + $F{gsisId} + "\n" +
-"6.  PAG-IBIG ID No.: " + $F{pagibigId} + "\n" +
-"7.  PhilHealth No.: " + $F{philhealthNo} + "\n" +
-"8.  SSS No.: " + $F{sssNo} + "\n" +
-"9.  TIN No.: " + $F{tinNo} + "\n" +
-"10. Agency Employee No.: " + $F{agencyEmpNo} + "\n" +
-"11. Citizenship: " + $F{citizenship} + "\n" +
-"12. Residential Address: " + $F{resAddress} + "\n" +
-"13. Permanent Address: " + $F{permAddress} + "\n" +
-"14. Telephone No.: " + $F{telNo} + "\n" +
-"15. Mobile No.: " + $F{mobileNo} + "\n" +
-"16. E-mail Address: " + $F{email}]]></expression>
-			</element>
-		</band>
-		<band height="16">
-			<element kind="staticText" uuid="e2bd895c-69f6-46d5-98a7-7b86d4835915" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
-				<text><![CDATA[II.  FAMILY BACKGROUND]]></text>
-			</element>
-		</band>
-		<band height="20" splitType="Stretch">
-			<element kind="textField" uuid="2528aec2-fc28-4309-b189-8deb354843bc" x="0" y="0" width="555" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
-				<expression><![CDATA["Spouse Surname: " + $F{spouseSurname} + "  First Name: " + $F{spouseFirstname} + "  Middle Name: " + $F{spouseMiddlename} + "\n" +
-"Spouse Occupation: " + $F{spouseOccupation} + "  Employer: " + $F{spouseEmployer} + "  Tel. No.: " + $F{spouseTelNo} + "\n" +
-"Father's Name: " + $F{fatherName} + "\n" +
-"Mother's Maiden Name: " + $F{motherName}]]></expression>
-			</element>
-		</band>
-		<band height="14">
-			<element kind="staticText" uuid="e0dde251-677a-47d9-ac6c-b5278cc0207c" x="0" y="0" width="555" height="14" fontName="SansSerif" fontSize="9.0" bold="true">
-				<text><![CDATA[Children (Name / Date of Birth):]]></text>
-			</element>
-		</band>
-		<band height="20" splitType="Stretch">
-			<element kind="textField" uuid="b238447a-ab92-48d0-8e40-abceff91c4a9" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
-				<expression><![CDATA[$F{childrenList}]]></expression>
-			</element>
-		</band>
-		<band height="16">
-			<element kind="staticText" uuid="fa8c5d28-3fea-49a2-b8a7-d091f34e1034" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
-				<text><![CDATA[III.  EDUCATIONAL BACKGROUND]]></text>
-			</element>
-		</band>
-		<band height="20" splitType="Stretch">
-			<element kind="textField" uuid="521aee8e-f964-4e92-879a-b19cfe5afab4" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
-				<expression><![CDATA[$F{educationList}]]></expression>
+		<band height="100">
+			<element kind="subreport" uuid="e5d0db55-ba8e-457e-bdb3-dc49bf8b5753" x="306" y="0" width="251" height="100" removeLineWhenBlank="true">
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<expression><![CDATA[$P{PDS_C1_CHILDREN_SUBREPORT} != null ? $P{PDS_C1_CHILDREN_SUBREPORT} : "pds_c1_children_sub.jasper"]]></expression>
+				<parameter name="EMPLOYEE_ID">
+					<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>
+				</parameter>
 			</element>
 		</band>
 	</detail>

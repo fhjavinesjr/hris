@@ -1,69 +1,110 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
-                http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
-              name="pds_c2_civilservice_sub" pageWidth="802" pageHeight="595"
-              columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0"
-              uuid="c2c50001-0000-4000-8000-000000000001">
-
-  <field name="careerServiceName"    class="java.lang.String"/>
-  <field name="civilServiceRating"   class="java.lang.String"/>
-  <field name="dateOfExamination"    class="java.lang.String"/>
-  <field name="placeOfExamination"   class="java.lang.String"/>
-  <field name="licenseNumber"        class="java.lang.String"/>
-  <field name="licenseValidityDate"  class="java.lang.String"/>
-
-  <detail>
-    <band height="11" splitType="Stretch">
-      <textField isStretchWithOverflow="true">
-        <reportElement x="0"   y="0" width="200" height="11" uuid="c2c50001-0000-4000-8000-000000000002"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{careerServiceName} != null ? $F{careerServiceName} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="200"  y="0" width="80"  height="11" uuid="c2c50001-0000-4000-8000-000000000003"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{civilServiceRating} != null ? $F{civilServiceRating} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="280"  y="0" width="100" height="11" uuid="c2c50001-0000-4000-8000-000000000004"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{dateOfExamination} != null ? $F{dateOfExamination} : ""]]></textFieldExpression>
-      </textField>
-      <textField isStretchWithOverflow="true">
-        <reportElement x="380"  y="0" width="180" height="11" uuid="c2c50001-0000-4000-8000-000000000005"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{placeOfExamination} != null ? $F{placeOfExamination} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="560"  y="0" width="120" height="11" uuid="c2c50001-0000-4000-8000-000000000006"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{licenseNumber} != null ? $F{licenseNumber} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="680"  y="0" width="122" height="11" uuid="c2c50001-0000-4000-8000-000000000007"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{licenseValidityDate} != null ? $F{licenseValidityDate} : ""]]></textFieldExpression>
-      </textField>
-    </band>
-  </detail>
-
-  <noData>
-    <band height="11">
-      <staticText>
-        <reportElement x="0" y="0" width="802" height="11" uuid="c2c50001-0000-4000-8000-000000000008"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <text><![CDATA[N/A]]></text>
-      </staticText>
-    </band>
-  </noData>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" name="pds_c2_civilservice_sub" pageWidth="612" pageHeight="940" columnWidth="598" leftMargin="0" rightMargin="14" topMargin="0" bottomMargin="20" uuid="e711acfa-800c-434c-9643-168f70b79548">
+	<property name="ireport.zoom" value="1.6105100000000008"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"></parameter>
+	
+	<queryString language="SQL"><![CDATA[SELECT
+    ISNULL(careerServiceName, '') AS career,
+    TRY_CONVERT(float, civilServiceRating) AS rating,
+    CAST(dateOfExamination AS date) AS dateTaken,
+    ISNULL(licenseNumber, '') AS licenseNo,
+    CAST(licenseValidityDate AS date) AS licenseReleaseDate,
+    '' AS remarks,
+    ISNULL(placeOfExamination, '') AS placeTaken,
+    ISNULL(CONVERT(varchar(10), CAST(dateOfExamination AS date), 101), '') AS dateTakenString
+FROM civilserviceeligibility
+WHERE personalDataId = (SELECT TOP 1 personalDataId FROM personaldata WHERE employeeId = $P{EMPLOYEE_ID})
+ORDER BY dateOfExamination DESC]]></queryString>
+<field name="career" class="java.lang.String"/>
+	<field name="rating" class="java.lang.Double"/>
+	<field name="dateTaken" class="java.sql.Date"/>
+	<field name="licenseNo" class="java.lang.String"/>
+	<field name="licenseReleaseDate" class="java.sql.Date"/>
+	<field name="remarks" class="java.lang.String"/>
+	<field name="placeTaken" class="java.lang.String"/>
+	<field name="dateTakenString" class="java.lang.String"/>
+	<detail>
+		<band height="19" splitType="Stretch">
+			<textField>
+				<reportElement uuid="d5ce9645-0779-4c40-a4fd-d78e7567906f" x="0" y="0" width="162" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{career}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="7a44fd25-06c2-4648-8932-84bfa51956c0" x="162" y="0" width="52" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{rating}]]></textFieldExpression>
+			</textField>
+			<textField pattern="">
+				<reportElement uuid="004035d8-3173-49f2-8bb6-36e396fdf2a3" x="214" y="0" width="56" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{dateTakenString}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="8e5b0932-2bd3-4546-9083-1220b5ad245a" x="270" y="0" width="198" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{placeTaken}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="6c001ed2-5268-469c-bcd5-402bd7f337e4" x="468" y="0" width="55" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{licenseNo}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd/yyyy" isBlankWhenNull="true">
+				<reportElement uuid="711d3955-f583-4f58-a98a-c5134c4f93e7" x="523" y="0" width="55" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{licenseReleaseDate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
 </jasperReport>

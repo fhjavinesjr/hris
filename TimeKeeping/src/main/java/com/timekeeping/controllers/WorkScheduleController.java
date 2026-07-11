@@ -4,12 +4,18 @@ import com.hris.common.dtos.MetadataResponse;
 import com.timekeeping.dtos.WorkScheduleDTO;
 import com.timekeeping.services.WorkScheduleService;
 import org.springframework.format.annotation.DateTimeFormat;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.net.URLEncoder;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -76,6 +82,36 @@ public class WorkScheduleController {
         int count = workScheduleService.bulkCreateDayOff(dtos);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new MetadataResponse((long) count, "Successfully created " + count + " rest day(s)"));
+    }
+
+
+
+
+    @GetMapping("/work-schedule/signatory-position")
+    public ResponseEntity<Map<String, String>> getWorkScheduleSignatoryPosition(@RequestParam("employeeId") String employeeId) {
+        return ResponseEntity.ok(workScheduleService.getWorkScheduleSignatoryInfo(employeeId));
+    }
+
+    @GetMapping(value = "/work-schedule/report", produces = MediaType.APPLICATION_PDF_VALUE)
+    public void generateWorkScheduleReport(
+            @RequestParam("areaId") Long areaId,
+            @RequestParam(value = "businessUnitId", required = false) Long businessUnitId,
+            @RequestParam("fromDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam("toDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(value = "preparedBy", required = false) String preparedBy,
+            @RequestParam(value = "preparedByPos", required = false) String preparedByPos,
+            @RequestParam(value = "approvedBy", required = false) String approvedBy,
+            @RequestParam(value = "approvedByPos", required = false) String approvedByPos,
+            HttpServletResponse response
+    ) throws Exception {
+        String fileName = "WorkSchedule_" + fromDate + "_" + toDate + ".pdf";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName);
+
+        workScheduleService.generateWorkScheduleReport(areaId, businessUnitId, fromDate, toDate, preparedBy, preparedByPos, approvedBy, approvedByPos, response.getOutputStream());
+        response.flushBuffer();
     }
 
 }

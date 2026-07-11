@@ -1,0 +1,214 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="permitSlip" language="java" pageWidth="680" pageHeight="520" columnWidth="640" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="946bd7f7-f3f2-47bc-adc7-39aeb9b69075">
+	<property name="ireport.zoom" value="1.4641000000000022"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="webAppPath" class="java.lang.String"/>
+	<parameter name="currentCompany" class="java.lang.String"/>
+	<parameter name="currentCompanyAddress" class="java.lang.String"/>
+	<parameter name="logoleft" class="java.lang.Object"/>
+	<parameter name="logoright" class="java.lang.Object"/>
+	<parameter name="isDOH" class="java.lang.Boolean"/>
+	<parameter name="passSlipId" class="java.lang.Long"/>
+	<query language="sql"><![CDATA[SELECT
+    CONCAT(
+        COALESCE(emp.lastname, ''),
+        CASE WHEN COALESCE(emp.lastname, '') <> '' AND COALESCE(emp.firstname, '') <> '' THEN ', ' ELSE '' END,
+        COALESCE(emp.firstname, ''),
+        CASE WHEN COALESCE(emp.suffix, '') <> '' THEN ' ' + emp.suffix ELSE '' END
+    ) AS employee,
+    ps.passSlipDate AS permitDate,
+    ps.purpose AS purpose,
+    COALESCE(ps.details, '') AS reason,
+    COALESCE(
+        CONCAT(
+            COALESCE(appr.lastname, ''),
+            CASE WHEN COALESCE(appr.lastname, '') <> '' AND COALESCE(appr.firstname, '') <> '' THEN ', ' ELSE '' END,
+            COALESCE(appr.firstname, ''),
+            CASE WHEN COALESCE(appr.suffix, '') <> '' THEN ' ' + appr.suffix ELSE '' END
+        ),
+        ''
+    ) AS approvalBy,
+    ps.departureTime AS departureOut,
+    ps.arrivalTime AS arrivalIn,
+    CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
+    ISNULL(st.companyName, '') AS currentCompanySetting,
+    ISNULL(st.address, '') AS currentCompanyAddressSetting,
+    st.leftHeaderLogo AS leftHeaderLogo,
+    st.rightHeaderLogo AS rightHeaderLogo
+FROM pass_slip ps
+LEFT JOIN employee emp ON emp.employeeId = ps.employeeId
+LEFT JOIN employee appr ON appr.employeeId = ps.approvedById
+OUTER APPLY (
+    SELECT TOP 1
+        s.companyName,
+        s.address,
+        s.hospitalAgency,
+        s.leftHeaderLogo,
+        s.rightHeaderLogo
+    FROM settings s
+    ORDER BY s.settingsId DESC
+) st
+WHERE ps.passSlipId = $P{passSlipId}
+ORDER BY ps.passSlipDate ASC, ps.departureTime ASC, ps.passSlipId ASC]]></query>
+	<field name="employee" class="java.lang.String"/>
+	<field name="permitDate" class="java.sql.Date"/>
+	<field name="purpose" class="java.lang.String"/>
+	<field name="reason" class="java.lang.String"/>
+	<field name="approvalBy" class="java.lang.String"/>
+	<field name="departureOut" class="java.sql.Time"/>
+	<field name="arrivalIn" class="java.sql.Time"/>
+	<field name="hospitalAgency" class="java.lang.Boolean"/>
+	<field name="currentCompanySetting" class="java.lang.String"/>
+	<field name="currentCompanyAddressSetting" class="java.lang.String"/>
+	<field name="leftHeaderLogo" class="java.lang.Object"/>
+	<field name="rightHeaderLogo" class="java.lang.Object"/>
+	<title height="105" splitType="Stretch">
+		<element kind="image" onErrorType="Blank" uuid="2b8ac8f6-4405-415b-966d-ff32016a0298" x="70" y="12" width="55" height="55" scaleImage="FillFrame" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{leftHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[])$F{leftHeaderLogo})]]></expression>
+		</element>
+		<element kind="image" onErrorType="Blank" uuid="9423539b-5603-4fe4-90bd-d9ac41225fa5" x="515" y="12" width="55" height="55" scaleImage="FillFrame" hImageAlign="Center" vImageAlign="Middle">
+			<expression><![CDATA[$F{rightHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[])$F{rightHeaderLogo})]]></expression>
+		</element>
+		<element kind="textField" uuid="0747ecaa-b09a-4ede-9e7d-f330ff10401c" x="130" y="10" width="380" height="58" markup="styled" fontName="Tahoma" fontSize="8.0" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[
+"<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+($F{hospitalAgency} != null && $F{hospitalAgency} ? "<style size=\"8\" isBold=\"true\">Department of Health</style><br />" : "") +
+"<style size=\"10\" isBold=\"true\"><b>" + ($F{currentCompanySetting} == null ? "" : $F{currentCompanySetting}) + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">" + ($F{currentCompanyAddressSetting} == null ? "" : $F{currentCompanyAddressSetting}) + "</style>"
+			]]></expression>
+		</element>
+		<element kind="staticText" uuid="e8f3f818-0176-4a9b-895e-af5185c96ae1" x="0" y="72" width="640" height="20" fontName="Tahoma" fontSize="12.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[PASS SLIP]]></text>
+		</element>
+	</title>
+	<columnHeader height="40" splitType="Stretch">
+		<element kind="textField" uuid="5151caa8-190c-4394-9d1a-f113ca122a72" x="0" y="20" width="141" height="20" fontSize="9.0" hTextAlign="Left" vTextAlign="Middle">
+			<expression><![CDATA[$F{employee}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="8776231b-f54e-4cbc-9ec6-3ddfd35f1652" x="0" y="0" width="141" height="20" fontSize="9.0" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA["Employee"]]></expression>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="037ff248-07e7-4ec7-87b0-751757c63245" x="141" y="20" width="99" height="20" fontSize="9.0" pattern="MMMMM dd, yyyy" vTextAlign="Middle">
+			<expression><![CDATA[$F{permitDate}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="2419eef2-4186-466b-8f25-267d3e81494e" x="141" y="0" width="99" height="20" fontSize="9.0" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA["Date"]]></expression>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="5dfdb618-1d49-4656-a453-96955355a76e" x="240" y="0" width="60" height="20" fontSize="9.0" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA["Purpose"]]></expression>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="8c10ef6c-1f45-44fb-a41a-4f4ecf27aca1" x="240" y="20" width="60" height="20" fontSize="9.0" vTextAlign="Middle">
+			<expression><![CDATA[$F{purpose}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="cb01e60b-b3f6-44a5-a65a-a46b4b626222" x="300" y="0" width="60" height="20" fontSize="9.0" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA["Departure Out"]]></expression>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="facc4e66-286e-492c-b0b2-3bcba3b65804" x="360" y="0" width="60" height="20" fontSize="9.0" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA["Arrival In"]]></expression>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="f47a4be4-8e87-4674-be8d-479bd1b4423f" x="300" y="20" width="60" height="20" fontSize="9.0" pattern="h:mm a" vTextAlign="Middle">
+			<expression><![CDATA[$F{departureOut}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="8e2420b5-771e-4915-aa85-b8e69a76585b" x="360" y="20" width="60" height="20" fontSize="9.0" pattern="h:mm a" vTextAlign="Middle">
+			<expression><![CDATA[$F{arrivalIn}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="2e2ca960-c3f7-429b-b07e-4bc462eb8de5" x="420" y="20" width="100" height="20" fontSize="8.0" vTextAlign="Middle">
+			<expression><![CDATA[$F{reason}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="133b958b-ee8f-4303-82ac-6c4f7827a6cd" x="420" y="0" width="100" height="20" fontSize="9.0" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA["Reason"]]></expression>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="c141cf93-b862-4864-9017-29c66b40188e" x="520" y="0" width="120" height="20" fontSize="9.0" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA["Approved By"]]></expression>
+			<box>
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="515bb474-f7a4-412b-970d-e9c54bfbcc58" x="520" y="20" width="120" height="20" fontSize="9.0" vTextAlign="Middle">
+			<expression><![CDATA[$F{approvalBy}]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="0.5"/>
+				<leftPen lineWidth="0.5"/>
+				<bottomPen lineWidth="0.5"/>
+				<rightPen lineWidth="0.5"/>
+			</box>
+		</element>
+	</columnHeader>
+</jasperReport>

@@ -1,41 +1,55 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
-                http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
-              name="pds_c1_children_sub" pageWidth="802" pageHeight="595"
-              columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0"
-              uuid="c1c10001-0000-4000-8000-000000000001">
-
-  <field name="childFullname" class="java.lang.String"/>
-  <field name="dob"           class="java.lang.String"/>
-
-  <detail>
-    <band height="11" splitType="Stretch">
-      <textField>
-        <reportElement x="0"   y="0" width="400" height="11" uuid="c1c10001-0000-4000-8000-000000000002"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{childFullname}]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="400" y="0" width="402" height="11" uuid="c1c10001-0000-4000-8000-000000000003"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{dob}]]></textFieldExpression>
-      </textField>
-    </band>
-  </detail>
-
-  <noData>
-    <band height="11">
-      <staticText>
-        <reportElement x="0" y="0" width="802" height="11" uuid="c1c10001-0000-4000-8000-000000000004"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <text><![CDATA[N/A]]></text>
-      </staticText>
-    </band>
-  </noData>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" name="pds_c1_children_sub" pageWidth="612" pageHeight="936" columnWidth="572" leftMargin="20" rightMargin="20" topMargin="0" bottomMargin="20" uuid="f32bdfc0-7a87-4efb-8518-43f378be3ad9">
+	<property name="ireport.zoom" value="1.6105100000000014"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"></parameter>
+	
+	<queryString language="SQL"><![CDATA[SELECT
+    '' AS firstname,
+    '' AS mi,
+    ISNULL(childFullname, '') AS lastname,
+    CAST(dob AS date) AS birthDate
+FROM children
+WHERE personalDataId = (SELECT TOP 1 personalDataId FROM personaldata WHERE employeeId = $P{EMPLOYEE_ID})
+ORDER BY dob, childFullname]]></queryString>
+<field name="lastname" class="java.lang.String"/>
+	<field name="firstname" class="java.lang.String"/>
+	<field name="mi" class="java.lang.String"/>
+	<field name="birthDate" class="java.sql.Date"/>
+	<variable name="fullname" class="java.lang.String">
+		<variableExpression><![CDATA[$F{firstname}.trim() + " "
++ ($F{mi} != null? $F{mi}.trim():"")
++ " " + $F{lastname}.trim()]]></variableExpression>
+	</variable>
+	<detail>
+		<band height="19" splitType="Stretch">
+			<textField>
+				<reportElement uuid="8eef847d-4ddf-4fd3-9df5-6cc75de94ee5" x="0" y="0" width="175" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{fullname}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd/yyyy">
+				<reportElement uuid="0de62a79-ce55-4422-9845-b5f3cdbfcbba" x="175" y="0" width="76" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{birthDate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
 </jasperReport>

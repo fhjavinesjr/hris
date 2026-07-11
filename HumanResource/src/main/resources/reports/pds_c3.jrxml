@@ -1,102 +1,1796 @@
 <!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
-<jasperReport name="pds_c3" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="e6a56e89-4729-43b4-9b4e-b84dff039d8c">
-	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+<jasperReport name="pds_c3" language="java" pageWidth="612" pageHeight="940" columnWidth="578" leftMargin="20" rightMargin="14" topMargin="20" bottomMargin="20" uuid="c38fb1cc-4fd2-4e9f-9624-fc5a8882b794">
+	<property name="ireport.zoom" value="1.6105100000000032"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="1592"/>
 	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
-	<query language="sql"><![CDATA[SELECT
-            ISNULL(e.employeeNo, '')  AS employeeNo,
-            ISNULL(pd.surname, '')    AS surname,
-            ISNULL(pd.firstname, '')  AS firstname,
-            ISNULL(pd.middlename, '') AS middlename,
-            ISNULL(pd.skillOrHobby, 'N/A') AS skillOrHobby,
-            ISNULL(pd.distinction, 'N/A')  AS distinction,
-            ISNULL(pd.association, 'N/A')  AS association,
-            ISNULL(STUFF((
-                SELECT CHAR(10) +
-                       ISNULL(v.organizationName, '') +
-                       CASE WHEN v.fromDate IS NOT NULL
-                            THEN ' | ' + CONVERT(varchar(10), CAST(v.fromDate AS date), 101) +
-                                 ' - ' + CASE WHEN v.toDate IS NOT NULL
-                                              THEN CONVERT(varchar(10), CAST(v.toDate AS date), 101)
-                                              ELSE 'Present' END
-                            ELSE '' END +
-                       CASE WHEN v.voluntaryHrs IS NOT NULL
-                            THEN ' | ' + CAST(v.voluntaryHrs AS varchar) + ' hrs'
-                            ELSE '' END +
-                       ' | ' + ISNULL(v.positionTitle, '')
-                FROM voluntarywork v
-                WHERE v.personalDataId = pd.personalDataId
-                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS voluntaryWorkList,
-            ISNULL(STUFF((
-                SELECT CHAR(10) +
-                       ISNULL(l.programName, '') +
-                       CASE WHEN l.fromDate IS NOT NULL
-                            THEN ' | ' + CONVERT(varchar(10), CAST(l.fromDate AS date), 101) +
-                                 ' - ' + CASE WHEN l.toDate IS NOT NULL
-                                              THEN CONVERT(varchar(10), CAST(l.toDate AS date), 101)
-                                              ELSE '' END
-                            ELSE '' END +
-                       CASE WHEN l.lndHrs IS NOT NULL
-                            THEN ' | ' + CAST(l.lndHrs AS varchar) + ' hrs'
-                            ELSE '' END +
-                       ' | ' + ISNULL(l.lndType, '') +
-                       ' | ' + ISNULL(l.conductedBy, '')
-                FROM learninganddevelopment l
-                WHERE l.personalDataId = pd.personalDataId
-                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, ''), 'None') AS lndList
-        FROM personaldata pd
-        JOIN employee e ON pd.employeeId = e.employeeId
-        WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
-	<field name="employeeNo" class="java.lang.String"/>
-	<field name="surname" class="java.lang.String"/>
-	<field name="firstname" class="java.lang.String"/>
-	<field name="middlename" class="java.lang.String"/>
-	<field name="skillOrHobby" class="java.lang.String"/>
-	<field name="distinction" class="java.lang.String"/>
-	<field name="association" class="java.lang.String"/>
-	<field name="voluntaryWorkList" class="java.lang.String"/>
-	<field name="lndList" class="java.lang.String"/>
-	<title height="52">
-		<element kind="staticText" uuid="5e4eb88f-4227-4d43-ae12-4da3e334bc0c" x="0" y="0" width="555" height="18" fontName="SansSerif" fontSize="12.0" bold="true" hTextAlign="Center">
-			<text><![CDATA[CS Form 212 (Revised 2017) â€” PERSONAL DATA SHEET]]></text>
+	<parameter name="PDS_C3_OTHERINFORMATION_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
+	<parameter name="PDS_C3_VOLUNTARYWORK_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
+	<parameter name="PDS_C3_LND_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
+	<query language="SQL"><![CDATA[SELECT TOP 1
+    CAST(NULL AS varchar(max)) AS eligibility,
+    CAST(NULL AS varchar(max)) AS employment,
+    CAST(NULL AS varchar(max)) AS extraactivity,
+    CAST(NULL AS varchar(max)) AS training,
+    CAST(NULL AS varchar(max)) AS otherinformation,
+    CAST(NULL AS varchar(max)) AS reference
+FROM personaldata pd
+JOIN employee e ON e.employeeId = pd.employeeId
+WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
+	<field name="extraactivity" class="java.util.List"/>
+	<field name="otherinformation" class="java.util.List"/>
+	<field name="training" class="java.util.List"/>
+	<background height="900" splitType="Stretch">
+		<element kind="staticText" uuid="df8d610f-6c60-46de-9c39-b98f847b0e8d" x="0" y="249" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
 		</element>
-		<element kind="staticText" uuid="394ff2bf-3af0-45d2-bd5f-c6ef68f62d53" x="0" y="20" width="555" height="14" fontName="SansSerif" fontSize="9.0" hTextAlign="Center">
-			<text><![CDATA[Sheet C3: Voluntary Work, Learning & Development & Other Information]]></text>
+		<element kind="staticText" uuid="2e822915-ac7a-4178-a1fb-dc2e35119c54" mode="Transparent" x="256" y="249" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
 		</element>
-		<element kind="textField" uuid="fc94c2fe-306f-4a53-8938-f52658c5ba26" x="0" y="36" width="555" height="14" fontName="SansSerif" fontSize="9.0" bold="true" hTextAlign="Center">
-			<expression><![CDATA["Employee No: " + $F{employeeNo} + "   Name: " + $F{surname} + ", " + $F{firstname} + " " + $F{middlename}]]></expression>
+		<element kind="staticText" uuid="db31478a-6fdc-4503-b19d-d94b7a7b6b08" x="353" y="249" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
 		</element>
-	</title>
+		<element kind="staticText" uuid="d788bfe5-ce09-4f90-b343-d3576df6da18" x="383" y="249" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e8de4211-212a-4b2a-94c8-9b2a3ec99cc2" x="440" y="249" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5d343194-f3fe-4502-9995-cc7aed15b0aa" x="353" y="268" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5beec66e-6bd9-4a45-a533-d44bc2c512be" mode="Transparent" x="256" y="268" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a3e6436b-7f37-4331-ae98-4b9d275d5f96" x="440" y="268" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="24734daf-de2c-40b5-a4dc-d2b7599fa92c" x="0" y="268" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fd525c69-e07a-4523-b3bb-85dbfd3b30df" x="383" y="268" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0aab326c-a5d7-4f3a-8cec-c359cdffc0af" x="353" y="287" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="964555f8-811f-448e-b3d2-bb0f27f9140c" mode="Transparent" x="256" y="287" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="346f38f9-973f-4506-9b40-8d4004ea5496" x="440" y="287" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="7c0e574c-0c04-45b5-8191-a0b44e9f0fc9" x="0" y="287" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="65190fbb-39b3-4fb3-9d6e-7d518b4b193b" x="383" y="287" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0f469d76-b8f0-44d0-a6a4-bdd0e2829313" x="353" y="306" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6f520364-ce38-46ed-b04e-87aef81639d5" mode="Transparent" x="256" y="306" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="486a8c30-0e4c-417e-8ca8-ff49211d66fb" x="440" y="306" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="944d2a6c-3199-48a3-87c4-41666c2e94c6" x="0" y="306" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="61e49aa4-1218-4116-a191-4b31f9f3a66c" x="383" y="306" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f2abceda-3faf-45f7-a786-d825b2b74d0e" x="353" y="325" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="633e8b81-bffb-4088-8ff9-cc5daccb5293" mode="Transparent" x="256" y="325" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f972716d-0fa2-484f-a5a7-73c669522171" x="440" y="325" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="02c91986-bab2-494d-ac83-56ab5e3d3d1c" x="0" y="325" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="125e4a48-e507-4a4e-a03f-2a041c78cd2b" x="383" y="325" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b8041c11-0d9b-48b1-8588-d49cb612f2d3" x="353" y="344" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="049c4d6b-c8bc-4ef5-b92f-ac2f9ed4e4aa" mode="Transparent" x="256" y="344" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2491dae9-d882-4c24-af9a-8dcad7ccc364" x="440" y="344" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5df5861d-a11a-4ade-a429-8145fd4de780" x="0" y="344" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="34cdc8a2-4581-4fb8-844f-99d782063c26" x="383" y="344" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b1ce6b86-ed63-4c62-bb4b-d8b7fe840cb7" x="353" y="363" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="bc084e87-f0e4-4e5a-95d1-ca0f6f0d3937" mode="Transparent" x="256" y="363" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="20ce0994-e876-4060-a64b-13e974b23e8d" x="440" y="363" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="cf7b9ba6-3330-4e58-ac25-ad438288e22b" x="0" y="363" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b34e1b10-7ce2-4e94-b2bd-9e0706a0f884" x="383" y="363" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2e946199-ffed-4737-937a-f7903420f944" x="353" y="382" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6534e3b7-f8e7-41d2-aa6a-5872ef461112" mode="Transparent" x="256" y="382" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="359f5927-27f8-417c-a20a-384cebf31fa3" x="440" y="382" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1167707f-4ba7-4824-aed0-7bdaee19f6a1" x="0" y="382" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="431dcdf1-576c-4abe-9bc9-09b9b71ee162" x="383" y="382" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fdf3fe35-5eb5-476d-8bf2-0f56889e6550" x="353" y="401" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f37157ad-830e-4f80-aa71-b92e01722195" mode="Transparent" x="256" y="401" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="378d1e62-93b4-4fe5-b375-4a2b8d419f1a" x="440" y="401" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="01583038-9af2-4af6-af91-3314923dd3c1" x="0" y="401" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ee951d8a-703d-4e45-b722-d898d8208a2f" x="383" y="401" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9ae64e98-8921-4b3d-8638-664a0b161507" x="353" y="420" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b78067ad-09a9-49db-a3eb-9f4e55bfcbbb" mode="Transparent" x="256" y="420" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="456621ef-3661-4754-acea-4ac62886f634" x="440" y="420" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ea0af7cb-6c2e-42f9-98f3-26782f466258" x="0" y="420" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a3f295f6-b8ac-4264-8078-e03d01e61d52" x="383" y="420" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c9d7a73c-2194-4675-aad9-324d1d632fad" x="353" y="439" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="dd638a7a-678f-481b-bf5d-45f79144740b" mode="Transparent" x="256" y="439" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="668f1297-57a7-4c0a-be93-0d57419a9fa1" x="440" y="439" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6ee5de73-1a4d-4ee8-b037-29b86c1a18e3" x="0" y="439" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="51299e79-4acf-415e-b98f-6f113796c33f" x="383" y="439" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9e9f2c0d-a617-4fff-8405-adddd20047d3" x="383" y="458" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5dcc9711-5469-4486-b22e-efa18a266313" x="0" y="458" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2500dec8-a4fa-4466-8d98-461998ec74a2" x="440" y="458" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f6f5414a-6d57-465c-b2bc-d911584b1196" x="353" y="458" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0dc83f5b-0931-4309-ab80-77e45d859192" x="256" y="458" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="829f7de0-1e41-468e-9b3e-ade707f623a6" x="0" y="477" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3942e753-a4c6-4a66-a88f-95e735331893" x="353" y="477" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="608d6c1b-9d08-4a0e-b2e6-a2343e2429bb" x="383" y="477" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e00d053d-9276-4f51-be74-bc36dfc1f698" x="440" y="477" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1a39b638-4923-4f11-ad14-91c04be0d46c" x="353" y="496" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="814c9c10-c99b-416a-b1cc-746fdba6f37b" mode="Transparent" x="256" y="496" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ef7ba1fe-ab8e-4a5f-89f0-90755274ef32" x="440" y="496" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="42a81b6b-2ca5-42e1-9265-0f0a6513c80d" x="0" y="496" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="05859232-4836-448b-8509-90c0ccb47996" x="383" y="496" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="71b32d96-1b07-4278-99b8-73501a2aa36e" x="353" y="515" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="38b3e11a-a071-4089-b2da-e3a84aed4f83" mode="Transparent" x="256" y="515" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c7bd1a7a-b632-428e-bdd3-b6470eb0bed6" x="440" y="515" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a72ef80f-832b-42d6-80a2-8e39ede8d808" x="0" y="515" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c03e5208-c7cc-4ad8-a112-0c7cabe27d77" x="383" y="515" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="46adfabd-a042-44b4-b800-8b5ebe42b45f" x="353" y="534" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ca82d819-b90d-422d-8483-62757e722670" mode="Transparent" x="256" y="534" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="aabff21b-4d45-4469-9de0-2e1373cd0a0b" x="440" y="534" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="83e5ccb9-b1ce-47cb-9387-ff666d8a2367" x="0" y="534" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="7ca08b30-f92c-4121-8aef-017dbfd24883" x="383" y="534" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="79b958a6-d64d-4e3e-bdc6-2118f1bfd07d" x="353" y="553" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fa4244ee-b22f-4391-9c82-66e5eef03277" mode="Transparent" x="256" y="553" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="28070c00-73de-46e2-905d-3a11a23a104f" x="440" y="553" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="cab07090-8a8a-4761-a357-c02a3921f171" x="0" y="553" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="94aa7d68-726e-4d32-ba98-62888e84b127" x="383" y="553" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fb67a752-0f8c-4601-96ec-f702857d36d6" x="440" y="572" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3cffe52a-143f-42b5-adf9-72da254c2851" x="0" y="572" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f75f0f7b-4325-45a5-ba7d-a59bf6998acf" x="353" y="572" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6d98770a-c806-432b-a98f-482763218323" mode="Transparent" x="256" y="572" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="73d34a46-146d-4f25-998b-2079eefe3b97" x="383" y="572" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3fdfaa0c-a5f1-4db6-a4e8-ea31c670bc08" x="440" y="591" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9d18510d-4ade-4cc1-aed1-4fc6c5e7386d" x="383" y="591" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b790975f-7da7-4a97-9865-11784084c707" x="256" y="591" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="7166e54d-017a-4501-a309-f6110e06949f" x="0" y="591" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b3bdbe3a-86e8-4c6a-8625-91076f76c2f0" x="353" y="591" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="67ccd987-fd29-42cc-bb8f-1bf2b2d1f94a" x="0" y="610" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e86f11c2-ddc6-42e6-b854-ede28aa28a09" x="256" y="610" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5bafea8f-381c-42b0-8404-10f2ac944ae2" x="440" y="610" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e8d2b9c6-51f5-43e7-955f-419b7f92a093" x="383" y="610" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="79d36952-b912-49f2-b097-31327ae367d4" x="353" y="610" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c0bb2d1a-b37e-4775-b23b-8d62f8414794" mode="Opaque" x="0" y="648" width="578" height="19" backcolor="#CCCCCC" fontSize="7.0" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[(Continue on separate sheet if necessary)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="04fc5020-f21a-4f2c-b1f1-e2bb6ff8f1cd" x="383" y="629" width="57" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="afa6a3ea-a959-4ba1-9d15-258328ca74e8" x="256" y="629" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="94a27f7f-6bcf-4ce7-b6bc-9857abd95a88" x="440" y="629" width="138" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="06be4ed1-3a2e-4b1b-b13c-d9da46107803" x="0" y="629" width="256" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1b69c8d5-f7e8-4b91-b6b4-e00728acf48b" x="353" y="629" width="30" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="8baf81b7-b16b-4bc7-86f2-df9ac9b1a782" x="115" y="871" width="214" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e10ce6a1-a89b-4497-9ea4-686bbcdcce44" mode="Opaque" x="0" y="861" width="578" height="10" backcolor="#CCCCCC" fontSize="7.0" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[(Continue on separate sheet if necessary)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="418c85bf-19a5-4312-8b8d-d4fb1f16a847" x="0" y="871" width="115" height="19" fontSize="8.0" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[SIGNATURE]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a784f6ef-00d0-494a-b8d5-c472acfa67a7" mode="Opaque" x="160" y="678" width="251" height="31" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[32. NON-ACADEMIC DISTINCTIONS / RECOGNITION
+(Write in full)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5cb38e4a-5353-4f55-8d14-cc260c19aec6" mode="Opaque" x="411" y="678" width="167" height="31" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[33. MEMBERSHIP IN ASSOCIATION/ORGANIZATION
+(Write in full)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ba1a7584-6a0f-47e9-b9f2-3aa283174dd9" x="329" y="871" width="71" height="19" fontSize="8.0" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[DATE]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f3e38302-5884-41b0-bd98-08eba4cfa93e" mode="Opaque" x="0" y="678" width="160" height="31" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[31. SPECIAL SKILLS and HOBBIES]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="eda1fc4e-d13d-43ea-bced-ec6708b90b4e" mode="Opaque" x="0" y="667" width="578" height="11" forecolor="#FFFFFF" backcolor="#666666" fontSize="8.0" bold="true">
+			<text><![CDATA[ VIII. OTHER INFORMATION]]></text>
+			<box>
+				<topPen lineWidth="1.0" lineColor="#000000"/>
+				<leftPen lineWidth="1.0" lineColor="#000000"/>
+				<bottomPen lineWidth="1.0" lineColor="#000000"/>
+				<rightPen lineWidth="1.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2b62b838-e298-4bbe-9d75-7ded00b36372" x="400" y="871" width="178" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e963bf71-3a45-4ea3-981f-c2dc7c297889" x="454" y="890" width="124" height="10" fontSize="6.0" bold="true" italic="true">
+			<text><![CDATA[CS FORM 212 (Revised 2025), Page 3 of 4]]></text>
+		</element>
+		<element kind="staticText" uuid="3ccec273-b0fc-4941-a22c-063942c39a23" x="0" y="709" width="160" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e0d105ff-cc4a-44db-bdce-719ad8d4db2b" x="160" y="709" width="251" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="7afed08e-5241-40a8-bf99-85b2d9e756e4" x="411" y="709" width="167" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ba9a79d2-6f6d-4b0a-b6a0-b80e900a9e3c" x="0" y="728" width="160" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9d261f0b-065c-47bc-863c-778945f8b7c1" x="411" y="728" width="167" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ac161769-6be7-4925-ad44-5b9d704ef70c" x="160" y="728" width="251" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="cc9f415e-e89b-45d9-a505-b94a8311f246" x="0" y="747" width="160" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="91b5f060-b8b9-47f6-981a-7a5a1b4896dc" x="411" y="747" width="167" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4bd072f4-34e5-45ff-ae88-c337a5cb802a" x="160" y="747" width="251" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="subreport" uuid="e0d85cad-5486-469f-a9f7-ed4b1770f34e" x="0" y="709" width="578" height="57" removeLineWhenBlank="true">
+			<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+			<expression><![CDATA[$P{PDS_C3_OTHERINFORMATION_SUBREPORT} != null ? $P{PDS_C3_OTHERINFORMATION_SUBREPORT} : "pds_c3_otherinformation_sub.jasper"]]></expression>
+			<parameter name="EMPLOYEE_ID">
+				<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>
+			</parameter>
+		</element>
+		<element kind="staticText" uuid="cf17bb2b-a200-4ec4-9b7e-2c67ef45b1ed" x="0" y="785" width="160" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e86eb3b3-7e41-47fe-9f63-ef6ccc0f3aeb" x="160" y="823" width="251" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2e398fe1-74fb-408d-add7-fd89f0015b6b" x="0" y="766" width="160" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4c38d6cb-b2ab-44da-98b6-4ac64d8d6e00" x="0" y="804" width="160" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ed2f11c2-feba-408a-b47d-161e5d3f6d28" x="411" y="804" width="167" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b56baa39-ef0f-4f71-a072-383cabd7e369" x="411" y="766" width="167" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6d1f7f15-d1a0-4b5c-ba0f-e248f3cffe26" x="160" y="766" width="251" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5161186c-3737-4ce9-a968-023b5f45a60c" x="160" y="804" width="251" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2f09e1f4-ea79-451d-910f-86425c72ede0" x="411" y="785" width="167" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e31abef3-cfa9-4e7b-87ee-74786e213988" x="0" y="804" width="160" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="63fb613a-3929-4075-8f20-51ad115d4423" x="160" y="785" width="251" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="bba7649a-4005-4704-84be-2ae0a6517407" x="411" y="785" width="167" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6127a164-2a3f-44a2-a475-9e16b291fd3f" x="411" y="842" width="167" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="92bfb2d8-e009-452f-ab05-d84794218e8f" x="0" y="842" width="160" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1019f2e1-f66c-4e17-9550-14c2d207ddc6" x="160" y="842" width="251" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="229c11e1-2f15-48d1-90b1-f7e0c16944b9" x="0" y="823" width="160" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2f85c49d-5690-4cdc-bc36-3682212c85aa" x="411" y="823" width="167" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f541501e-7c54-4d9b-af7a-6a53e5835e57" x="256" y="477" width="97" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5efc1c9c-86c8-4501-a9ed-4603cbd18515" x="0" y="890" width="123" height="10" forecolor="#0000FF" fontSize="6.0" pdfFontName="Helvetica-Bold" bold="true" italic="true">
+			<text><![CDATA[ISOFT HRIS System Generated]]></text>
+		</element>
+	</background>
+	<pageHeader height="191">
+		<element kind="staticText" uuid="94a6698d-435f-447d-8d9c-3a09540dc51b" x="274" y="80" width="98" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="7322e6a6-dde4-450a-9235-0c09aacd1c30" x="176" y="80" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="12a5e72c-3be9-43d8-ada0-41515e7ab8a8" x="225" y="80" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1263caef-144c-4dbc-b7cb-5e1363fe308a" x="0" y="80" width="176" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3324a84a-69ff-4f68-a803-62162c72c6cb" x="372" y="80" width="206" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="61334544-5720-4efb-bb25-ecd1f888d6e1" x="274" y="99" width="98" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ea4cf261-59d1-4d6d-a95e-06e3845d50ea" x="176" y="99" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1ee484c0-8efc-4d5f-ad61-29642224a7b4" x="225" y="99" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="6473b496-94c5-4acf-a024-1edd5d3b8b60" x="0" y="99" width="176" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="05e41660-025c-4c1d-805c-4a8325833a1b" x="372" y="99" width="206" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0b6965cf-c236-4937-932f-74f3b69287a1" x="274" y="118" width="98" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fa578f95-2701-49bc-9f4b-a02e4c9a6ed1" x="176" y="118" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="cf3fa953-b50d-42fa-b5a1-6f7386ebc144" x="225" y="118" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4b7e3a07-f945-4433-a662-aa7b906d2420" x="0" y="118" width="176" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="56f0af32-c443-4ea7-b8dd-b0e20521ecfc" x="372" y="118" width="206" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="418c5e8c-4f20-4e8f-ac3c-782b97812e87" mode="Opaque" x="0" y="0" width="578" height="11" forecolor="#FFFFFF" backcolor="#666666" fontSize="8.0" bold="true">
+			<text><![CDATA[ VI. VOLUNTARY WORK OR INVOLVEMENT IN CIVIC / NON-GOVERNMENT / PEOPLE / VOLUNTARY ORGANIZATION/S]]></text>
+			<box>
+				<topPen lineWidth="1.0" lineColor="#000000"/>
+				<leftPen lineWidth="1.0" lineColor="#000000"/>
+				<bottomPen lineWidth="1.0" lineColor="#000000"/>
+				<rightPen lineWidth="1.0" lineColor="#000000"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9b6a47bc-836f-4340-a51b-a00c3dfff2fc" mode="Opaque" x="0" y="11" width="176" height="31" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[29. NAME & ADDRESS OF ORGANIZATION
+(Write in full)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="fb00d6ac-a715-4371-a50e-6c2f917675f9" mode="Opaque" x="176" y="11" width="98" height="18" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[INCLUSIVE DATE
+(mm/dd/yyyy)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="42dd3fc4-6c5e-434d-9739-b090cd4e4c2a" mode="Opaque" x="176" y="29" width="49" height="13" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[From]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d193a373-6420-426c-9eb0-2765ffed729c" mode="Opaque" x="225" y="29" width="49" height="13" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[TO]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4cafacbf-68ce-4938-9776-fbd30220cb12" mode="Opaque" x="274" y="11" width="98" height="31" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[NUMBER OF HOURS]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="acd0b554-b6e1-45f9-9e47-abe81acd5692" mode="Opaque" x="372" y="11" width="206" height="31" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[POSITION / NATURE OF WORK]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5476e452-dcc5-421d-ac82-dcbbf9d3bd23" mode="Opaque" x="0" y="175" width="578" height="16" backcolor="#CCCCCC" fontSize="7.0" bold="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[(Continue on separate sheet if necessary)]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3c7c271c-4e4c-4ee6-a6b0-13c8bfd9a9d9" x="0" y="42" width="176" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f9b32f50-7d73-4761-bd00-9c3810061d5f" x="176" y="42" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f618449a-c030-4203-84e6-eb1f1bc98a43" x="225" y="42" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1f4e545e-5586-4a51-a96e-0a5dd7ea1d4b" x="274" y="42" width="98" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="79cbefb4-64ae-40dc-b0c1-7a85e1e5a7dd" x="372" y="42" width="206" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5532a8f2-c3d5-494d-b461-237545bd18de" x="274" y="61" width="98" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e3550efe-6a95-4be7-86c4-3a3747fb2857" x="176" y="61" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="74a7faaf-04e6-4608-bd2f-e74d4b9d5a9c" x="225" y="61" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="9837f65c-ac09-4219-85b6-c46124fd5694" x="0" y="61" width="176" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="4e322605-3d58-410c-9d8a-4b02405b09be" x="372" y="61" width="206" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d9783164-a8b8-4b19-819c-ba3d6b2c0bbe" x="274" y="137" width="98" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0a9b8397-f22f-47d1-ba39-8312bea2109a" x="176" y="137" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="bf652279-2715-4157-86dd-35f83c7f2f2f" x="225" y="137" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="168602fa-60da-41f1-baad-ce9c8936f349" x="0" y="137" width="176" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="265f66a3-840e-45c9-964a-1225a2e39a03" x="372" y="137" width="206" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0dc054f4-92b6-408b-8871-3954cb5b5130" x="274" y="156" width="98" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="84c14f9d-27eb-4440-b5c5-cf3a5c237896" x="176" y="156" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="bfca2789-821e-4bb8-95c5-680b134e5b09" x="225" y="156" width="49" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="0a1551a3-2760-41fa-8190-6e5e199b81cf" x="0" y="156" width="176" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2e391c55-186b-4be3-8a08-fa2258bcc93c" x="372" y="156" width="206" height="19">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="subreport" uuid="4e1f8c43-8aa1-43ce-bc55-d1bda44f4c14" x="0" y="42" width="578" height="57" removeLineWhenBlank="true">
+			<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+			<expression><![CDATA[$P{PDS_C3_VOLUNTARYWORK_SUBREPORT} != null ? $P{PDS_C3_VOLUNTARYWORK_SUBREPORT} : "pds_c3_voluntarywork_sub.jasper"]]></expression>
+			<parameter name="EMPLOYEE_ID">
+				<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>
+			</parameter>
+		</element>
+	</pageHeader>
 	<detail>
-		<band height="16">
-			<element kind="staticText" uuid="677204c3-021c-4aa7-a432-07c533ded538" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
-				<text><![CDATA[VI.  VOLUNTARY WORK OR INVOLVEMENT IN CIVIC / NON-GOVERNMENT / PEOPLE / VOLUNTARY ORGANIZATION/S]]></text>
+		<band height="158" splitType="Stretch">
+			<element kind="subreport" uuid="9254a273-4566-4907-b08c-a9f4ed85f6bd" x="0" y="58" width="578" height="100" runToBottom="false" printRepeatedValues="false">
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<expression><![CDATA[$P{PDS_C3_LND_SUBREPORT} != null ? $P{PDS_C3_LND_SUBREPORT} : "pds_c3_lnd_sub.jasper"]]></expression>
+				<parameter name="EMPLOYEE_ID">
+					<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>
+				</parameter>
 			</element>
-		</band>
-		<band height="20" splitType="Stretch">
-			<element kind="textField" uuid="d0165d6f-0991-41fd-834d-10a71b35830b" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
-				<expression><![CDATA[$F{voluntaryWorkList}]]></expression>
+			<element kind="staticText" uuid="f504c956-65a2-40f0-b4c1-87f5a3555b60" mode="Opaque" x="440" y="21" width="138" height="37" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[CONDUCTED/SPONSORED BY
+(Write in full)]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
 			</element>
-		</band>
-		<band height="16">
-			<element kind="staticText" uuid="7ee54520-e1ab-47cd-b455-5720528b6e65" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
-				<text><![CDATA[VII.  LEARNING AND DEVELOPMENT (L&D) INTERVENTIONS / TRAINING PROGRAMS ATTENDED]]></text>
+			<element kind="staticText" uuid="95ea9ca6-876d-4532-9330-5025e1527213" mode="Opaque" x="0" y="21" width="256" height="37" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[30. TITLE OF LEARNING AND DEVELOPMENT INTERVENTIONS/TRAINING PROGRAMS
+(Write in full)]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
 			</element>
-		</band>
-		<band height="20" splitType="Stretch">
-			<element kind="textField" uuid="d81d49a0-aca0-464b-abf0-7d0a42446a5f" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
-				<expression><![CDATA[$F{lndList}]]></expression>
+			<element kind="staticText" uuid="e765f0cc-8180-4dbd-b806-316cf1e9b558" mode="Transparent" x="0" y="11" width="552" height="10" forecolor="#FFFFFF" backcolor="#FFFFFF" fontSize="6.0" bold="true" vTextAlign="Middle">
+				<text><![CDATA[ (Start from the most recent L&D/training program and include only the relevant L&D/training taken from the last five (5) years for Division Chief/Executive/Managerial positions)]]></text>
+				<box>
+					<topPen lineWidth="0.0" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineColor="#000000"/>
+				</box>
 			</element>
-		</band>
-		<band height="16">
-			<element kind="staticText" uuid="4e294b7c-6cb0-4c9c-b0b1-5a4cd567ab7a" x="0" y="0" width="555" height="16" fontName="SansSerif" fontSize="10.0" bold="true">
-				<text><![CDATA[VIII.  OTHER INFORMATION]]></text>
+			<element kind="staticText" uuid="3aaef007-5f5c-47c1-b2f7-cbf48f149eda" mode="Opaque" x="383" y="21" width="57" height="37" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[Type of LD
+( Managerial/
+Supervisory/
+Technical/etc)]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
 			</element>
-		</band>
-		<band height="20" splitType="Stretch">
-			<element kind="textField" uuid="962a46f0-5bd4-4f09-9729-97a7a9639235" x="10" y="0" width="545" height="20" fontName="SansSerif" fontSize="9.0" textAdjust="StretchHeight">
-				<expression><![CDATA["Special Skills / Hobbies:\n" + $F{skillOrHobby} + "\n\n" +
-"Non-Academic Distinctions / Recognition:\n" + $F{distinction} + "\n\n" +
-"Membership in Association/s:\n" + $F{association}]]></expression>
+			<element kind="staticText" uuid="9d919676-fe72-4c4c-bda2-2e135606988f" mode="Opaque" x="256" y="21" width="97" height="37" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[INCLUSIVE DATES OF
+ATTENDANCE
+(mm/dd/yyyy)]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="c60c1ad2-a73a-4e56-a430-3711543e76f9" mode="Opaque" x="353" y="21" width="30" height="37" backcolor="#CCCCCC" fontSize="6.0" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[NUMBER OF HOURS]]></text>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="a8496fa0-183e-4feb-b194-916e5e3833a7" mode="Opaque" x="0" y="0" width="578" height="21" forecolor="#FFFFFF" backcolor="#666666" fontSize="8.0" bold="true">
+				<text><![CDATA[ VII. LEARNING AND DEVELOPMENT (L&D) INTERVENTIONS/TRAINING PROGRAMS ATTENDED]]></text>
+				<box>
+					<topPen lineWidth="1.0" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineColor="#000000"/>
+				</box>
+			</element>
+			<element kind="staticText" uuid="2039ea30-84f7-4a6e-b0e0-17a8b0ef691c" mode="Transparent" x="0" y="11" width="552" height="10" forecolor="#FFFFFF" backcolor="#FFFFFF" fontSize="6.0" bold="true" vTextAlign="Middle">
+				<text><![CDATA[ (Start from the most recent L&D/training program and include only the relevant L&D/training taken from the last five (5) years for Division Chief/Executive/Managerial positions)]]></text>
+				<box>
+					<topPen lineWidth="0.0" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineColor="#000000"/>
+				</box>
 			</element>
 		</band>
 	</detail>

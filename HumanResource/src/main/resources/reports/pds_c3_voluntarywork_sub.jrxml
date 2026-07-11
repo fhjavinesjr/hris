@@ -1,62 +1,96 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
-                http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
-              name="pds_c3_voluntarywork_sub" pageWidth="802" pageHeight="595"
-              columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0"
-              uuid="c3ab0001-0000-4000-8000-000000000001">
-
-  <field name="organizationName" class="java.lang.String"/>
-  <field name="fromDate"         class="java.lang.String"/>
-  <field name="toDate"           class="java.lang.String"/>
-  <field name="voluntaryHrs"     class="java.lang.String"/>
-  <field name="positionTitle"    class="java.lang.String"/>
-
-  <detail>
-    <band height="11" splitType="Stretch">
-      <textField isStretchWithOverflow="true">
-        <reportElement x="0"   y="0" width="220" height="11" uuid="c3ab0001-0000-4000-8000-000000000002"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{organizationName} != null ? $F{organizationName} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="220"  y="0" width="90"  height="11" uuid="c3ab0001-0000-4000-8000-000000000003"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{fromDate} != null ? $F{fromDate} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="310"  y="0" width="90"  height="11" uuid="c3ab0001-0000-4000-8000-000000000004"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{toDate} != null ? $F{toDate} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="400"  y="0" width="80"  height="11" uuid="c3ab0001-0000-4000-8000-000000000005"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{voluntaryHrs} != null ? $F{voluntaryHrs} : ""]]></textFieldExpression>
-      </textField>
-      <textField isStretchWithOverflow="true">
-        <reportElement x="480"  y="0" width="322" height="11" uuid="c3ab0001-0000-4000-8000-000000000006"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{positionTitle} != null ? $F{positionTitle} : ""]]></textFieldExpression>
-      </textField>
-    </band>
-  </detail>
-
-  <noData>
-    <band height="11">
-      <staticText>
-        <reportElement x="0" y="0" width="802" height="11" uuid="c3ab0001-0000-4000-8000-000000000007"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <text><![CDATA[N/A]]></text>
-      </staticText>
-    </band>
-  </noData>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" name="pds_c3_voluntarywork_sub" pageWidth="612" pageHeight="936" columnWidth="612" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="8938af32-4eb6-42d1-a3c6-2884d4a6fa81">
+	<property name="ireport.zoom" value="1.7715610000000013"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"></parameter>
+	
+	<queryString language="SQL"><![CDATA[SELECT
+    ISNULL(organizationName, '') AS nameAndAddress,
+    CAST(fromDate AS date) AS dateFrom,
+    CAST(toDate AS date) AS dateTo,
+    TRY_CONVERT(int, voluntaryHrs) AS noOfHours,
+    ISNULL(positionTitle, '') AS positionAndNature,
+    CASE WHEN toDate IS NULL THEN '' ELSE CONVERT(varchar(10), CAST(toDate AS date), 101) END AS dateToString
+FROM voluntarywork
+WHERE personalDataId = (SELECT TOP 1 personalDataId FROM personaldata WHERE employeeId = $P{EMPLOYEE_ID})
+ORDER BY fromDate DESC]]></queryString>
+<field name="nameAndAddress" class="java.lang.String"/>
+	<field name="dateFrom" class="java.sql.Date"/>
+	<field name="dateTo" class="java.sql.Date"/>
+	<field name="noOfHours" class="java.lang.Integer"/>
+	<field name="positionAndNature" class="java.lang.String"/>
+	<field name="dateToString" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<detail>
+		<band height="19" splitType="Stretch">
+			<textField>
+				<reportElement uuid="39d995a8-9022-402b-9670-49f0b5a9bf8a" x="0" y="0" width="176" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{nameAndAddress}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd/yyyy" isBlankWhenNull="true">
+				<reportElement uuid="b2d9339f-1696-4454-857a-5987a9b72fa7" x="176" y="0" width="49" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{dateFrom}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd/yyyy">
+				<reportElement uuid="7e11f9e8-ed1c-411b-88c1-c0c2fa419604" x="225" y="0" width="49" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{dateToString}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="abd8ab1b-ab21-41a0-b7df-ebe2589180bd" x="274" y="0" width="98" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{noOfHours}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="ce8007b9-08b3-4753-84a2-5121bb9853c2" x="372" y="0" width="206" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{positionAndNature}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
 </jasperReport>

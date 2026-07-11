@@ -6,6 +6,19 @@ import com.humanresource.repositories.PassSlipRepository;
 import com.humanresource.services.DateConflictChecker;
 import com.humanresource.services.PassSlipService;
 import jakarta.transaction.Transactional;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import org.springframework.core.io.ClassPathResource;
+
+import javax.sql.DataSource;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.sql.Connection;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -22,10 +35,12 @@ public class PassSlipImpl implements PassSlipService {
 
     private final PassSlipRepository repository;
     private final DateConflictChecker conflictChecker;
+    private final DataSource dataSource;
 
-    public PassSlipImpl(PassSlipRepository repository, DateConflictChecker conflictChecker) {
+    public PassSlipImpl(PassSlipRepository repository, DateConflictChecker conflictChecker, DataSource dataSource) {
         this.repository = repository;
         this.conflictChecker = conflictChecker;
+        this.dataSource = dataSource;
     }
 
     private PassSlipDTO toDTO(PassSlip e) {
@@ -189,4 +204,34 @@ public class PassSlipImpl implements PassSlipService {
             return false;
         }
     }
+
+    @Override
+    public void generatePassSlipReport(Long passSlipId, OutputStream outputStream) throws Exception {
+        if (passSlipId == null) {
+            throw new IllegalArgumentException("passSlipId is required.");
+        }
+
+        ClassPathResource reportResource = new ClassPathResource("reports/permitSlip.jrxml");
+        try (InputStream inputStream = reportResource.getInputStream();
+             Connection connection = dataSource.getConnection()) {
+
+            JasperReport jasperReport = JasperCompileManager.compileReport(inputStream);
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("passSlipId", passSlipId);
+
+            // Header parameters expected by the existing JRXML.
+            // These can be wired later to System Config if you want agency-specific values/logos.
+            params.put("webAppPath", "");
+            params.put("currentCompany", "");
+            params.put("currentCompanyAddress", "");
+            params.put("logoleft", null);
+            params.put("logoright", null);
+            params.put("isDOH", Boolean.FALSE);
+
+            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, connection);
+            JasperExportManager.exportReportToPdfStream(jasperPrint, outputStream);
+        }
+    }
+
 }

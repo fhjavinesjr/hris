@@ -45,11 +45,18 @@
 		CASE WHEN ob.officialEngagementApplicationId IS NULL THEN NULL ELSE d.work_date END AS obDate,
 		CASE WHEN otx.overtimeRequestId IS NULL THEN NULL ELSE d.work_date END AS otDate,
 		CAST(NULL AS time) AS nextDayholder,
-		CAST(0 AS bit) AS isForNextDay
+		CAST(0 AS bit) AS isForNextDay,
+		d.dtr_daily_id
 	FROM dtr_daily d
 	LEFT JOIN employee e ON e.employeeId = TRY_CAST(d.employee_id AS int)
 	LEFT JOIN personaldata pd ON pd.employeeId = e.employeeId
-	LEFT JOIN work_schedule ws ON CAST(ws.employeeId AS varchar(50)) = d.employee_id AND CAST(ws.wsDateTime AS date) = d.work_date
+	OUTER APPLY (
+		SELECT TOP 1 ws2.isDayOff
+		FROM work_schedule ws2
+		WHERE CAST(ws2.employeeId AS varchar(50)) = d.employee_id
+		  AND CAST(ws2.wsDateTime AS date) = d.work_date
+		ORDER BY ws2.wsId
+	) ws
 	LEFT JOIN official_engagement_application ob ON ob.employeeId = TRY_CAST(d.employee_id AS int) AND ob.status = 'Approved' AND d.work_date BETWEEN ob.startDate AND ob.endDate
 	LEFT JOIN overtime_request otx ON otx.employeeId = TRY_CAST(d.employee_id AS int) AND otx.status = 'Approved' AND d.work_date = CAST(otx.dateTimeFrom AS date)
 	LEFT JOIN compensatory_time_off cto ON cto.employeeId = TRY_CAST(d.employee_id AS int) AND cto.status = 'Approved' AND d.work_date = cto.dateOfOffset
@@ -64,23 +71,23 @@
 	WHERE d.employee_id = $P{EMPLOYEE_ID}
 	  AND d.work_date BETWEEN $P{fromDate} AND $P{toDate}
 ),
-SegRaw AS (
-	SELECT
-		ds.dtr_daily_id,
-		MIN(ds.segment_no) AS firstSegmentNo
-	FROM dtr_segment ds
-	GROUP BY ds.dtr_daily_id
-),
 Seg AS (
+	-- Normal same-day segment rows.
 	SELECT
 		ds.dtr_daily_id,
+		d.work_date AS reportDate,
+		ds.segment_no AS segmentNo,
+		0 AS splitOrder,
 		CASE
+			WHEN ds.break_in IS NOT NULL THEN CAST(ds.time_in AS time)
+			WHEN CAST(ds.time_out AS time) < CAST(ds.time_in AS time) THEN NULL
 			WHEN CAST(ds.time_in AS time) < CAST('12:00:00' AS time) THEN CAST(ds.time_in AS time)
 			ELSE NULL
 		END AS in1st,
 		CASE
 			WHEN ds.break_out IS NOT NULL THEN CAST(ds.break_out AS time)
-			WHEN CAST(ds.time_out AS time) <= CAST('13:00:00' AS time) THEN CAST(ds.time_out AS time)
+			WHEN CAST(ds.time_out AS time) < CAST(ds.time_in AS time) THEN NULL
+			WHEN CAST(ds.time_out AS time) <= CAST('12:00:00' AS time) THEN CAST(ds.time_out AS time)
 			ELSE NULL
 		END AS out1st,
 		CASE
@@ -90,15 +97,56 @@ Seg AS (
 		END AS in2nd,
 		CASE
 			WHEN ds.break_in IS NOT NULL THEN CAST(ds.time_out AS time)
+			WHEN CAST(ds.time_out AS time) < CAST(ds.time_in AS time) THEN NULL
 			WHEN CAST(ds.time_in AS time) >= CAST('12:00:00' AS time) THEN CAST(ds.time_out AS time)
-			WHEN CAST(ds.time_out AS time) > CAST('13:00:00' AS time) THEN CAST(ds.time_out AS time)
+			WHEN CAST(ds.time_in AS time) < CAST('12:00:00' AS time)
+			     AND CAST(ds.time_out AS time) > CAST('12:00:00' AS time) THEN CAST(ds.time_out AS time)
 			ELSE NULL
-		END AS out2nd
+		END AS out2nd,
+		CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) % 60 AS int) AS segmentUnderMin,
+		CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) / 60 AS int) AS segmentUnderMinHours
 	FROM dtr_segment ds
-	INNER JOIN SegRaw sr ON sr.dtr_daily_id = ds.dtr_daily_id AND sr.firstSegmentNo = ds.segment_no
+	INNER JOIN dtr_daily d ON d.dtr_daily_id = ds.dtr_daily_id
+	WHERE NOT (CAST(ds.time_out AS time) < CAST(ds.time_in AS time))
+
+	UNION ALL
+
+	-- Overnight start row: display night time-in on the actual work date.
+	SELECT
+		ds.dtr_daily_id,
+		d.work_date AS reportDate,
+		ds.segment_no AS segmentNo,
+		0 AS splitOrder,
+		CAST(NULL AS time) AS in1st,
+		CAST(NULL AS time) AS out1st,
+		CAST(ds.time_in AS time) AS in2nd,
+		CAST(NULL AS time) AS out2nd,
+		CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) % 60 AS int) AS segmentUnderMin,
+		CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) / 60 AS int) AS segmentUnderMinHours
+	FROM dtr_segment ds
+	INNER JOIN dtr_daily d ON d.dtr_daily_id = ds.dtr_daily_id
+	WHERE CAST(ds.time_out AS time) < CAST(ds.time_in AS time)
+
+	UNION ALL
+
+	-- Overnight end row: display next-day morning departure on the following date.
+	SELECT
+		ds.dtr_daily_id,
+		DATEADD(day, 1, d.work_date) AS reportDate,
+		ds.segment_no AS segmentNo,
+		1 AS splitOrder,
+		CAST(NULL AS time) AS in1st,
+		CAST(ds.time_out AS time) AS out1st,
+		CAST(NULL AS time) AS in2nd,
+		CAST(NULL AS time) AS out2nd,
+		CAST(0 AS int) AS segmentUnderMin,
+		CAST(0 AS int) AS segmentUnderMinHours
+	FROM dtr_segment ds
+	INNER JOIN dtr_daily d ON d.dtr_daily_id = ds.dtr_daily_id
+	WHERE CAST(ds.time_out AS time) < CAST(ds.time_in AS time)
 )
 SELECT
-	b.dtrDate,
+	COALESCE(s.reportDate, b.dtrDate) AS dtrDate,
 	b.fullname,
 	s.in1st,
 	s.out1st,
@@ -112,24 +160,62 @@ SELECT
 	b.otRegApproved,
 	b.otExcessApproved,
 	b.lateMin,
-	b.underMin,
+	CASE WHEN s.segmentNo IS NULL THEN b.underMin ELSE s.segmentUnderMin END AS underMin,
 	b.absentMin,
 	b.ob,
 	b.ot,
 	b.obDate,
 	b.otDate,
 	b.dayOff,
-	b.underMinHours,
+	CASE WHEN s.segmentNo IS NULL THEN b.underMinHours ELSE s.segmentUnderMinHours END AS underMinHours,
 	b.remarks,
 	b.leaveType,
 	b.nextDayholder,
 	b.isForNextDay,
 	b.cto,
-	b.dayDescription
+	DATENAME(WEEKDAY, COALESCE(s.reportDate, b.dtrDate)) AS dayDescription,
+	ISNULL(s.segmentNo, 0) AS sortSegmentNo,
+	ISNULL(s.splitOrder, 0) AS sortSplitOrder
 FROM DailyBase b
-LEFT JOIN dtr_daily d ON d.employee_id = $P{EMPLOYEE_ID} AND d.work_date = b.dtrDate
-LEFT JOIN Seg s ON s.dtr_daily_id = d.dtr_daily_id
-ORDER BY b.dtrDate]]></query>
+LEFT JOIN Seg s ON s.dtr_daily_id = b.dtr_daily_id AND s.reportDate = b.dtrDate
+
+UNION ALL
+
+SELECT
+	s.reportDate AS dtrDate,
+	b.fullname,
+	s.in1st,
+	s.out1st,
+	s.in2nd,
+	s.out2nd,
+	0 AS regMin,
+	b.excessMin,
+	b.ndApproved,
+	0.0 AS otReg,
+	b.otExcess,
+	0.0 AS otRegApproved,
+	b.otExcessApproved,
+	0 AS lateMin,
+	s.segmentUnderMin AS underMin,
+	0 AS absentMin,
+	'' AS ob,
+	'' AS ot,
+	CAST(NULL AS date) AS obDate,
+	CAST(NULL AS date) AS otDate,
+	'' AS dayOff,
+	s.segmentUnderMinHours AS underMinHours,
+	'Present' AS remarks,
+	'' AS leaveType,
+	b.nextDayholder,
+	CAST(1 AS bit) AS isForNextDay,
+	'' AS cto,
+	DATENAME(WEEKDAY, s.reportDate) AS dayDescription,
+	s.segmentNo AS sortSegmentNo,
+	s.splitOrder AS sortSplitOrder
+FROM DailyBase b
+INNER JOIN Seg s ON s.dtr_daily_id = b.dtr_daily_id AND s.reportDate <> b.dtrDate
+WHERE s.reportDate BETWEEN $P{fromDate} AND $P{toDate}
+ORDER BY dtrDate, sortSegmentNo, sortSplitOrder]]></query>
 	<field name="dtrDate" class="java.sql.Date"/>
 	<field name="fullname" class="java.lang.String"/>
 	<field name="in1st" class="java.sql.Time"/>
@@ -296,10 +382,10 @@ ORDER BY b.dtrDate]]></query>
 				<element kind="staticText" uuid="1583bc88-526f-46da-8185-dbcfbcaf9c5a" key="staticText-18" x="16" y="135" width="142" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Left" vTextAlign="Middle">
 					<text><![CDATA[Official hours for             :]]></text>
 				</element>
-				<element kind="image" onErrorType="Blank" uuid="13d4323c-eee0-44bd-9005-9bc820429a5e" x="263" y="6" width="56" height="44" hImageAlign="Center" vImageAlign="Middle">
+				<element kind="image" uuid="13d4323c-eee0-44bd-9005-9bc820429a5e" x="263" y="6" width="56" height="44" onErrorType="Blank" hImageAlign="Center" vImageAlign="Middle">
 					<expression><![CDATA[$P{logoright}]]></expression>
 				</element>
-				<element kind="image" onErrorType="Blank" uuid="52395253-78ad-428b-9344-1d2fc67fe8ea" x="0" y="6" width="55" height="41" hImageAlign="Center" vImageAlign="Middle">
+				<element kind="image" uuid="52395253-78ad-428b-9344-1d2fc67fe8ea" x="0" y="6" width="55" height="41" onErrorType="Blank" hImageAlign="Center" vImageAlign="Middle">
 					<expression><![CDATA[$P{logoleft}]]></expression>
 				</element>
 				<element kind="staticText" uuid="c2592ea9-ac11-468e-8725-f7fe3d25772f" key="staticText-18" x="16" y="150" width="142" height="15" fontSize="10.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Left" vTextAlign="Middle">
@@ -488,10 +574,10 @@ new SimpleDateFormat("yyyy").format($P{fromDate})]]></expression>
 				<element kind="staticText" uuid="bd4b7269-e728-4797-bfe5-ab29b839ed7b" key="staticText-18" x="334" y="55" width="288" height="24" fontSize="12.0" pdfFontName="Helvetica-Bold" bold="true" hTextAlign="Center">
 					<text><![CDATA[DAILY TIME RECORD]]></text>
 				</element>
-				<element kind="image" onErrorType="Blank" uuid="f9a3a67a-6800-4a35-a19a-9d9a7bb3f050" x="583" y="6" width="56" height="44" hImageAlign="Center" vImageAlign="Middle">
+				<element kind="image" uuid="f9a3a67a-6800-4a35-a19a-9d9a7bb3f050" x="583" y="6" width="56" height="44" onErrorType="Blank" hImageAlign="Center" vImageAlign="Middle">
 					<expression><![CDATA[$P{logoright}]]></expression>
 				</element>
-				<element kind="image" onErrorType="Blank" uuid="69b87e71-475c-4c4f-afa3-1985a3d4fad3" x="320" y="6" width="55" height="41" hImageAlign="Center" vImageAlign="Middle">
+				<element kind="image" uuid="69b87e71-475c-4c4f-afa3-1985a3d4fad3" x="320" y="6" width="55" height="41" onErrorType="Blank" hImageAlign="Center" vImageAlign="Middle">
 					<expression><![CDATA[$P{logoleft}]]></expression>
 				</element>
 			</band>
@@ -535,30 +621,6 @@ daily at the time of arrival and departure from office.]]></text>
 						<topPen lineWidth="1.0"/>
 					</box>
 				</element>
-				<element kind="staticText" uuid="5daa898a-436c-459f-bd2d-93a4ea7ebd85" key="staticText-18" x="17" y="132" width="119" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
-					<text><![CDATA[Adopted from CSC FORM NO. 48]]></text>
-					<box>
-						<topPen lineWidth="0.0"/>
-					</box>
-				</element>
-				<element kind="staticText" uuid="44ebfd19-77d1-41f6-8e93-dd88f831b095" key="staticText-18" x="17" y="154" width="72" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
-					<text><![CDATA[ZCMC-F-HRMO-01]]></text>
-					<box>
-						<topPen lineWidth="0.0"/>
-					</box>
-				</element>
-				<element kind="staticText" uuid="684ca470-e75b-4100-9b82-18a827febde4" key="staticText-18" x="126" y="154" width="32" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
-					<text><![CDATA[ReV. 0]]></text>
-					<box>
-						<topPen lineWidth="0.0"/>
-					</box>
-				</element>
-				<element kind="staticText" uuid="f1f49843-18fd-4c20-a0be-0b35307dfc5e" key="staticText-18" x="198" y="154" width="98" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
-					<text><![CDATA[Effectivity Date: June 2, 2014]]></text>
-					<box>
-						<topPen lineWidth="0.0"/>
-					</box>
-				</element>
 				<element kind="staticText" uuid="33076b8c-2c19-4a1f-b260-c0e192d147ce" x="0" y="0" width="14" height="186">
 					<text><![CDATA[]]></text>
 					<box>
@@ -578,12 +640,6 @@ daily at the time of arrival and departure from office.]]></text>
 						<rightPen lineWidth="1.0"/>
 					</box>
 				</element>
-				<element kind="staticText" uuid="6038db62-719a-40c7-94b5-93a0d6b69432" key="staticText-18" x="338" y="132" width="119" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
-					<text><![CDATA[Adopted from CSC FORM NO. 48]]></text>
-					<box>
-						<topPen lineWidth="0.0"/>
-					</box>
-				</element>
 				<element kind="staticText" uuid="f2fab13f-fcad-47a0-a25d-4ec07e227104" x="319" y="175" width="321" height="11">
 					<text><![CDATA[]]></text>
 					<box>
@@ -597,24 +653,6 @@ daily at the time of arrival and departure from office.]]></text>
 					<box>
 						<leftPen lineWidth="1.0"/>
 						<rightPen lineWidth="0.0"/>
-					</box>
-				</element>
-				<element kind="staticText" uuid="85b893d7-074a-4669-84da-504008ce8038" key="staticText-18" x="338" y="154" width="72" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
-					<text><![CDATA[ZCMC-F-HRMO-01]]></text>
-					<box>
-						<topPen lineWidth="0.0"/>
-					</box>
-				</element>
-				<element kind="staticText" uuid="b3358feb-8d7e-4fa8-8dd2-dc4870adaf34" key="staticText-18" x="456" y="154" width="32" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
-					<text><![CDATA[ReV. 0]]></text>
-					<box>
-						<topPen lineWidth="0.0"/>
-					</box>
-				</element>
-				<element kind="staticText" uuid="f00da80f-2324-4e34-8c40-d453b3008c0a" key="staticText-18" x="521" y="154" width="98" height="12" markup="styled" fontSize="7.0" underline="false" pdfEmbedded="true" bold="false" hTextAlign="Center" vTextAlign="Middle">
-					<text><![CDATA[Effectivity Date: June 2, 2014]]></text>
-					<box>
-						<topPen lineWidth="0.0"/>
 					</box>
 				</element>
 				<element kind="staticText" uuid="762b6d7e-7d13-4341-8a6f-52f369f25286" x="339" y="0" width="280" height="42" markup="styled" fontSize="10.0" pdfEmbedded="true">

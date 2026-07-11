@@ -1,0 +1,397 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="stationschedules" language="java" pageWidth="2050" pageHeight="950" orientation="Landscape" columnWidth="2010" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="30b692e9-9b81-448b-a97f-c089b8a54756" summaryNewPage="true" summaryWithPageHeaderAndFooter="true">
+	<property name="ireport.zoom" value="1.4641000000000115"/>
+	<property name="ireport.x" value="1117"/>
+	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<style name="Crosstab Data Text" hTextAlign="Center" hImageAlign="Center"/>
+	<parameter name="approvedBy" class="java.lang.String"/>
+	<parameter name="printedBy" class="java.lang.String"/>
+	<parameter name="approvedByPos" class="java.lang.String"/>
+	<parameter name="printedByPos" class="java.lang.String"/>
+	<parameter name="formCode" class="java.lang.String"/>
+	<parameter name="nchLogoPath" class="java.lang.String"/>
+	<parameter name="dohLogoPath" class="java.lang.String"/>
+	<parameter name="webAppPath" class="java.lang.String"/>
+	<parameter name="supervisingNurse" class="java.lang.String"/>
+	<parameter name="currentCompanyAddress" class="java.lang.String"/>
+	<parameter name="currentCompany" class="java.lang.String"/>
+	<parameter name="logoright" class="java.lang.Object"/>
+	<parameter name="logoleft" class="java.lang.Object"/>
+	<parameter name="isDOH" class="java.lang.Boolean"/>
+	<parameter name="areaId" class="java.lang.Long"/>
+	<parameter name="businessUnitId" class="java.lang.Long"/>
+	<parameter name="fromDate" class="java.sql.Date"/>
+	<parameter name="toDate" class="java.sql.Date"/>
+	<parameter name="reportArea" class="java.lang.String"/>
+	<parameter name="reportBusinessUnit" class="java.lang.String"/>
+	<parameter name="dateRangeLabel" class="java.lang.String"/>
+	<query language="SQL"><![CDATA[SELECT
+    p.areasName AS department,
+    p.fullname AS fullname,
+    d.dtrDate AS dtrDate,
+    CASE
+        WHEN ws.wsId IS NULL THEN ''
+        WHEN ISNULL(ws.isDayOff, 0) = 1 THEN 'DAY OFF / REST DAY'
+        WHEN ts.tsCode IS NULL THEN ISNULL(ws.tsCode, '')
+        ELSE CONCAT(
+            ts.tsCode, ' - ',
+            FORMAT(CAST(ts.timeIn AS datetime), 'hh:mm tt'),
+            CASE
+                WHEN ts.breakOut IS NULL OR ts.breakIn IS NULL THEN ' - '
+                ELSE CONCAT(' / ', FORMAT(CAST(ts.breakOut AS datetime), 'hh:mm tt'), ' - ', FORMAT(CAST(ts.breakIn AS datetime), 'hh:mm tt'), ' / ')
+            END,
+            FORMAT(CAST(ts.timeOut AS datetime), 'hh:mm tt')
+        )
+    END AS sched,
+    '' AS actual,
+    ISNULL(jp.jobPositionName, ISNULL(p.position, '')) AS jobPosition,
+    TRY_CAST(ea.salaryGrade AS int) AS salaryGrade
+FROM (
+    SELECT DISTINCT
+        mp.employeeId,
+        mp.areaId,
+        mp.businessUnitId,
+        a.areasName,
+        bu.businessUnitsName,
+        e.employeeNo,
+        e.position,
+        LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''),
+            CASE WHEN ISNULL(e.suffix, '') = '' THEN '' ELSE CONCAT(' ', e.suffix) END,
+            CASE WHEN ISNULL(e.firstname, '') = '' THEN '' ELSE CONCAT(', ', e.firstname) END
+        ))) AS fullname
+    FROM manage_personnel mp
+    INNER JOIN areas a ON a.areasId = mp.areaId
+    INNER JOIN businessunits bu ON bu.businessUnitsId = mp.businessUnitId
+    INNER JOIN employee e ON e.employeeId = mp.employeeId
+    WHERE mp.areaId = $P{areaId}
+      AND ($P{businessUnitId} IS NULL OR mp.businessUnitId = $P{businessUnitId})
+) p
+CROSS JOIN (
+    SELECT DATEADD(day, n.n, CAST($P{fromDate} AS date)) AS dtrDate
+    FROM (
+        SELECT TOP (DATEDIFF(day, CAST($P{fromDate} AS date), CAST($P{toDate} AS date)) + 1)
+            ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) - 1 AS n
+        FROM sys.all_objects a
+        CROSS JOIN sys.all_objects b
+    ) n
+) d
+OUTER APPLY (
+    SELECT TOP 1
+        ea0.jobPositionId,
+        ea0.salaryGrade,
+        ea0.assumptionToDutyDate,
+        ea0.activeAppointment,
+        ea0.employeeAppointmentId
+    FROM employeeAppointment ea0
+    WHERE TRY_CAST(ea0.employeeId AS bigint) = p.employeeId
+      AND (
+            ea0.assumptionToDutyDate IS NULL
+            OR CAST(ea0.assumptionToDutyDate AS date) <= d.dtrDate
+          )
+    ORDER BY
+        CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
+        ea0.assumptionToDutyDate DESC,
+        ea0.employeeAppointmentId DESC
+) ea
+LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
+LEFT JOIN work_schedule ws
+       ON TRY_CAST(ws.employeeId AS bigint) = p.employeeId
+      AND CAST(ws.wsDateTime AS date) = d.dtrDate
+LEFT JOIN time_shift ts ON UPPER(LTRIM(RTRIM(ts.tsCode))) = UPPER(LTRIM(RTRIM(ws.tsCode)))
+ORDER BY
+    p.businessUnitsName,
+    p.fullname,
+    d.dtrDate,
+    ws.wsDateTime,
+    ws.wsId]]></query>
+	<field name="department" class="java.lang.String"/>
+	<field name="fullname" class="java.lang.String"/>
+	<field name="dtrDate" class="java.util.Date"/>
+	<field name="sched" class="java.lang.String"/>
+	<field name="actual" class="java.lang.String"/>
+	<field name="jobPosition" class="java.lang.String"/>
+	<field name="salaryGrade" class="java.lang.Integer"/>
+	<background splitType="Stretch"/>
+	<title splitType="Stretch"/>
+	<pageHeader height="168" splitType="Stretch">
+		<element kind="textField" uuid="2535d343-cfa4-4fe1-8c31-0ea3725449e0" x="0" y="0" width="2010" height="82" markup="styled" fontName="Tahoma" fontSize="10.0" pdfEmbedded="false" hTextAlign="Center">
+			<printWhenExpression><![CDATA[$P{isDOH} == false]]></printWhenExpression>
+			<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $P{currentCompany} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $P{currentCompanyAddress} +  "</style><br />"]]></expression>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="657f1814-6225-4891-9e93-8f33f82d4941" x="0" y="0" width="2010" height="82" markup="styled" fontName="Tahoma" fontSize="10.0" pdfEmbedded="false" hTextAlign="Center">
+			<printWhenExpression><![CDATA[$P{isDOH} == true]]></printWhenExpression>
+			<expression><![CDATA["<style size=\"8\" isBold=\"true\">Republic of the Philippines</style><br />" +
+"<style size=\"8\" isBold=\"true\">Department of Health</style><br />" +
+"<style size=\"10\" isBold=\"true\"><b>" + $P{currentCompany} + "</b></style><br />" +
+"<style size=\"7\" isBold=\"false\">"  + $P{currentCompanyAddress} +  "</style><br />"]]></expression>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d43a0f8f-41b9-4f10-ae58-db4141013110" x="0" y="82" width="2010" height="29" fontSize="17.0" bold="true" hTextAlign="Center" vTextAlign="Bottom">
+			<text><![CDATA[OFF DUTY SCHEDULE]]></text>
+		</element>
+		<element kind="textField" uuid="ad4cd5d3-5b68-449a-94f0-7dc612cf2cb9" x="117" y="111" width="522" height="28" fontSize="16.0" pdfFontName="Helvetica-Bold">
+			<expression><![CDATA[$P{reportArea}]]></expression>
+		</element>
+		<element kind="staticText" uuid="951d3d59-133f-4be4-b1a8-a4dd2f2be33d" x="69" y="111" width="48" height="28" fontSize="16.0">
+			<text><![CDATA[Area:]]></text>
+		</element>
+		<element kind="staticText" uuid="dc7c54d1-e8f1-4333-9ffe-35f4e5bae990" x="1450" y="111" width="95" height="28" fontSize="16.0">
+			<text><![CDATA[Period :]]></text>
+		</element>
+		<element kind="textField" uuid="e8af88bd-86ba-4236-9289-e28cb21d71c7" x="1545" y="111" width="420" height="28" fontSize="16.0" pdfFontName="Helvetica-Bold">
+			<expression><![CDATA[$P{dateRangeLabel}]]></expression>
+		</element>
+		<element kind="image" uuid="f5b982a5-a2e7-4611-987f-0812420119d9" x="770" y="0" width="102" height="72" onErrorType="Blank">
+			<expression><![CDATA[$P{logoleft}]]></expression>
+		</element>
+		<element kind="image" uuid="8edccf79-5b32-446d-8074-10e21279f5f9" x="1181" y="0" width="80" height="72" onErrorType="Blank">
+			<expression><![CDATA[$P{logoright}]]></expression>
+		</element>
+		<element kind="staticText" uuid="d53f865e-a5f6-44ab-84ad-ba3224b95c4a" x="69" y="139" width="150" height="28" fontSize="16.0">
+			<text><![CDATA[Business Unit:]]></text>
+		</element>
+		<element kind="textField" uuid="4e1bcd74-0dc0-4fb6-8810-21f6b1921397" x="219" y="140" width="420" height="28" fontSize="16.0" pdfFontName="Helvetica-Bold">
+			<expression><![CDATA[$P{reportBusinessUnit}]]></expression>
+		</element>
+	</pageHeader>
+	<columnHeader height="30" splitType="Stretch">
+		<element kind="staticText" uuid="90e0eb68-e716-4551-81ff-ef0091b15c3f" x="40" y="0" width="170" height="30" fontSize="12.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Date]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="c5fe0e34-e0a0-4b33-86d0-03a88d74b4c2" x="210" y="0" width="420" height="30" fontSize="12.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Employee]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="90d07e14-3870-43e9-913d-2a8c97b38301" x="630" y="0" width="330" height="30" fontSize="12.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Position]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="d139b3b8-6750-4f47-aaaa-d288d7b92802" x="960" y="0" width="100" height="30" fontSize="12.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[SG]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="75bd822e-5eea-4b52-897a-aa538ab539da" x="1060" y="0" width="520" height="30" fontSize="12.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Schedule]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ecf4815d-771e-46f2-8103-99aef2dd2543" x="1580" y="0" width="390" height="30" fontSize="12.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Actual / Remarks]]></text>
+			<box>
+				<pen lineWidth="0.5"/>
+			</box>
+		</element>
+	</columnHeader>
+	<detail>
+		<band height="30" splitType="Stretch">
+			<element kind="textField" uuid="86ca1726-0456-45b5-a9ac-23e0b0daba34" x="40" y="0" width="170" height="28" fontSize="11.0" pattern="MM/dd/yyyy" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{dtrDate}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="59c30d2e-66d9-4516-8564-6178d3048d11" x="210" y="0" width="420" height="28" fontSize="11.0" textAdjust="StretchHeight" vTextAlign="Middle">
+				<expression><![CDATA[$F{fullname}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="94c03d7b-9a28-4dde-8771-42f646970a1c" x="630" y="0" width="330" height="28" fontSize="11.0" textAdjust="StretchHeight" vTextAlign="Middle">
+				<expression><![CDATA[$F{jobPosition}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="ad2062ae-9a21-4b2e-960f-f845e37781b8" x="960" y="0" width="100" height="28" fontSize="11.0" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{salaryGrade} == null || $F{salaryGrade}.intValue() == 0 ? "" : String.valueOf($F{salaryGrade})]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="b10a07ed-0bc2-410b-89ba-9f95c4fef215" x="1060" y="0" width="520" height="28" fontSize="11.0" textAdjust="StretchHeight" vTextAlign="Middle">
+				<expression><![CDATA[$F{sched}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+			<element kind="textField" uuid="0ce998f5-62fb-4c19-87ac-c17e86e24810" x="1580" y="0" width="390" height="28" fontSize="11.0" textAdjust="StretchHeight" vTextAlign="Middle">
+				<expression><![CDATA[$F{actual}]]></expression>
+				<box>
+					<pen lineWidth="0.5"/>
+				</box>
+			</element>
+		</band>
+	</detail>
+	<columnFooter splitType="Stretch"/>
+	<pageFooter height="143" splitType="Stretch">
+		<element kind="textField" uuid="e5fa23cf-b2fa-4449-9b0d-66805a9c25ec" positionType="FixRelativeToBottom" x="1729" y="54" width="226" height="22" fontSize="15.0">
+			<expression><![CDATA[$P{approvedBy}]]></expression>
+		</element>
+		<element kind="textField" uuid="28c5375a-b4a4-4f9f-a05d-391153b88f11" positionType="FixRelativeToBottom" x="66" y="53" width="225" height="22" fontSize="15.0">
+			<expression><![CDATA[$P{printedBy}]]></expression>
+		</element>
+		<element kind="line" uuid="6a959030-3876-4433-ad28-d15b4e9e40eb" positionType="FixRelativeToBottom" x="66" y="75" width="225" height="1"/>
+		<element kind="line" uuid="d1cf0b3f-f44a-4619-9f16-c0b3a40bc47f" positionType="FixRelativeToBottom" x="1729" y="76" width="227" height="1"/>
+		<element kind="staticText" uuid="6a63f443-c875-4a9b-94f5-73c0ff941e24" positionType="FixRelativeToBottom" x="1729" y="16" width="226" height="18" fontSize="14.0" pdfFontName="Helvetica-Bold">
+			<text><![CDATA[Approved By]]></text>
+		</element>
+		<element kind="textField" uuid="2798c422-f2fe-4caf-be70-bd68894f3853" positionType="FixRelativeToBottom" x="1729" y="77" width="226" height="18" fontSize="13.0" pdfFontName="Helvetica-Bold">
+			<expression><![CDATA[$P{approvedByPos}]]></expression>
+		</element>
+		<element kind="textField" uuid="3f883a8b-6ffd-4f8d-befb-50ad39c46a09" positionType="FixRelativeToBottom" x="66" y="76" width="225" height="18" fontSize="13.0" pdfFontName="Helvetica-Bold" printWhenDetailOverflows="true">
+			<expression><![CDATA[$P{printedByPos}]]></expression>
+		</element>
+		<element kind="staticText" uuid="4c8e3083-77b9-4dd6-8e73-c7ea8d193e37" positionType="FixRelativeToBottom" x="66" y="16" width="225" height="18" fontSize="14.0" pdfFontName="Helvetica-Bold" printWhenDetailOverflows="true">
+			<text><![CDATA[Prepared By]]></text>
+		</element>
+		<element kind="textField" uuid="c223e46c-17bc-43ca-9a72-0be67d55736d" x="65" y="121" width="226" height="17" fontSize="13.0">
+			<expression><![CDATA[$P{formCode}]]></expression>
+		</element>
+	</pageFooter>
+	<summary height="60" splitType="Stretch">
+		<element kind="elementGroup"/>
+		<element kind="crosstab" uuid="9c8dff54-521b-4d55-90b4-607e19d53d55" x="20" y="0" width="1000" height="60" ignoreWidth="true" printWhenDetailOverflows="true" printInFirstWholeBand="true">
+			<dataset/>
+			<headerCell/>
+			<rowGroup name="salaryGrade" width="0">
+				<bucket order="Descending" class="java.lang.Integer">
+					<expression><![CDATA[$F{salaryGrade}]]></expression>
+				</bucket>
+				<header/>
+				<totalHeader/>
+			</rowGroup>
+			<rowGroup name="jobPosition" width="32" position="Stretch">
+				<bucket order="Descending" class="java.lang.String">
+					<expression><![CDATA[$F{jobPosition}]]></expression>
+				</bucket>
+				<header>
+					<element kind="textField" uuid="83aaea8b-8023-4b04-ad0c-3658f09636e0" x="0" y="0" width="32" height="43" fontSize="8.0" vTextAlign="Middle" style="Crosstab Data Text">
+						<expression><![CDATA[$V{jobPosition}]]></expression>
+						<box style="Crosstab Data Text">
+							<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#999999"/>
+							<leftPen lineWidth="1.0" lineColor="#999999"/>
+							<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#999999"/>
+							<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#999999"/>
+						</box>
+					</element>
+				</header>
+				<totalHeader/>
+			</rowGroup>
+			<rowGroup name="fullname" width="61">
+				<bucket class="java.lang.String">
+					<expression><![CDATA[$F{fullname}]]></expression>
+				</bucket>
+				<header mode="Opaque" backcolor="#F0F8FF">
+					<element kind="textField" uuid="a9538034-9794-4e06-9179-6a284ec66d84" x="0" y="0" width="61" height="43" fontSize="9.0" style="Crosstab Data Text">
+						<expression><![CDATA[$V{fullname}]]></expression>
+					</element>
+					<box>
+						<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+					</box>
+				</header>
+				<totalHeader/>
+			</rowGroup>
+			<columnGroup name="dtrDate" height="25">
+				<bucket class="java.util.Date">
+					<expression><![CDATA[$F{dtrDate}]]></expression>
+				</bucket>
+				<header mode="Opaque" backcolor="#F0F8FF">
+					<element kind="textField" uuid="f14f981d-2af0-4099-a364-59421bd453c6" x="0" y="0" width="61" height="25" fontSize="10.0" pattern="EEE dd MMMMM" style="Crosstab Data Text">
+						<expression><![CDATA[$V{dtrDate}]]></expression>
+					</element>
+					<box>
+						<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+					</box>
+				</header>
+				<totalHeader/>
+			</columnGroup>
+			<measure name="schedMeasure" class="java.lang.String">
+				<expression><![CDATA[$F{sched}]]></expression>
+			</measure>
+			<cell width="61" height="43">
+				<contents mode="Transparent">
+					<element kind="textField" uuid="53a8d114-d8c4-41b3-af37-1bc75b973f72" x="0" y="0" width="61" height="43" markup="styled" fontSize="11.0" pdfFontName="Helvetica-Bold" bold="true" vTextAlign="Middle" style="Crosstab Data Text">
+						<expression><![CDATA[$V{schedMeasure}.toString().equals("6A")?"<style forecolor='blue'>"+"6"+"</style>"
+:$V{schedMeasure}.toString().equals("2P")?"<style forecolor='green'>"+"2"+"</style>"
+:$V{schedMeasure}.toString().equals("1P")?"<style forecolor='red'>"+"10"+"</style>"
+:$V{schedMeasure}.toString().equals("7A")?"<style forecolor='blue'>"+"7"+"</style>"
+:$V{schedMeasure}.toString().equals("8B")?"<style forecolor='blue'>"+"8"+"</style>"
+:$V{schedMeasure}.toString().equals("8A")?"<style forecolor='blue'>"+"8A"+"</style>"
+:$V{schedMeasure}.toString().equals("4P")?"<style forecolor='blue'>"+"4"+"</style>"
+:$V{schedMeasure}.toString().equals("1A")?"<style forecolor='blue'>"+"10A"+"</style>"
+:$V{schedMeasure}]]></expression>
+					</element>
+					<box>
+						<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+					</box>
+				</contents>
+			</cell>
+			<cell height="25" rowTotalGroup="fullname">
+				<contents mode="Opaque" backcolor="#BFE1FF">
+					<element kind="textField" uuid="0b54deb7-3ade-4bbd-892d-18fb81859e4d" x="0" y="0" width="50" height="25" style="Crosstab Data Text">
+						<expression><![CDATA[$V{schedMeasure}]]></expression>
+					</element>
+					<box>
+						<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+					</box>
+				</contents>
+			</cell>
+			<cell width="50" columnTotalGroup="dtrDate">
+				<contents mode="Opaque" backcolor="#BFE1FF">
+					<element kind="textField" uuid="6d7434c5-444e-4efa-97a4-36045a34b1ad" x="0" y="0" width="50" height="25" style="Crosstab Data Text">
+						<expression><![CDATA[$V{schedMeasure}]]></expression>
+					</element>
+					<box>
+						<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+					</box>
+				</contents>
+			</cell>
+			<cell rowTotalGroup="fullname" columnTotalGroup="dtrDate">
+				<contents mode="Opaque" backcolor="#BFE1FF">
+					<element kind="textField" uuid="3172437d-92fe-474b-97a7-b37125dfd531" x="0" y="0" width="50" height="25" style="Crosstab Data Text">
+						<expression><![CDATA[$V{schedMeasure}]]></expression>
+					</element>
+					<box>
+						<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+					</box>
+				</contents>
+			</cell>
+			<cell rowTotalGroup="jobPosition">
+				<contents/>
+			</cell>
+			<cell rowTotalGroup="jobPosition" columnTotalGroup="dtrDate">
+				<contents/>
+			</cell>
+			<cell rowTotalGroup="salaryGrade">
+				<contents/>
+			</cell>
+			<cell rowTotalGroup="salaryGrade" columnTotalGroup="dtrDate">
+				<contents/>
+			</cell>
+		</element>
+	</summary>
+</jasperReport>

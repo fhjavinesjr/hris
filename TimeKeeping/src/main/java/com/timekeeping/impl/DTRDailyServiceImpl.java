@@ -5,6 +5,7 @@ import com.timekeeping.dtos.DTRSegmentDTO;
 import com.timekeeping.entitymodels.DTRDaily;
 import com.timekeeping.entitymodels.DTRSegment;
 import com.timekeeping.repositories.DTRDailyRepository;
+import com.timekeeping.repositories.DTRSegmentRepository;
 import com.timekeeping.services.DTRDailyService;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
@@ -31,11 +32,17 @@ import java.util.stream.Collectors;
 @Service
 public class DTRDailyServiceImpl implements DTRDailyService {
     private final DTRDailyRepository dtrDailyRepository;
+    private final DTRSegmentRepository dtrSegmentRepository;
     private final JdbcTemplate jdbc;
     private final DataSource dataSource;
 
-    public DTRDailyServiceImpl(DTRDailyRepository dtrDailyRepository, JdbcTemplate jdbc, DataSource dataSource) {
+    public DTRDailyServiceImpl(
+            DTRDailyRepository dtrDailyRepository,
+            DTRSegmentRepository dtrSegmentRepository,
+            JdbcTemplate jdbc,
+            DataSource dataSource) {
         this.dtrDailyRepository = dtrDailyRepository;
+        this.dtrSegmentRepository = dtrSegmentRepository;
         this.jdbc = jdbc;
         this.dataSource = dataSource;
     }
@@ -43,20 +50,85 @@ public class DTRDailyServiceImpl implements DTRDailyService {
     @Override
     @Transactional
     public DTRDailyDTO createOrUpdateDTRDaily(DTRDailyDTO dto) {
-        // Manual DTR entries usually come from the UI without dtrDailyId.
-        // If the parent daily row still exists for employeeId + workDate
-        // (for example: segments were deleted but dtr_daily remained),
-        // reuse that existing daily ID so the save becomes an update instead of
-        // failing due to a duplicate employee/date record.
-        if (dto.getDtrDailyId() == null && dto.getEmployeeId() != null && dto.getWorkDate() != null) {
-            dtrDailyRepository
-                    .findByEmployeeIdAndWorkDate(dto.getEmployeeId(), dto.getWorkDate().toLocalDate())
-                    .ifPresent(existing -> dto.setDtrDailyId(existing.getDtrDailyId()));
+        if (dto.getEmployeeId() == null || dto.getWorkDate() == null) {
+            DTRDaily entity = toEntity(dto);
+            DTRDaily saved = dtrDailyRepository.save(entity);
+            return toDTO(saved);
         }
 
+        LocalDate workDate = dto.getWorkDate().toLocalDate();
+
+        // Manual Add DTR normally sends no dtrDailyId and one new segment.
+        // When a daily row already exists for employeeId + workDate, append the
+        // incoming segment(s) instead of replacing the whole segment list.
+        if (dto.getDtrDailyId() == null) {
+            Optional<DTRDaily> existingOpt = dtrDailyRepository.findByEmployeeIdAndWorkDate(dto.getEmployeeId(), workDate);
+            if (existingOpt.isPresent()) {
+                DTRDaily existing = existingOpt.get();
+                appendSegmentsAndRecomputeTotals(existing, dto.getSegments());
+                existing.setAttendanceStatus(
+                        dto.getAttendanceStatus() != null && !dto.getAttendanceStatus().trim().isEmpty()
+                                ? dto.getAttendanceStatus()
+                                : "Present"
+                );
+                DTRDaily saved = dtrDailyRepository.save(existing);
+                return toDTO(saved);
+            }
+        }
+
+        // Existing DTOs with dtrDailyId are full-record updates, used by segment edit/delete.
+        // In that case, keep the original replace behavior.
         DTRDaily entity = toEntity(dto);
         DTRDaily saved = dtrDailyRepository.save(entity);
         return toDTO(saved);
+    }
+
+    private void appendSegmentsAndRecomputeTotals(DTRDaily daily, List<DTRSegmentDTO> incomingSegments) {
+        if (incomingSegments == null || incomingSegments.isEmpty()) {
+            return;
+        }
+
+        if (daily.getSegments() == null) {
+            daily.setSegments(new ArrayList<>());
+        }
+
+        int nextSegmentNo = daily.getSegments().stream()
+                .map(DTRSegment::getSegmentNo)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
+
+        for (DTRSegmentDTO segmentDTO : incomingSegments) {
+            DTRSegment segment = toSegmentEntity(segmentDTO, daily);
+            segment.setDtrSegmentId(null);
+            segment.setSegmentNo(nextSegmentNo++);
+
+            DTRSegment savedSegment = dtrSegmentRepository.save(segment);
+            daily.getSegments().add(savedSegment);
+        }
+
+        recomputeDailyTotals(daily);
+    }
+
+    private void recomputeDailyTotals(DTRDaily daily) {
+        int totalWorkMinutes = 0;
+        int totalLateMinutes = 0;
+        int totalUndertimeMinutes = 0;
+        int totalOvertimeMinutes = 0;
+
+        if (daily.getSegments() != null) {
+            for (DTRSegment segment : daily.getSegments()) {
+                totalWorkMinutes += segment.getWorkMinutes();
+                totalLateMinutes += segment.getLateMinutes();
+                totalUndertimeMinutes += segment.getUndertimeMinutes();
+                totalOvertimeMinutes += segment.getOvertimeMinutes();
+            }
+        }
+
+        daily.setTotalWorkMinutes(totalWorkMinutes);
+        daily.setTotalLateMinutes(totalLateMinutes);
+        daily.setTotalUndertimeMinutes(totalUndertimeMinutes);
+        daily.setTotalOvertimeMinutes(totalOvertimeMinutes);
     }
 
     @Override

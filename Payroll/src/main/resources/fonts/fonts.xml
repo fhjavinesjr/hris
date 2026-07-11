@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fontFamilies>
+  <!--
+    Maps "Arial" and "SansSerif" JRXML font names to DejaVu Sans TTF files
+    bundled inside jasperreports-fonts-6.20.0.jar on the classpath.
+    pdfEmbedded=true ensures characters render correctly in the exported PDF.
+  -->
+  <fontFamily name="Arial">
+    <normal>net/sf/jasperreports/fonts/dejavu/DejaVuSans.ttf</normal>
+    <bold>net/sf/jasperreports/fonts/dejavu/DejaVuSans-Bold.ttf</bold>
+    <italic>net/sf/jasperreports/fonts/dejavu/DejaVuSans-Oblique.ttf</italic>
+    <boldItalic>net/sf/jasperreports/fonts/dejavu/DejaVuSans-BoldOblique.ttf</boldItalic>
+    <pdfEncoding>Identity-H</pdfEncoding>
+    <pdfEmbedded>true</pdfEmbedded>
+  </fontFamily>
+  <fontFamily name="SansSerif">
+    <normal>net/sf/jasperreports/fonts/dejavu/DejaVuSans.ttf</normal>
+    <bold>net/sf/jasperreports/fonts/dejavu/DejaVuSans-Bold.ttf</bold>
+    <italic>net/sf/jasperreports/fonts/dejavu/DejaVuSans-Oblique.ttf</italic>
+    <boldItalic>net/sf/jasperreports/fonts/dejavu/DejaVuSans-BoldOblique.ttf</boldItalic>
+    <pdfEncoding>Identity-H</pdfEncoding>
+    <pdfEmbedded>true</pdfEmbedded>
+  </fontFamily>
+</fontFamilies>

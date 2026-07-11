@@ -1,69 +1,92 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
-                http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
-              name="pds_c3_lnd_sub" pageWidth="802" pageHeight="595"
-              columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0"
-              uuid="c3de0001-0000-4000-8000-000000000001">
-
-  <field name="programName"  class="java.lang.String"/>
-  <field name="fromDate"     class="java.lang.String"/>
-  <field name="toDate"       class="java.lang.String"/>
-  <field name="lndHrs"       class="java.lang.String"/>
-  <field name="lndType"      class="java.lang.String"/>
-  <field name="conductedBy"  class="java.lang.String"/>
-
-  <detail>
-    <band height="11" splitType="Stretch">
-      <textField isStretchWithOverflow="true">
-        <reportElement x="0"   y="0" width="220" height="11" uuid="c3de0001-0000-4000-8000-000000000002"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{programName} != null ? $F{programName} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="220"  y="0" width="90"  height="11" uuid="c3de0001-0000-4000-8000-000000000003"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{fromDate} != null ? $F{fromDate} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="310"  y="0" width="90"  height="11" uuid="c3de0001-0000-4000-8000-000000000004"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{toDate} != null ? $F{toDate} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="400"  y="0" width="80"  height="11" uuid="c3de0001-0000-4000-8000-000000000005"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{lndHrs} != null ? $F{lndHrs} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="480"  y="0" width="120" height="11" uuid="c3de0001-0000-4000-8000-000000000006"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{lndType} != null ? $F{lndType} : ""]]></textFieldExpression>
-      </textField>
-      <textField isStretchWithOverflow="true">
-        <reportElement x="600"  y="0" width="202" height="11" uuid="c3de0001-0000-4000-8000-000000000007"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{conductedBy} != null ? $F{conductedBy} : ""]]></textFieldExpression>
-      </textField>
-    </band>
-  </detail>
-
-  <noData>
-    <band height="11">
-      <staticText>
-        <reportElement x="0" y="0" width="802" height="11" uuid="c3de0001-0000-4000-8000-000000000008"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <text><![CDATA[N/A]]></text>
-      </staticText>
-    </band>
-  </noData>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" name="pds_c3_lnd_sub" pageWidth="612" pageHeight="936" columnWidth="612" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="57e07fe0-a296-4346-b564-0ec255ea5ba2">
+	<property name="ireport.zoom" value="1.9487171000000025"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"></parameter>
+	
+	<queryString language="SQL"><![CDATA[SELECT
+    ISNULL(programName, '') AS name,
+    CAST(fromDate AS date) AS dateFrom,
+    CAST(toDate AS date) AS dateTo,
+    TRY_CONVERT(int, lndHrs) AS noOfHours,
+    ISNULL(conductedBy, '') AS sponsoredBy,
+    ISNULL(CONVERT(varchar(10), CAST(fromDate AS date), 101), '') + CASE WHEN toDate IS NOT NULL THEN ' - ' + CONVERT(varchar(10), CAST(toDate AS date), 101) ELSE '' END AS dateRange,
+    ISNULL(lndType, '') AS typeOfLd,
+    CASE WHEN toDate IS NULL THEN '' ELSE CONVERT(varchar(10), CAST(toDate AS date), 101) END AS dateToString
+FROM learninganddevelopment
+WHERE personalDataId = (SELECT TOP 1 personalDataId FROM personaldata WHERE employeeId = $P{EMPLOYEE_ID})
+ORDER BY fromDate DESC]]></queryString>
+<field name="name" class="java.lang.String"/>
+	<field name="dateFrom" class="java.sql.Date"/>
+	<field name="dateTo" class="java.sql.Date"/>
+	<field name="noOfHours" class="java.lang.Integer"/>
+	<field name="sponsoredBy" class="java.lang.String"/>
+	<field name="dateRange" class="java.lang.String"/>
+	<field name="typeOfLd" class="java.lang.String"/>
+	<field name="dateToString" class="java.lang.String"/>
+	<detail>
+		<band height="19">
+			<textField>
+				<reportElement uuid="402e5fb0-aaee-48f8-876d-e2edbe9a99f7" x="0" y="0" width="256" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{name}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="30aadbec-8de0-4694-8392-37651173dc82" x="440" y="0" width="138" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sponsoredBy}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="6732c4ca-8216-40b4-8118-ac542e953e7e" x="353" y="0" width="30" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{noOfHours}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="b5e4720c-ddcd-4c05-8324-ff1d24cbd185" x="256" y="0" width="97" height="19"/>
+				<box leftPadding="5">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new SimpleDateFormat("MM/dd/yyyy").format($F{dateFrom}) + " - " + $F{dateToString}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="04ed8dfe-521a-46bb-a85d-fd4fd62b99b4" x="383" y="0" width="57" height="19"/>
+				<box leftPadding="5"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{typeOfLd}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
 </jasperReport>

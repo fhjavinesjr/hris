@@ -1,8 +1,8 @@
 package com.humanresource.impl;
 
 import com.humanresource.services.PDSReportService;
-import jakarta.annotation.PostConstruct;
 import net.sf.jasperreports.engine.*;
+import net.sf.jasperreports.engine.util.JRLoader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -16,13 +16,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Generates all four PDS sheets (C1–C4) by compiling JRXML templates that
- * contain embedded SQL queries. JasperReports executes those queries directly
- * against the database using a JDBC connection from the Spring DataSource.
+ * Generates all four PDS sheets (C1-C4) using pre-compiled .jasper files.
  *
- * XML schema validation is disabled via jasperreports.properties on the
- * classpath, which eliminates the "Unable to load report / jrDesign is null"
- * error caused by the parser trying to fetch the XSD from the internet.
+ * Why .jasper instead of compiling .jrxml at runtime?
+ * - JasperSoft Studio can already compile the PDS JRXML files successfully.
+ * - Spring Boot/JasperReports runtime was failing with "Unable to load report"
+ *   while parsing JRXML.
+ * - Loading .jasper avoids runtime XML parsing/schema issues.
+ *
+ * This is still SQL-only: the main reports and subreports execute their own SQL
+ * through the same JDBC REPORT_CONNECTION. Java only loads the compiled report
+ * templates and passes the subreport templates as parameters.
  */
 @Service
 public class PDSReportServiceImpl implements PDSReportService {
@@ -30,38 +34,29 @@ public class PDSReportServiceImpl implements PDSReportService {
     @Autowired
     private DataSource dataSource;
 
-    /**
-     * Disable XML schema validation programmatically at startup.
-     * This prevents the SAX parser from trying to fetch the XSD from the
-     * internet (jasperreports.sourceforge.net), which causes
-     * "Unable to load report" when the server has no outbound internet access.
-     */
-    @PostConstruct
-    private void disableSchemaValidation() {
-        System.setProperty("net.sf.jasperreports.compiler.xml.parser.validation", "false");
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Public API
-    // ═══════════════════════════════════════════════════════════════════════
-
     @Override
     public void generatePDS(Long employeeId, OutputStream out) throws Exception {
-
-        // Compile all four JRXML templates from classpath.
-        // jasperreports.properties disables schema validation so the XML
-        // loader never needs to reach the internet.
-        JasperReport c1 = compile("reports/pds_c1.jrxml");
-        JasperReport c2 = compile("reports/pds_c2.jrxml");
-        JasperReport c3 = compile("reports/pds_c3.jrxml");
-        JasperReport c4 = compile("reports/pds_c4.jrxml");
-
-        // Single parameter passed to every sheet.
         Map<String, Object> params = new HashMap<>();
         params.put("EMPLOYEE_ID", employeeId);
 
-        // One connection is enough — fillReport() fetches all data synchronously
-        // and releases the ResultSet before returning.
+        // Load compiled subreports from src/main/resources/reports/*.jasper
+        params.put("PDS_C1_CHILDREN_SUBREPORT", loadCompiledReport("reports/pds_c1_children_sub.jasper"));
+
+        params.put("PDS_C2_CIVILSERVICE_SUBREPORT", loadCompiledReport("reports/pds_c2_civilservice_sub.jasper"));
+        params.put("PDS_C2_WORKEXPERIENCE_SUBREPORT", loadCompiledReport("reports/pds_c2_workexperience_sub.jasper"));
+
+        params.put("PDS_C3_VOLUNTARYWORK_SUBREPORT", loadCompiledReport("reports/pds_c3_voluntarywork_sub.jasper"));
+        params.put("PDS_C3_LND_SUBREPORT", loadCompiledReport("reports/pds_c3_lnd_sub.jasper"));
+        params.put("PDS_C3_OTHERINFORMATION_SUBREPORT", loadCompiledReport("reports/pds_c3_otherinformation_sub.jasper"));
+
+        params.put("PDS_C4_REFERENCES_SUBREPORT", loadCompiledReport("reports/pds_c4_references_sub.jasper"));
+
+        // Load compiled main reports from src/main/resources/reports/*.jasper
+        JasperReport c1 = loadCompiledReport("reports/pds_c1.jasper");
+        JasperReport c2 = loadCompiledReport("reports/pds_c2.jasper");
+        JasperReport c3 = loadCompiledReport("reports/pds_c3.jasper");
+        JasperReport c4 = loadCompiledReport("reports/pds_c4.jasper");
+
         try (Connection conn = dataSource.getConnection()) {
             JasperPrint p1 = JasperFillManager.fillReport(c1, params, conn);
             JasperPrint p2 = JasperFillManager.fillReport(c2, params, conn);
@@ -73,26 +68,22 @@ public class PDSReportServiceImpl implements PDSReportService {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Helpers
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Compile a JRXML from the classpath. Schema validation is globally
-     * disabled by jasperreports.properties, so the loader never touches
-     * the internet.
-     */
-    private JasperReport compile(String classpathPath) throws Exception {
+    private JasperReport loadCompiledReport(String classpathPath) throws Exception {
         ClassPathResource resource = new ClassPathResource(classpathPath);
+        if (!resource.exists()) {
+            throw new IllegalStateException("PDS compiled Jasper file not found in classpath: " + classpathPath);
+        }
         try (InputStream is = resource.getInputStream()) {
-            return JasperCompileManager.compileReport(is);
+            Object report = JRLoader.loadObject(is);
+            if (!(report instanceof JasperReport)) {
+                throw new IllegalStateException("Classpath file is not a JasperReport: " + classpathPath);
+            }
+            return (JasperReport) report;
+        } catch (JRException e) {
+            throw new JRException("Unable to load compiled PDS Jasper file: " + classpathPath, e);
         }
     }
 
-    /**
-     * Merge all JasperPrint objects into one so that they export as a
-     * single continuous PDF document.
-     */
     private JasperPrint mergeReports(List<JasperPrint> prints) {
         JasperPrint master = prints.get(0);
         for (int i = 1; i < prints.size(); i++) {
@@ -103,5 +94,3 @@ public class PDSReportServiceImpl implements PDSReportService {
         return master;
     }
 }
-
-

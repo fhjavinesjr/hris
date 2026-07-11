@@ -1,83 +1,151 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
-                http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
-              name="pds_c2_workexperience_sub" pageWidth="802" pageHeight="595"
-              columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0"
-              uuid="c2ee0001-0000-4000-8000-000000000001">
-
-  <field name="fromDate"             class="java.lang.String"/>
-  <field name="toDate"               class="java.lang.String"/>
-  <field name="positionTitle"        class="java.lang.String"/>
-  <field name="agencyName"           class="java.lang.String"/>
-  <field name="monthlySalary"        class="java.lang.String"/>
-  <field name="payGrade"             class="java.lang.String"/>
-  <field name="workStatus"           class="java.lang.String"/>
-  <field name="boolGovernmentService" class="java.lang.String"/>
-
-  <detail>
-    <band height="11" splitType="Stretch">
-      <textField>
-        <reportElement x="0"   y="0" width="80"  height="11" uuid="c2ee0001-0000-4000-8000-000000000002"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{fromDate} != null ? $F{fromDate} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="80"  y="0" width="80"  height="11" uuid="c2ee0001-0000-4000-8000-000000000003"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{toDate} != null ? $F{toDate} : "Present"]]></textFieldExpression>
-      </textField>
-      <textField isStretchWithOverflow="true">
-        <reportElement x="160"  y="0" width="180" height="11" uuid="c2ee0001-0000-4000-8000-000000000004"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{positionTitle} != null ? $F{positionTitle} : ""]]></textFieldExpression>
-      </textField>
-      <textField isStretchWithOverflow="true">
-        <reportElement x="340"  y="0" width="150" height="11" uuid="c2ee0001-0000-4000-8000-000000000005"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{agencyName} != null ? $F{agencyName} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="490"  y="0" width="80"  height="11" uuid="c2ee0001-0000-4000-8000-000000000006"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Right"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{monthlySalary} != null ? $F{monthlySalary} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="570"  y="0" width="80"  height="11" uuid="c2ee0001-0000-4000-8000-000000000007"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{payGrade} != null ? $F{payGrade} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="650"  y="0" width="80"  height="11" uuid="c2ee0001-0000-4000-8000-000000000008"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{workStatus} != null ? $F{workStatus} : ""]]></textFieldExpression>
-      </textField>
-      <textField>
-        <reportElement x="730"  y="0" width="72"  height="11" uuid="c2ee0001-0000-4000-8000-000000000009"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement textAlignment="Center"><font fontName="Arial" size="7"/></textElement>
-        <textFieldExpression><![CDATA[$F{boolGovernmentService} != null ? $F{boolGovernmentService} : ""]]></textFieldExpression>
-      </textField>
-    </band>
-  </detail>
-
-  <noData>
-    <band height="11">
-      <staticText>
-        <reportElement x="0" y="0" width="802" height="11" uuid="c2ee0001-0000-4000-8000-00000000000a"/>
-        <box><pen lineWidth="0.3"/></box>
-        <textElement><font fontName="Arial" size="7"/></textElement>
-        <text><![CDATA[N/A]]></text>
-      </staticText>
-    </band>
-  </noData>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" name="pds_c2_workexperience_sub" pageWidth="612" pageHeight="936" columnWidth="612" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="d07d91b3-fbc4-4bfb-95ea-976c8d8e4d19">
+	<property name="ireport.zoom" value="1.6105100000000012"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"></parameter>
+	
+	<queryString language="SQL"><![CDATA[SELECT
+    CAST(fromDate AS date) AS employmentDate,
+    CAST(toDate AS date) AS separationDate,
+    ISNULL(positionTitle, '') AS position,
+    ISNULL(agencyName, '') AS companyAndDepartment,
+    TRY_CONVERT(float, monthlySalary) AS salary,
+    TRY_CONVERT(float, payGrade) AS salaryIncStep,
+    ISNULL(workStatus, '') AS appointmentStatus,
+    CASE WHEN LOWER(ISNULL(boolGovernmentService,'')) IN ('yes','y','true','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS isGovernmentService,
+    CASE WHEN toDate IS NULL THEN 'Present' ELSE CONVERT(varchar(10), CAST(toDate AS date), 101) END AS separationDateTo,
+    CASE WHEN payGrade IS NULL THEN '' ELSE CAST(payGrade AS varchar(30)) END AS salaryIncStepString
+FROM workexperience
+WHERE personalDataId = (SELECT TOP 1 personalDataId FROM personaldata WHERE employeeId = $P{EMPLOYEE_ID})
+ORDER BY fromDate DESC]]></queryString>
+<field name="employmentDate" class="java.sql.Date"/>
+	<field name="separationDate" class="java.sql.Date"/>
+	<field name="position" class="java.lang.String"/>
+	<field name="companyAndDepartment" class="java.lang.String"/>
+	<field name="salary" class="java.lang.Double"/>
+	<field name="salaryIncStep" class="java.lang.Double"/>
+	<field name="appointmentStatus" class="java.lang.String"/>
+	<field name="isGovernmentService" class="java.lang.Boolean"/>
+	<field name="separationDateTo" class="java.lang.String"/>
+	<field name="salaryIncStepString" class="java.lang.String"/>
+	<variable name="governmentService" class="java.lang.String">
+		<variableExpression><![CDATA[$F{isGovernmentService}? "Yes": "No"]]></variableExpression>
+	</variable>
+	<detail>
+		<band height="19" splitType="Stretch">
+			<textField>
+				<reportElement uuid="9cc5d791-7ae6-4801-9e7a-9c46911fc6cd" x="214" y="0" width="147" height="19"/>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{companyAndDepartment}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="df4b9f38-e878-40cb-8ff6-930b5dc269f5" x="361" y="0" width="37" height="19"/>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{salary}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="06f9068f-190f-473f-ad09-bc90d86b526c" x="398" y="0" width="60" height="19"/>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{salaryIncStepString}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="679126c2-a724-4b44-8d1e-574c49384d5e" x="518" y="0" width="60" height="19"/>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isGovernmentService}?"Yes":"No"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="cdcb8ae1-efaf-402a-ac15-9de4856c9439" x="100" y="0" width="114" height="19"/>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{position}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="b5a24d21-fd4e-421e-8dc6-ecf5e3439d23" x="458" y="0" width="60" height="19"/>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{appointmentStatus}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd/yyyy" isBlankWhenNull="true">
+				<reportElement uuid="3699d90e-f155-4478-95e9-6d5a08474d06" x="49" y="0" width="51" height="19"/>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{separationDateTo}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd/yyyy" isBlankWhenNull="true">
+				<reportElement uuid="46ed0d83-2de8-4f69-b901-33b60f1f8871" x="0" y="0" width="49" height="19"/>
+				<box leftPadding="5">
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{employmentDate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
 </jasperReport>

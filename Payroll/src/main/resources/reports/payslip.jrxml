@@ -1,0 +1,384 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="payslip_dynamic" language="java" pageWidth="780" pageHeight="842" columnWidth="740" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="f90f61ce-d3dc-4fee-bff8-2a8dbb34c17a">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="employeeNo" class="java.lang.String"/>
+	<parameter name="salaryPeriodKey" class="java.lang.String"/>
+	<parameter name="releasedOnly" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+	</parameter>
+	<query language="SQL"><![CDATA[WITH selected_detail AS (
+    SELECT TOP 1 pd.*
+    FROM payroll_detail pd
+    WHERE pd.employeeNo = $P{employeeNo}
+      AND pd.salaryPeriodKey = $P{salaryPeriodKey}
+      AND ($P{releasedOnly} = 0 OR pd.isLocked = 1)
+    ORDER BY pd.id DESC
+),
+adjustment_summary AS (
+    SELECT
+        h.employeeNo,
+        h.salaryPeriodKey,
+        SUM(CASE
+            WHEN UPPER(COALESCE(l.type, '')) = 'EARNING' THEN COALESCE(l.amount, 0)
+            WHEN UPPER(COALESCE(l.type, '')) = 'DEDUCTION' THEN -COALESCE(l.amount, 0)
+            ELSE 0
+        END) AS netAdjustment
+    FROM payroll_adjustment_header h
+    INNER JOIN payroll_adjustment_line l ON l.header_id = h.id
+    INNER JOIN selected_detail pd
+        ON pd.employeeNo = h.employeeNo
+       AND pd.salaryPeriodKey = h.salaryPeriodKey
+    WHERE UPPER(COALESCE(h.status, '')) = 'POSTED'
+    GROUP BY h.employeeNo, h.salaryPeriodKey
+),
+raw_lines AS (
+    SELECT
+        'EARNINGS' AS lineSection,
+        COALESCE(e.earningCode, '') AS lineCode,
+        COALESCE(e.earningName, '') AS lineName,
+        COALESCE(e.amount, 0) AS lineAmount,
+        CAST(NULL AS float) AS employerShare,
+        CAST('' AS varchar(100)) AS referenceNo,
+        CAST('' AS varchar(50)) AS termPaid,
+        10 + COALESCE(e.indexNo, 0) AS sortNo
+    FROM payroll_detail_earning e
+    INNER JOIN selected_detail pd ON pd.id = e.payroll_detail_id
+
+    UNION ALL
+
+    SELECT
+        'DEDUCTIONS' AS lineSection,
+        COALESCE(d.deductionCode, '') AS lineCode,
+        COALESCE(d.deductionName, '') AS lineName,
+        COALESCE(d.amount, 0) AS lineAmount,
+        COALESCE(d.employerShare, 0) AS employerShare,
+        COALESCE(d.reference, '') AS referenceNo,
+        CASE
+            WHEN d.loanPaymentsMade IS NOT NULL AND d.loanTotalAmount IS NOT NULL
+                THEN CONCAT(CAST(d.loanPaymentsMade AS varchar(20)), ' paid')
+            WHEN d.loanPaymentsMade IS NOT NULL
+                THEN CAST(d.loanPaymentsMade AS varchar(20))
+            ELSE ''
+        END AS termPaid,
+        100 + COALESCE(d.indexNo, 0) AS sortNo
+    FROM payroll_detail_deduction d
+    INNER JOIN selected_detail pd ON pd.id = d.payroll_detail_id
+
+    UNION ALL
+
+    SELECT
+        'POSTED ADJUSTMENTS' AS lineSection,
+        COALESCE(l.code, '') AS lineCode,
+        COALESCE(l.name, '') AS lineName,
+        CASE
+            WHEN UPPER(COALESCE(l.type, '')) = 'EARNING' THEN COALESCE(l.amount, 0)
+            WHEN UPPER(COALESCE(l.type, '')) = 'DEDUCTION' THEN -COALESCE(l.amount, 0)
+            ELSE COALESCE(l.amount, 0)
+        END AS lineAmount,
+        CAST(NULL AS float) AS employerShare,
+        COALESCE(h.authorityNo, '') AS referenceNo,
+        COALESCE(h.status, '') AS termPaid,
+        300 + COALESCE(l.indexNo, 0) AS sortNo
+    FROM payroll_adjustment_header h
+    INNER JOIN payroll_adjustment_line l ON l.header_id = h.id
+    INNER JOIN selected_detail pd
+        ON pd.employeeNo = h.employeeNo
+       AND pd.salaryPeriodKey = h.salaryPeriodKey
+    WHERE UPPER(COALESCE(h.status, '')) = 'POSTED'
+),
+lines AS (
+    SELECT
+        lineSection,
+        lineCode,
+        lineName,
+        SUM(lineAmount) AS lineAmount,
+        SUM(COALESCE(employerShare, 0)) AS employerShare,
+        MAX(referenceNo) AS referenceNo,
+        MAX(termPaid) AS termPaid,
+        MIN(sortNo) AS sortNo
+    FROM raw_lines
+    GROUP BY lineSection, lineCode, lineName
+),
+final_lines AS (
+    SELECT * FROM lines
+    UNION ALL
+    SELECT 'PAYSLIP DETAILS', '', 'No earnings or deductions found for this payroll record.', 0, 0, '', '', 999
+    WHERE NOT EXISTS (SELECT 1 FROM lines)
+)
+SELECT
+    pd.employeeNo,
+    pd.employeeName,
+    COALESCE(pd.department, '') AS department,
+    pd.salaryGrade,
+    pd.salaryStep,
+    pd.salaryPeriodKey,
+    pd.cutoffStartDate,
+    pd.cutoffEndDate,
+    pd.salaryDate,
+    pd.basicPerSalary,
+    pd.salaryPerDay,
+    pd.salaryPerMinute,
+    pd.actualBasic,
+    pd.grossAmount,
+    pd.totalDeduction,
+    pd.netAmount,
+    COALESCE(adj.netAdjustment, 0) AS netAdjustment,
+    COALESCE(pd.netAmount, 0) + COALESCE(adj.netAdjustment, 0) AS finalNetPay,
+    pd.taxableIncome,
+    pd.taxAmount,
+    pd.lateMinutes,
+    pd.lateValue,
+    pd.undertimeMinutes,
+    pd.undertimeValue,
+    pd.absentDays,
+    pd.absentParticulars,
+    pd.vacationLeaveUsed,
+    pd.sickLeaveUsed,
+    pd.forceLeaveUsed,
+    pd.vlBalance,
+    pd.slBalance,
+    pd.status,
+    pd.isLocked,
+    fl.lineSection,
+    fl.lineCode,
+    fl.lineName,
+    fl.lineAmount,
+    fl.employerShare,
+    fl.referenceNo,
+    fl.termPaid,
+    fl.sortNo
+FROM selected_detail pd
+LEFT JOIN adjustment_summary adj
+    ON adj.employeeNo = pd.employeeNo
+   AND adj.salaryPeriodKey = pd.salaryPeriodKey
+CROSS JOIN final_lines fl
+ORDER BY
+    CASE fl.lineSection
+        WHEN 'EARNINGS' THEN 1
+        WHEN 'DEDUCTIONS' THEN 2
+        WHEN 'POSTED ADJUSTMENTS' THEN 3
+        ELSE 9
+    END,
+    fl.sortNo,
+    fl.lineName;]]></query>
+	<field name="employeeNo" class="java.lang.String"/>
+	<field name="employeeName" class="java.lang.String"/>
+	<field name="department" class="java.lang.String"/>
+	<field name="salaryGrade" class="java.lang.Integer"/>
+	<field name="salaryStep" class="java.lang.Integer"/>
+	<field name="salaryPeriodKey" class="java.lang.String"/>
+	<field name="cutoffStartDate" class="java.sql.Date"/>
+	<field name="cutoffEndDate" class="java.sql.Date"/>
+	<field name="salaryDate" class="java.sql.Date"/>
+	<field name="basicPerSalary" class="java.lang.Double"/>
+	<field name="salaryPerDay" class="java.lang.Double"/>
+	<field name="salaryPerMinute" class="java.lang.Double"/>
+	<field name="actualBasic" class="java.lang.Double"/>
+	<field name="grossAmount" class="java.lang.Double"/>
+	<field name="totalDeduction" class="java.lang.Double"/>
+	<field name="netAmount" class="java.lang.Double"/>
+	<field name="netAdjustment" class="java.lang.Double"/>
+	<field name="finalNetPay" class="java.lang.Double"/>
+	<field name="taxableIncome" class="java.lang.Double"/>
+	<field name="taxAmount" class="java.lang.Double"/>
+	<field name="lateMinutes" class="java.lang.Integer"/>
+	<field name="lateValue" class="java.lang.Double"/>
+	<field name="undertimeMinutes" class="java.lang.Integer"/>
+	<field name="undertimeValue" class="java.lang.Double"/>
+	<field name="absentDays" class="java.lang.Double"/>
+	<field name="absentParticulars" class="java.lang.String"/>
+	<field name="vacationLeaveUsed" class="java.lang.Double"/>
+	<field name="sickLeaveUsed" class="java.lang.Double"/>
+	<field name="forceLeaveUsed" class="java.lang.Double"/>
+	<field name="vlBalance" class="java.lang.Double"/>
+	<field name="slBalance" class="java.lang.Double"/>
+	<field name="status" class="java.lang.String"/>
+	<field name="isLocked" class="java.lang.Boolean"/>
+	<field name="lineSection" class="java.lang.String"/>
+	<field name="lineCode" class="java.lang.String"/>
+	<field name="lineName" class="java.lang.String"/>
+	<field name="lineAmount" class="java.lang.Double"/>
+	<field name="employerShare" class="java.lang.Double"/>
+	<field name="referenceNo" class="java.lang.String"/>
+	<field name="termPaid" class="java.lang.String"/>
+	<field name="sortNo" class="java.lang.Integer"/>
+	<group name="sectionGroup">
+		<expression><![CDATA[$F{lineSection}]]></expression>
+		<groupHeader>
+			<band height="20">
+				<element kind="rectangle" uuid="2b0120c1-bd44-4913-89c5-106bfe42b762" mode="Opaque" x="0" y="2" width="740" height="16" backcolor="#EAF1FF">
+					<pen lineWidth="0.25"/>
+				</element>
+				<element kind="textField" uuid="dd54e804-f666-444f-b712-a630419569a3" x="5" y="4" width="730" height="12" fontSize="8.0" bold="true" vTextAlign="Middle">
+					<expression><![CDATA[$F{lineSection}]]></expression>
+				</element>
+			</band>
+		</groupHeader>
+	</group>
+	<title height="123">
+		<element kind="staticText" uuid="1a757110-6064-40d7-ad25-a1e6fa116440" x="0" y="0" width="740" height="18" fontSize="13.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[PAYSLIP]]></text>
+		</element>
+		<element kind="line" uuid="f91a0c1e-af62-4422-9946-f8b7412df0c7" x="0" y="20" width="740" height="1"/>
+		<element kind="staticText" uuid="c9fb11a9-d6f5-424b-8f8c-d3ae18d51008" x="0" y="27" width="90" height="13" fontSize="8.0" bold="true">
+			<text><![CDATA[Employee]]></text>
+		</element>
+		<element kind="textField" uuid="842eaddb-818b-4fbf-83ec-3cba47f6ebc5" x="95" y="27" width="300" height="13" fontSize="8.0">
+			<expression><![CDATA[$F{employeeName} + " (" + $F{employeeNo} + ")"]]></expression>
+		</element>
+		<element kind="staticText" uuid="53643716-38c2-4d72-9c42-49a8d258d087" x="430" y="27" width="70" height="13" fontSize="8.0" bold="true">
+			<text><![CDATA[Period]]></text>
+		</element>
+		<element kind="textField" uuid="49a063b9-69ef-4483-89d3-2a741abda80d" x="505" y="27" width="235" height="13" fontSize="8.0">
+			<expression><![CDATA[$F{salaryPeriodKey}]]></expression>
+		</element>
+		<element kind="staticText" uuid="7cf8f052-2839-4a37-8c73-ac78d8b37438" x="0" y="43" width="90" height="13" fontSize="8.0" bold="true">
+			<text><![CDATA[Department]]></text>
+		</element>
+		<element kind="textField" uuid="27b5823b-add9-4a3e-a8a9-c692c8669561" x="95" y="43" width="300" height="13" fontSize="8.0" blankWhenNull="true">
+			<expression><![CDATA[$F{department}]]></expression>
+		</element>
+		<element kind="staticText" uuid="a6c741f2-cdbc-4747-be81-cd0650dce1e4" x="430" y="43" width="70" height="13" fontSize="8.0" bold="true">
+			<text><![CDATA[SG / Step]]></text>
+		</element>
+		<element kind="textField" uuid="6d573bdb-c738-44a2-a560-d0680885f96d" x="505" y="43" width="235" height="13" fontSize="8.0">
+			<expression><![CDATA["SG " + $F{salaryGrade} + " / Step " + $F{salaryStep}]]></expression>
+		</element>
+		<element kind="staticText" uuid="d13f6718-1efc-4172-b745-4e88818ffc94" x="0" y="59" width="90" height="13" fontSize="8.0" bold="true">
+			<text><![CDATA[Cutoff]]></text>
+		</element>
+		<element kind="textField" uuid="cb655e86-36be-48cc-b86c-e105a40f39be" x="95" y="59" width="90" height="13" fontSize="8.0" pattern="MMM dd, yyyy">
+			<expression><![CDATA[$F{cutoffStartDate}]]></expression>
+		</element>
+		<element kind="staticText" uuid="ff58fab6-283e-4da2-b20f-67de01236964" x="186" y="59" width="15" height="13" fontSize="8.0" hTextAlign="Center">
+			<text><![CDATA[-]]></text>
+		</element>
+		<element kind="textField" uuid="d53b275e-0c7f-4447-8809-a84bf0b5ad9b" x="202" y="59" width="90" height="13" fontSize="8.0" pattern="MMM dd, yyyy">
+			<expression><![CDATA[$F{cutoffEndDate}]]></expression>
+		</element>
+		<element kind="staticText" uuid="521ba122-1677-4efa-acd3-72331a2942b0" x="430" y="59" width="70" height="13" fontSize="8.0" bold="true">
+			<text><![CDATA[Salary Date]]></text>
+		</element>
+		<element kind="textField" uuid="343d844f-b50d-4f48-bd7d-f09aa2bc5585" x="505" y="59" width="235" height="13" fontSize="8.0" pattern="MMM dd, yyyy" blankWhenNull="true">
+			<expression><![CDATA[$F{salaryDate}]]></expression>
+		</element>
+		<element kind="line" uuid="fcfef6b6-d168-4a3c-a385-8709853502c6" x="0" y="79" width="740" height="1"/>
+		<element kind="staticText" uuid="bf65f80d-c686-4acf-a79b-0ba93833c233" x="0" y="86" width="290" height="14" fontSize="8.0" bold="true" vTextAlign="Middle">
+			<text><![CDATA[Description]]></text>
+		</element>
+		<element kind="staticText" uuid="f6193c7f-01eb-479d-8067-5ed73f8e071b" x="290" y="86" width="70" height="14" fontSize="8.0" bold="true" vTextAlign="Middle">
+			<text><![CDATA[Code]]></text>
+		</element>
+		<element kind="staticText" uuid="c651c601-c83e-4b5c-beee-481ec05d82e0" x="360" y="86" width="120" height="14" fontSize="8.0" bold="true" vTextAlign="Middle">
+			<text><![CDATA[Reference / Term]]></text>
+		</element>
+		<element kind="staticText" uuid="a2c25bce-9f7c-4869-9926-a16b8253d188" x="480" y="86" width="110" height="14" fontSize="8.0" bold="true" hTextAlign="Right" vTextAlign="Middle">
+			<text><![CDATA[Employer Share]]></text>
+		</element>
+		<element kind="staticText" uuid="5c8b9d5a-13b5-48a7-8246-5a596bfcbd5e" x="590" y="86" width="150" height="14" fontSize="8.0" bold="true" hTextAlign="Right" vTextAlign="Middle">
+			<text><![CDATA[Amount]]></text>
+		</element>
+		<element kind="line" uuid="b0514a93-0bd3-4f7b-aa63-6af44343400d" x="0" y="103" width="740" height="1"/>
+	</title>
+	<detail>
+		<band height="17">
+			<element kind="textField" uuid="a003cfb8-ab33-407e-af62-47a2b56840fa" x="0" y="1" width="290" height="14" fontSize="8.0" textAdjust="StretchHeight" blankWhenNull="true" vTextAlign="Middle">
+				<expression><![CDATA[$F{lineName}]]></expression>
+			</element>
+			<element kind="textField" uuid="e808cef5-b259-4a95-83cc-7b6d853c1ab9" x="290" y="1" width="70" height="14" fontSize="8.0" blankWhenNull="true" vTextAlign="Middle">
+				<expression><![CDATA[$F{lineCode}]]></expression>
+			</element>
+			<element kind="textField" uuid="21835292-7fcc-4185-8d29-ed82ce2709a4" x="360" y="1" width="120" height="14" fontSize="8.0" blankWhenNull="true" vTextAlign="Middle">
+				<expression><![CDATA[($F{referenceNo} == null || $F{referenceNo}.trim().isEmpty()) ? $F{termPaid} : $F{referenceNo}]]></expression>
+			</element>
+			<element kind="textField" uuid="9d0324a5-baa4-4440-a7ee-19895d3c0a9a" x="480" y="1" width="110" height="14" fontSize="8.0" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{employerShare} != null && $F{employerShare}.doubleValue() != 0 ? $F{employerShare} : null]]></expression>
+			</element>
+			<element kind="textField" uuid="311ca882-987e-42ad-a427-faa052b9588d" x="590" y="1" width="150" height="14" fontSize="8.0" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[$F{lineAmount}]]></expression>
+			</element>
+			<element kind="line" uuid="5f55e967-ebfb-40a0-a485-1ac70358432c" x="0" y="16" width="740" height="1" forecolor="#DDDDDD"/>
+		</band>
+	</detail>
+	<summary height="210">
+		<element kind="line" uuid="f0f73f1a-bb82-4e31-90fe-8322a0b29e83" x="0" y="5" width="740" height="1"/>
+		<element kind="staticText" uuid="2b87b28d-ef90-40b2-b5e3-f02d45500438" x="0" y="15" width="180" height="13" fontSize="8.0" bold="true">
+			<text><![CDATA[Attendance / Leave Summary]]></text>
+		</element>
+		<element kind="staticText" uuid="b480a6f7-4554-41c7-b610-53a88739c264" x="0" y="35" width="90" height="12" fontSize="7.0">
+			<text><![CDATA[Absent Days]]></text>
+		</element>
+		<element kind="textField" uuid="238c1c33-4c36-47f3-b3b7-382c3e82722d" x="95" y="35" width="70" height="12" fontSize="7.0" pattern="#,##0.###" hTextAlign="Right">
+			<expression><![CDATA[$F{absentDays}]]></expression>
+		</element>
+		<element kind="staticText" uuid="723e9458-963f-4f13-bfda-bc9a01b841e8" x="0" y="50" width="90" height="12" fontSize="7.0">
+			<text><![CDATA[Late Minutes]]></text>
+		</element>
+		<element kind="textField" uuid="a18c2f81-e836-4f6d-9560-b7ddcb49e3db" x="95" y="50" width="70" height="12" fontSize="7.0" hTextAlign="Right">
+			<expression><![CDATA[$F{lateMinutes}]]></expression>
+		</element>
+		<element kind="staticText" uuid="93fb6d8a-3fc0-4194-80e6-13def294ae01" x="0" y="65" width="90" height="12" fontSize="7.0">
+			<text><![CDATA[Undertime Min.]]></text>
+		</element>
+		<element kind="textField" uuid="0ce92e90-0b9d-43ca-8ea2-bf117f31f7b8" x="95" y="65" width="70" height="12" fontSize="7.0" hTextAlign="Right">
+			<expression><![CDATA[$F{undertimeMinutes}]]></expression>
+		</element>
+		<element kind="staticText" uuid="843d72eb-cfdc-4c97-8344-3f2fee4c3d57" x="190" y="35" width="90" height="12" fontSize="7.0">
+			<text><![CDATA[VL Balance]]></text>
+		</element>
+		<element kind="textField" uuid="b527e3b0-02e7-4a9f-92ed-7003429c241d" x="285" y="35" width="70" height="12" fontSize="7.0" pattern="#,##0.###" hTextAlign="Right">
+			<expression><![CDATA[$F{vlBalance}]]></expression>
+		</element>
+		<element kind="staticText" uuid="ab44a6ea-0edb-4dd7-9e6e-a6396e2b8258" x="190" y="50" width="90" height="12" fontSize="7.0">
+			<text><![CDATA[SL Balance]]></text>
+		</element>
+		<element kind="textField" uuid="e56f6b85-437e-473e-acf8-bb9edb3ded7f" x="285" y="50" width="70" height="12" fontSize="7.0" pattern="#,##0.###" hTextAlign="Right">
+			<expression><![CDATA[$F{slBalance}]]></expression>
+		</element>
+		<element kind="textField" uuid="fdf6d2e5-ab1d-4b81-9c58-371337292ac8" x="0" y="84" width="360" height="28" fontSize="7.0" textAdjust="StretchHeight" blankWhenNull="true">
+			<expression><![CDATA[$F{absentParticulars} == null || $F{absentParticulars}.trim().isEmpty() ? "" : "Absent dates: " + $F{absentParticulars}]]></expression>
+		</element>
+		<element kind="rectangle" uuid="f5b36084-51a4-46ac-8251-35137d9530b6" mode="Opaque" x="430" y="15" width="310" height="105" backcolor="#F8FAFC">
+			<pen lineWidth="0.25"/>
+		</element>
+		<element kind="staticText" uuid="29e45f83-9cb1-4f2d-abd7-d00685a8c0f4" x="440" y="22" width="160" height="13" fontSize="8.0" bold="true">
+			<text><![CDATA[Payroll Summary]]></text>
+		</element>
+		<element kind="staticText" uuid="6133df74-efcb-4b40-a851-d42ff56a004f" x="440" y="42" width="120" height="12" fontSize="7.0">
+			<text><![CDATA[Basic Rate]]></text>
+		</element>
+		<element kind="textField" uuid="b782712b-d6a3-42bd-8cb4-bfc512d0b65e" x="610" y="42" width="115" height="12" fontSize="7.0" pattern="#,##0.00" hTextAlign="Right">
+			<expression><![CDATA[$F{basicPerSalary}]]></expression>
+		</element>
+		<element kind="staticText" uuid="0e4d8918-13cd-4b51-a9d2-0e70a3310b13" x="440" y="57" width="120" height="12" fontSize="7.0">
+			<text><![CDATA[Gross Income]]></text>
+		</element>
+		<element kind="textField" uuid="bfb8098b-1ef7-42ca-98d3-893e15026ad3" x="610" y="57" width="115" height="12" fontSize="7.0" pattern="#,##0.00" hTextAlign="Right">
+			<expression><![CDATA[$F{grossAmount}]]></expression>
+		</element>
+		<element kind="staticText" uuid="429a1935-5889-41c2-824a-20bad9997ed8" x="440" y="72" width="120" height="12" fontSize="7.0">
+			<text><![CDATA[Total Deductions]]></text>
+		</element>
+		<element kind="textField" uuid="8665e886-2000-47db-be36-48d6f2b45745" x="610" y="72" width="115" height="12" fontSize="7.0" pattern="#,##0.00" hTextAlign="Right">
+			<expression><![CDATA[$F{totalDeduction}]]></expression>
+		</element>
+		<element kind="staticText" uuid="33d52ab3-ec03-4b07-b9f4-4d0be8411ff5" x="440" y="87" width="120" height="12" fontSize="7.0">
+			<text><![CDATA[Posted Adjustment]]></text>
+		</element>
+		<element kind="textField" uuid="dedcb7c0-9387-40b8-b5f5-b7284058eab5" x="610" y="87" width="115" height="12" fontSize="7.0" pattern="#,##0.00" hTextAlign="Right">
+			<expression><![CDATA[$F{netAdjustment}]]></expression>
+		</element>
+		<element kind="staticText" uuid="ce292f2b-e4c1-488c-bd89-301c71f64305" x="440" y="102" width="120" height="12" fontSize="8.0" bold="true">
+			<text><![CDATA[Final Net Pay]]></text>
+		</element>
+		<element kind="textField" uuid="809a8b18-e71e-4ad1-bbd4-d7c4dac6a6e0" x="610" y="102" width="115" height="12" fontSize="8.0" pattern="#,##0.00" bold="true" hTextAlign="Right">
+			<expression><![CDATA[$F{finalNetPay}]]></expression>
+		</element>
+		<element kind="staticText" uuid="3d29dc5b-7a4f-448b-ad44-e41f1d3b4d75" x="0" y="150" width="250" height="12" fontSize="7.0">
+			<text><![CDATA[This is a computer-generated payslip.]]></text>
+		</element>
+		<element kind="textField" uuid="e79ebf9a-ecec-4537-a0c4-860038410efb" x="590" y="150" width="150" height="12" fontSize="7.0" hTextAlign="Right">
+			<expression><![CDATA["Page " + $V{PAGE_NUMBER}]]></expression>
+		</element>
+	</summary>
+</jasperReport>
