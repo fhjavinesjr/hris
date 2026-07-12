@@ -15,6 +15,24 @@
 	<parameter name="cashierBy" forPrompting="false" class="java.lang.String">
 		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
 	</parameter>
+	<parameter name="preparedByEmployeeNo" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="approvedByEmployeeNo" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="cashierByEmployeeNo" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="preparedByPosition" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="approvedByPosition" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="cashierByPosition" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
 	<query language="SQL"><![CDATA[WITH base AS (
     SELECT
         pd.id,
@@ -188,6 +206,88 @@ final_rows AS (
     FROM base b
     LEFT JOIN earning_lines el ON el.employeeNo = b.employeeNo
     LEFT JOIN deduction_lines dl ON dl.employeeNo = b.employeeNo
+),
+signatory_positions AS (
+    SELECT
+        ISNULL(prep.position, '') AS preparedByPositionResolved,
+        ISNULL(appr.position, '') AS approvedByPositionResolved,
+        ISNULL(cash.position, '') AS cashierByPositionResolved
+    FROM (SELECT 1 AS oneRow) oneRow
+    OUTER APPLY (
+        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
+        FROM employee e
+        OUTER APPLY (
+            SELECT TOP 1
+                ea0.jobPositionId,
+                ea0.assumptionToDutyDate,
+                ea0.activeAppointment,
+                ea0.employeeAppointmentId
+            FROM employeeappointment ea0
+            WHERE ea0.employeeId = e.employeeId
+            ORDER BY
+                CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
+                ea0.assumptionToDutyDate DESC,
+                ea0.employeeAppointmentId DESC
+        ) ea
+        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
+        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{salaryPeriodKey}
+        WHERE (
+            e.employeeNo = $P{preparedByEmployeeNo}
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pd.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{preparedBy})), ' ', ''), '.', ''), '-', ''))
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.firstname, ''), ' ', ISNULL(e.lastname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{preparedBy})), ' ', ''), '.', ''), '-', ''))
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''), ' ', ISNULL(e.firstname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{preparedBy})), ' ', ''), '.', ''), '-', ''))
+        )
+    ) prep
+    OUTER APPLY (
+        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
+        FROM employee e
+        OUTER APPLY (
+            SELECT TOP 1
+                ea0.jobPositionId,
+                ea0.assumptionToDutyDate,
+                ea0.activeAppointment,
+                ea0.employeeAppointmentId
+            FROM employeeappointment ea0
+            WHERE ea0.employeeId = e.employeeId
+            ORDER BY
+                CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
+                ea0.assumptionToDutyDate DESC,
+                ea0.employeeAppointmentId DESC
+        ) ea
+        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
+        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{salaryPeriodKey}
+        WHERE (
+            e.employeeNo = $P{approvedByEmployeeNo}
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pd.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{approvedBy})), ' ', ''), '.', ''), '-', ''))
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.firstname, ''), ' ', ISNULL(e.lastname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{approvedBy})), ' ', ''), '.', ''), '-', ''))
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''), ' ', ISNULL(e.firstname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{approvedBy})), ' ', ''), '.', ''), '-', ''))
+        )
+    ) appr
+    OUTER APPLY (
+        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
+        FROM employee e
+        OUTER APPLY (
+            SELECT TOP 1
+                ea0.jobPositionId,
+                ea0.assumptionToDutyDate,
+                ea0.activeAppointment,
+                ea0.employeeAppointmentId
+            FROM employeeappointment ea0
+            WHERE ea0.employeeId = e.employeeId
+            ORDER BY
+                CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
+                ea0.assumptionToDutyDate DESC,
+                ea0.employeeAppointmentId DESC
+        ) ea
+        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
+        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{salaryPeriodKey}
+        WHERE (
+            e.employeeNo = $P{cashierByEmployeeNo}
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pd.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{cashierBy})), ' ', ''), '.', ''), '-', ''))
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.firstname, ''), ' ', ISNULL(e.lastname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{cashierBy})), ' ', ''), '.', ''), '-', ''))
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''), ' ', ISNULL(e.firstname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{cashierBy})), ' ', ''), '.', ''), '-', ''))
+        )
+    ) cash
 )
 SELECT
     fr.rowNo,
@@ -219,10 +319,14 @@ SELECT
     )
     THEN 'FINAL / LOCKED - POSTED ADJUSTMENTS ONLY'
     ELSE 'DRAFT / PREVIEW - POSTED + PENDING ADJUSTMENTS INCLUDED'
-    END AS reportMode
+    END AS reportMode,
+    sp.preparedByPositionResolved,
+    sp.approvedByPositionResolved,
+    sp.cashierByPositionResolved
 FROM final_rows fr
 CROSS JOIN grand_earnings ge
 CROSS JOIN grand_deductions gd
+CROSS JOIN signatory_positions sp
 ORDER BY fr.rowNo]]></query>
 	<field name="rowNo" class="java.lang.Integer"/>
 	<field name="employeeNo" class="java.lang.String"/>
@@ -247,6 +351,9 @@ ORDER BY fr.rowNo]]></query>
 	<field name="grandEarningsBreakdown" class="java.lang.String"/>
 	<field name="grandDeductionsBreakdown" class="java.lang.String"/>
 	<field name="reportMode" class="java.lang.String"/>
+	<field name="preparedByPositionResolved" class="java.lang.String"/>
+	<field name="approvedByPositionResolved" class="java.lang.String"/>
+	<field name="cashierByPositionResolved" class="java.lang.String"/>
 	<group name="PayrollHeader" reprintHeaderOnEachPage="true">
 		<expression><![CDATA["ALL"]]></expression>
 		<groupHeader>
@@ -289,11 +396,14 @@ ORDER BY fr.rowNo]]></query>
 				<element kind="textField" uuid="2482f1d7-2851-4970-90c1-2fdb21fd0fe7" x="365" y="42" width="280" height="48" fontName="Arial" fontSize="5.5" textAdjust="StretchHeight" hTextAlign="Left" vTextAlign="Top"><expression><![CDATA[$F{grandEarningsBreakdown}]]></expression><box><pen lineWidth="0.25"/></box></element>
 				<element kind="textField" uuid="c221fef8-175b-4e5d-b80c-dad23851c0de" x="715" y="42" width="360" height="48" fontName="Arial" fontSize="5.5" textAdjust="StretchHeight" hTextAlign="Left" vTextAlign="Top"><expression><![CDATA[$F{grandDeductionsBreakdown}]]></expression><box><pen lineWidth="0.25"/></box></element>
 				<element kind="staticText" uuid="6f5b9e71-ebaf-421f-b13b-9d167e175577" x="0" y="115" width="220" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle"><text><![CDATA[Prepared by:]]></text><box><pen lineWidth="0.25"/></box></element>
-				<element kind="textField" uuid="e406e673-918d-4388-a617-93626c79844d" x="0" y="150" width="220" height="18" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{preparedBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="e406e673-918d-4388-a617-93626c79844d" x="0" y="145" width="220" height="16" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{preparedBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="95903995-d8c2-4598-a689-64bab89104d9" x="0" y="161" width="220" height="14" fontName="Arial" fontSize="6.0" italic="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$F{preparedByPositionResolved}]]></expression><box><pen lineWidth="0.25"/></box></element>
 				<element kind="staticText" uuid="ef97fa03-2eef-43b1-ae8e-34b279779eb3" x="260" y="115" width="220" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle"><text><![CDATA[Approved by:]]></text><box><pen lineWidth="0.25"/></box></element>
-				<element kind="textField" uuid="d8f03d1a-2cd7-4dbe-a540-30d4aa69f14b" x="260" y="150" width="220" height="18" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{approvedBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="d8f03d1a-2cd7-4dbe-a540-30d4aa69f14b" x="260" y="145" width="220" height="16" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{approvedBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="dafbb27f-a97f-4fcd-8b3c-8751f4afe6de" x="260" y="161" width="220" height="14" fontName="Arial" fontSize="6.0" italic="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$F{approvedByPositionResolved}]]></expression><box><pen lineWidth="0.25"/></box></element>
 				<element kind="staticText" uuid="a1f3e7ef-df6a-4f73-a79f-27c66ad4d05e" x="520" y="115" width="220" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle"><text><![CDATA[Cashier:]]></text><box><pen lineWidth="0.25"/></box></element>
-				<element kind="textField" uuid="6093a116-e0d9-48d4-94ef-66506be76a19" x="520" y="150" width="220" height="18" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{cashierBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="6093a116-e0d9-48d4-94ef-66506be76a19" x="520" y="145" width="220" height="16" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{cashierBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="51514e83-6a81-4873-b9ad-35cb3b5cf1a8" x="520" y="161" width="220" height="14" fontName="Arial" fontSize="6.0" italic="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$F{cashierByPositionResolved}]]></expression><box><pen lineWidth="0.25"/></box></element>
 			</band>
 		</groupFooter>
 	</group>

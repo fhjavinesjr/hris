@@ -8,34 +8,151 @@
 	<parameter name="CATEGORY" class="java.lang.String"/>
 	<parameter name="CURRENT_COMPANY" class="java.lang.String"/>
 	<parameter name="REPORT_PERIOD_LABEL" class="java.lang.String"/>
-	<query language="SQL"><![CDATA[SELECT
-    CAST(ROW_NUMBER() OVER (ORDER BY pd.employeeName, pd.employeeNo) AS int) AS no,
-    pd.employeeNo AS employeeNo,
-    pd.employeeName AS fullname,
-    ISNULL(pd.department, '') AS department,
-    pd.salaryGrade AS salaryGrade,
-    pd.salaryStep AS salaryStep,
-    pd.basicPerSalary AS basicPerSalary,
-    CAST(SUM(ISNULL(pde.amount, 0)) AS float) AS grossAmount,
+	<parameter name="PREPARED_BY" class="java.lang.String"/>
+	<parameter name="PREPARED_BY_EMPLOYEE_NO" class="java.lang.String"/>
+	<parameter name="CERTIFIED_BY" class="java.lang.String"/>
+	<parameter name="CERTIFIED_BY_EMPLOYEE_NO" class="java.lang.String"/>
+	<parameter name="APPROVED_BY" class="java.lang.String"/>
+	<parameter name="APPROVED_BY_EMPLOYEE_NO" class="java.lang.String"/>
+	<query language="SQL"><![CDATA[WITH lock_state AS (
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM payroll_period_lock ppl
+            WHERE ppl.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
+        ) THEN 1 ELSE 0
+    END AS isLocked
+), report_lines AS (
+    -- Original computed earning lines from payroll computation
+    SELECT
+        pd.employeeNo,
+        pd.employeeName,
+        ISNULL(pd.department, '') AS department,
+        pd.salaryGrade,
+        pd.salaryStep,
+        pd.basicPerSalary,
+        ISNULL(pde.amount, 0) AS amount
+    FROM payroll_detail pd
+    INNER JOIN payroll_detail_earning pde ON pde.payroll_detail_id = pd.id
+    WHERE pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
+      AND (
+            UPPER(LTRIM(RTRIM(ISNULL(pde.earningCode, '')))) = UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_CODE}, ''))))
+            OR UPPER(LTRIM(RTRIM(ISNULL(pde.earningName, '')))) = UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_NAME}, ''))))
+            OR UPPER(LTRIM(RTRIM(ISNULL(pde.earningName, '')))) LIKE UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_NAME}, '')))) + '%'
+          )
+
+    UNION ALL
+
+    -- Earning adjustments for the same earning/allowance type.
+    -- Draft/unlocked report includes POSTED + PENDING.
+    -- Final/locked report includes POSTED only.
+    SELECT
+        pd.employeeNo,
+        pd.employeeName,
+        ISNULL(pd.department, '') AS department,
+        pd.salaryGrade,
+        pd.salaryStep,
+        pd.basicPerSalary,
+        ISNULL(pal.amount, 0) AS amount
+    FROM payroll_detail pd
+    INNER JOIN payroll_adjustment_header pah
+        ON pah.employeeNo = pd.employeeNo
+       AND pah.salaryPeriodKey = pd.salaryPeriodKey
+    INNER JOIN payroll_adjustment_line pal
+        ON pal.header_id = pah.id
+    CROSS JOIN lock_state ls
+    WHERE pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
+      AND UPPER(LTRIM(RTRIM(ISNULL(pal.type, '')))) = 'EARNING'
+      AND (
+            (ls.isLocked = 1 AND UPPER(LTRIM(RTRIM(ISNULL(pah.status, '')))) = 'POSTED')
+            OR
+            (ls.isLocked = 0 AND UPPER(LTRIM(RTRIM(ISNULL(pah.status, '')))) IN ('POSTED', 'PENDING'))
+          )
+      AND UPPER(LTRIM(RTRIM(ISNULL(pah.status, '')))) <> 'SUPERSEDED'
+      AND (
+            UPPER(LTRIM(RTRIM(ISNULL(pal.code, '')))) = UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_CODE}, ''))))
+            OR UPPER(LTRIM(RTRIM(ISNULL(pal.name, '')))) = UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_NAME}, ''))))
+            OR UPPER(LTRIM(RTRIM(ISNULL(pal.name, '')))) LIKE UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_NAME}, '')))) + '%'
+          )
+), signatory_positions AS (
+    SELECT
+        ISNULL(prep.position, '') AS preparedByPosition,
+        ISNULL(cert.position, '') AS certifiedByPosition,
+        ISNULL(appr.position, '') AS approvedByPosition
+    FROM (SELECT 1 AS oneRow) oneRow
+    OUTER APPLY (
+        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
+        FROM employee e
+        OUTER APPLY (
+            SELECT TOP 1 ea0.jobPositionId, ea0.assumptionToDutyDate, ea0.activeAppointment, ea0.employeeAppointmentId
+            FROM employeeappointment ea0
+            WHERE ea0.employeeId = e.employeeId
+            ORDER BY CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
+                     ea0.assumptionToDutyDate DESC,
+                     ea0.employeeAppointmentId DESC
+        ) ea
+        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
+        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
+        WHERE e.employeeNo = $P{PREPARED_BY_EMPLOYEE_NO}
+    ) prep
+    OUTER APPLY (
+        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
+        FROM employee e
+        OUTER APPLY (
+            SELECT TOP 1 ea0.jobPositionId, ea0.assumptionToDutyDate, ea0.activeAppointment, ea0.employeeAppointmentId
+            FROM employeeappointment ea0
+            WHERE ea0.employeeId = e.employeeId
+            ORDER BY CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
+                     ea0.assumptionToDutyDate DESC,
+                     ea0.employeeAppointmentId DESC
+        ) ea
+        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
+        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
+        WHERE e.employeeNo = $P{CERTIFIED_BY_EMPLOYEE_NO}
+    ) cert
+    OUTER APPLY (
+        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
+        FROM employee e
+        OUTER APPLY (
+            SELECT TOP 1 ea0.jobPositionId, ea0.assumptionToDutyDate, ea0.activeAppointment, ea0.employeeAppointmentId
+            FROM employeeappointment ea0
+            WHERE ea0.employeeId = e.employeeId
+            ORDER BY CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
+                     ea0.assumptionToDutyDate DESC,
+                     ea0.employeeAppointmentId DESC
+        ) ea
+        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
+        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
+        WHERE e.employeeNo = $P{APPROVED_BY_EMPLOYEE_NO}
+    ) appr
+)
+SELECT
+    CAST(ROW_NUMBER() OVER (ORDER BY rl.employeeName, rl.employeeNo) AS int) AS no,
+    rl.employeeNo AS employeeNo,
+    rl.employeeName AS fullname,
+    rl.department AS department,
+    rl.salaryGrade AS salaryGrade,
+    rl.salaryStep AS salaryStep,
+    rl.basicPerSalary AS basicPerSalary,
+    CAST(SUM(ISNULL(rl.amount, 0)) AS float) AS grossAmount,
     CAST(0 AS float) AS tax,
-    CAST(SUM(ISNULL(pde.amount, 0)) AS float) AS netAmount,
-    ISNULL(pd.department, '') AS position,
-    pd.basicPerSalary AS salaryMo
-FROM payroll_detail pd
-INNER JOIN payroll_detail_earning pde ON pde.payroll_detail_id = pd.id
-WHERE pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
-  AND (
-        UPPER(LTRIM(RTRIM(ISNULL(pde.earningCode, '')))) = UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_CODE}, ''))))
-        OR UPPER(LTRIM(RTRIM(ISNULL(pde.earningName, '')))) = UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_NAME}, ''))))
-      )
+    CAST(SUM(ISNULL(rl.amount, 0)) AS float) AS netAmount,
+    rl.department AS position,
+    rl.basicPerSalary AS salaryMo,
+    MAX(sp.preparedByPosition) AS preparedByPosition,
+    MAX(sp.certifiedByPosition) AS certifiedByPosition,
+    MAX(sp.approvedByPosition) AS approvedByPosition
+FROM report_lines rl
+CROSS JOIN signatory_positions sp
 GROUP BY
-    pd.employeeNo,
-    pd.employeeName,
-    pd.department,
-    pd.salaryGrade,
-    pd.salaryStep,
-    pd.basicPerSalary
-ORDER BY pd.employeeName, pd.employeeNo]]></query>
+    rl.employeeNo,
+    rl.employeeName,
+    rl.department,
+    rl.salaryGrade,
+    rl.salaryStep,
+    rl.basicPerSalary
+HAVING SUM(ISNULL(rl.amount, 0)) <> 0
+ORDER BY rl.employeeName, rl.employeeNo]]></query>
 	<field name="no" class="java.lang.Integer"/>
 	<field name="employeeNo" class="java.lang.String"/>
 	<field name="fullname" class="java.lang.String"/>
@@ -48,6 +165,9 @@ ORDER BY pd.employeeName, pd.employeeNo]]></query>
 	<field name="netAmount" class="java.lang.Double"/>
 	<field name="position" class="java.lang.String"/>
 	<field name="salaryMo" class="java.lang.Double"/>
+	<field name="preparedByPosition" class="java.lang.String"/>
+	<field name="certifiedByPosition" class="java.lang.String"/>
+	<field name="approvedByPosition" class="java.lang.String"/>
 	<variable name="TOTAL_AMOUNT" calculation="Sum" class="java.lang.Double">
 		<expression><![CDATA[$F{grossAmount}]]></expression>
 		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
@@ -194,7 +314,7 @@ ORDER BY pd.employeeName, pd.employeeNo]]></query>
 			</element>
 		</band>
 	</detail>
-	<summary height="80">
+	<summary height="110">
 		<element kind="staticText" uuid="8a16621d-4a06-4dfa-b097-8e1682133b87" x="0" y="0" width="775" height="24" fontSize="8.0" bold="true" hTextAlign="Right" vTextAlign="Middle">
 			<text><![CDATA[GRAND TOTAL]]></text>
 			<box>
@@ -213,14 +333,38 @@ ORDER BY pd.employeeName, pd.employeeNo]]></query>
 				<pen lineWidth="0.5"/>
 			</box>
 		</element>
-		<element kind="staticText" uuid="5244b813-8c7d-4bc4-84ef-020365c3b118" x="0" y="42" width="260" height="16" fontSize="8.0">
+		<element kind="staticText" uuid="7dd726b6-d013-4cbb-a1f0-636c4f45b3dd" x="0" y="42" width="260" height="16" fontSize="8.0">
 			<text><![CDATA[Prepared by:]]></text>
 		</element>
-		<element kind="staticText" uuid="e1618458-4119-4a17-bc5a-ce293a91970f" x="320" y="42" width="260" height="16" fontSize="8.0">
+		<element kind="textField" uuid="4f18f52e-1317-4a24-8e9a-1ce41a87528f" x="0" y="62" width="260" height="20" fontSize="8.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$P{PREPARED_BY}]]></expression>
+			<box><pen lineWidth="0.5"/></box>
+		</element>
+		<element kind="textField" uuid="67d2a01c-8213-49cd-9ff2-ea801c3e5eaa" x="0" y="82" width="260" height="20" fontSize="8.0" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{preparedByPosition}]]></expression>
+			<box><pen lineWidth="0.5"/></box>
+		</element>
+		<element kind="staticText" uuid="ffb18d4e-74cd-4c8f-b9b9-fdd34c38678e" x="320" y="42" width="260" height="16" fontSize="8.0">
 			<text><![CDATA[Certified correct:]]></text>
 		</element>
-		<element kind="staticText" uuid="fe621e28-9089-41fa-a571-9527a5a8bfcf" x="640" y="42" width="260" height="16" fontSize="8.0">
+		<element kind="textField" uuid="f1da643f-5b7c-4780-a79d-63039072c6f2" x="320" y="62" width="260" height="20" fontSize="8.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$P{CERTIFIED_BY}]]></expression>
+			<box><pen lineWidth="0.5"/></box>
+		</element>
+		<element kind="textField" uuid="085867df-aa0b-4800-ad30-1123934c3382" x="320" y="82" width="260" height="20" fontSize="8.0" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{certifiedByPosition}]]></expression>
+			<box><pen lineWidth="0.5"/></box>
+		</element>
+		<element kind="staticText" uuid="af5e0397-c85a-47e8-af60-8f05fc9440bf" x="640" y="42" width="260" height="16" fontSize="8.0">
 			<text><![CDATA[Approved by:]]></text>
+		</element>
+		<element kind="textField" uuid="f24216d1-98c6-4ffb-9951-d14e532563cb" x="640" y="62" width="260" height="20" fontSize="8.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$P{APPROVED_BY}]]></expression>
+			<box><pen lineWidth="0.5"/></box>
+		</element>
+		<element kind="textField" uuid="d9c43b90-23e7-4af2-b357-484b19977f80" x="640" y="82" width="260" height="20" fontSize="8.0" italic="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{approvedByPosition}]]></expression>
+			<box><pen lineWidth="0.5"/></box>
 		</element>
 	</summary>
 </jasperReport>

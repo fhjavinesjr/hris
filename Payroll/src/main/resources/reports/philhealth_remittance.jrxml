@@ -1,282 +1,316 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test" pageWidth="595" pageHeight="985" columnWidth="570" leftMargin="5" rightMargin="20" topMargin="20" bottomMargin="20" uuid="3ffc7c7b-e40f-48be-bfd4-d7f92897ec0d">
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="Test" language="java" pageWidth="595" pageHeight="985" columnWidth="570" leftMargin="5" rightMargin="20" topMargin="20" bottomMargin="20" uuid="3ffc7c7b-e40f-48be-bfd4-d7f92897ec0d">
 	<property name="ireport.zoom" value="1.1000000000000032"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<parameter name="salaryPeriodKey" class="java.lang.String"/>
 	<parameter name="currentCompany" class="java.lang.String"/>
 	<parameter name="salaryDate" class="java.lang.String"/>
 	<parameter name="companyPhilhealthNo" class="java.lang.String"/>
 	<parameter name="preparedBy" class="java.lang.String"/>
-	<parameter name="preparedByPos" class="java.lang.String"/>
+	<parameter name="preparedByEmployeeNo" class="java.lang.String"/>
 	<parameter name="certifiedBy" class="java.lang.String"/>
-	<parameter name="certifiedByPos" class="java.lang.String"/>
+	<parameter name="certifiedByEmployeeNo" class="java.lang.String"/>
+	<query language="SQL"><![CDATA[WITH remittance_lines AS (
+    SELECT
+        pd.employeeNo,
+        pd.employeeName,
+        SUM(COALESCE(pdd.amount, 0)) AS ps,
+        SUM(COALESCE(pdd.employerShare, 0)) AS es
+    FROM payroll_detail pd
+    INNER JOIN payroll_detail_deduction pdd ON pdd.payroll_detail_id = pd.id
+    WHERE pd.salaryPeriodKey = $P{salaryPeriodKey}
+      AND (
+             UPPER(LTRIM(RTRIM(pdd.deductionCode))) IN ('PHIC','PHILHEALTH')
+          OR UPPER(REPLACE(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(pdd.deductionName)), ' ', ''), '-', ''), '_', ''), '.', '')) IN ('PHIC','PHILHEALTH','PHILHEALTHPREMIUM','PHILHEALTHCONTRIBUTION')
+      )
+    GROUP BY pd.employeeNo, pd.employeeName
+
+    UNION ALL
+
+    SELECT
+        ah.employeeNo,
+        ah.employeeName,
+        SUM(COALESCE(al.amount, 0)) AS ps,
+        CAST(0 AS FLOAT) AS es
+    FROM payroll_adjustment_header ah
+    INNER JOIN payroll_adjustment_line al ON al.header_id = ah.id
+    WHERE ah.salaryPeriodKey = $P{salaryPeriodKey}
+      AND al.type = 'DEDUCTION'
+      AND (
+             UPPER(LTRIM(RTRIM(al.code))) IN ('PHIC','PHILHEALTH','PHIC_CASCADE')
+          OR UPPER(REPLACE(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(al.name)), ' ', ''), '-', ''), '_', ''), '.', '')) IN ('PHIC','PHILHEALTH','PHILHEALTHPREMIUM','PHILHEALTHCONTRIBUTION','PHICCASCADE')
+      )
+      AND (
+              ah.status = 'POSTED'
+           OR (ah.status = 'PENDING' AND NOT EXISTS (
+                SELECT 1 FROM payroll_period_lock ppl WHERE ppl.salaryPeriodKey = ah.salaryPeriodKey
+              ))
+        )
+    GROUP BY ah.employeeNo, ah.employeeName
+), grouped AS (
+    SELECT employeeNo, employeeName, SUM(ps) AS ps, SUM(es) AS es
+    FROM remittance_lines
+    GROUP BY employeeNo, employeeName
+), signatory_positions AS (
+    SELECT
+        ISNULL(prep.position, '') AS preparedByPositionResolved,
+        ISNULL(cert.position, '') AS certifiedByPositionResolved
+    FROM (SELECT 1 AS oneRow) oneRow
+    OUTER APPLY (
+        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
+        FROM employee e
+        OUTER APPLY (
+            SELECT TOP 1
+                ea0.jobPositionId,
+                ea0.assumptionToDutyDate,
+                ea0.activeAppointment,
+                ea0.employeeAppointmentId
+            FROM employeeappointment ea0
+            WHERE ea0.employeeId = e.employeeId
+            ORDER BY
+                CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
+                ea0.assumptionToDutyDate DESC,
+                ea0.employeeAppointmentId DESC
+        ) ea
+        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
+        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{salaryPeriodKey}
+        WHERE (
+            e.employeeNo = $P{preparedByEmployeeNo}
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pd.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{preparedBy})), ' ', ''), '.', ''), '-', ''))
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.firstname, ''), ' ', ISNULL(e.lastname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{preparedBy})), ' ', ''), '.', ''), '-', ''))
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''), ' ', ISNULL(e.firstname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{preparedBy})), ' ', ''), '.', ''), '-', ''))
+        )
+    ) prep
+    OUTER APPLY (
+        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
+        FROM employee e
+        OUTER APPLY (
+            SELECT TOP 1
+                ea0.jobPositionId,
+                ea0.assumptionToDutyDate,
+                ea0.activeAppointment,
+                ea0.employeeAppointmentId
+            FROM employeeappointment ea0
+            WHERE ea0.employeeId = e.employeeId
+            ORDER BY
+                CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
+                ea0.assumptionToDutyDate DESC,
+                ea0.employeeAppointmentId DESC
+        ) ea
+        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
+        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{salaryPeriodKey}
+        WHERE (
+            e.employeeNo = $P{certifiedByEmployeeNo}
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pd.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{certifiedBy})), ' ', ''), '.', ''), '-', ''))
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.firstname, ''), ' ', ISNULL(e.lastname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{certifiedBy})), ' ', ''), '.', ''), '-', ''))
+            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''), ' ', ISNULL(e.firstname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{certifiedBy})), ' ', ''), '.', ''), '-', ''))
+        )
+    ) cert
+)
+SELECT
+    CAST(ROW_NUMBER() OVER (ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), ISNULL(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '')) AS INT) AS no,
+    CONCAT(
+        ISNULL(NULLIF(LTRIM(RTRIM(per.philhealthNo)), ''), ''),
+        CASE WHEN NULLIF(LTRIM(RTRIM(per.philhealthNo)), '') IS NULL THEN '' ELSE ' - ' END,
+        ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName),
+        CASE WHEN NULLIF(LTRIM(RTRIM(per.firstname)), '') IS NULL THEN '' ELSE ', ' + LTRIM(RTRIM(per.firstname)) END,
+        CASE WHEN NULLIF(LTRIM(RTRIM(per.middlename)), '') IS NULL THEN '' ELSE ' ' + LTRIM(RTRIM(per.middlename)) END
+    ) AS employee,
+    CAST(COALESCE(ps,0) AS FLOAT) AS ps,
+    CAST(COALESCE(es,0) AS FLOAT) AS es,
+    sp.preparedByPositionResolved,
+    sp.certifiedByPositionResolved
+FROM grouped
+CROSS JOIN signatory_positions sp
+LEFT JOIN employee emp ON emp.employeeNo = grouped.employeeNo
+LEFT JOIN personaldata per ON per.employeeId = emp.employeeId
+WHERE COALESCE(ps,0) <> 0 OR COALESCE(es,0) <> 0
+ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), ISNULL(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '')]]></query>
 	<field name="no" class="java.lang.Integer"/>
 	<field name="employee" class="java.lang.String"/>
 	<field name="ps" class="java.lang.Double"/>
 	<field name="es" class="java.lang.Double"/>
-	<variable name="psTotal" class="java.lang.Double" calculation="Sum">
-		<variableExpression><![CDATA[Math.round($F{ps} * 100.0) / 100.0]]></variableExpression>
+	<field name="preparedByPositionResolved" class="java.lang.String"/>
+	<field name="certifiedByPositionResolved" class="java.lang.String"/>
+	<variable name="psTotal" calculation="Sum" class="java.lang.Double">
+		<expression><![CDATA[Math.round($F{ps} * 100.0) / 100.0]]></expression>
 	</variable>
-	<variable name="esTotal" class="java.lang.Double" calculation="Sum">
-		<variableExpression><![CDATA[Math.round($F{es} * 100.0) / 100.0]]></variableExpression>
+	<variable name="esTotal" calculation="Sum" class="java.lang.Double">
+		<expression><![CDATA[Math.round($F{es} * 100.0) / 100.0]]></expression>
 	</variable>
-	<title>
-		<band height="64" splitType="Stretch">
-			<textField>
-				<reportElement uuid="e658cbe2-7cc8-433b-a5ac-b2c69f7542b4" x="0" y="0" width="378" height="16"/>
-				<box leftPadding="5"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="9"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{currentCompany}.toUpperCase()]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement uuid="24c64c50-3030-4e61-963e-69d442f29dbe" x="0" y="16" width="378" height="16"/>
-				<box leftPadding="5"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle"/>
-				<text><![CDATA[PHIC Premium Remittance List]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="301aed82-1327-4189-8eff-f2d09903e2f3" x="0" y="32" width="80" height="16"/>
-				<box leftPadding="5"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font isStrikeThrough="false"/>
-				</textElement>
-				<text><![CDATA[for the month of]]></text>
-			</staticText>
-			<textField pattern="MMMMM yyyy">
-				<reportElement uuid="24724461-c2d9-4c40-8832-a0dfe70ef718" x="80" y="32" width="298" height="16"/>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$P{salaryDate}]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement uuid="29efe78d-c54d-463b-ac84-d8162f26d5b6" x="0" y="48" width="80" height="16"/>
-				<box leftPadding="5"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font isStrikeThrough="false"/>
-				</textElement>
-				<text><![CDATA[Employer's No.]]></text>
-			</staticText>
-			<textField>
-				<reportElement uuid="bae520ab-dd8e-410e-959c-93484648f620" x="80" y="48" width="298" height="16"/>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$P{companyPhilhealthNo}]]></textFieldExpression>
-			</textField>
-		</band>
+	<title height="64" splitType="Stretch">
+		<element kind="textField" uuid="e658cbe2-7cc8-433b-a5ac-b2c69f7542b4" x="0" y="0" width="378" height="16" fontSize="9.0" hTextAlign="Left" vTextAlign="Middle">
+			<expression><![CDATA[$P{currentCompany}.toUpperCase()]]></expression>
+			<box leftPadding="5"/>
+		</element>
+		<element kind="staticText" uuid="24c64c50-3030-4e61-963e-69d442f29dbe" x="0" y="16" width="378" height="16" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[PHIC Premium Remittance List]]></text>
+			<box leftPadding="5"/>
+		</element>
+		<element kind="staticText" uuid="301aed82-1327-4189-8eff-f2d09903e2f3" x="0" y="32" width="80" height="16" strikeThrough="false" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[for the month of]]></text>
+			<box leftPadding="5"/>
+		</element>
+		<element kind="textField" uuid="24724461-c2d9-4c40-8832-a0dfe70ef718" x="80" y="32" width="298" height="16" pattern="MMMMM yyyy" vTextAlign="Middle">
+			<expression><![CDATA[$P{salaryDate}]]></expression>
+		</element>
+		<element kind="staticText" uuid="29efe78d-c54d-463b-ac84-d8162f26d5b6" x="0" y="48" width="80" height="16" fontSize="8.0" strikeThrough="false" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[Employer's No.]]></text>
+			<box leftPadding="5"/>
+		</element>
+		<element kind="textField" uuid="bae520ab-dd8e-410e-959c-93484648f620" x="80" y="48" width="298" height="16" vTextAlign="Middle">
+			<expression><![CDATA[$P{companyPhilhealthNo}]]></expression>
+		</element>
 	</title>
-	<columnHeader>
-		<band height="32" splitType="Stretch">
-			<staticText>
-				<reportElement uuid="fbc4554f-6bb7-4a54-94dc-799ab8e37e30" x="0" y="0" width="39" height="32"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement/>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="703642dc-a844-46ec-8881-f11e58c5d85e" x="39" y="0" width="169" height="32"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="11"/>
-				</textElement>
-				<text><![CDATA[Name of Employees]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="3dc2cc99-39df-49d2-bd6d-45d545e96559" x="208" y="0" width="86" height="32"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="11"/>
-				</textElement>
-				<text><![CDATA[Employee's Share]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="13d867e0-ac5f-4f85-8d99-b43d0d37ff68" x="294" y="0" width="84" height="32"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="11"/>
-				</textElement>
-				<text><![CDATA[Employer's Share]]></text>
-			</staticText>
-		</band>
+	<columnHeader height="32" splitType="Stretch">
+		<element kind="staticText" uuid="fbc4554f-6bb7-4a54-94dc-799ab8e37e30" x="0" y="0" width="39" height="32">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="703642dc-a844-46ec-8881-f11e58c5d85e" x="39" y="0" width="169" height="32" fontSize="11.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Name of Employees]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3dc2cc99-39df-49d2-bd6d-45d545e96559" x="208" y="0" width="86" height="32" fontSize="11.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Employee's Share]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="13d867e0-ac5f-4f85-8d99-b43d0d37ff68" x="294" y="0" width="84" height="32" fontSize="11.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Employer's Share]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
 	</columnHeader>
 	<detail>
 		<band height="22" splitType="Stretch">
-			<textField>
-				<reportElement uuid="4ed59318-ff53-4031-9eda-2014fa00b7ca" x="0" y="0" width="39" height="22"/>
+			<element kind="textField" uuid="4ed59318-ff53-4031-9eda-2014fa00b7ca" x="0" y="0" width="39" height="22" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{no}]]></expression>
 				<box leftPadding="0">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{no}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="0bde16ae-931e-427f-8054-a26cd2004f63" x="39" y="0" width="169" height="22"/>
+			</element>
+			<element kind="textField" uuid="0bde16ae-931e-427f-8054-a26cd2004f63" x="39" y="0" width="169" height="22" vTextAlign="Middle">
+				<expression><![CDATA[$F{employee}]]></expression>
 				<box leftPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{employee}]]></textFieldExpression>
-			</textField>
-			<textField pattern="#,##0.00">
-				<reportElement uuid="775a999c-ef23-4112-9ce4-818dc1f51037" x="208" y="0" width="86" height="22"/>
+			</element>
+			<element kind="textField" uuid="775a999c-ef23-4112-9ce4-818dc1f51037" x="208" y="0" width="86" height="22" pattern="#,##0.00" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[Math.round($F{ps} * 100.0) / 100.0]]></expression>
 				<box leftPadding="0" rightPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[Math.round($F{ps} * 100.0) / 100.0]]></textFieldExpression>
-			</textField>
-			<textField pattern="#,##0.00">
-				<reportElement uuid="f7fc4c42-9fd5-476b-8b30-1462ed9c72d6" x="294" y="0" width="84" height="22"/>
+			</element>
+			<element kind="textField" uuid="f7fc4c42-9fd5-476b-8b30-1462ed9c72d6" x="294" y="0" width="84" height="22" pattern="#,##0.00" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[Math.round($F{es} * 100.0) / 100.0]]></expression>
 				<box leftPadding="0" rightPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[Math.round($F{es} * 100.0) / 100.0]]></textFieldExpression>
-			</textField>
+			</element>
 		</band>
 	</detail>
-	<lastPageFooter>
-		<band height="97">
-			<staticText>
-				<reportElement uuid="95b092a3-d0bc-4c0a-a004-352b5d6de442" x="208" y="38" width="170" height="13"/>
-				<textElement>
-					<font size="8"/>
-				</textElement>
-				<text><![CDATA[Certified corrected by:]]></text>
-			</staticText>
-			<textField>
-				<reportElement uuid="2d4457b6-01a1-43d1-aa36-da46e4f658a2" x="234" y="67" width="144" height="15"/>
-				<textElement>
-					<font pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{certifiedBy}]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement uuid="4d3cdc47-e74d-4509-b108-98bfae40fcdf" x="0" y="38" width="208" height="13"/>
-				<textElement>
-					<font size="8"/>
-				</textElement>
-				<text><![CDATA[Prepared by:]]></text>
-			</staticText>
-			<textField>
-				<reportElement uuid="90408751-66a5-4c4e-b6f5-af5c928cce1d" x="14" y="82" width="194" height="15"/>
-				<textElement/>
-				<textFieldExpression><![CDATA[$P{preparedByPos}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="e5089df7-0915-49c0-9afa-bc7efaa43f0a" x="234" y="82" width="144" height="15"/>
-				<textElement/>
-				<textFieldExpression><![CDATA[$P{certifiedByPos}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="aecfd63a-d960-43fd-855f-f2a9708442e3" x="14" y="67" width="194" height="15"/>
-				<textElement>
-					<font pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{preparedBy}]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement uuid="ee85cd50-76a6-41de-b6a7-cff6faf33d2e" x="0" y="0" width="208" height="22"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<text><![CDATA[Total]]></text>
-			</staticText>
-			<textField pattern="#,##0.00">
-				<reportElement uuid="4ac7a746-ee8d-4cba-93cf-d150f9cdba72" x="208" y="0" width="86" height="22"/>
-				<box leftPadding="5">
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[Math.round($V{psTotal} * 100.0) / 100.0]]></textFieldExpression>
-			</textField>
-			<textField pattern="#,##0.00">
-				<reportElement uuid="a5c4b22b-f7e7-4fb3-8300-fb6ab371ab3c" x="294" y="0" width="84" height="22"/>
-				<box leftPadding="5">
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[Math.round($V{esTotal} * 100.0) / 100.0]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement uuid="b3da40d7-fbd1-4c1e-9296-6639952612b9" x="0" y="22" width="378" height="16"/>
-				<box leftPadding="5"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle"/>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="11f2c8a8-8c4f-4d7c-9792-bd3e843210e0" x="0" y="51" width="378" height="16"/>
-				<box leftPadding="5"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle"/>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="869b706f-782c-4b7e-a6ec-9339beea3d48" x="0" y="67" width="14" height="15"/>
-				<box leftPadding="5"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle"/>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="788e0da0-a11d-4c8e-8e53-f674f10d24ee" x="0" y="82" width="14" height="15"/>
-				<box leftPadding="5"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle"/>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="ca03ee68-2999-44be-bb60-d70b14a59e11" x="208" y="67" width="26" height="15"/>
-				<box leftPadding="5"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle"/>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="4aaf1890-6c70-40c0-b469-d535bad5d2f7" x="208" y="82" width="26" height="15"/>
-				<box leftPadding="5"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle"/>
-				<text><![CDATA[]]></text>
-			</staticText>
-		</band>
+	<lastPageFooter height="97">
+		<element kind="staticText" uuid="95b092a3-d0bc-4c0a-a004-352b5d6de442" x="208" y="38" width="170" height="13" fontSize="8.0">
+			<text><![CDATA[Certified corrected by:]]></text>
+		</element>
+		<element kind="textField" uuid="2d4457b6-01a1-43d1-aa36-da46e4f658a2" x="234" y="67" width="144" height="15" pdfFontName="Helvetica-Bold">
+			<expression><![CDATA[$P{certifiedBy}]]></expression>
+		</element>
+		<element kind="staticText" uuid="4d3cdc47-e74d-4509-b108-98bfae40fcdf" x="0" y="38" width="208" height="13" fontSize="8.0">
+			<text><![CDATA[Prepared by:]]></text>
+		</element>
+		<element kind="textField" uuid="90408751-66a5-4c4e-b6f5-af5c928cce1d" x="14" y="82" width="194" height="15">
+			<expression><![CDATA[$F{preparedByPositionResolved}]]></expression>
+		</element>
+		<element kind="textField" uuid="e5089df7-0915-49c0-9afa-bc7efaa43f0a" x="234" y="82" width="144" height="15">
+			<expression><![CDATA[$F{certifiedByPositionResolved}]]></expression>
+		</element>
+		<element kind="textField" uuid="aecfd63a-d960-43fd-855f-f2a9708442e3" x="14" y="67" width="194" height="15" pdfFontName="Helvetica-Bold">
+			<expression><![CDATA[$P{preparedBy}]]></expression>
+		</element>
+		<element kind="staticText" uuid="ee85cd50-76a6-41de-b6a7-cff6faf33d2e" x="0" y="0" width="208" height="22" fontSize="10.0" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Total]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="4ac7a746-ee8d-4cba-93cf-d150f9cdba72" x="208" y="0" width="86" height="22" pattern="#,##0.00" vTextAlign="Middle">
+			<expression><![CDATA[Math.round($V{psTotal} * 100.0) / 100.0]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="a5c4b22b-f7e7-4fb3-8300-fb6ab371ab3c" x="294" y="0" width="84" height="22" pattern="#,##0.00" vTextAlign="Middle">
+			<expression><![CDATA[Math.round($V{esTotal} * 100.0) / 100.0]]></expression>
+			<box leftPadding="5">
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b3da40d7-fbd1-4c1e-9296-6639952612b9" x="0" y="22" width="378" height="16" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box leftPadding="5"/>
+		</element>
+		<element kind="staticText" uuid="11f2c8a8-8c4f-4d7c-9792-bd3e843210e0" x="0" y="51" width="378" height="16" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box leftPadding="5"/>
+		</element>
+		<element kind="staticText" uuid="869b706f-782c-4b7e-a6ec-9339beea3d48" x="0" y="67" width="14" height="15" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box leftPadding="5"/>
+		</element>
+		<element kind="staticText" uuid="788e0da0-a11d-4c8e-8e53-f674f10d24ee" x="0" y="82" width="14" height="15" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box leftPadding="5"/>
+		</element>
+		<element kind="staticText" uuid="ca03ee68-2999-44be-bb60-d70b14a59e11" x="208" y="67" width="26" height="15" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box leftPadding="5"/>
+		</element>
+		<element kind="staticText" uuid="4aaf1890-6c70-40c0-b469-d535bad5d2f7" x="208" y="82" width="26" height="15" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box leftPadding="5"/>
+		</element>
 	</lastPageFooter>
 </jasperReport>

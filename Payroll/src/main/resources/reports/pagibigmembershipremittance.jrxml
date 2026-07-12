@@ -1,25 +1,109 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="NUMFC_REMITTANCE_LIST_MONTHLY" pageWidth="1010" pageHeight="668" orientation="Landscape" columnWidth="985" leftMargin="5" rightMargin="20" topMargin="2" bottomMargin="20" uuid="6e52e5de-1320-4314-a334-3e0a16f07970">
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="NUMFC_REMITTANCE_LIST_MONTHLY" language="java" pageWidth="1010" pageHeight="668" orientation="Landscape" columnWidth="985" leftMargin="5" rightMargin="20" topMargin="2" bottomMargin="20" uuid="6e52e5de-1320-4314-a334-3e0a16f07970">
 	<property name="ireport.scriptlethandling" value="0"/>
 	<property name="ireport.encoding" value="UTF-8"/>
 	<property name="ireport.zoom" value="0.9313819845887548"/>
 	<property name="ireport.x" value="99"/>
 	<property name="ireport.y" value="0"/>
-	<import value="net.sf.jasperreports.engine.*"/>
-	<import value="java.util.*"/>
-	<import value="net.sf.jasperreports.engine.data.*"/>
-	<parameter name="runDate" class="java.util.Date" isForPrompting="false"/>
-	<parameter name="currentCompany" class="java.lang.String" isForPrompting="false"/>
-	<parameter name="companyAddress" class="java.lang.String" isForPrompting="false"/>
-	<parameter name="employerPagIbigNo" class="java.lang.String"/>
-	<parameter name="periodCovered" class="java.lang.String" isForPrompting="false"/>
-	<parameter name="preparedBy" class="java.lang.String" isForPrompting="false"/>
-	<parameter name="preparedByTitle" class="java.lang.String" isForPrompting="false"/>
-	<parameter name="certifiedBy" class="java.lang.String" isForPrompting="false"/>
-	<parameter name="certifiedByPos" class="java.lang.String" isForPrompting="false"/>
-	<parameter name="notedBy" class="java.lang.String" isForPrompting="false"/>
-	<parameter name="notedByTitle" class="java.lang.String" isForPrompting="false"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
+	<import>net.sf.jasperreports.engine.*</import>
+	<import>java.util.*</import>
+	<import>net.sf.jasperreports.engine.data.*</import>
+	<parameter name="salaryPeriodKey" class="java.lang.String"/>
+	<parameter name="runDate" forPrompting="false" class="java.util.Date"/>
+	<parameter name="currentCompany" forPrompting="false" class="java.lang.String"/>
+	<parameter name="employerOfficeId" forPrompting="false" class="java.lang.String"/>
+	<parameter name="companyAddress" forPrompting="false" class="java.lang.String"/>
+	<parameter name="employerPagIbigNo" forPrompting="false" class="java.lang.String"/>
+	<parameter name="periodCovered" forPrompting="false" class="java.lang.String"/>
+	<parameter name="certifiedBy" forPrompting="false" class="java.lang.String"/>
+	<parameter name="certifiedByEmployeeNo" forPrompting="false" class="java.lang.String"/>
 	<parameter name="perCov" class="java.lang.String"/>
+	<query language="SQL"><![CDATA[WITH remittance_lines AS (
+    SELECT
+        pd.employeeNo,
+        pd.employeeName,
+        SUM(COALESCE(pdd.amount, 0)) AS eeAmount,
+        SUM(COALESCE(pdd.employerShare, 0)) AS erAmount
+    FROM payroll_detail pd
+    INNER JOIN payroll_detail_deduction pdd ON pdd.payroll_detail_id = pd.id
+    WHERE pd.salaryPeriodKey = $P{salaryPeriodKey}
+      AND (
+             UPPER(LTRIM(RTRIM(pdd.deductionCode))) IN ('HDMF','PAGIBIG')
+          OR UPPER(REPLACE(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(pdd.deductionName)), ' ', ''), '-', ''), '_', ''), '.', '')) IN ('HDMF','PAGIBIG','PAGIBIGPREMIUM','PAGIBIGCONTRIBUTION')
+      )
+    GROUP BY pd.employeeNo, pd.employeeName
+
+    UNION ALL
+
+    SELECT
+        ah.employeeNo,
+        ah.employeeName,
+        SUM(COALESCE(al.amount, 0)) AS eeAmount,
+        CAST(0 AS FLOAT) AS erAmount
+    FROM payroll_adjustment_header ah
+    INNER JOIN payroll_adjustment_line al ON al.header_id = ah.id
+    WHERE ah.salaryPeriodKey = $P{salaryPeriodKey}
+      AND al.type = 'DEDUCTION'
+      AND (
+             UPPER(LTRIM(RTRIM(al.code))) IN ('HDMF','PAGIBIG')
+          OR UPPER(REPLACE(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(al.name)), ' ', ''), '-', ''), '_', ''), '.', '')) IN ('HDMF','PAGIBIG','PAGIBIGPREMIUM','PAGIBIGCONTRIBUTION')
+      )
+      AND (
+              ah.status = 'POSTED'
+           OR (ah.status = 'PENDING' AND NOT EXISTS (
+                SELECT 1 FROM payroll_period_lock ppl WHERE ppl.salaryPeriodKey = ah.salaryPeriodKey
+              ))
+        )
+    GROUP BY ah.employeeNo, ah.employeeName
+), grouped AS (
+    SELECT employeeNo, employeeName, SUM(eeAmount) AS eeAmount, SUM(erAmount) AS erAmount
+    FROM remittance_lines
+    GROUP BY employeeNo, employeeName
+)
+SELECT
+    ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName) AS lastname,
+    CAST(COALESCE(eeAmount,0) AS FLOAT) AS eeAmount,
+    ISNULL(NULLIF(LTRIM(RTRIM(per.pagibigId)), ''), '') AS pagIbigNo,
+    ISNULL(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '') AS firstname,
+    ISNULL(NULLIF(LTRIM(RTRIM(per.middlename)), ''), '') AS middlename,
+    CAST(COALESCE(erAmount,0) AS FLOAT) AS erAmount,
+    '' AS accountNo,
+    '' AS me,
+    ISNULL(NULLIF(LTRIM(RTRIM(per.extname)), ''), '') AS extName,
+    '' AS remarks,
+    CAST(ROW_NUMBER() OVER (ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), ISNULL(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '')) AS INT) AS countNum,
+    ISNULL(cert.position, '') AS certifiedByPosition
+FROM grouped
+LEFT JOIN employee emp ON emp.employeeNo = grouped.employeeNo
+LEFT JOIN personaldata per ON per.employeeId = emp.employeeId
+OUTER APPLY (
+    SELECT TOP 1 COALESCE(jp.jobPositionName, certEmp.position, pdCert.department, '') AS position
+    FROM employee certEmp
+    OUTER APPLY (
+        SELECT TOP 1
+            ea0.jobPositionId,
+            ea0.assumptionToDutyDate,
+            ea0.activeAppointment,
+            ea0.employeeAppointmentId
+        FROM employeeappointment ea0
+        WHERE ea0.employeeId = certEmp.employeeId
+        ORDER BY
+            CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
+            ea0.assumptionToDutyDate DESC,
+            ea0.employeeAppointmentId DESC
+    ) ea
+    LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
+    LEFT JOIN payroll_detail pdCert ON pdCert.employeeNo = certEmp.employeeNo AND pdCert.salaryPeriodKey = $P{salaryPeriodKey}
+    WHERE (
+        certEmp.employeeNo = $P{certifiedByEmployeeNo}
+        OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pdCert.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{certifiedBy})), ' ', ''), '.', ''), '-', ''))
+        OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(certEmp.firstname, ''), ' ', ISNULL(certEmp.lastname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{certifiedBy})), ' ', ''), '.', ''), '-', ''))
+        OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(certEmp.lastname, ''), ' ', ISNULL(certEmp.firstname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{certifiedBy})), ' ', ''), '.', ''), '-', ''))
+    )
+) cert
+WHERE COALESCE(eeAmount,0) <> 0 OR COALESCE(erAmount,0) <> 0
+ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), ISNULL(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '')]]></query>
 	<field name="lastname" class="java.lang.String"/>
 	<field name="eeAmount" class="java.lang.Double"/>
 	<field name="pagIbigNo" class="java.lang.String"/>
@@ -31,583 +115,392 @@
 	<field name="extName" class="java.lang.String"/>
 	<field name="remarks" class="java.lang.String"/>
 	<field name="countNum" class="java.lang.Integer"/>
-	<variable name="totalEEAmountPerPage" class="java.lang.Double" calculation="Sum">
-		<variableExpression><![CDATA[Math.round($F{eeAmount} * 100.0) / 100.0]]></variableExpression>
+	<field name="certifiedByPosition" class="java.lang.String"/>
+	<variable name="totalEEAmountPerPage" calculation="Sum" class="java.lang.Double">
+		<expression><![CDATA[Math.round($F{eeAmount} * 100.0) / 100.0]]></expression>
 	</variable>
-	<variable name="grandEETotalAmount" class="java.lang.Double" calculation="Sum">
-		<variableExpression><![CDATA[Math.round($F{eeAmount} * 100.0) / 100.0]]></variableExpression>
+	<variable name="grandEETotalAmount" calculation="Sum" class="java.lang.Double">
+		<expression><![CDATA[Math.round($F{eeAmount} * 100.0) / 100.0]]></expression>
 	</variable>
-	<variable name="totalERAmountPerPage" class="java.lang.Double" calculation="Sum">
-		<variableExpression><![CDATA[Math.round($F{erAmount} * 100.0) / 100.0]]></variableExpression>
+	<variable name="totalERAmountPerPage" calculation="Sum" class="java.lang.Double">
+		<expression><![CDATA[Math.round($F{erAmount} * 100.0) / 100.0]]></expression>
 	</variable>
-	<variable name="grandERTotalAmount" class="java.lang.Double" calculation="Sum">
-		<variableExpression><![CDATA[Math.round($F{erAmount} * 100.0) / 100.0]]></variableExpression>
+	<variable name="grandERTotalAmount" calculation="Sum" class="java.lang.Double">
+		<expression><![CDATA[Math.round($F{erAmount} * 100.0) / 100.0]]></expression>
 	</variable>
-	<background>
-		<band splitType="Stretch"/>
-	</background>
-	<pageHeader>
-		<band height="103" splitType="Stretch">
-			<textField>
-				<reportElement uuid="db8fcce9-379a-4a79-8cc3-0f1ed9387c20" x="113" y="0" width="652" height="28"/>
-				<box leftPadding="10"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="12" isBold="true" isStrikeThrough="false"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{employerPagIbigNo}]]></textFieldExpression>
-			</textField>
-			<textField isBlankWhenNull="false">
-				<reportElement uuid="25f3f7df-83cd-4437-899e-1136aedbb5d1" key="textField" x="113" y="28" width="376" height="27"/>
-				<box leftPadding="10"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="12" isBold="true" pdfFontName="Helvetica"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{currentCompany}]]></textFieldExpression>
-			</textField>
-			<textField isBlankWhenNull="false">
-				<reportElement uuid="00495157-5098-4631-93dc-bca47287ca0b" key="textField" x="113" y="55" width="376" height="28"/>
-				<box leftPadding="10"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="12" isBold="true"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{companyAddress} + " "]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement uuid="2cc597f5-3720-4bd9-b8ad-067f45034be8" key="staticText-11" x="6" y="2" width="0" height="0"/>
-				<textElement/>
-				<text><![CDATA[Static Text]]></text>
-			</staticText>
-			<textField isBlankWhenNull="false">
-				<reportElement uuid="6a16ae2a-f8ea-4a86-bc47-32d1a7da9ecd" key="textField" x="113" y="83" width="376" height="20"/>
-				<box leftPadding="10"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="12" isBold="true" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<textFieldExpression><![CDATA["PERIOD COVERED: " + $P{periodCovered}]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement uuid="e47ca305-4982-4cad-b5f0-5b434358e8ad" key="staticText-5" x="0" y="0" width="113" height="28"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<text><![CDATA[Employer ID]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="2fa32908-e3ad-4ea1-82cf-02ede0951f61" key="staticText-5" x="765" y="0" width="145" height="28"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[HQP-PFF-053
+	<background splitType="Stretch"/>
+	<pageHeader height="103" splitType="Stretch">
+		<element kind="textField" uuid="db8fcce9-379a-4a79-8cc3-0f1ed9387c20" x="113" y="0" width="652" height="28" fontSize="12.0" bold="true" strikeThrough="false" hTextAlign="Left" vTextAlign="Middle">
+			<expression><![CDATA[$P{employerOfficeId}]]></expression>
+			<box leftPadding="10"/>
+		</element>
+		<element kind="textField" uuid="25f3f7df-83cd-4437-899e-1136aedbb5d1" key="textField" x="113" y="28" width="376" height="27" fontSize="12.0" pdfFontName="Helvetica" blankWhenNull="false" bold="true" hTextAlign="Left" vTextAlign="Middle">
+			<expression><![CDATA[$P{currentCompany}]]></expression>
+			<box leftPadding="10"/>
+		</element>
+		<element kind="textField" uuid="00495157-5098-4631-93dc-bca47287ca0b" key="textField" x="113" y="55" width="376" height="28" fontSize="12.0" blankWhenNull="false" bold="true" hTextAlign="Left" vTextAlign="Middle">
+			<expression><![CDATA[$P{companyAddress} + " "]]></expression>
+			<box leftPadding="10"/>
+		</element>
+		<element kind="staticText" uuid="2cc597f5-3720-4bd9-b8ad-067f45034be8" key="staticText-11" x="6" y="2" width="0" height="0">
+			<text><![CDATA[Static Text]]></text>
+		</element>
+		<element kind="textField" uuid="6a16ae2a-f8ea-4a86-bc47-32d1a7da9ecd" key="textField" x="113" y="83" width="376" height="20" fontSize="12.0" pdfFontName="Helvetica-Bold" blankWhenNull="false" bold="true" hTextAlign="Left" vTextAlign="Middle">
+			<expression><![CDATA["PERIOD COVERED: " + $P{periodCovered}]]></expression>
+			<box leftPadding="10"/>
+		</element>
+		<element kind="staticText" uuid="e47ca305-4982-4cad-b5f0-5b434358e8ad" key="staticText-5" x="0" y="0" width="113" height="28" fontSize="12.0" pdfFontName="Helvetica-Bold" bold="true" underline="false" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[Employer ID]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2fa32908-e3ad-4ea1-82cf-02ede0951f61" key="staticText-5" x="765" y="0" width="145" height="28" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[HQP-PFF-053
 ]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="82fc48ce-b966-44dc-87b9-081e1e30238a" key="staticText-5" x="0" y="28" width="113" height="27"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<text><![CDATA[Address]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="141deaa1-8db7-4088-b5c2-1d8224f6dbe2" key="staticText-5" x="0" y="55" width="113" height="28"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<text><![CDATA[Employer Name]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="7dfbdfe8-d73d-405d-828a-8ee85741498f" key="staticText-5" x="0" y="83" width="113" height="20"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="efa311ab-1b80-4b3e-8ad4-01a03892b339" key="staticText-5" x="489" y="83" width="421" height="20"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="a98bb405-36ed-4b32-bba1-05505f53d243" key="staticText-5" x="489" y="55" width="421" height="28"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="137a253a-bb24-41f2-b346-bfefb50b87f9" key="staticText-5" x="489" y="28" width="421" height="27"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-		</band>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="82fc48ce-b966-44dc-87b9-081e1e30238a" key="staticText-5" x="0" y="28" width="113" height="27" fontSize="12.0" pdfFontName="Helvetica-Bold" bold="true" underline="false" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[Address]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="141deaa1-8db7-4088-b5c2-1d8224f6dbe2" key="staticText-5" x="0" y="55" width="113" height="28" fontSize="12.0" pdfFontName="Helvetica-Bold" bold="true" underline="false" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[Employer Name]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="7dfbdfe8-d73d-405d-828a-8ee85741498f" key="staticText-5" x="0" y="83" width="113" height="20" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="efa311ab-1b80-4b3e-8ad4-01a03892b339" key="staticText-5" x="489" y="83" width="421" height="20" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a98bb405-36ed-4b32-bba1-05505f53d243" key="staticText-5" x="489" y="55" width="421" height="28" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="137a253a-bb24-41f2-b346-bfefb50b87f9" key="staticText-5" x="489" y="28" width="421" height="27" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
 	</pageHeader>
-	<columnHeader>
-		<band height="25" splitType="Stretch">
-			<staticText>
-				<reportElement uuid="4380f7a9-f01f-435e-820d-56a86de336fb" key="staticText-5" x="0" y="0" width="113" height="25"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="8" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[ Pag-IBIG MID/RTN]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="62ad21d4-6633-481c-8eee-564b4c3bfb87" key="staticText-26" x="113" y="0" width="96" height="25"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="8" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[LAST NAME]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="f3d221ff-147d-4fdd-bcde-e9019948f256" key="staticText-6" x="609" y="0" width="99" height="25"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="8" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[ EE SHARE]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="1e4c8556-1106-4f5b-9448-b82831e703e9" key="staticText-29" x="708" y="0" width="104" height="25"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="8" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[ ER SHARE]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="7a55e01a-5668-42a4-ae93-ee16c1e8e88d" key="staticText-27" x="209" y="0" width="95" height="25"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="8" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[FIRST NAME]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="ebe1d898-0db2-4fd4-9583-9e57496b6fd8" key="staticText-29" x="812" y="0" width="98" height="25"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="8" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[REMARKS]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="5e24ac4d-e57f-43f0-befa-1d0940c5ee76" key="staticText-27" x="304" y="0" width="104" height="25"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="8" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[NAME EXTENSION]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="3e295345-fc1a-4edf-ac58-c202b89871bb" x="509" y="0" width="100" height="25"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="8" isBold="true"/>
-				</textElement>
-				<text><![CDATA[ PERCOV]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="b38c9e2b-5647-4980-bbd0-a7d71feeb718" key="staticText-27" x="408" y="0" width="101" height="25"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="8" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[MIDDLE NAME]]></text>
-			</staticText>
-		</band>
+	<columnHeader height="25" splitType="Stretch">
+		<element kind="staticText" uuid="4380f7a9-f01f-435e-820d-56a86de336fb" key="staticText-5" x="0" y="0" width="113" height="25" fontSize="8.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[ Pag-IBIG MID/RTN]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="62ad21d4-6633-481c-8eee-564b4c3bfb87" key="staticText-26" x="113" y="0" width="96" height="25" fontSize="8.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[LAST NAME]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="f3d221ff-147d-4fdd-bcde-e9019948f256" key="staticText-6" x="609" y="0" width="99" height="25" fontSize="8.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[ EE SHARE]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="1e4c8556-1106-4f5b-9448-b82831e703e9" key="staticText-29" x="708" y="0" width="104" height="25" fontSize="8.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[ ER SHARE]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="7a55e01a-5668-42a4-ae93-ee16c1e8e88d" key="staticText-27" x="209" y="0" width="95" height="25" fontSize="8.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[FIRST NAME]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ebe1d898-0db2-4fd4-9583-9e57496b6fd8" key="staticText-29" x="812" y="0" width="98" height="25" fontSize="8.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[REMARKS]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="5e24ac4d-e57f-43f0-befa-1d0940c5ee76" key="staticText-27" x="304" y="0" width="104" height="25" fontSize="8.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[NAME EXTENSION]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="3e295345-fc1a-4edf-ac58-c202b89871bb" x="509" y="0" width="100" height="25" fontSize="8.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[ PERCOV]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="b38c9e2b-5647-4980-bbd0-a7d71feeb718" key="staticText-27" x="408" y="0" width="101" height="25" fontSize="8.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[MIDDLE NAME]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<leftPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+				<rightPen lineWidth="1.0"/>
+			</box>
+		</element>
 	</columnHeader>
 	<detail>
 		<band height="25" splitType="Stretch">
-			<textField>
-				<reportElement uuid="72a7456b-8359-4660-b53f-e90b13cada13" x="0" y="0" width="113" height="25"/>
+			<element kind="textField" uuid="72a7456b-8359-4660-b53f-e90b13cada13" x="0" y="0" width="113" height="25" fontSize="10.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{pagIbigNo}]]></expression>
 				<box leftPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{pagIbigNo}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="da438d4c-25f4-4caf-9a4c-b563aa928b19" x="113" y="0" width="96" height="25"/>
+			</element>
+			<element kind="textField" uuid="da438d4c-25f4-4caf-9a4c-b563aa928b19" x="113" y="0" width="96" height="25" fontSize="10.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{lastname}]]></expression>
 				<box leftPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{lastname}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="ea222778-1e38-4178-b3e8-1550de57d8c7" x="209" y="0" width="95" height="25"/>
+			</element>
+			<element kind="textField" uuid="ea222778-1e38-4178-b3e8-1550de57d8c7" x="209" y="0" width="95" height="25" fontSize="10.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{firstname}]]></expression>
 				<box leftPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{firstname}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="25c3dd5a-27e7-41be-812a-8cc22734bfe0" x="304" y="0" width="104" height="25"/>
+			</element>
+			<element kind="textField" uuid="25c3dd5a-27e7-41be-812a-8cc22734bfe0" x="304" y="0" width="104" height="25" fontSize="10.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{extName}]]></expression>
 				<box leftPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{extName}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="24352f08-0413-41df-92b7-57ae22b2907a" x="408" y="0" width="101" height="25"/>
+			</element>
+			<element kind="textField" uuid="24352f08-0413-41df-92b7-57ae22b2907a" x="408" y="0" width="101" height="25" fontSize="10.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{middlename}]]></expression>
 				<box leftPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{middlename}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="63e92efa-40ac-4729-87e1-e5d9870a9618" x="509" y="0" width="100" height="25"/>
+			</element>
+			<element kind="textField" uuid="63e92efa-40ac-4729-87e1-e5d9870a9618" x="509" y="0" width="100" height="25" fontSize="10.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$P{perCov}]]></expression>
 				<box leftPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{perCov}]]></textFieldExpression>
-			</textField>
-			<textField pattern="#,##0.00" isBlankWhenNull="true">
-				<reportElement uuid="a5426689-dc75-4d67-8200-44f584a2d994" x="609" y="0" width="99" height="25"/>
+			</element>
+			<element kind="textField" uuid="a5426689-dc75-4d67-8200-44f584a2d994" x="609" y="0" width="99" height="25" fontSize="10.0" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[Math.round($F{eeAmount} * 100.0) / 100.0]]></expression>
 				<box leftPadding="0" rightPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[Math.round($F{eeAmount} * 100.0) / 100.0]]></textFieldExpression>
-			</textField>
-			<textField pattern="#,##0.00" isBlankWhenNull="true">
-				<reportElement uuid="19eb3a5a-dd0f-43bd-86e2-d4ac2fb57108" x="708" y="0" width="104" height="25"/>
+			</element>
+			<element kind="textField" uuid="19eb3a5a-dd0f-43bd-86e2-d4ac2fb57108" x="708" y="0" width="104" height="25" fontSize="10.0" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right" vTextAlign="Middle">
+				<expression><![CDATA[Math.round($F{erAmount} * 100.0) / 100.0]]></expression>
 				<box leftPadding="0" rightPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[Math.round($F{erAmount} * 100.0) / 100.0]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="3bba27ff-6db1-41a4-b165-0856d89b45f5" x="812" y="0" width="98" height="25"/>
+			</element>
+			<element kind="textField" uuid="3bba27ff-6db1-41a4-b165-0856d89b45f5" x="812" y="0" width="98" height="25" fontSize="10.0" hTextAlign="Left" vTextAlign="Middle">
+				<expression><![CDATA[$F{remarks}]]></expression>
 				<box leftPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{remarks}]]></textFieldExpression>
-			</textField>
-			<break>
-				<reportElement uuid="5b79c6a0-1989-403e-9fa4-da85e9e0e869" x="0" y="11" width="100" height="1">
-					<printWhenExpression><![CDATA[$V{PAGE_COUNT} == 19]]></printWhenExpression>
-				</reportElement>
-			</break>
+			</element>
+			<element kind="break" uuid="5b79c6a0-1989-403e-9fa4-da85e9e0e869" x="0" y="11" width="100" height="1">
+				<printWhenExpression><![CDATA[$V{PAGE_COUNT} == 19]]></printWhenExpression>
+			</element>
 		</band>
 	</detail>
-	<summary>
-		<band height="152" splitType="Stretch">
-			<staticText>
-				<reportElement uuid="113c2421-d736-496a-9b35-a5cadf41f193" key="staticText-9" x="509" y="65" width="303" height="25"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="12" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<text><![CDATA[CERTIFIED CORRECT BY:]]></text>
-			</staticText>
-			<textField isBlankWhenNull="false">
-				<reportElement uuid="b3aca3af-08fe-40aa-9ef5-5c3fd086c3ed" key="textField" x="509" y="102" width="303" height="25"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="false" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{certifiedBy} + " "]]></textFieldExpression>
-			</textField>
-			<textField isBlankWhenNull="false">
-				<reportElement uuid="2585c9f5-94d9-451f-932d-44c03ad1a0f8" key="textField" x="509" y="127" width="303" height="25"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{certifiedByPos} + " "]]></textFieldExpression>
-			</textField>
-			<textField pattern="#,##0.00" isBlankWhenNull="true">
-				<reportElement uuid="db9cc73f-eb96-40e1-9fd6-e7c5fc78d459" key="textField-7" x="708" y="15" width="104" height="25"/>
-				<box>
-					<pen lineWidth="0.0" lineStyle="Dashed"/>
-					<topPen lineWidth="0.0" lineStyle="Dashed"/>
-					<leftPen lineWidth="0.0" lineStyle="Dashed"/>
-					<bottomPen lineWidth="0.0" lineStyle="Dashed"/>
-					<rightPen lineWidth="0.0" lineStyle="Dashed"/>
-				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="12" isBold="false" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<textFieldExpression><![CDATA[Math.round($V{totalERAmountPerPage} * 100.0) / 100.0]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement uuid="01b81a89-25e6-40de-bbc3-0169e5bc3d5a" key="staticText-15" x="609" y="40" width="203" height="5"/>
-				<box>
-					<topPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<textField pattern="#,##0.00" isBlankWhenNull="true">
-				<reportElement uuid="8cc7d98f-f89c-4bf1-b83f-05d61168b044" key="textField-1" x="609" y="15" width="99" height="25"/>
-				<box>
-					<pen lineWidth="0.0" lineStyle="Dashed"/>
-					<topPen lineWidth="0.0" lineStyle="Dashed"/>
-					<leftPen lineWidth="0.0" lineStyle="Dashed"/>
-					<bottomPen lineWidth="0.0" lineStyle="Dashed"/>
-					<rightPen lineWidth="0.0" lineStyle="Dashed"/>
-				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="12" isBold="false" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<textFieldExpression><![CDATA[Math.round($V{totalEEAmountPerPage} * 100.0) / 100.0]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement uuid="ad618b1b-33b5-4597-9240-081bfef9dd03" key="staticText-15" x="0" y="15" width="609" height="30"/>
-				<box rightPadding="10"/>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="12" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<text><![CDATA[TOTAL]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="61a6b185-27c1-4780-9fc1-4b33a312cdf0" key="staticText-5" x="0" y="0" width="910" height="15"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="2b82388e-ae1b-446f-b275-aaca81bd503f" key="staticText-5" x="0" y="45" width="910" height="20"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="e3f30ea4-0ce2-4703-a31a-c1c51c9f4461" key="staticText-15" x="812" y="15" width="98" height="30"/>
-				<box rightPadding="10"/>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="12" pdfFontName="Helvetica-Bold"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="8d3bf1db-2d7c-4c98-b7dc-2b37aaef936f" key="staticText-5" x="0" y="65" width="509" height="25"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="68315f20-b2d9-42b8-94b7-c54b66c7c4a2" key="staticText-5" x="0" y="90" width="910" height="12"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="a24e3131-06dd-45bb-9a5d-e03c738f7cc4" key="staticText-5" x="812" y="65" width="98" height="25"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="047d87ad-960e-457a-9edf-9d5bfda7fd32" key="staticText-5" x="0" y="102" width="509" height="50"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement uuid="39f0a6a8-a00e-4691-8059-d4e0f0132e2d" key="staticText-5" x="812" y="102" width="98" height="50"/>
-				<box>
-					<topPen lineWidth="0.0"/>
-					<leftPen lineWidth="0.0"/>
-					<bottomPen lineWidth="0.0"/>
-					<rightPen lineWidth="0.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="12" isBold="true" isUnderline="false" pdfFontName="Helvetica"/>
-				</textElement>
-				<text><![CDATA[]]></text>
-			</staticText>
-		</band>
+	<summary height="152" splitType="Stretch">
+		<element kind="staticText" uuid="113c2421-d736-496a-9b35-a5cadf41f193" key="staticText-9" x="509" y="65" width="303" height="25" fontSize="12.0" pdfFontName="Helvetica-Bold" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[CERTIFIED CORRECT BY:]]></text>
+		</element>
+		<element kind="textField" uuid="b3aca3af-08fe-40aa-9ef5-5c3fd086c3ed" key="textField" x="509" y="102" width="303" height="25" fontSize="12.0" pdfFontName="Helvetica-Bold" blankWhenNull="false" bold="false" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$P{certifiedBy} + " "]]></expression>
+		</element>
+		<element kind="textField" uuid="2585c9f5-94d9-451f-932d-44c03ad1a0f8" key="textField" x="509" y="127" width="303" height="25" fontSize="12.0" blankWhenNull="false" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{certifiedByPosition} + " "]]></expression>
+		</element>
+		<element kind="textField" uuid="db9cc73f-eb96-40e1-9fd6-e7c5fc78d459" key="textField-7" x="708" y="15" width="104" height="25" fontSize="12.0" pdfFontName="Helvetica-Bold" pattern="#,##0.00" blankWhenNull="true" bold="false" hTextAlign="Right" vTextAlign="Middle">
+			<expression><![CDATA[Math.round($V{totalERAmountPerPage} * 100.0) / 100.0]]></expression>
+			<box>
+				<pen lineWidth="0.0" lineStyle="Dashed"/>
+				<topPen lineWidth="0.0" lineStyle="Dashed"/>
+				<leftPen lineWidth="0.0" lineStyle="Dashed"/>
+				<bottomPen lineWidth="0.0" lineStyle="Dashed"/>
+				<rightPen lineWidth="0.0" lineStyle="Dashed"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="01b81a89-25e6-40de-bbc3-0169e5bc3d5a" key="staticText-15" x="609" y="40" width="203" height="5" fontSize="12.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="1.0"/>
+				<bottomPen lineWidth="1.0"/>
+			</box>
+		</element>
+		<element kind="textField" uuid="8cc7d98f-f89c-4bf1-b83f-05d61168b044" key="textField-1" x="609" y="15" width="99" height="25" fontSize="12.0" pdfFontName="Helvetica-Bold" pattern="#,##0.00" blankWhenNull="true" bold="false" hTextAlign="Right" vTextAlign="Middle">
+			<expression><![CDATA[Math.round($V{totalEEAmountPerPage} * 100.0) / 100.0]]></expression>
+			<box>
+				<pen lineWidth="0.0" lineStyle="Dashed"/>
+				<topPen lineWidth="0.0" lineStyle="Dashed"/>
+				<leftPen lineWidth="0.0" lineStyle="Dashed"/>
+				<bottomPen lineWidth="0.0" lineStyle="Dashed"/>
+				<rightPen lineWidth="0.0" lineStyle="Dashed"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="ad618b1b-33b5-4597-9240-081bfef9dd03" key="staticText-15" x="0" y="15" width="609" height="30" fontSize="12.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+			<text><![CDATA[TOTAL]]></text>
+			<box rightPadding="10"/>
+		</element>
+		<element kind="staticText" uuid="61a6b185-27c1-4780-9fc1-4b33a312cdf0" key="staticText-5" x="0" y="0" width="910" height="15" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="2b82388e-ae1b-446f-b275-aaca81bd503f" key="staticText-5" x="0" y="45" width="910" height="20" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="e3f30ea4-0ce2-4703-a31a-c1c51c9f4461" key="staticText-15" x="812" y="15" width="98" height="30" fontSize="12.0" pdfFontName="Helvetica-Bold" hTextAlign="Right" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box rightPadding="10"/>
+		</element>
+		<element kind="staticText" uuid="8d3bf1db-2d7c-4c98-b7dc-2b37aaef936f" key="staticText-5" x="0" y="65" width="509" height="25" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="68315f20-b2d9-42b8-94b7-c54b66c7c4a2" key="staticText-5" x="0" y="90" width="910" height="12" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="a24e3131-06dd-45bb-9a5d-e03c738f7cc4" key="staticText-5" x="812" y="65" width="98" height="25" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="047d87ad-960e-457a-9edf-9d5bfda7fd32" key="staticText-5" x="0" y="102" width="509" height="50" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
+		<element kind="staticText" uuid="39f0a6a8-a00e-4691-8059-d4e0f0132e2d" key="staticText-5" x="812" y="102" width="98" height="50" fontSize="12.0" pdfFontName="Helvetica" bold="true" underline="false" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[]]></text>
+			<box>
+				<topPen lineWidth="0.0"/>
+				<leftPen lineWidth="0.0"/>
+				<bottomPen lineWidth="0.0"/>
+				<rightPen lineWidth="0.0"/>
+			</box>
+		</element>
 	</summary>
 </jasperReport>
