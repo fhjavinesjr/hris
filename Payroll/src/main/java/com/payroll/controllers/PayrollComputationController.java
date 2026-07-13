@@ -99,8 +99,27 @@ public class PayrollComputationController {
      * @return 200 + list of PayrollDetail entities
      */
     @GetMapping("/results/{salaryPeriodKey}")
-    public ResponseEntity<List<PayrollDetail>> getResults(@PathVariable String salaryPeriodKey) {
-        return ResponseEntity.ok(detailRepository.findBySalaryPeriodKey(salaryPeriodKey));
+    public ResponseEntity<List<PayrollDetail>> getResults(
+            @PathVariable String salaryPeriodKey,
+            @RequestParam(required = false) String payrollGroup) {
+
+        List<PayrollDetail> records = detailRepository.findBySalaryPeriodKey(salaryPeriodKey);
+
+        if (payrollGroup != null && !payrollGroup.isBlank()) {
+            String group = payrollGroup.trim().toUpperCase();
+            records = records.stream()
+                    .filter(pd -> {
+                        String savedGroup = pd.getPayrollGroup();
+                        // Backward compatibility: old records before this update are treated as REGULAR.
+                        if (savedGroup == null || savedGroup.isBlank()) {
+                            savedGroup = "REGULAR";
+                        }
+                        return group.equalsIgnoreCase(savedGroup);
+                    })
+                    .toList();
+        }
+
+        return ResponseEntity.ok(records);
     }
 
     /**

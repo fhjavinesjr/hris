@@ -24,10 +24,14 @@ public class GeneralPayrollReportController {
     @GetMapping(value = "/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     public void generateGeneralPayrollPdf(
             @RequestParam String salaryPeriodKey,
+            @RequestParam(required = false) String payrollGroup,
             @RequestParam(required = false) String currentCompany,
             @RequestParam(required = false) String preparedBy,
             @RequestParam(required = false) String approvedBy,
             @RequestParam(required = false) String cashierBy,
+            @RequestParam(required = false) String preparedByEmployeeNo,
+            @RequestParam(required = false) String approvedByEmployeeNo,
+            @RequestParam(required = false) String cashierByEmployeeNo,
             HttpServletResponse response
     ) throws Exception {
 
@@ -44,13 +48,16 @@ public class GeneralPayrollReportController {
 
         generalPayrollReportService.generateGeneralPayrollPdf(
                 salaryPeriodKey,
+                payrollGroup,
                 currentCompany,
                 preparedBy,
                 approvedBy,
                 cashierBy,
+                preparedByEmployeeNo,
+                approvedByEmployeeNo,
+                cashierByEmployeeNo,
                 response.getOutputStream()
         );
-
         response.flushBuffer();
     }
 }

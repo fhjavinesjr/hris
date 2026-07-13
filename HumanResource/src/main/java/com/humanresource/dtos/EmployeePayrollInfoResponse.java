@@ -16,6 +16,9 @@ public class EmployeePayrollInfoResponse {
     private Integer salaryStep;
     private Double basicMonthlySalary;
 
+    /** Daily rate from the active employee appointment. Used for Contractual / COS / Job Order payroll. */
+    private Double salaryPerDay;
+
     /** Derived from natureofappointment.isContractual of the employee's active appointment. */
     private Boolean isExcludedFromPayroll = false;
 
@@ -44,6 +47,9 @@ public class EmployeePayrollInfoResponse {
 
     public Double getBasicMonthlySalary()         { return basicMonthlySalary; }
     public void   setBasicMonthlySalary(Double v) { this.basicMonthlySalary = v; }
+
+    public Double getSalaryPerDay()               { return salaryPerDay; }
+    public void   setSalaryPerDay(Double v)       { this.salaryPerDay = v; }
 
     public Boolean getIsExcludedFromPayroll()         { return isExcludedFromPayroll; }
     public void    setIsExcludedFromPayroll(Boolean v){ this.isExcludedFromPayroll = v; }

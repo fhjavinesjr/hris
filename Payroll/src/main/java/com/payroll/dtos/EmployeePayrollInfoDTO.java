@@ -22,6 +22,9 @@ public class EmployeePayrollInfoDTO {
      */
     private Double basicPerSalary;
 
+    /** Daily rate from active employee appointment. Used for Contractual / COS / Job Order computation. */
+    private Double salaryPerDay;
+
     /** true = PART_TIME employee (salary and allowances halved). */
     private Boolean isPartTime = false;
 
@@ -58,6 +61,8 @@ public class EmployeePayrollInfoDTO {
     public void setBasicMonthlySalary(Double basicMonthlySalary) { this.basicMonthlySalary = basicMonthlySalary; }
     public Double getBasicPerSalary() { return basicPerSalary; }
     public void setBasicPerSalary(Double basicPerSalary) { this.basicPerSalary = basicPerSalary; }
+    public Double getSalaryPerDay() { return salaryPerDay; }
+    public void setSalaryPerDay(Double salaryPerDay) { this.salaryPerDay = salaryPerDay; }
     public Boolean getIsPartTime() { return isPartTime; }
     public void setIsPartTime(Boolean isPartTime) { this.isPartTime = isPartTime; }
     public Boolean getIsExcludedFromPayroll() { return isExcludedFromPayroll; }

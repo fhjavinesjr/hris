@@ -133,6 +133,10 @@ public class PayrollDetail implements Serializable {
     @Column(nullable = false)
     private Boolean displayToLastPage = false;
 
+    /** Payroll group used to separate regular and contractual/non-career computation results. */
+    @Column(length = 30)
+    private String payrollGroup = "REGULAR";
+
     // ── Children ──────────────────────────────────────────────────────────────
     @OneToMany(mappedBy = "payrollDetail", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<PayrollDetailEarning> earnings = new ArrayList<>();
@@ -228,6 +232,8 @@ public class PayrollDetail implements Serializable {
     public void setAbsentParticulars(String absentParticulars) { this.absentParticulars = absentParticulars; }
     public Boolean getDisplayToLastPage() { return displayToLastPage; }
     public void setDisplayToLastPage(Boolean displayToLastPage) { this.displayToLastPage = displayToLastPage; }
+    public String getPayrollGroup() { return payrollGroup; }
+    public void setPayrollGroup(String payrollGroup) { this.payrollGroup = payrollGroup; }
     public List<PayrollDetailEarning> getEarnings() { return earnings; }
     public void setEarnings(List<PayrollDetailEarning> earnings) { this.earnings = earnings; }
     public List<PayrollDetailDeduction> getDeductions() { return deductions; }

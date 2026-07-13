@@ -16,206 +16,266 @@
 	<parameter name="logoleft" class="java.lang.Object"/>
 	<parameter name="logoright" class="java.lang.Object"/>
 	<parameter name="isDOH" class="java.lang.Boolean"/>
-	<query language="sql"><![CDATA[WITH DailyBase AS (
-	SELECT
-		d.work_date AS dtrDate,
-		CONCAT(
-			ISNULL(pd.firstname, ISNULL(e.firstname, '')),
-			CASE WHEN ISNULL(pd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', pd.middlename, ' ') END,
-			ISNULL(pd.surname, ISNULL(e.lastname, ''))
-		) AS fullname,
-		ISNULL(d.total_work_minutes, 0) AS regMin,
-		0 AS excessMin,
-		0.0 AS ndApproved,
-		CAST(ISNULL(d.total_overtime_minutes, 0) / 60.0 AS float) AS otReg,
-		0.0 AS otExcess,
-		CAST(ISNULL(d.total_overtime_minutes, 0) / 60.0 AS float) AS otRegApproved,
-		0.0 AS otExcessApproved,
-		ISNULL(d.total_late_minutes, 0) AS lateMin,
-		CAST((ISNULL(d.total_late_minutes, 0) + ISNULL(d.total_undertime_minutes, 0)) % 60 AS int) AS underMin,
-		CASE WHEN UPPER(ISNULL(d.attendance_status, '')) = 'ABSENT' THEN 480 ELSE 0 END AS absentMin,
-		ISNULL(d.attendance_status, '') AS remarks,
-		DATENAME(WEEKDAY, d.work_date) AS dayDescription,
-		CASE WHEN ISNULL(ws.isDayOff, 0) = 1 THEN 'REST DAY' ELSE '' END AS dayOff,
-		CAST((ISNULL(d.total_late_minutes, 0) + ISNULL(d.total_undertime_minutes, 0)) / 60 AS int) AS underMinHours,
-		ISNULL(la.leaveType, '') AS leaveType,
-		CASE WHEN ob.officialEngagementApplicationId IS NULL THEN '' ELSE 'OB' END AS ob,
-		'' AS ot,
-		CASE WHEN cto.ctoId IS NULL THEN '' ELSE 'CTO' END AS cto,
-		CASE WHEN ob.officialEngagementApplicationId IS NULL THEN NULL ELSE d.work_date END AS obDate,
-		CASE WHEN otx.overtimeRequestId IS NULL THEN NULL ELSE d.work_date END AS otDate,
-		CAST(NULL AS time) AS nextDayholder,
-		CAST(0 AS bit) AS isForNextDay,
-		d.dtr_daily_id
-	FROM dtr_daily d
-	LEFT JOIN employee e ON e.employeeId = TRY_CAST(d.employee_id AS int)
-	LEFT JOIN personaldata pd ON pd.employeeId = e.employeeId
-	OUTER APPLY (
-		SELECT TOP 1 ws2.isDayOff
-		FROM work_schedule ws2
-		WHERE CAST(ws2.employeeId AS varchar(50)) = d.employee_id
-		  AND CAST(ws2.wsDateTime AS date) = d.work_date
-		ORDER BY ws2.wsId
-	) ws
-	LEFT JOIN official_engagement_application ob ON ob.employeeId = TRY_CAST(d.employee_id AS int) AND ob.status = 'Approved' AND d.work_date BETWEEN ob.startDate AND ob.endDate
-	LEFT JOIN overtime_request otx ON otx.employeeId = TRY_CAST(d.employee_id AS int) AND otx.status = 'Approved' AND d.work_date = CAST(otx.dateTimeFrom AS date)
-	LEFT JOIN compensatory_time_off cto ON cto.employeeId = TRY_CAST(d.employee_id AS int) AND cto.status = 'Approved' AND d.work_date = cto.dateOfOffset
-	OUTER APPLY (
-		SELECT TOP 1 la2.leaveType
-		FROM leave_application la2
-		WHERE la2.employeeId = TRY_CAST(d.employee_id AS int)
-		  AND la2.approvedStatus = 'Approved'
-		  AND d.work_date BETWEEN la2.startDate AND la2.endDate
-		ORDER BY la2.leaveApplicationId DESC
-	) la
-	WHERE d.employee_id = $P{EMPLOYEE_ID}
-	  AND d.work_date BETWEEN $P{fromDate} AND $P{toDate}
+	<query language="sql"><![CDATA[WITH DateRange AS (
+    SELECT CAST($P{fromDate} AS date) AS work_date
+    UNION ALL
+    SELECT DATEADD(day, 1, work_date)
+    FROM DateRange
+    WHERE work_date < CAST($P{toDate} AS date)
+),
+EmpInfo AS (
+    SELECT TOP 1
+        e.employeeId,
+        e.employeeNo,
+        CONCAT(
+            ISNULL(pd.firstname, ISNULL(e.firstname, '')),
+            CASE WHEN ISNULL(pd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', pd.middlename, ' ') END,
+            ISNULL(pd.surname, ISNULL(e.lastname, ''))
+        ) AS fullname
+    FROM employee e
+    LEFT JOIN personaldata pd ON pd.employeeId = e.employeeId
+    WHERE CAST(e.employeeId AS varchar(50)) = $P{EMPLOYEE_ID}
+       OR e.employeeNo = $P{EMPLOYEE_ID}
+),
+DailyBase AS (
+    SELECT
+        dr.work_date AS dtrDate,
+        ei.fullname,
+        ISNULL(d.total_work_minutes, 0) AS regMin,
+        0 AS excessMin,
+        0.0 AS ndApproved,
+        CAST(ISNULL(d.total_overtime_minutes, 0) / 60.0 AS float) AS otReg,
+        0.0 AS otExcess,
+        CAST(ISNULL(d.total_overtime_minutes, 0) / 60.0 AS float) AS otRegApproved,
+        0.0 AS otExcessApproved,
+        ISNULL(d.total_late_minutes, 0) AS lateMin,
+        CAST((ISNULL(d.total_late_minutes, 0) + ISNULL(d.total_undertime_minutes, 0)) % 60 AS int) AS underMin,
+        CASE
+            WHEN UPPER(ISNULL(d.attendance_status, '')) = 'ABSENT' THEN 480
+            WHEN d.dtr_daily_id IS NULL
+                 AND ISNULL(ws.isDayOff, 0) = 0
+                 AND la.leaveType IS NULL
+                 AND ob.officialEngagementApplicationId IS NULL
+                 AND cto.ctoId IS NULL THEN 480
+            ELSE 0
+        END AS absentMin,
+        CASE
+            WHEN d.dtr_daily_id IS NULL AND ISNULL(ws.isDayOff, 0) = 1 THEN 'REST DAY'
+            WHEN d.dtr_daily_id IS NULL AND la.leaveType IS NOT NULL THEN la.leaveType
+            WHEN d.dtr_daily_id IS NULL AND ob.officialEngagementApplicationId IS NOT NULL THEN 'OB'
+            WHEN d.dtr_daily_id IS NULL AND cto.ctoId IS NOT NULL THEN 'CTO'
+            WHEN d.dtr_daily_id IS NULL THEN 'ABSENT'
+            ELSE ISNULL(d.attendance_status, '')
+        END AS remarks,
+        DATENAME(WEEKDAY, dr.work_date) AS dayDescription,
+        CASE WHEN ISNULL(ws.isDayOff, 0) = 1 THEN 'REST DAY' ELSE '' END AS dayOff,
+        CAST((ISNULL(d.total_late_minutes, 0) + ISNULL(d.total_undertime_minutes, 0)) / 60 AS int) AS underMinHours,
+        ISNULL(la.leaveType, '') AS leaveType,
+        CASE WHEN ob.officialEngagementApplicationId IS NULL THEN '' ELSE 'OB' END AS ob,
+        CASE WHEN otx.overtimeRequestId IS NULL THEN '' ELSE 'OT' END AS ot,
+        CASE WHEN cto.ctoId IS NULL THEN '' ELSE 'CTO' END AS cto,
+        CASE WHEN ob.officialEngagementApplicationId IS NULL THEN NULL ELSE dr.work_date END AS obDate,
+        CASE WHEN otx.overtimeRequestId IS NULL THEN NULL ELSE dr.work_date END AS otDate,
+        CAST(NULL AS time) AS nextDayholder,
+        CAST(0 AS bit) AS isForNextDay,
+        d.dtr_daily_id,
+        ei.employeeId,
+        ei.employeeNo
+    FROM DateRange dr
+    CROSS JOIN EmpInfo ei
+    LEFT JOIN dtr_daily d ON d.work_date = dr.work_date
+        AND (
+            d.employee_id = CAST(ei.employeeId AS varchar(50))
+            OR d.employee_id = ei.employeeNo
+            OR d.employee_id = $P{EMPLOYEE_ID}
+        )
+    OUTER APPLY (
+        SELECT TOP 1 ws2.isDayOff
+        FROM work_schedule ws2
+        WHERE (
+                CAST(ws2.employeeId AS varchar(50)) = CAST(ei.employeeId AS varchar(50))
+                OR CAST(ws2.employeeId AS varchar(50)) = ei.employeeNo
+                OR CAST(ws2.employeeId AS varchar(50)) = $P{EMPLOYEE_ID}
+              )
+          AND CAST(ws2.wsDateTime AS date) = dr.work_date
+        ORDER BY ws2.wsId
+    ) ws
+    LEFT JOIN official_engagement_application ob ON ob.employeeId = ei.employeeId AND ob.status = 'Approved' AND dr.work_date BETWEEN ob.startDate AND ob.endDate
+    LEFT JOIN overtime_request otx ON otx.employeeId = ei.employeeId AND otx.status = 'Approved' AND dr.work_date = CAST(otx.dateTimeFrom AS date)
+    LEFT JOIN compensatory_time_off cto ON cto.employeeId = ei.employeeId AND cto.status = 'Approved' AND dr.work_date = cto.dateOfOffset
+    OUTER APPLY (
+        SELECT TOP 1 la2.leaveType
+        FROM leave_application la2
+        WHERE la2.employeeId = ei.employeeId
+          AND la2.approvedStatus = 'Approved'
+          AND dr.work_date BETWEEN la2.startDate AND la2.endDate
+        ORDER BY la2.leaveApplicationId DESC
+    ) la
 ),
 Seg AS (
-	-- Normal same-day segment rows.
-	SELECT
-		ds.dtr_daily_id,
-		d.work_date AS reportDate,
-		ds.segment_no AS segmentNo,
-		0 AS splitOrder,
-		CASE
-			WHEN ds.break_in IS NOT NULL THEN CAST(ds.time_in AS time)
-			WHEN CAST(ds.time_out AS time) < CAST(ds.time_in AS time) THEN NULL
-			WHEN CAST(ds.time_in AS time) < CAST('12:00:00' AS time) THEN CAST(ds.time_in AS time)
-			ELSE NULL
-		END AS in1st,
-		CASE
-			WHEN ds.break_out IS NOT NULL THEN CAST(ds.break_out AS time)
-			WHEN CAST(ds.time_out AS time) < CAST(ds.time_in AS time) THEN NULL
-			WHEN CAST(ds.time_out AS time) <= CAST('12:00:00' AS time) THEN CAST(ds.time_out AS time)
-			ELSE NULL
-		END AS out1st,
-		CASE
-			WHEN ds.break_in IS NOT NULL THEN CAST(ds.break_in AS time)
-			WHEN CAST(ds.time_in AS time) >= CAST('12:00:00' AS time) THEN CAST(ds.time_in AS time)
-			ELSE NULL
-		END AS in2nd,
-		CASE
-			WHEN ds.break_in IS NOT NULL THEN CAST(ds.time_out AS time)
-			WHEN CAST(ds.time_out AS time) < CAST(ds.time_in AS time) THEN NULL
-			WHEN CAST(ds.time_in AS time) >= CAST('12:00:00' AS time) THEN CAST(ds.time_out AS time)
-			WHEN CAST(ds.time_in AS time) < CAST('12:00:00' AS time)
-			     AND CAST(ds.time_out AS time) > CAST('12:00:00' AS time) THEN CAST(ds.time_out AS time)
-			ELSE NULL
-		END AS out2nd,
-		CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) % 60 AS int) AS segmentUnderMin,
-		CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) / 60 AS int) AS segmentUnderMinHours
-	FROM dtr_segment ds
-	INNER JOIN dtr_daily d ON d.dtr_daily_id = ds.dtr_daily_id
-	WHERE NOT (CAST(ds.time_out AS time) < CAST(ds.time_in AS time))
+    -- Normal same-day segment rows.
+    SELECT
+        ds.dtr_daily_id,
+        d.work_date AS reportDate,
+        ds.segment_no AS segmentNo,
+        0 AS splitOrder,
+        CASE
+            WHEN ds.break_in IS NOT NULL THEN CAST(ds.time_in AS time)
+            WHEN CAST(ds.time_out AS time) < CAST(ds.time_in AS time) THEN NULL
+            WHEN CAST(ds.time_in AS time) < CAST('12:00:00' AS time) THEN CAST(ds.time_in AS time)
+            ELSE NULL
+        END AS in1st,
+        CASE
+            WHEN ds.break_out IS NOT NULL THEN CAST(ds.break_out AS time)
+            WHEN CAST(ds.time_out AS time) < CAST(ds.time_in AS time) THEN NULL
+            WHEN CAST(ds.time_out AS time) <= CAST('12:00:00' AS time) THEN CAST(ds.time_out AS time)
+            ELSE NULL
+        END AS out1st,
+        CASE
+            WHEN ds.break_in IS NOT NULL THEN CAST(ds.break_in AS time)
+            WHEN CAST(ds.time_in AS time) >= CAST('12:00:00' AS time) THEN CAST(ds.time_in AS time)
+            ELSE NULL
+        END AS in2nd,
+        CASE
+            WHEN ds.break_in IS NOT NULL THEN CAST(ds.time_out AS time)
+            WHEN CAST(ds.time_out AS time) < CAST(ds.time_in AS time) THEN NULL
+            WHEN CAST(ds.time_in AS time) >= CAST('12:00:00' AS time) THEN CAST(ds.time_out AS time)
+            WHEN CAST(ds.time_in AS time) < CAST('12:00:00' AS time)
+                 AND CAST(ds.time_out AS time) > CAST('12:00:00' AS time) THEN CAST(ds.time_out AS time)
+            ELSE NULL
+        END AS out2nd,
+        CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) % 60 AS int) AS segmentUnderMin,
+        CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) / 60 AS int) AS segmentUnderMinHours
+    FROM dtr_segment ds
+    INNER JOIN dtr_daily d ON d.dtr_daily_id = ds.dtr_daily_id
+    INNER JOIN EmpInfo ei ON d.employee_id = CAST(ei.employeeId AS varchar(50)) OR d.employee_id = ei.employeeNo OR d.employee_id = $P{EMPLOYEE_ID}
+    WHERE NOT (CAST(ds.time_out AS time) < CAST(ds.time_in AS time))
+      AND d.work_date BETWEEN DATEADD(day, -1, CAST($P{fromDate} AS date)) AND CAST($P{toDate} AS date)
 
-	UNION ALL
+    UNION ALL
 
-	-- Overnight start row: display night time-in on the actual work date.
-	SELECT
-		ds.dtr_daily_id,
-		d.work_date AS reportDate,
-		ds.segment_no AS segmentNo,
-		0 AS splitOrder,
-		CAST(NULL AS time) AS in1st,
-		CAST(NULL AS time) AS out1st,
-		CAST(ds.time_in AS time) AS in2nd,
-		CAST(NULL AS time) AS out2nd,
-		CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) % 60 AS int) AS segmentUnderMin,
-		CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) / 60 AS int) AS segmentUnderMinHours
-	FROM dtr_segment ds
-	INNER JOIN dtr_daily d ON d.dtr_daily_id = ds.dtr_daily_id
-	WHERE CAST(ds.time_out AS time) < CAST(ds.time_in AS time)
+    -- Overnight start row: display night time-in on the actual work date.
+    SELECT
+        ds.dtr_daily_id,
+        d.work_date AS reportDate,
+        ds.segment_no AS segmentNo,
+        0 AS splitOrder,
+        CAST(NULL AS time) AS in1st,
+        CAST(NULL AS time) AS out1st,
+        CAST(ds.time_in AS time) AS in2nd,
+        CAST(NULL AS time) AS out2nd,
+        CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) % 60 AS int) AS segmentUnderMin,
+        CAST((ISNULL(ds.late_minutes, 0) + ISNULL(ds.undertime_minutes, 0)) / 60 AS int) AS segmentUnderMinHours
+    FROM dtr_segment ds
+    INNER JOIN dtr_daily d ON d.dtr_daily_id = ds.dtr_daily_id
+    INNER JOIN EmpInfo ei ON d.employee_id = CAST(ei.employeeId AS varchar(50)) OR d.employee_id = ei.employeeNo OR d.employee_id = $P{EMPLOYEE_ID}
+    WHERE CAST(ds.time_out AS time) < CAST(ds.time_in AS time)
+      AND d.work_date BETWEEN DATEADD(day, -1, CAST($P{fromDate} AS date)) AND CAST($P{toDate} AS date)
 
-	UNION ALL
+    UNION ALL
 
-	-- Overnight end row: display next-day morning departure on the following date.
-	SELECT
-		ds.dtr_daily_id,
-		DATEADD(day, 1, d.work_date) AS reportDate,
-		ds.segment_no AS segmentNo,
-		1 AS splitOrder,
-		CAST(NULL AS time) AS in1st,
-		CAST(ds.time_out AS time) AS out1st,
-		CAST(NULL AS time) AS in2nd,
-		CAST(NULL AS time) AS out2nd,
-		CAST(0 AS int) AS segmentUnderMin,
-		CAST(0 AS int) AS segmentUnderMinHours
-	FROM dtr_segment ds
-	INNER JOIN dtr_daily d ON d.dtr_daily_id = ds.dtr_daily_id
-	WHERE CAST(ds.time_out AS time) < CAST(ds.time_in AS time)
+    -- Overnight end row: display next-day morning departure on the following date.
+    SELECT
+        ds.dtr_daily_id,
+        DATEADD(day, 1, d.work_date) AS reportDate,
+        ds.segment_no AS segmentNo,
+        1 AS splitOrder,
+        CAST(NULL AS time) AS in1st,
+        CAST(ds.time_out AS time) AS out1st,
+        CAST(NULL AS time) AS in2nd,
+        CAST(NULL AS time) AS out2nd,
+        CAST(0 AS int) AS segmentUnderMin,
+        CAST(0 AS int) AS segmentUnderMinHours
+    FROM dtr_segment ds
+    INNER JOIN dtr_daily d ON d.dtr_daily_id = ds.dtr_daily_id
+    INNER JOIN EmpInfo ei ON d.employee_id = CAST(ei.employeeId AS varchar(50)) OR d.employee_id = ei.employeeNo OR d.employee_id = $P{EMPLOYEE_ID}
+    WHERE CAST(ds.time_out AS time) < CAST(ds.time_in AS time)
+      AND DATEADD(day, 1, d.work_date) BETWEEN CAST($P{fromDate} AS date) AND CAST($P{toDate} AS date)
 )
 SELECT
-	COALESCE(s.reportDate, b.dtrDate) AS dtrDate,
-	b.fullname,
-	s.in1st,
-	s.out1st,
-	s.in2nd,
-	s.out2nd,
-	b.regMin,
-	b.excessMin,
-	b.ndApproved,
-	b.otReg,
-	b.otExcess,
-	b.otRegApproved,
-	b.otExcessApproved,
-	b.lateMin,
-	CASE WHEN s.segmentNo IS NULL THEN b.underMin ELSE s.segmentUnderMin END AS underMin,
-	b.absentMin,
-	b.ob,
-	b.ot,
-	b.obDate,
-	b.otDate,
-	b.dayOff,
-	CASE WHEN s.segmentNo IS NULL THEN b.underMinHours ELSE s.segmentUnderMinHours END AS underMinHours,
-	b.remarks,
-	b.leaveType,
-	b.nextDayholder,
-	b.isForNextDay,
-	b.cto,
-	DATENAME(WEEKDAY, COALESCE(s.reportDate, b.dtrDate)) AS dayDescription,
-	ISNULL(s.segmentNo, 0) AS sortSegmentNo,
-	ISNULL(s.splitOrder, 0) AS sortSplitOrder
+    CAST(COALESCE(s.reportDate, b.dtrDate) AS date) AS dtrDate,
+    b.fullname,
+    s.in1st,
+    s.out1st,
+    s.in2nd,
+    s.out2nd,
+    b.regMin,
+    b.excessMin,
+    b.ndApproved,
+    b.otReg,
+    b.otExcess,
+    b.otRegApproved,
+    b.otExcessApproved,
+    b.lateMin,
+    CASE WHEN s.segmentNo IS NULL THEN b.underMin ELSE s.segmentUnderMin END AS underMin,
+    b.absentMin,
+    b.ob,
+    b.ot,
+    b.obDate,
+    b.otDate,
+    b.dayOff,
+    CASE WHEN s.segmentNo IS NULL THEN b.underMinHours ELSE s.segmentUnderMinHours END AS underMinHours,
+    b.remarks,
+    b.leaveType,
+    b.nextDayholder,
+    b.isForNextDay,
+    b.cto,
+    DATENAME(WEEKDAY, COALESCE(s.reportDate, b.dtrDate)) AS dayDescription,
+    ISNULL(s.segmentNo, 0) AS sortSegmentNo,
+    ISNULL(s.splitOrder, 0) AS sortSplitOrder
 FROM DailyBase b
 LEFT JOIN Seg s ON s.dtr_daily_id = b.dtr_daily_id AND s.reportDate = b.dtrDate
+WHERE NOT (
+    b.dtr_daily_id IS NULL
+    AND EXISTS (
+        SELECT 1
+        FROM dtr_segment dsx
+        INNER JOIN dtr_daily dx ON dx.dtr_daily_id = dsx.dtr_daily_id
+        WHERE CAST(dsx.time_out AS time) < CAST(dsx.time_in AS time)
+          AND DATEADD(day, 1, dx.work_date) = b.dtrDate
+          AND (dx.employee_id = CAST(b.employeeId AS varchar(50)) OR dx.employee_id = b.employeeNo OR dx.employee_id = $P{EMPLOYEE_ID})
+    )
+)
 
 UNION ALL
 
 SELECT
-	s.reportDate AS dtrDate,
-	b.fullname,
-	s.in1st,
-	s.out1st,
-	s.in2nd,
-	s.out2nd,
-	0 AS regMin,
-	b.excessMin,
-	b.ndApproved,
-	0.0 AS otReg,
-	b.otExcess,
-	0.0 AS otRegApproved,
-	b.otExcessApproved,
-	0 AS lateMin,
-	s.segmentUnderMin AS underMin,
-	0 AS absentMin,
-	'' AS ob,
-	'' AS ot,
-	CAST(NULL AS date) AS obDate,
-	CAST(NULL AS date) AS otDate,
-	'' AS dayOff,
-	s.segmentUnderMinHours AS underMinHours,
-	'Present' AS remarks,
-	'' AS leaveType,
-	b.nextDayholder,
-	CAST(1 AS bit) AS isForNextDay,
-	'' AS cto,
-	DATENAME(WEEKDAY, s.reportDate) AS dayDescription,
-	s.segmentNo AS sortSegmentNo,
-	s.splitOrder AS sortSplitOrder
+    CAST(s.reportDate AS date) AS dtrDate,
+    b.fullname,
+    s.in1st,
+    s.out1st,
+    s.in2nd,
+    s.out2nd,
+    0 AS regMin,
+    b.excessMin,
+    b.ndApproved,
+    0.0 AS otReg,
+    b.otExcess,
+    0.0 AS otRegApproved,
+    b.otExcessApproved,
+    0 AS lateMin,
+    s.segmentUnderMin AS underMin,
+    0 AS absentMin,
+    '' AS ob,
+    '' AS ot,
+    CAST(NULL AS date) AS obDate,
+    CAST(NULL AS date) AS otDate,
+    '' AS dayOff,
+    s.segmentUnderMinHours AS underMinHours,
+    'Present' AS remarks,
+    '' AS leaveType,
+    b.nextDayholder,
+    CAST(1 AS bit) AS isForNextDay,
+    '' AS cto,
+    DATENAME(WEEKDAY, s.reportDate) AS dayDescription,
+    s.segmentNo AS sortSegmentNo,
+    s.splitOrder AS sortSplitOrder
 FROM DailyBase b
 INNER JOIN Seg s ON s.dtr_daily_id = b.dtr_daily_id AND s.reportDate <> b.dtrDate
 WHERE s.reportDate BETWEEN $P{fromDate} AND $P{toDate}
-ORDER BY dtrDate, sortSegmentNo, sortSplitOrder]]></query>
+ORDER BY dtrDate, sortSegmentNo, sortSplitOrder
+OPTION (MAXRECURSION 366)
+]]></query>
 	<field name="dtrDate" class="java.sql.Date"/>
 	<field name="fullname" class="java.lang.String"/>
 	<field name="in1st" class="java.sql.Time"/>
@@ -679,8 +739,8 @@ daily at the time of arrival and departure from office.]]></text>
 	<pageHeader splitType="Stretch"/>
 	<columnHeader splitType="Stretch"/>
 	<detail>
-		<band height="16" splitType="Stretch">
-			<element kind="textField" uuid="51f89d0e-eef6-437f-ab89-4c7d3e16fcb5" key="textField" mode="Opaque" x="458" y="0" width="80" height="16" fontSize="6.0" textAdjust="StretchHeight" pattern="" blankWhenNull="true" printWhenDetailOverflows="true" hTextAlign="Center" vTextAlign="Middle">
+		<band height="11" splitType="Stretch">
+			<element kind="textField" uuid="51f89d0e-eef6-437f-ab89-4c7d3e16fcb5" key="textField" mode="Opaque" x="458" y="0" width="80" height="11" fontSize="6.0" textAdjust="ScaleFont" pattern="" blankWhenNull="true" printWhenDetailOverflows="false" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
 				<expression><![CDATA[$F{dayDescription}]]></expression>
 				<box>
@@ -690,7 +750,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="61fae6ab-7d1e-4121-836b-ae6b2a9955e3" key="textField" mode="Opaque" x="136" y="0" width="80" height="16" fontSize="6.0" textAdjust="StretchHeight" pattern="" blankWhenNull="true" printWhenDetailOverflows="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="61fae6ab-7d1e-4121-836b-ae6b2a9955e3" key="textField" mode="Opaque" x="136" y="0" width="80" height="11" fontSize="6.0" textAdjust="ScaleFont" pattern="" blankWhenNull="true" printWhenDetailOverflows="false" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
 				<expression><![CDATA[$F{dayDescription}]]></expression>
 				<box>
@@ -700,7 +760,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="3a337785-3a29-472a-b262-9df32274c71b" x="256" y="0" width="40" height="16" fontSize="8.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="3a337785-3a29-472a-b262-9df32274c71b" x="256" y="0" width="40" height="11" fontSize="6.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[new Integer($F{underMin}!=0?$F{underMin}:null)]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -709,7 +769,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="5f570f5b-4541-48a5-80bd-00f1a8dcd162" x="578" y="0" width="40" height="16" fontSize="8.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="5f570f5b-4541-48a5-80bd-00f1a8dcd162" x="578" y="0" width="40" height="11" fontSize="6.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[new Integer($F{underMin}!=0?$F{underMin}:null)]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -718,21 +778,21 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="staticText" uuid="4875955b-84c3-4df4-910d-62e0e83f427f" x="319" y="0" width="14" height="16">
+			<element kind="staticText" uuid="4875955b-84c3-4df4-910d-62e0e83f427f" x="319" y="0" width="14" height="11">
 				<text><![CDATA[]]></text>
 				<box>
 					<leftPen lineWidth="1.0"/>
 					<rightPen lineWidth="0.0"/>
 				</box>
 			</element>
-			<element kind="staticText" uuid="d935ed7d-08f6-4f2a-88f2-528a7f71b92d" x="0" y="0" width="14" height="16">
+			<element kind="staticText" uuid="d935ed7d-08f6-4f2a-88f2-528a7f71b92d" x="0" y="0" width="14" height="11">
 				<text><![CDATA[]]></text>
 				<box>
 					<leftPen lineWidth="1.0"/>
 					<rightPen lineWidth="0.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="0c0cbff2-4150-4c96-9cd6-4af367bae2a8" key="textField" x="15" y="0" width="20" height="16" fontSize="8.0" pattern="dd" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="0c0cbff2-4150-4c96-9cd6-4af367bae2a8" key="textField" x="15" y="0" width="20" height="11" fontSize="6.0" pattern="dd" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{dtrDate}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -741,7 +801,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="01fd18bf-9999-466d-946b-0d6b40919182" key="textField" x="136" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="01fd18bf-9999-466d-946b-0d6b40919182" key="textField" x="136" y="0" width="40" height="11" fontSize="6.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{in2nd}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -750,13 +810,13 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="staticText" uuid="563c702e-e8c2-4c84-a4f2-3d33e199444e" x="305" y="0" width="14" height="16">
+			<element kind="staticText" uuid="563c702e-e8c2-4c84-a4f2-3d33e199444e" x="305" y="0" width="14" height="11">
 				<text><![CDATA[]]></text>
 				<box>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="f3a2ba9f-b6d7-4f04-a31c-e2c52eaef896" key="textField" x="338" y="0" width="20" height="16" fontSize="8.0" pattern="dd" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="f3a2ba9f-b6d7-4f04-a31c-e2c52eaef896" key="textField" x="338" y="0" width="20" height="11" fontSize="6.0" pattern="dd" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{dtrDate}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -765,7 +825,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="0b1f970d-4363-4451-bfec-a0844f0e1443" key="textField" x="498" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="0b1f970d-4363-4451-bfec-a0844f0e1443" key="textField" x="498" y="0" width="40" height="11" fontSize="6.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{isForNextDay} ? new SimpleDateFormat("h:mm aa").format($F{out2nd}) + "[ ]" : $F{out2nd}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -774,7 +834,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="83656a86-d2b9-4981-b5cf-4843ea29bc03" key="textField" x="458" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="83656a86-d2b9-4981-b5cf-4843ea29bc03" key="textField" x="458" y="0" width="40" height="11" fontSize="6.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{in2nd}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -783,7 +843,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="9846ceba-9544-4bff-ba06-c05dc11be18a" key="textField" x="378" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="9846ceba-9544-4bff-ba06-c05dc11be18a" key="textField" x="378" y="0" width="40" height="11" fontSize="6.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{in1st}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -792,7 +852,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="28d8395b-be56-4ee6-9d9c-253554c89a30" key="textField" x="418" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="28d8395b-be56-4ee6-9d9c-253554c89a30" key="textField" x="418" y="0" width="40" height="11" fontSize="6.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{out1st}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -801,13 +861,13 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="staticText" uuid="09b3adb5-31a4-47d3-8a95-31c91820acef" x="626" y="0" width="14" height="16">
+			<element kind="staticText" uuid="09b3adb5-31a4-47d3-8a95-31c91820acef" x="626" y="0" width="14" height="11">
 				<text><![CDATA[]]></text>
 				<box>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="6f7e0ca6-8dba-4713-b66a-c07e1bd34422" key="textField" x="176" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="6f7e0ca6-8dba-4713-b66a-c07e1bd34422" key="textField" x="176" y="0" width="40" height="11" fontSize="6.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{isForNextDay} ? new SimpleDateFormat("h:mm aa").format($F{out2nd}) + "[ ]" : $F{out2nd}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -816,7 +876,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="89bb2dfc-897a-4c28-a3ca-47e71e27b93b" x="538" y="0" width="40" height="16" fontSize="8.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="89bb2dfc-897a-4c28-a3ca-47e71e27b93b" x="538" y="0" width="40" height="11" fontSize="6.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[new Integer($F{underMinHours}!=0?$F{underMinHours}:null)]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -825,7 +885,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="d721cec1-1fe1-4000-8b51-439e77f3274c" key="textField" x="56" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="d721cec1-1fe1-4000-8b51-439e77f3274c" key="textField" x="56" y="0" width="40" height="11" fontSize="6.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{in1st}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -834,7 +894,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="fbda112f-101a-4cd1-b7af-6f1b1aa3b18a" key="textField" x="35" y="0" width="21" height="16" fontSize="8.0" pattern="EEE" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="fbda112f-101a-4cd1-b7af-6f1b1aa3b18a" key="textField" x="35" y="0" width="21" height="11" fontSize="6.0" pattern="EEE" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{dtrDate}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -843,7 +903,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="8a07e7c8-7aca-446f-8a06-aa39a7ab4695" key="textField" x="358" y="0" width="20" height="16" fontSize="8.0" pattern="EEE" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="8a07e7c8-7aca-446f-8a06-aa39a7ab4695" key="textField" x="358" y="0" width="20" height="11" fontSize="6.0" pattern="EEE" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{dtrDate}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -852,7 +912,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="5cb4e7cb-7e65-4467-82da-be93cf1ff3de" x="216" y="0" width="40" height="16" fontSize="8.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="5cb4e7cb-7e65-4467-82da-be93cf1ff3de" x="216" y="0" width="40" height="11" fontSize="6.0" pattern="" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[new Integer($F{underMinHours}!=0?$F{underMinHours}:null)]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -861,7 +921,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="e64149ae-59f1-442a-b318-e422e618d022" key="textField" x="96" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="e64149ae-59f1-442a-b318-e422e618d022" key="textField" x="96" y="0" width="40" height="11" fontSize="6.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{out1st}]]></expression>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -870,13 +930,13 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="313667a9-f355-47f7-ab5b-19abe1102355" key="textField" x="96" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="313667a9-f355-47f7-ab5b-19abe1102355" key="textField" x="96" y="0" width="40" height="11" fontSize="6.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{nextDayholder}]]></expression>
 			</element>
-			<element kind="textField" uuid="96e3500b-e2f1-4b6b-9403-a8ac53754b21" key="textField" x="418" y="0" width="40" height="16" fontSize="8.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="96e3500b-e2f1-4b6b-9403-a8ac53754b21" key="textField" x="418" y="0" width="40" height="11" fontSize="6.0" pattern="h:mm a" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<expression><![CDATA[$F{nextDayholder}]]></expression>
 			</element>
-			<element kind="textField" uuid="7056e130-bd05-4563-a7ae-4f11d3282d82" x="378" y="0" width="40" height="16" fontSize="6.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="7056e130-bd05-4563-a7ae-4f11d3282d82" x="378" y="0" width="40" height="11" fontSize="6.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[!$F{cto}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[$F{cto}]]></expression>
 				<box topPadding="0" leftPadding="0">
@@ -886,7 +946,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="a66b214c-dce0-4cef-be65-6123e4bd0d08" mode="Opaque" x="378" y="0" width="40" height="16" fontSize="9.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true">
+			<element kind="textField" uuid="a66b214c-dce0-4cef-be65-6123e4bd0d08" mode="Opaque" x="378" y="0" width="40" height="11" fontSize="6.0" textAdjust="ScaleFont" blankWhenNull="true" printWhenDetailOverflows="false">
 				<printWhenExpression><![CDATA[!$F{dayOff}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[$F{dayOff}]]></expression>
 				<box topPadding="2" leftPadding="5">
@@ -896,7 +956,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="020b924c-de1c-4fbd-b066-cc85528b1fda" mode="Opaque" x="378" y="0" width="40" height="16" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" pdfFontName="Helvetica-Bold" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="020b924c-de1c-4fbd-b066-cc85528b1fda" mode="Opaque" x="378" y="0" width="40" height="11" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" pdfFontName="Helvetica-Bold" textAdjust="ScaleFont" blankWhenNull="true" printWhenDetailOverflows="false" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[!$F{ot}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[$F{otDate} != null ? $F{ot} : ""]]></expression>
 				<box leftPadding="0">
@@ -906,7 +966,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="a65b36f3-3537-43e5-a44a-43a8837a119f" mode="Opaque" x="378" y="0" width="40" height="16" forecolor="#000000" backcolor="#FFFFFF" markup="none" fontSize="6.0" pdfFontName="Helvetica-Bold" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="a65b36f3-3537-43e5-a44a-43a8837a119f" mode="Opaque" x="378" y="0" width="40" height="11" forecolor="#000000" backcolor="#FFFFFF" markup="none" fontSize="6.0" pdfFontName="Helvetica-Bold" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[!$F{ob}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[$F{obDate} != null ? $F{ob} : ""]]></expression>
 				<box leftPadding="0">
@@ -916,7 +976,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="94a745fb-595a-4f72-bd58-eafe5722b6ec" mode="Opaque" x="378" y="0" width="40" height="16" fontSize="4.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="94a745fb-595a-4f72-bd58-eafe5722b6ec" mode="Opaque" x="378" y="0" width="40" height="11" fontSize="4.0" pdfFontName="Helvetica-Bold" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[$F{leaveType} != null && !$F{leaveType}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[new String($F{leaveType}.equals("Special Privilege Leave")?"SPL":$F{leaveType}.equals("Emergency Leave")?"Vacation Leave":$F{leaveType})]]></expression>
 				<box topPadding="0" leftPadding="0">
@@ -926,7 +986,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="d0a57a3e-b757-47d6-8321-402591e770c4" x="56" y="0" width="40" height="16" fontSize="6.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="d0a57a3e-b757-47d6-8321-402591e770c4" x="56" y="0" width="40" height="11" fontSize="6.0" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[!$F{cto}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[$F{cto}]]></expression>
 				<box topPadding="0" leftPadding="0">
@@ -936,7 +996,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="6dcafd09-294d-435d-8034-c833be13bfbe" mode="Opaque" x="56" y="0" width="40" height="16" fontSize="9.0" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true">
+			<element kind="textField" uuid="6dcafd09-294d-435d-8034-c833be13bfbe" mode="Opaque" x="56" y="0" width="40" height="11" fontSize="6.0" textAdjust="ScaleFont" blankWhenNull="true" printWhenDetailOverflows="false">
 				<printWhenExpression><![CDATA[!$F{dayOff}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[$F{dayOff}]]></expression>
 				<box topPadding="2" leftPadding="5">
@@ -946,7 +1006,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="edc27589-2326-48ab-8c68-d62c22b3c2ff" mode="Opaque" x="56" y="0" width="40" height="16" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" pdfFontName="Helvetica-Bold" textAdjust="StretchHeight" blankWhenNull="true" printWhenDetailOverflows="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="edc27589-2326-48ab-8c68-d62c22b3c2ff" mode="Opaque" x="56" y="0" width="40" height="11" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" pdfFontName="Helvetica-Bold" textAdjust="ScaleFont" blankWhenNull="true" printWhenDetailOverflows="false" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[!$F{ot}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[$F{otDate} != null ? $F{ot} : ""]]></expression>
 				<box leftPadding="0">
@@ -956,7 +1016,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="f113c411-61c8-4901-81dd-aee2b8b8285b" mode="Opaque" x="56" y="0" width="40" height="16" forecolor="#000000" backcolor="#FFFFFF" markup="none" fontSize="6.0" pdfFontName="Helvetica-Bold" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="f113c411-61c8-4901-81dd-aee2b8b8285b" mode="Opaque" x="56" y="0" width="40" height="11" forecolor="#000000" backcolor="#FFFFFF" markup="none" fontSize="6.0" pdfFontName="Helvetica-Bold" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[!$F{ob}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[$F{obDate} != null ? $F{ob} : ""]]></expression>
 				<box leftPadding="0">
@@ -966,7 +1026,7 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="e3c10083-b0bc-4053-adf3-cdaf2d672d73" mode="Opaque" x="56" y="0" width="40" height="16" fontSize="4.0" pdfFontName="Helvetica-Bold" blankWhenNull="false" hTextAlign="Center" vTextAlign="Middle">
+			<element kind="textField" uuid="e3c10083-b0bc-4053-adf3-cdaf2d672d73" mode="Opaque" x="56" y="0" width="40" height="11" fontSize="4.0" pdfFontName="Helvetica-Bold" blankWhenNull="false" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[$F{leaveType} != null && !$F{leaveType}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[new String($F{leaveType}.equals("Special Privilege Leave")?"SPL":$F{leaveType}.equals("Emergency Leave")?"Vacation Leave":$F{leaveType})]]></expression>
 				<box topPadding="0" leftPadding="0">

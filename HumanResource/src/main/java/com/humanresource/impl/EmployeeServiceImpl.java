@@ -198,6 +198,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                         "       ea.salaryGrade," +
                         "       ea.salaryStep," +
                         "       CAST(ea.salaryPerMonth AS FLOAT) AS basicMonthlySalary," +
+                        "       CAST(ea.salaryPerDay AS FLOAT) AS salaryPerDay," +
                         // Removed CAST and COALESCE. rs.getBoolean() will safely default NULLs to false.
                         "       n.isContractual AS isExcludedFromPayroll" +
                         " FROM employee e" +
@@ -227,6 +228,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             dto.setSalaryGrade(rs.getObject("salaryGrade") != null ? rs.getInt("salaryGrade") : null);
             dto.setSalaryStep(rs.getObject("salaryStep") != null ? rs.getInt("salaryStep") : null);
             dto.setBasicMonthlySalary(rs.getObject("basicMonthlySalary") != null ? rs.getDouble("basicMonthlySalary") : null);
+            dto.setSalaryPerDay(rs.getObject("salaryPerDay") != null ? rs.getDouble("salaryPerDay") : null);
 
             // rs.getBoolean natively handles SQL NULL by returning false
             dto.setIsExcludedFromPayroll(rs.getBoolean("isExcludedFromPayroll"));

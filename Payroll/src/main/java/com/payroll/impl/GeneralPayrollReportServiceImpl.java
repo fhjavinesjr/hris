@@ -28,10 +28,14 @@ public class GeneralPayrollReportServiceImpl implements GeneralPayrollReportServ
 
     @Override
     public void generateGeneralPayrollPdf(String salaryPeriodKey,
+                                          String payrollGroup,
                                           String currentCompany,
                                           String preparedBy,
                                           String approvedBy,
                                           String cashierBy,
+                                          String preparedByEmployeeNo,
+                                          String approvedByEmployeeNo,
+                                          String cashierByEmployeeNo,
                                           OutputStream out) throws Exception {
         if (salaryPeriodKey == null || salaryPeriodKey.isBlank()) {
             throw new IllegalArgumentException("Salary period key is required.");
@@ -41,10 +45,14 @@ public class GeneralPayrollReportServiceImpl implements GeneralPayrollReportServ
 
         Map<String, Object> params = new HashMap<>();
         params.put("salaryPeriodKey", salaryPeriodKey.trim());
+        params.put("payrollGroup", clean(payrollGroup, "REGULAR").toUpperCase());
         params.put("currentCompany", clean(currentCompany, "ISOFT HRIS"));
         params.put("preparedBy", clean(preparedBy, ""));
         params.put("approvedBy", clean(approvedBy, ""));
         params.put("cashierBy", clean(cashierBy, ""));
+        params.put("preparedByEmployeeNo", clean(preparedByEmployeeNo, ""));
+        params.put("approvedByEmployeeNo", clean(approvedByEmployeeNo, ""));
+        params.put("cashierByEmployeeNo", clean(cashierByEmployeeNo, ""));
 
         try (Connection conn = dataSource.getConnection()) {
             JasperPrint print = JasperFillManager.fillReport(report, params, conn);

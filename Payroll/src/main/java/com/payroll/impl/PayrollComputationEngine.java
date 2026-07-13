@@ -62,6 +62,12 @@ public class PayrollComputationEngine {
             // ── Step 1: Attendance aggregation ────────────────────────────────
             AttendanceSummary attendance = aggregateAttendance(emp, request, snap);
 
+            // Contractual / COS / Job Order computation uses a separate daily-rate path.
+            // These employees do not earn/use leave credits and are paid only for payable days worked.
+            if (Boolean.TRUE.equals(request.getExcludedOnly()) || Boolean.TRUE.equals(emp.getIsExcludedFromPayroll())) {
+                return computeContractual(emp, request, snap);
+            }
+
             // ── Step 2: Salary rates ──────────────────────────────────────────
             int cutoffDays = request.getCutoffDays() != null ? request.getCutoffDays() : STANDARD_DAYS_PER_MONTH;
             double basicPerSalary = emp.getBasicPerSalary();
@@ -176,6 +182,183 @@ public class PayrollComputationEngine {
         } catch (Exception ex) {
             log.error("[PayrollEngine] FAILED for employee {} — {}", emp.getEmployeeNo(), ex.getMessage(), ex);
             throw new PayrollComputationException(emp.getEmployeeNo(), ex);
+        }
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Contractual / COS / Job Order computation
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Computes payroll for Contractual / COS / Job Order employees.
+     * Business rule: no leave credits, no earned leave, no VL-first offset.
+     * Pay is based on appointment salaryPerDay multiplied by payable days actually worked.
+     */
+    private PayrollDetail computeContractual(EmployeePayrollInfoDTO emp,
+                                             PayrollComputationRequest request,
+                                             PayrollDataSnapshot snap) {
+        AttendanceSummary attendance = aggregateContractualAttendance(emp, request, snap);
+
+        double salaryPerDay = emp.getSalaryPerDay() != null && emp.getSalaryPerDay() > 0
+                ? emp.getSalaryPerDay()
+                : fallbackDailyRate(emp, request);
+        if (Boolean.TRUE.equals(emp.getIsPartTime())) {
+            salaryPerDay = salaryPerDay / 2;
+        }
+
+        double salaryPerMinute = roundOff(salaryPerDay / 8 / 60);
+        double basicPerSalary = roundOff(salaryPerDay * attendance.workDays);
+
+        LateUndertimeResult lateResult = new LateUndertimeResult();
+        lateResult.vlDeductedDays = 0.0;
+        lateResult.lateValue = roundOff(salaryPerMinute * attendance.lateMinutes);
+        lateResult.undertimeValue = roundOff(salaryPerMinute * attendance.undertimeMinutes);
+
+        double actualBasic = roundOff((salaryPerDay * attendance.workDaysPresent)
+                - lateResult.lateValue
+                - lateResult.undertimeValue);
+        if (actualBasic < 0) actualBasic = 0;
+
+        List<PayrollDetailEarning> earningLines = new ArrayList<>();
+        double grossAmount = buildContractualEarnings(emp, actualBasic, snap, earningLines);
+
+        List<PayrollDetailDeduction> deductionLines = new ArrayList<>();
+        buildContractualDeductions(emp, snap, deductionLines);
+
+        double totalDeduction = deductionLines.stream()
+                .mapToDouble(d -> d.getAmount() != null ? d.getAmount() : 0)
+                .sum();
+        double netAmount = roundOff(grossAmount - totalDeduction);
+        if (netAmount < 0) netAmount = 0;
+
+        LeaveBalanceResult leaveBalance = new LeaveBalanceResult();
+        leaveBalance.vlBalance = 0.0;
+        leaveBalance.slBalance = 0.0;
+
+        return buildPayrollDetail(emp, request, attendance, lateResult,
+                0.0, roundOff(salaryPerDay * attendance.absentDays), actualBasic, basicPerSalary,
+                roundOff(salaryPerDay), salaryPerMinute, attendance.workDays, grossAmount,
+                totalDeduction, netAmount, actualBasic, 0.0,
+                leaveBalance, earningLines, deductionLines);
+    }
+
+    /**
+     * Contractual attendance: payable days come only from actual present/special-approved days.
+     * Approved leaves do not create paid days for contractual employees.
+     */
+    private AttendanceSummary aggregateContractualAttendance(EmployeePayrollInfoDTO emp,
+                                                             PayrollComputationRequest req,
+                                                             PayrollDataSnapshot snap) {
+        AttendanceSummary s = new AttendanceSummary();
+
+        List<DtrDailySummaryDTO> dtrs = snap.getDtrMap()
+                .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
+
+        Map<LocalDate, DtrDailySummaryDTO> dtrByDate = new LinkedHashMap<>();
+        for (DtrDailySummaryDTO dtr : dtrs) {
+            dtrByDate.put(dtr.getDtrDate(), dtr);
+        }
+
+        LocalDate cursor = req.getCutoffStartDate();
+        LocalDate cutoffEnd = req.getCutoffEndDate();
+        StringBuilder absentDates = new StringBuilder();
+
+        while (!cursor.isAfter(cutoffEnd)) {
+            boolean isHoliday = snap.getHolidayMap().containsKey(cursor)
+                    && !Boolean.TRUE.equals(emp.getNoHoliday());
+            DtrDailySummaryDTO dtr = dtrByDate.get(cursor);
+            boolean isRestDay = dtr != null && Boolean.TRUE.equals(dtr.getRestDay());
+            boolean expectedWorkDay = !isRestDay && !isHoliday;
+
+            if (expectedWorkDay) {
+                s.workDays++;
+            }
+
+            boolean payablePresent = dtr != null &&
+                    (Boolean.TRUE.equals(dtr.getPresent()) || dtrHasSpecialApproval(dtr));
+
+            if (payablePresent) {
+                s.workDaysPresent++;
+                if (expectedWorkDay) {
+                    s.lateMinutes += safeInt(dtr.getLateMinutes());
+                    s.undertimeMinutes += safeInt(dtr.getUndertimeMinutes());
+                }
+            } else if (expectedWorkDay) {
+                s.awolDays++;
+                s.absentDays++;
+                appendDate(absentDates, cursor);
+            }
+
+            cursor = cursor.plusDays(1);
+        }
+
+        s.absentParticulars = absentDates.toString().trim();
+        return s;
+    }
+
+    private double fallbackDailyRate(EmployeePayrollInfoDTO emp, PayrollComputationRequest request) {
+        double monthly = emp.getBasicMonthlySalary() != null ? emp.getBasicMonthlySalary() : 0.0;
+        if (monthly <= 0) return 0.0;
+        int cutoffDays = request.getCutoffDays() != null ? request.getCutoffDays() : STANDARD_DAYS_PER_MONTH;
+        return cutoffDays > 0 ? roundOff(monthly / cutoffDays) : 0.0;
+    }
+
+    private double buildContractualEarnings(EmployeePayrollInfoDTO emp,
+                                             double actualBasic,
+                                             PayrollDataSnapshot snap,
+                                             List<PayrollDetailEarning> lines) {
+        double gross = 0;
+
+        PayrollDetailEarning basicLine = new PayrollDetailEarning(
+                null, "BASIC", "Contractual Services", roundOff(actualBasic), true, 0);
+        lines.add(basicLine);
+        gross += basicLine.getAmount();
+
+        // Only explicit income entries are added. Automatic regular benefits/allowances are not applied.
+        List<PayrollDataSnapshot.IncomeEntryDTO> incomeEntries = snap.getIncomeEntriesMap()
+                .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
+        for (PayrollDataSnapshot.IncomeEntryDTO entry : incomeEntries) {
+            double amount = entry.getAmount() != null ? entry.getAmount() : 0;
+            if (amount > 0) {
+                PayrollDetailEarning line = new PayrollDetailEarning(
+                        null, entry.getEarningType(), entry.getEarningTypeName(),
+                        roundOff(amount), Boolean.TRUE.equals(entry.getIsTaxable()), lines.size());
+                lines.add(line);
+                gross += line.getAmount();
+            }
+        }
+
+        return roundOff(gross);
+    }
+
+    private void buildContractualDeductions(EmployeePayrollInfoDTO emp,
+                                            PayrollDataSnapshot snap,
+                                            List<PayrollDetailDeduction> lines) {
+        // No automatic GSIS / PhilHealth / PagIbig / WTX for contractual computation.
+        // Only encoded employee loans and deduction entries are applied.
+        List<PayrollDataSnapshot.LoanDTO> loans = snap.getLoansMap()
+                .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
+        for (PayrollDataSnapshot.LoanDTO loan : loans) {
+            double installment = loan.getAmount() != null ? loan.getAmount() : 0;
+            if (installment > 0) {
+                String loanLabel = loan.getLoanType() != null ? loan.getLoanType() : "LOAN";
+                lines.add(new PayrollDetailDeduction(null,
+                        loanLabel, loanLabel, roundOff(installment), 0.0, lines.size()));
+            }
+        }
+
+        List<PayrollDataSnapshot.EntryDeductionDTO> entryDeductions = snap.getEntryDeductionsMap()
+                .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
+        for (PayrollDataSnapshot.EntryDeductionDTO ded : entryDeductions) {
+            double amount = ded.getAmount() != null ? ded.getAmount() : 0;
+            if (amount > 0) {
+                String dedLabel = ded.getDeductionTypeName() != null
+                        ? ded.getDeductionTypeName()
+                        : (ded.getDeductionType() != null ? ded.getDeductionType() : "DEDUCTION");
+                lines.add(new PayrollDetailDeduction(null,
+                        dedLabel, dedLabel, roundOff(amount), 0.0, lines.size()));
+            }
         }
     }
 
@@ -728,6 +911,9 @@ public class PayrollComputationEngine {
         pd.setIsLocked(false);
         pd.setComputedAt(LocalDateTime.now());
         pd.setDisplayToLastPage(Boolean.TRUE.equals(emp.getDisplayToLastPage()));
+        pd.setPayrollGroup(Boolean.TRUE.equals(emp.getIsExcludedFromPayroll()) || Boolean.TRUE.equals(req.getExcludedOnly())
+                ? "CONTRACTUAL"
+                : "REGULAR");
 
         // Link child records to this PayrollDetail
         for (PayrollDetailEarning e : earningLines) {

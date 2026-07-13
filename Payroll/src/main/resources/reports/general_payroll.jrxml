@@ -3,6 +3,9 @@
 	<property name="net.sf.jasperreports.compiler.xml.parser.validation" value="false"/>
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
 	<parameter name="salaryPeriodKey" class="java.lang.String"/>
+	<parameter name="payrollGroup" forPrompting="false" class="java.lang.String">
+		<defaultValueExpression><![CDATA["REGULAR"]]></defaultValueExpression>
+	</parameter>
 	<parameter name="currentCompany" forPrompting="false" class="java.lang.String">
 		<defaultValueExpression><![CDATA["ISOFT HRIS"]]></defaultValueExpression>
 	</parameter>
@@ -59,6 +62,11 @@
         ) AS rowNo
     FROM payroll_detail pd
     WHERE pd.salaryPeriodKey = $P{salaryPeriodKey}
+      AND (
+            UPPER(ISNULL($P{payrollGroup}, 'REGULAR')) = 'ALL'
+            OR (UPPER(ISNULL($P{payrollGroup}, 'REGULAR')) = 'REGULAR' AND UPPER(ISNULL(pd.payrollGroup, 'REGULAR')) = 'REGULAR')
+            OR (UPPER(ISNULL($P{payrollGroup}, 'REGULAR')) = 'CONTRACTUAL' AND UPPER(ISNULL(pd.payrollGroup, 'REGULAR')) = 'CONTRACTUAL')
+          )
       AND ISNULL(CAST(pd.status AS varchar(30)), 'COMPUTED') <> 'CANCELLED'
 ),
 base_earnings AS (
@@ -363,7 +371,7 @@ ORDER BY fr.rowNo]]></query>
 					<box><pen lineWidth="0.25"/></box>
 				</element>
 				<element kind="textField" uuid="17305bfc-bc5c-4ceb-9f33-288dd6a28926" x="0" y="18" width="1223" height="16" fontName="Arial" fontSize="8.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
-					<expression><![CDATA["GENERAL PAYROLL REGISTER - " + $P{salaryPeriodKey} + "  |  " + $F{reportMode}]]></expression>
+					<expression><![CDATA["GENERAL PAYROLL REGISTER - " + $P{salaryPeriodKey} + "  |  " + ("CONTRACTUAL".equalsIgnoreCase($P{payrollGroup}) ? "CONTRACTUAL" : "REGULAR") + "  |  " + $F{reportMode}]]></expression>
 					<box><pen lineWidth="0.25"/></box>
 				</element>
 				<element kind="textField" uuid="40955eac-d8b5-4ed5-9e2e-ded8a11a6949" x="0" y="34" width="1223" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Center" vTextAlign="Middle">
