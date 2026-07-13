@@ -3,6 +3,9 @@ package com.humanresource.impl;
 import com.humanresource.dtos.CompensatoryOvertimeCreditDTO;
 import com.humanresource.entitymodels.CompensatoryOvertimeCredit;
 import com.humanresource.entitymodels.CocBeginningBalance;
+import com.humanresource.entitymodels.OvertimeRequest;
+import com.humanresource.repositories.OvertimeRequestRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
 import com.humanresource.repositories.CompensatoryOvertimeCreditRepository;
 import com.humanresource.repositories.CompensatoryTimeOffRepository;
 import com.humanresource.repositories.CocBeginningBalanceRepository;
@@ -39,15 +42,20 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
     private final CompensatoryTimeOffRepository ctoRepository;
     private final CocBeginningBalanceRepository cocBegBalRepository;
     private final DataSource dataSource;
+    private final OvertimeRequestRepository overtimeRequestRepository;
+    private final JdbcTemplate jdbc;
 
     public CompensatoryOvertimeCreditImpl(CompensatoryOvertimeCreditRepository cocRepository,
                                           CompensatoryTimeOffRepository ctoRepository,
                                           CocBeginningBalanceRepository cocBegBalRepository,
+                                          OvertimeRequestRepository overtimeRequestRepository,
                                           DataSource dataSource) {
         this.cocRepository = cocRepository;
         this.ctoRepository = ctoRepository;
         this.cocBegBalRepository = cocBegBalRepository;
         this.dataSource = dataSource;
+        this.overtimeRequestRepository = overtimeRequestRepository;
+        this.jdbc = new JdbcTemplate(dataSource);
     }
 
     private CompensatoryOvertimeCreditDTO toDTO(CompensatoryOvertimeCredit e) {
@@ -57,6 +65,9 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
         dto.setDateFiled(e.getDateFiled());
         dto.setDateWorked(e.getDateWorked());
         dto.setHoursWorked(e.getHoursWorked());
+        dto.setOvertimeRequestId(e.getOvertimeRequestId());
+        dto.setActualHoursWorked(e.getActualHoursWorked());
+        dto.setCocMultiplier(e.getCocMultiplier());
         dto.setReason(e.getReason());
         dto.setWorkType(e.getWorkType());
         dto.setStatus(e.getStatus());
@@ -74,53 +85,88 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
     @Transactional
     @Override
     public CompensatoryOvertimeCreditDTO create(CompensatoryOvertimeCreditDTO dto) throws Exception {
-        try {
-            // Guard: required fields must be present
-            if (dto.getEmployeeId() == null || dto.getDateWorked() == null || dto.getHoursWorked() == null) {
-                log.warn("COC creation rejected: missing required fields for employeeId {}", dto.getEmployeeId());
-                return null;
-            }
-
-            // Guard: hoursWorked must be a positive value and cannot exceed 24 hours in a day
-            if (dto.getHoursWorked() <= 0 || dto.getHoursWorked() > 24) {
-                log.warn("COC creation rejected: invalid hoursWorked {} for employeeId {}", dto.getHoursWorked(), dto.getEmployeeId());
-                return null;
-            }
-
-            // Guard: dateWorked must not be a future date
-            if (dto.getDateWorked().isAfter(LocalDate.now())) {
-                log.warn("COC creation rejected: dateWorked {} is in the future for employeeId {}", dto.getDateWorked(), dto.getEmployeeId());
-                return null;
-            }
-
-            // Guard: no duplicate active (Pending or Approved) COC for the same employee + dateWorked.
-            // Disapproved records are excluded so the employee can re-file after rejection.
-            if (cocRepository.existsByEmployeeIdAndDateWorkedAndStatusNot(dto.getEmployeeId(), dto.getDateWorked(), "Disapproved")) {
-                log.warn("COC creation rejected: active COC already exists for employeeId {} on dateWorked {}", dto.getEmployeeId(), dto.getDateWorked());
-                return null;
-            }
-
-            CompensatoryOvertimeCredit entity = new CompensatoryOvertimeCredit();
-            entity.setEmployeeId(dto.getEmployeeId());
-            entity.setDateFiled(dto.getDateFiled());
-            entity.setDateWorked(dto.getDateWorked());
-            entity.setHoursWorked(dto.getHoursWorked());
-            entity.setReason(dto.getReason());
-            entity.setWorkType(dto.getWorkType());
-            entity.setStatus(dto.getStatus() != null ? dto.getStatus() : "Pending");
-            entity.setApprovedById(dto.getApprovedById());
-            entity.setApprovalRemarks(dto.getApprovalRemarks());
-            entity.setRecommendationStatus(dto.getRecommendationStatus());
-            entity.setRecommendedById(dto.getRecommendedById());
-            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
-            entity.setCreatedAt(LocalDateTime.now());
-            entity.setUpdatedAt(LocalDateTime.now());
-            entity = cocRepository.save(entity);
-            return toDTO(entity);
-        } catch (Exception ex) {
-            log.error("Error creating COC for employeeId {}: ", dto.getEmployeeId(), ex);
-            return null;
+        if (dto.getEmployeeId() == null || dto.getOvertimeRequestId() == null) {
+            throw new IllegalArgumentException("An approved Overtime/Holiday Duty authority reference is required.");
         }
+        Map<String, Object> preview = previewFromOvertimeRequest(dto.getOvertimeRequestId(), dto.getEmployeeId());
+        LocalDate dateWorked = LocalDate.parse(preview.get("dateWorked").toString());
+        double actualHours = ((Number) preview.get("actualHoursWorked")).doubleValue();
+        double multiplier = ((Number) preview.get("cocMultiplier")).doubleValue();
+        double creditedHours = ((Number) preview.get("creditedHours")).doubleValue();
+        String workType = preview.get("workType").toString();
+
+        if (cocRepository.existsByOvertimeRequestIdAndStatusNot(dto.getOvertimeRequestId(), "Disapproved")) {
+            throw new IllegalArgumentException("This approved authority has already been used for a COC filing.");
+        }
+        if (creditedHours <= 0) throw new IllegalArgumentException("No eligible rendered hours were found in DTR.");
+        LocalDate monthStart = dateWorked.withDayOfMonth(1);
+        LocalDate monthEnd = dateWorked.withDayOfMonth(dateWorked.lengthOfMonth());
+        double monthEarned = Optional.ofNullable(cocRepository.sumApprovedHoursByEmployeeIdAndDateWorkedBetween(dto.getEmployeeId(), monthStart, monthEnd)).orElse(0.0);
+        if (monthEarned + creditedHours > 40.0) {
+            throw new IllegalArgumentException("COC monthly earning limit exceeded. Approved credits for this month: " + monthEarned + " hours.");
+        }
+
+        CompensatoryOvertimeCredit entity = new CompensatoryOvertimeCredit();
+        entity.setEmployeeId(dto.getEmployeeId());
+        entity.setDateFiled(dto.getDateFiled() != null ? dto.getDateFiled() : LocalDate.now());
+        entity.setDateWorked(dateWorked);
+        entity.setOvertimeRequestId(dto.getOvertimeRequestId());
+        entity.setActualHoursWorked(actualHours);
+        entity.setCocMultiplier(multiplier);
+        entity.setHoursWorked(creditedHours);
+        entity.setReason(dto.getReason());
+        entity.setWorkType(workType);
+
+        String requestedStatus = dto.getStatus() != null ? dto.getStatus() : "Pending";
+        entity.setStatus(requestedStatus);
+        entity.setApprovedById(dto.getApprovedById());
+        entity.setApprovalRemarks(dto.getApprovalRemarks());
+
+        if ("Approved".equalsIgnoreCase(requestedStatus)
+                || "Disapproved".equalsIgnoreCase(requestedStatus)) {
+            entity.setApprovedAt(LocalDateTime.now());
+        }
+
+        entity.setRecommendationStatus(
+                dto.getRecommendationStatus() != null
+                        ? dto.getRecommendationStatus()
+                        : "Pending"
+        );
+        entity.setRecommendedById(dto.getRecommendedById());
+        entity.setRecommendationRemarks(dto.getRecommendationRemarks());
+
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(LocalDateTime.now());
+        return toDTO(cocRepository.save(entity));
+    }
+
+    @Override
+    public Map<String, Object> previewFromOvertimeRequest(Long overtimeRequestId, Long employeeId) throws Exception {
+        OvertimeRequest ot = overtimeRequestRepository.findById(overtimeRequestId)
+                .orElseThrow(() -> new IllegalArgumentException("Overtime/Holiday Duty authority not found."));
+        if (!employeeId.equals(ot.getEmployeeId())) throw new IllegalArgumentException("Authority does not belong to the selected employee.");
+        if (!"Approved".equalsIgnoreCase(ot.getStatus())) throw new IllegalArgumentException("Authority must be approved before COC validation.");
+        LocalDate workDate = ot.getDateTimeFrom().toLocalDate();
+        Map<String, Object> dtr;
+        try {
+            dtr = jdbc.queryForMap("SELECT total_work_minutes, total_overtime_minutes FROM dtr_daily WHERE employee_id = ? AND work_date = ?", String.valueOf(employeeId), workDate);
+        } catch (org.springframework.dao.EmptyResultDataAccessException ex) {
+            throw new IllegalArgumentException("No processed DTR record was found for " + workDate + ". Process or validate the employee DTR first.");
+        }
+        int workMinutes = ((Number)dtr.get("total_work_minutes")).intValue();
+        int overtimeMinutes = ((Number)dtr.get("total_overtime_minutes")).intValue();
+        String workType = ot.getWorkType() != null ? ot.getWorkType() : "REGULAR_OVERTIME";
+        int eligibleMinutes = "REGULAR_OVERTIME".equalsIgnoreCase(workType) ? overtimeMinutes : workMinutes;
+        double authorizedHours = ot.getNetAuthorizedHours() != null ? ot.getNetAuthorizedHours() : ot.getTotalHours();
+        double actualHours = Math.round(Math.min(eligibleMinutes / 60.0, authorizedHours) * 100.0) / 100.0;
+        double multiplier = (workType.contains("HOLIDAY") || workType.contains("DAY_OFF") || workType.contains("REST_DAY")) ? 1.5 : 1.0;
+        double credited = Math.round(actualHours * multiplier * 100.0) / 100.0;
+        Map<String, Object> result = new HashMap<>();
+        result.put("overtimeRequestId", overtimeRequestId); result.put("dateWorked", workDate.toString());
+        result.put("workType", workType); result.put("authorizedHours", authorizedHours);
+        result.put("actualHoursWorked", actualHours); result.put("cocMultiplier", multiplier); result.put("creditedHours", credited);
+        result.put("authorityReference", ot.getAuthorityReference() != null ? ot.getAuthorityReference() : "");
+        return result;
     }
 
     @Override
@@ -149,6 +195,9 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
     @Transactional
     @Override
     public CompensatoryOvertimeCreditDTO approve(Long cocId, Long approvedById, String remarks) throws Exception {
+        CompensatoryOvertimeCredit entity = cocRepository.findById(cocId).orElseThrow(() -> new IllegalArgumentException("COC not found."));
+        double projected = getAvailableBalance(entity.getEmployeeId()) + (entity.getHoursWorked() != null ? entity.getHoursWorked() : 0.0);
+        if (projected > 120.0) throw new IllegalArgumentException("Approval would exceed the 120-hour maximum COC balance.");
         return updateStatus(cocId, "Approved", approvedById, remarks);
     }
 

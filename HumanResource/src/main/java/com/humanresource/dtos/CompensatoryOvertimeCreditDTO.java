@@ -24,6 +24,9 @@ public class CompensatoryOvertimeCreditDTO implements Serializable {
 
     @NotNull(message = "hoursWorked is mandatory")
     private Double hoursWorked;
+    private Long overtimeRequestId;
+    private Double actualHoursWorked;
+    private Double cocMultiplier;
 
     private String reason;
 
@@ -105,4 +108,11 @@ public class CompensatoryOvertimeCreditDTO implements Serializable {
 
     public Double getCurrentBalance() { return currentBalance; }
     public void setCurrentBalance(Double currentBalance) { this.currentBalance = currentBalance; }
+    public Long getOvertimeRequestId() { return overtimeRequestId; }
+    public void setOvertimeRequestId(Long overtimeRequestId) { this.overtimeRequestId = overtimeRequestId; }
+    public Double getActualHoursWorked() { return actualHoursWorked; }
+    public void setActualHoursWorked(Double actualHoursWorked) { this.actualHoursWorked = actualHoursWorked; }
+    public Double getCocMultiplier() { return cocMultiplier; }
+    public void setCocMultiplier(Double cocMultiplier) { this.cocMultiplier = cocMultiplier; }
+
 }

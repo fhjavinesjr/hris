@@ -48,6 +48,11 @@ public class CompensatoryOvertimeCreditController {
         return ResponseEntity.ok(cocService.getPendingAll());
     }
 
+    @GetMapping("/coc/preview/{overtimeRequestId}/{employeeId}")
+    public ResponseEntity<Map<String, Object>> preview(@PathVariable Long overtimeRequestId, @PathVariable Long employeeId) throws Exception {
+        return ResponseEntity.ok(cocService.previewFromOvertimeRequest(overtimeRequestId, employeeId));
+    }
+
     @GetMapping("/coc/balance/{employeeId}")
     public ResponseEntity<Map<String, Double>> getBalance(@PathVariable Long employeeId) throws Exception {
         Double balance = cocService.getAvailableBalance(employeeId);

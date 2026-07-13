@@ -30,4 +30,8 @@ public interface CompensatoryTimeOffRepository extends JpaRepository<Compensator
     @Query("SELECT COALESCE(SUM(c.hoursUsed), 0) FROM CompensatoryTimeOff c " +
            "WHERE c.employeeId = :employeeId AND c.status = 'Approved'")
     Double sumApprovedHoursUsedByEmployeeId(@Param("employeeId") Long employeeId);
+    @Query("SELECT COALESCE(SUM(c.hoursUsed), 0) FROM CompensatoryTimeOff c " +
+           "WHERE c.employeeId = :employeeId AND c.status = 'Pending'")
+    Double sumPendingHoursUsedByEmployeeId(@Param("employeeId") Long employeeId);
 }
+

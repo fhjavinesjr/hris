@@ -43,6 +43,16 @@ public class CompensatoryOvertimeCredit implements Serializable {
     @Column(name = "hoursWorked", nullable = false)
     private Double hoursWorked;
 
+
+    @Column(name = "overtimeRequestId")
+    private Long overtimeRequestId;
+
+    @Column(name = "actualHoursWorked")
+    private Double actualHoursWorked;
+
+    @Column(name = "cocMultiplier")
+    private Double cocMultiplier;
+
     @Column(name = "reason", length = 500)
     private String reason;
 
@@ -132,4 +142,11 @@ public class CompensatoryOvertimeCredit implements Serializable {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public Long getOvertimeRequestId() { return overtimeRequestId; }
+    public void setOvertimeRequestId(Long overtimeRequestId) { this.overtimeRequestId = overtimeRequestId; }
+    public Double getActualHoursWorked() { return actualHoursWorked; }
+    public void setActualHoursWorked(Double actualHoursWorked) { this.actualHoursWorked = actualHoursWorked; }
+    public Double getCocMultiplier() { return cocMultiplier; }
+    public void setCocMultiplier(Double cocMultiplier) { this.cocMultiplier = cocMultiplier; }
+
 }

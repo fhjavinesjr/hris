@@ -4,6 +4,7 @@ import com.humanresource.dtos.CompensatoryOvertimeCreditDTO;
 
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Map;
 
 public interface CompensatoryOvertimeCreditService {
 
@@ -30,6 +31,8 @@ public interface CompensatoryOvertimeCreditService {
      * CocBeginningBalance.accumulatedHours + approved COC hours earned - CTO hours used.
      */
     Double getAvailableBalance(Long employeeId) throws Exception;
+
+    Map<String, Object> previewFromOvertimeRequest(Long overtimeRequestId, Long employeeId) throws Exception;
 
     void generateCertificateCoc(Long cocId, OutputStream out) throws Exception;
 }

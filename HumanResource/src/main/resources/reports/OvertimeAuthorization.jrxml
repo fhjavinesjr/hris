@@ -23,7 +23,7 @@ SELECT
 	) AS fullname,
 	ISNULL(bu.businessUnitsName, '') AS businessUnit,
 	CAST(ot.dateTimeFrom AS DATE) AS dateCovered,
-	ISNULL(ot.totalHours, 0) AS noOfHours,
+	ISNULL(ot.netAuthorizedHours, ISNULL(ot.totalHours, 0)) AS noOfHours,
 	ISNULL(ot.purpose, '') AS purpose,
 	CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
 	ISNULL(st.companyName, '') AS currentCompanySetting,

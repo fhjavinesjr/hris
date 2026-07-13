@@ -22,6 +22,8 @@ public interface CompensatoryOvertimeCreditRepository extends JpaRepository<Comp
      * Returns true if there is already a Pending or Approved COC for this employee on this date.
      * Disapproved records are excluded so the employee may re-file after rejection.
      */
+    boolean existsByOvertimeRequestIdAndStatusNot(Long overtimeRequestId, String status);
+
     boolean existsByEmployeeIdAndDateWorkedAndStatusNot(Long employeeId, LocalDate dateWorked, String status);
 
     /**
@@ -32,4 +34,8 @@ public interface CompensatoryOvertimeCreditRepository extends JpaRepository<Comp
     @Query("SELECT COALESCE(SUM(c.hoursWorked), 0) FROM CompensatoryOvertimeCredit c " +
            "WHERE c.employeeId = :employeeId AND c.status = 'Approved'")
     Double sumApprovedHoursByEmployeeId(@Param("employeeId") Long employeeId);
+    @Query("SELECT COALESCE(SUM(c.hoursWorked), 0) FROM CompensatoryOvertimeCredit c " +
+           "WHERE c.employeeId = :employeeId AND c.status = 'Approved' AND c.dateWorked BETWEEN :from AND :to")
+    Double sumApprovedHoursByEmployeeIdAndDateWorkedBetween(@Param("employeeId") Long employeeId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }
+

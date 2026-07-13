@@ -49,6 +49,12 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
         dto.setDateTimeFrom(e.getDateTimeFrom());
         dto.setDateTimeTo(e.getDateTimeTo());
         dto.setTotalHours(e.getTotalHours());
+        dto.setWorkType(e.getWorkType());
+        dto.setAuthorityReference(e.getAuthorityReference());
+        dto.setEmergencyPostFiling(e.getEmergencyPostFiling());
+        dto.setEmergencyJustification(e.getEmergencyJustification());
+        dto.setBreakMinutes(e.getBreakMinutes());
+        dto.setNetAuthorizedHours(e.getNetAuthorizedHours());
         dto.setPurpose(e.getPurpose());
         dto.setStatus(e.getStatus());
         dto.setApprovedById(e.getApprovedById());
@@ -75,10 +81,18 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
                 return null;
             }
 
-            // Compute totalHours from the date-time range (rounded to 2 decimal places)
+            boolean emergency = Boolean.TRUE.equals(dto.getEmergencyPostFiling());
+            if (dto.getDateTimeFrom().isBefore(LocalDateTime.now()) && !emergency) {
+                throw new IllegalArgumentException("Overtime/Holiday Duty authority must be filed before the scheduled work. Use Emergency/Post-filing only for duly justified exceptional cases.");
+            }
+            if (emergency && (dto.getEmergencyJustification() == null || dto.getEmergencyJustification().isBlank())) {
+                throw new IllegalArgumentException("Emergency/post-filing justification is required.");
+            }
+            int breakMinutes = dto.getBreakMinutes() != null ? Math.max(0, dto.getBreakMinutes()) : 0;
             double totalHours = Duration.between(dto.getDateTimeFrom(), dto.getDateTimeTo()).toMinutes() / 60.0;
             totalHours = Math.round(totalHours * 100.0) / 100.0;
-            if (totalHours <= 0) {
+            double netAuthorizedHours = Math.round(Math.max(0, totalHours - (breakMinutes / 60.0)) * 100.0) / 100.0;
+            if (netAuthorizedHours <= 0) {
                 log.warn("OvertimeRequest creation rejected: computed totalHours is zero or negative");
                 return null;
             }
@@ -89,6 +103,12 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
             entity.setDateTimeFrom(dto.getDateTimeFrom());
             entity.setDateTimeTo(dto.getDateTimeTo());
             entity.setTotalHours(totalHours);
+            entity.setWorkType(dto.getWorkType() != null ? dto.getWorkType() : "REGULAR_OVERTIME");
+            entity.setAuthorityReference(dto.getAuthorityReference());
+            entity.setEmergencyPostFiling(emergency);
+            entity.setEmergencyJustification(dto.getEmergencyJustification());
+            entity.setBreakMinutes(breakMinutes);
+            entity.setNetAuthorizedHours(netAuthorizedHours);
             entity.setPurpose(dto.getPurpose());
             entity.setStatus(dto.getStatus() != null ? dto.getStatus() : "Pending");
             entity.setApprovedById(dto.getApprovedById());
@@ -101,6 +121,8 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
 
             entity = overtimeRequestRepository.save(entity);
             return toDTO(entity);
+        } catch (IllegalArgumentException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("Error creating OvertimeRequest for employeeId {}: ", dto.getEmployeeId(), ex);
             return null;
@@ -191,6 +213,16 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
             if (dto.getDateTimeFrom() != null) entity.setDateTimeFrom(dto.getDateTimeFrom());
             if (dto.getDateTimeTo() != null) entity.setDateTimeTo(dto.getDateTimeTo());
             if (dto.getPurpose() != null) entity.setPurpose(dto.getPurpose());
+            if (dto.getWorkType() != null) entity.setWorkType(dto.getWorkType());
+            if (dto.getAuthorityReference() != null) entity.setAuthorityReference(dto.getAuthorityReference());
+            if (dto.getEmergencyPostFiling() != null) entity.setEmergencyPostFiling(dto.getEmergencyPostFiling());
+            if (dto.getEmergencyJustification() != null) entity.setEmergencyJustification(dto.getEmergencyJustification());
+            if (dto.getBreakMinutes() != null) entity.setBreakMinutes(Math.max(0, dto.getBreakMinutes()));
+            if (dto.getDateTimeFrom() != null && dto.getDateTimeTo() != null) {
+                double raw = Duration.between(dto.getDateTimeFrom(), dto.getDateTimeTo()).toMinutes() / 60.0;
+                int brk = entity.getBreakMinutes() != null ? entity.getBreakMinutes() : 0;
+                entity.setNetAuthorizedHours(Math.round(Math.max(0, raw - brk / 60.0) * 100.0) / 100.0);
+            }
             if (dto.getDateTimeFrom() != null && dto.getDateTimeTo() != null
                     && dto.getDateTimeTo().isAfter(dto.getDateTimeFrom())) {
                 double totalHours = Duration.between(dto.getDateTimeFrom(), dto.getDateTimeTo()).toMinutes() / 60.0;

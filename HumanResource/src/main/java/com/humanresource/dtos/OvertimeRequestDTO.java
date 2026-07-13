@@ -21,6 +21,12 @@ public class OvertimeRequestDTO implements Serializable {
     private LocalDateTime dateTimeTo;
 
     private Double totalHours;
+    private String workType;
+    private String authorityReference;
+    private Boolean emergencyPostFiling;
+    private String emergencyJustification;
+    private Integer breakMinutes;
+    private Double netAuthorizedHours;
     private String purpose;
     private String status;
     private Long approvedById;
@@ -89,4 +95,17 @@ public class OvertimeRequestDTO implements Serializable {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getWorkType() { return workType; }
+    public void setWorkType(String workType) { this.workType = workType; }
+    public String getAuthorityReference() { return authorityReference; }
+    public void setAuthorityReference(String authorityReference) { this.authorityReference = authorityReference; }
+    public Boolean getEmergencyPostFiling() { return emergencyPostFiling; }
+    public void setEmergencyPostFiling(Boolean emergencyPostFiling) { this.emergencyPostFiling = emergencyPostFiling; }
+    public String getEmergencyJustification() { return emergencyJustification; }
+    public void setEmergencyJustification(String emergencyJustification) { this.emergencyJustification = emergencyJustification; }
+    public Integer getBreakMinutes() { return breakMinutes; }
+    public void setBreakMinutes(Integer breakMinutes) { this.breakMinutes = breakMinutes; }
+    public Double getNetAuthorizedHours() { return netAuthorizedHours; }
+    public void setNetAuthorizedHours(Double netAuthorizedHours) { this.netAuthorizedHours = netAuthorizedHours; }
+
 }

@@ -57,15 +57,24 @@ public class CompensatoryTimeOffImpl implements CompensatoryTimeOffService {
     @Transactional
     @Override
     public CompensatoryTimeOffDTO create(CompensatoryTimeOffDTO dto) throws Exception {
+        if (dto.getEmployeeId() == null || dto.getDateOfOffset() == null || dto.getHoursUsed() == null)
+            throw new IllegalArgumentException("Employee, offset date and hours are required.");
+        if (Math.abs(dto.getHoursUsed() - 4.0) > 0.001 && Math.abs(dto.getHoursUsed() - 8.0) > 0.001)
+            throw new IllegalArgumentException("CTO hoursUsed must be either 4 or 8 hours for a single offset date.");
+        if (!dto.getDateOfOffset().isAfter(java.time.LocalDate.now()))
+            throw new IllegalArgumentException("CTO must be filed for a future offset date.");
+
         // Validate date conflict across all leave-type applications
         conflictChecker.checkSingleDate(dto.getEmployeeId(), dto.getDateOfOffset());
 
         // Validate COC balance — throw so the controller returns 400 with the message
         double currentBalance = cocService.getAvailableBalance(dto.getEmployeeId());
-        if (dto.getHoursUsed() > currentBalance) {
+        double pendingReserved = java.util.Optional.ofNullable(ctoRepository.sumPendingHoursUsedByEmployeeId(dto.getEmployeeId())).orElse(0.0);
+        double spendableBalance = currentBalance - pendingReserved;
+        if (dto.getHoursUsed() > spendableBalance) {
             throw new IllegalArgumentException(
                     "Insufficient COC balance. Requested: " + dto.getHoursUsed() +
-                    " hours, Available: " + currentBalance + " hours.");
+                    " hours, Available after pending reservations: " + spendableBalance + " hours.");
         }
 
         try {
@@ -75,7 +84,7 @@ public class CompensatoryTimeOffImpl implements CompensatoryTimeOffService {
             entity.setDateFiled(dto.getDateFiled());
             entity.setDateOfOffset(dto.getDateOfOffset());
             entity.setHoursUsed(dto.getHoursUsed());
-            entity.setCocBalanceAtFiling(currentBalance);
+            entity.setCocBalanceAtFiling(spendableBalance);
             entity.setReason(dto.getReason());
             entity.setStatus(dto.getStatus() != null ? dto.getStatus() : "Pending");
             entity.setApprovedById(dto.getApprovedById());

@@ -55,6 +55,26 @@ public class OvertimeRequest implements Serializable {
     @Column(name = "totalHours", nullable = false)
     private Double totalHours;
 
+
+    /** REGULAR_OVERTIME, HOLIDAY_DUTY, DAY_OFF_DUTY, REST_DAY_DUTY */
+    @Column(name = "workType", length = 50)
+    private String workType;
+
+    @Column(name = "authorityReference", length = 150)
+    private String authorityReference;
+
+    @Column(name = "emergencyPostFiling", nullable = false)
+    private Boolean emergencyPostFiling = false;
+
+    @Column(name = "emergencyJustification", length = 500)
+    private String emergencyJustification;
+
+    @Column(name = "breakMinutes", nullable = false)
+    private Integer breakMinutes = 0;
+
+    @Column(name = "netAuthorizedHours")
+    private Double netAuthorizedHours;
+
     /** Purpose / justification for overtime work. */
     @Column(name = "purpose", length = 500)
     private String purpose;
@@ -140,4 +160,17 @@ public class OvertimeRequest implements Serializable {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getWorkType() { return workType; }
+    public void setWorkType(String workType) { this.workType = workType; }
+    public String getAuthorityReference() { return authorityReference; }
+    public void setAuthorityReference(String authorityReference) { this.authorityReference = authorityReference; }
+    public Boolean getEmergencyPostFiling() { return emergencyPostFiling; }
+    public void setEmergencyPostFiling(Boolean emergencyPostFiling) { this.emergencyPostFiling = emergencyPostFiling; }
+    public String getEmergencyJustification() { return emergencyJustification; }
+    public void setEmergencyJustification(String emergencyJustification) { this.emergencyJustification = emergencyJustification; }
+    public Integer getBreakMinutes() { return breakMinutes; }
+    public void setBreakMinutes(Integer breakMinutes) { this.breakMinutes = breakMinutes; }
+    public Double getNetAuthorizedHours() { return netAuthorizedHours; }
+    public void setNetAuthorizedHours(Double netAuthorizedHours) { this.netAuthorizedHours = netAuthorizedHours; }
+
 }
