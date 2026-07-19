@@ -32,6 +32,20 @@ public class OvertimeRequestController {
         return ResponseEntity.ok(new MetadataResponse(created.getOvertimeRequestId(), "Overtime request filed successfully"));
     }
 
+    /**
+     * Administrative emergency override only. Secure this endpoint with the project's
+     * admin permission/role configuration; normal employee portal requests must use /create.
+     */
+    @PostMapping("/overtime-request/admin-override/create")
+    public ResponseEntity<MetadataResponse> createEmergencyOverride(@RequestBody OvertimeRequestDTO dto) throws Exception {
+        OvertimeRequestDTO created = overtimeRequestService.createEmergencyOverride(dto);
+        if (created == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MetadataResponse("Failed to create emergency overtime override"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(created.getOvertimeRequestId(), "Emergency overtime override created successfully"));
+    }
+
     @GetMapping("/overtime-request/get-all")
     public ResponseEntity<List<OvertimeRequestDTO>> getAll() throws Exception {
         return ResponseEntity.ok(overtimeRequestService.getAll());
@@ -84,7 +98,9 @@ public class OvertimeRequestController {
                                                       @RequestBody Map<String, Object> body) throws Exception {
         Long recommendedById = body.get("recommendedById") != null ? Long.valueOf(body.get("recommendedById").toString()) : null;
         String remarks = body.get("remarks") != null ? body.get("remarks").toString() : "";
-        OvertimeRequestDTO result = overtimeRequestService.recommend(id, recommendedById, remarks);
+        String dutyShiftCode = body.get("dutyShiftCode") != null ? body.get("dutyShiftCode").toString() : null;
+        Integer breakMinutes = body.get("breakMinutes") != null ? Integer.valueOf(body.get("breakMinutes").toString()) : null;
+        OvertimeRequestDTO result = overtimeRequestService.recommend(id, recommendedById, remarks, dutyShiftCode, breakMinutes);
         if (result == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MetadataResponse("Failed to recommend overtime request"));
@@ -103,6 +119,22 @@ public class OvertimeRequestController {
         return ResponseEntity.ok(new MetadataResponse(id, "Overtime request updated successfully"));
     }
 
+    /**
+     * HRM maintenance edit. This updates the request details regardless of its
+     * workflow status while preserving recommendation/final-decision audit data.
+     * Restrict this endpoint with the project's HRM edit permission policy.
+     */
+    @PutMapping("/overtime-request/hrm-update/{id}")
+    public ResponseEntity<MetadataResponse> administrativeUpdate(@PathVariable Long id,
+                                                                 @RequestBody OvertimeRequestDTO dto) throws Exception {
+        OvertimeRequestDTO result = overtimeRequestService.administrativeUpdate(id, dto);
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MetadataResponse("Failed to administratively update overtime request"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(id, "Overtime request administratively updated successfully"));
+    }
+
     @DeleteMapping("/overtime-request/delete/{id}")
     public ResponseEntity<MetadataResponse> delete(@PathVariable Long id) throws Exception {
         Boolean deleted = overtimeRequestService.delete(id);
@@ -111,6 +143,20 @@ public class OvertimeRequestController {
                     .body(new MetadataResponse("Failed to delete overtime request"));
         }
         return ResponseEntity.ok(new MetadataResponse(id, "Overtime request deleted successfully"));
+    }
+
+    /**
+     * HRM maintenance delete. This is intentionally independent of workflow
+     * status. Restrict this endpoint with the project's HRM delete permission policy.
+     */
+    @DeleteMapping("/overtime-request/hrm-delete/{id}")
+    public ResponseEntity<MetadataResponse> administrativeDelete(@PathVariable Long id) throws Exception {
+        Boolean deleted = overtimeRequestService.administrativeDelete(id);
+        if (!deleted) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MetadataResponse("Overtime request not found or could not be deleted"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(id, "Overtime request administratively deleted successfully"));
     }
 
     @GetMapping("/overtime-request/report/{id}")

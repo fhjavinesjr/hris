@@ -128,12 +128,7 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
             entity.setSlBalanceBefore(slBefore);
             entity.setVlBalanceBefore(vlBefore);
             entity.setReason(dto.getReason());
-            entity.setRecommendationStatus(dto.getRecommendationStatus() != null ? dto.getRecommendationStatus() : "Pending");
-            entity.setRecommendedById(dto.getRecommendedById());
-            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
-            entity.setApprovalStatus(dto.getApprovalStatus() != null ? dto.getApprovalStatus() : "Pending");
-            entity.setApprovedById(dto.getApprovedById());
-            entity.setApprovalRemarks(dto.getApprovalRemarks());
+            applyAdministrativeWorkflow(entity, dto);
             entity.setPayrollIncluded(false);
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
@@ -337,13 +332,107 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
                      + (dto.getNoOfDaysSL() != null ? dto.getNoOfDaysSL() : entity.getNoOfDaysSL());
         entity.setTotalDays(round3(total));
         if (dto.getReason() != null) entity.setReason(dto.getReason());
-        if (dto.getRecommendationStatus() != null) entity.setRecommendationStatus(dto.getRecommendationStatus());
-        if (dto.getApprovalStatus() != null) entity.setApprovalStatus(dto.getApprovalStatus());
+        applyAdministrativeWorkflow(entity, dto);
         entity.setUpdatedAt(LocalDateTime.now());
         entity = leaveMonetizationRepository.save(entity);
         LeaveMonetizationDTO result = toDTO(entity);
         enrichEmployeeInfo(result);
         return result;
+    }
+
+    /**
+     * HRM update/create applies the selected status directly. Approval still
+     * performs the CSC balance validations so an administrative status change
+     * cannot bypass monetization policy.
+     */
+    private void applyAdministrativeWorkflow(LeaveMonetization entity,
+                                             LeaveMonetizationDTO dto) {
+        String previousRecommendation = entity.getRecommendationStatus();
+        String previousApproval = entity.getApprovalStatus();
+        String recommendationStatus = normalizeWorkflowStatus(
+                dto.getRecommendationStatus(), previousRecommendation, true);
+        String approvalStatus = normalizeWorkflowStatus(
+                dto.getApprovalStatus(), previousApproval, false);
+
+        entity.setRecommendationStatus(recommendationStatus);
+        entity.setRecommendationRemarks(dto.getRecommendationRemarks());
+        if ("Pending".equalsIgnoreCase(recommendationStatus)) {
+            entity.setRecommendedById(null);
+            entity.setRecommendedAt(null);
+        } else {
+            entity.setRecommendedById(dto.getRecommendedById());
+            if (entity.getRecommendedAt() == null
+                    || previousRecommendation == null
+                    || !recommendationStatus.equalsIgnoreCase(previousRecommendation)) {
+                entity.setRecommendedAt(LocalDateTime.now());
+            }
+        }
+
+        entity.setApprovalStatus(approvalStatus);
+        entity.setApprovalRemarks(dto.getApprovalRemarks());
+        if ("Pending".equalsIgnoreCase(approvalStatus)) {
+            entity.setApprovedById(null);
+            entity.setApprovedAt(null);
+            entity.setSlBalanceAfter(null);
+            entity.setVlBalanceAfter(null);
+        } else {
+            entity.setApprovedById(dto.getApprovedById());
+            if (entity.getApprovedAt() == null
+                    || previousApproval == null
+                    || !approvalStatus.equalsIgnoreCase(previousApproval)) {
+                entity.setApprovedAt(LocalDate.now());
+            }
+            if ("Approved".equalsIgnoreCase(approvalStatus)) {
+                validateAndApplyApprovedBalances(entity);
+            } else {
+                entity.setSlBalanceAfter(null);
+                entity.setVlBalanceAfter(null);
+            }
+        }
+    }
+
+    private void validateAndApplyApprovedBalances(LeaveMonetization entity) {
+        double totalDays = entity.getTotalDays() != null ? entity.getTotalDays() : 0.0;
+        double noOfDaysSL = entity.getNoOfDaysSL() != null ? entity.getNoOfDaysSL() : 0.0;
+        double noOfDaysVL = entity.getNoOfDaysVL() != null ? entity.getNoOfDaysVL() : 0.0;
+        double slBefore = entity.getSlBalanceBefore() != null ? entity.getSlBalanceBefore() : 0.0;
+        double vlBefore = entity.getVlBalanceBefore() != null ? entity.getVlBalanceBefore() : 0.0;
+
+        if (totalDays < 10.0) {
+            throw new IllegalArgumentException(
+                    "Leave monetization requires a minimum of 10 days. Total days filed: " + totalDays);
+        }
+        double vlAfter = vlBefore - noOfDaysVL;
+        if (vlAfter < 5.0) {
+            throw new IllegalArgumentException(
+                    "VL balance after monetization (" + vlAfter + ") must be at least 5 days.");
+        }
+        double slAfter = slBefore - noOfDaysSL;
+        if (noOfDaysSL > 0 && slAfter < 5.0) {
+            throw new IllegalArgumentException(
+                    "SL balance after monetization (" + slAfter + ") must be at least 5 days.");
+        }
+        entity.setSlBalanceAfter(round3(slAfter));
+        entity.setVlBalanceAfter(round3(vlAfter));
+    }
+
+    private String normalizeWorkflowStatus(String requested,
+                                           String current,
+                                           boolean recommendation) {
+        if (requested == null || requested.isBlank()) return current != null ? current : "Pending";
+        return switch (requested.trim().toLowerCase()) {
+            case "pending" -> "Pending";
+            case "approved" -> "Approved";
+            case "recommended" -> {
+                if (!recommendation) {
+                    throw new IllegalArgumentException("Recommended is not a final approval status.");
+                }
+                yield "Recommended";
+            }
+            case "disapproved" -> "Disapproved";
+            case "cancel", "canceled", "cancelled" -> "Cancelled";
+            default -> throw new IllegalArgumentException("Unsupported workflow status: " + requested);
+        };
     }
 
     // ─── Utility ─────────────────────────────────────────────────────────────

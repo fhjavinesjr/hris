@@ -172,20 +172,44 @@ public class PassSlipImpl implements PassSlipService {
             Optional<PassSlip> optional = repository.findById(passSlipId);
             if (optional.isEmpty()) return null;
             PassSlip entity = optional.get();
-            entity.setDateFiled(dto.getDateFiled());
-            entity.setPurpose(dto.getPurpose());
-            entity.setDepartureTime(dto.getDepartureTime());
-            entity.setArrivalTime(dto.getArrivalTime());
-            entity.setDetails(dto.getDetails());
+
+            if (dto.getEmployeeId() != null
+                    && !dto.getEmployeeId().equals(entity.getEmployeeId())) {
+                throw new IllegalArgumentException(
+                        "A Pass Slip record cannot be moved to another employee."
+                );
+            }
+
+            // The HRM form has separate Date Filed and Pass Slip Date fields.
+            // passSlipDate was previously omitted here, so the edited date was
+            // accepted by the UI but the database kept its original value.
+            if (dto.getPassSlipDate() != null
+                    && !dto.getPassSlipDate().equals(entity.getPassSlipDate())) {
+                conflictChecker.checkSingleDate(
+                        entity.getEmployeeId(),
+                        dto.getPassSlipDate()
+                );
+            }
+
+            if (dto.getDateFiled() != null) entity.setDateFiled(dto.getDateFiled());
+            if (dto.getPassSlipDate() != null) entity.setPassSlipDate(dto.getPassSlipDate());
+            if (dto.getPurpose() != null) entity.setPurpose(dto.getPurpose());
+            if (dto.getDepartureTime() != null) entity.setDepartureTime(dto.getDepartureTime());
+            if (dto.getArrivalTime() != null) entity.setArrivalTime(dto.getArrivalTime());
+            if (dto.getDetails() != null) entity.setDetails(dto.getDetails());
             entity.setStatus(dto.getStatus() != null ? dto.getStatus() : entity.getStatus());
             entity.setApprovedById(dto.getApprovedById());
             entity.setApprovalRemarks(dto.getApprovalRemarks());
-            entity.setRecommendationStatus(dto.getRecommendationStatus());
+            if (dto.getRecommendationStatus() != null) {
+                entity.setRecommendationStatus(dto.getRecommendationStatus());
+            }
             entity.setRecommendedById(dto.getRecommendedById());
             entity.setRecommendationRemarks(dto.getRecommendationRemarks());
             entity.setUpdatedAt(LocalDateTime.now());
             entity = repository.save(entity);
             return toDTO(entity);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("Error updating PassSlip id {}: ", passSlipId, ex);
             return null;

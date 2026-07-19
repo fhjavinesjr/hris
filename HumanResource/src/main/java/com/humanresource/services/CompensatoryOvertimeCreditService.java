@@ -24,7 +24,16 @@ public interface CompensatoryOvertimeCreditService {
 
     CompensatoryOvertimeCreditDTO update(Long cocId, CompensatoryOvertimeCreditDTO dto) throws Exception;
 
+    /**
+     * HRM maintenance edit. This is intentionally independent of workflow
+     * status and preserves recommendation/final-approval audit fields.
+     */
+    CompensatoryOvertimeCreditDTO administrativeUpdate(Long cocId, CompensatoryOvertimeCreditDTO dto) throws Exception;
+
     Boolean delete(Long cocId) throws Exception;
+
+    /** HRM maintenance delete, intentionally independent of workflow status. */
+    Boolean administrativeDelete(Long cocId) throws Exception;
 
     /**
      * Returns the total available COC balance for an employee:

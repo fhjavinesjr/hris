@@ -251,37 +251,253 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
             Optional<CompensatoryOvertimeCredit> optional = cocRepository.findById(cocId);
             if (optional.isEmpty()) return null;
             CompensatoryOvertimeCredit entity = optional.get();
-            entity.setDateFiled(dto.getDateFiled());
-            entity.setDateWorked(dto.getDateWorked());
-            entity.setHoursWorked(dto.getHoursWorked());
-            entity.setReason(dto.getReason());
-            entity.setWorkType(dto.getWorkType());
-            entity.setStatus(dto.getStatus() != null ? dto.getStatus() : entity.getStatus());
-            entity.setApprovedById(dto.getApprovedById());
-            entity.setApprovalRemarks(dto.getApprovalRemarks());
-            entity.setRecommendationStatus(dto.getRecommendationStatus());
-            entity.setRecommendedById(dto.getRecommendedById());
-            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
+
+            if (!"Pending".equalsIgnoreCase(entity.getStatus())
+                    || "Recommended".equalsIgnoreCase(entity.getRecommendationStatus())) {
+                throw new IllegalStateException(
+                        "Only a pending COC record that has not entered approval may be edited through the employee endpoint."
+                );
+            }
+
+            if (dto.getDateFiled() != null) entity.setDateFiled(dto.getDateFiled());
+            if (dto.getDateWorked() != null) entity.setDateWorked(dto.getDateWorked());
+            if (dto.getHoursWorked() != null) {
+                validatePositiveHours(dto.getHoursWorked());
+                entity.setHoursWorked(dto.getHoursWorked());
+            }
+            if (dto.getReason() != null) entity.setReason(dto.getReason());
+            if (dto.getWorkType() != null) entity.setWorkType(requireWorkType(dto.getWorkType()));
+
+            // Workflow state and audit fields are changed only through the
+            // recommend/approve/disapprove endpoints.
             entity.setUpdatedAt(LocalDateTime.now());
             entity = cocRepository.save(entity);
             return toDTO(entity);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("Error updating COC id {}: ", cocId, ex);
             return null;
         }
     }
 
+    /**
+     * HRM maintenance edit. Unlike the employee edit operation, this does not
+     * depend on Pending/Recommended/Approved/Disapproved/Cancelled state and
+     * applies the workflow values selected by the administrator.
+     */
+    @Transactional
+    @Override
+    public CompensatoryOvertimeCreditDTO administrativeUpdate(
+            Long cocId,
+            CompensatoryOvertimeCreditDTO dto) throws Exception {
+        Optional<CompensatoryOvertimeCredit> optional = cocRepository.findById(cocId);
+        if (optional.isEmpty()) return null;
+
+        CompensatoryOvertimeCredit entity = optional.get();
+        if (dto.getEmployeeId() != null && !dto.getEmployeeId().equals(entity.getEmployeeId())) {
+            throw new IllegalArgumentException("The COC record cannot be moved to another employee.");
+        }
+
+        LocalDate newDateFiled = dto.getDateFiled() != null
+                ? dto.getDateFiled()
+                : entity.getDateFiled();
+        LocalDate newDateWorked = dto.getDateWorked() != null
+                ? dto.getDateWorked()
+                : entity.getDateWorked();
+        Double newHoursWorked = dto.getHoursWorked() != null
+                ? dto.getHoursWorked()
+                : entity.getHoursWorked();
+        String newWorkType = dto.getWorkType() != null
+                ? requireWorkType(dto.getWorkType())
+                : entity.getWorkType();
+        String newStatus = normalizeFinalStatus(dto.getStatus(), entity.getStatus());
+
+        if (newDateFiled == null) throw new IllegalArgumentException("Date filed is required.");
+        if (newDateWorked == null) throw new IllegalArgumentException("Date worked is required.");
+        validatePositiveHours(newHoursWorked);
+
+        Long newOvertimeRequestId = dto.getOvertimeRequestId() != null
+                ? dto.getOvertimeRequestId()
+                : entity.getOvertimeRequestId();
+        if (newOvertimeRequestId != null
+                && !newOvertimeRequestId.equals(entity.getOvertimeRequestId())) {
+            OvertimeRequest authority = overtimeRequestRepository.findById(newOvertimeRequestId)
+                    .orElseThrow(() -> new IllegalArgumentException("Overtime/Duty Order authority not found."));
+            if (!entity.getEmployeeId().equals(authority.getEmployeeId())) {
+                throw new IllegalArgumentException("Authority does not belong to the COC employee.");
+            }
+            if (!"Approved".equalsIgnoreCase(authority.getStatus())) {
+                throw new IllegalArgumentException("The selected Overtime/Duty Order authority is not approved.");
+            }
+            if (cocRepository.existsByOvertimeRequestIdAndStatusNotAndCocIdNot(
+                    newOvertimeRequestId, "Disapproved", cocId)) {
+                throw new IllegalArgumentException("The selected authority is already used by another active COC record.");
+            }
+        }
+
+        validateAdministrativeCaps(entity, newDateWorked, newHoursWorked, newStatus);
+
+        entity.setDateFiled(newDateFiled);
+        entity.setDateWorked(newDateWorked);
+        entity.setHoursWorked(newHoursWorked);
+        entity.setReason(dto.getReason() != null ? dto.getReason() : entity.getReason());
+        entity.setWorkType(newWorkType);
+        entity.setOvertimeRequestId(newOvertimeRequestId);
+
+        if (dto.getActualHoursWorked() != null) {
+            if (!Double.isFinite(dto.getActualHoursWorked()) || dto.getActualHoursWorked() < 0) {
+                throw new IllegalArgumentException("Actual eligible DTR hours cannot be negative.");
+            }
+            entity.setActualHoursWorked(dto.getActualHoursWorked());
+        }
+        if (dto.getCocMultiplier() != null) {
+            if (!Double.isFinite(dto.getCocMultiplier()) || dto.getCocMultiplier() <= 0) {
+                throw new IllegalArgumentException("COC multiplier must be greater than zero.");
+            }
+            entity.setCocMultiplier(dto.getCocMultiplier());
+        }
+
+        applyAdministrativeWorkflow(entity, dto, newStatus);
+        entity.setUpdatedAt(LocalDateTime.now());
+        return toDTO(cocRepository.save(entity));
+    }
+
     @Transactional
     @Override
     public Boolean delete(Long cocId) throws Exception {
         try {
-            if (!cocRepository.existsById(cocId)) return false;
+            Optional<CompensatoryOvertimeCredit> optional = cocRepository.findById(cocId);
+            if (optional.isEmpty()) return false;
+            CompensatoryOvertimeCredit entity = optional.get();
+            if (!"Pending".equalsIgnoreCase(entity.getStatus())
+                    || "Recommended".equalsIgnoreCase(entity.getRecommendationStatus())) {
+                throw new IllegalStateException(
+                        "Only a pending COC record that has not entered approval may be deleted through the employee endpoint."
+                );
+            }
             cocRepository.deleteById(cocId);
             return true;
         } catch (Exception ex) {
             log.error("Error deleting COC id {}: ", cocId, ex);
             return false;
         }
+    }
+
+    @Transactional
+    @Override
+    public Boolean administrativeDelete(Long cocId) throws Exception {
+        if (!cocRepository.existsById(cocId)) return false;
+        cocRepository.deleteById(cocId);
+        return true;
+    }
+
+    private void validatePositiveHours(Double hours) {
+        if (hours == null || !Double.isFinite(hours) || hours <= 0) {
+            throw new IllegalArgumentException("COC hours to credit must be greater than zero.");
+        }
+    }
+
+    private String requireWorkType(String workType) {
+        String normalized = workType == null ? "" : workType.trim();
+        if (normalized.isEmpty()) throw new IllegalArgumentException("Work type is required.");
+        return normalized;
+    }
+
+    private void validateAdministrativeCaps(CompensatoryOvertimeCredit entity,
+                                            LocalDate newDateWorked,
+                                            double newHoursWorked,
+                                            String newStatus) throws Exception {
+        if (!"Approved".equalsIgnoreCase(newStatus)) return;
+
+        boolean existingCreditIsApproved = "Approved".equalsIgnoreCase(entity.getStatus());
+
+        LocalDate monthStart = newDateWorked.withDayOfMonth(1);
+        LocalDate monthEnd = newDateWorked.withDayOfMonth(newDateWorked.lengthOfMonth());
+        double approvedInTargetMonth = Optional.ofNullable(
+                cocRepository.sumApprovedHoursByEmployeeIdAndDateWorkedBetween(
+                        entity.getEmployeeId(), monthStart, monthEnd)
+        ).orElse(0.0);
+
+        LocalDate oldDateWorked = entity.getDateWorked();
+        boolean oldCreditIsInTargetMonth = oldDateWorked != null
+                && !oldDateWorked.isBefore(monthStart)
+                && !oldDateWorked.isAfter(monthEnd);
+        if (existingCreditIsApproved
+                && oldCreditIsInTargetMonth
+                && entity.getHoursWorked() != null) {
+            approvedInTargetMonth -= entity.getHoursWorked();
+        }
+        if (approvedInTargetMonth + newHoursWorked > 40.0) {
+            throw new IllegalArgumentException(
+                    "COC monthly earning limit would be exceeded by this administrative edit."
+            );
+        }
+
+        double projectedBalance = getAvailableBalance(entity.getEmployeeId())
+                - (existingCreditIsApproved && entity.getHoursWorked() != null
+                    ? entity.getHoursWorked()
+                    : 0.0)
+                + newHoursWorked;
+        if (projectedBalance > 120.0) {
+            throw new IllegalArgumentException(
+                    "The administrative edit would exceed the 120-hour maximum COC balance."
+            );
+        }
+    }
+
+    private void applyAdministrativeWorkflow(CompensatoryOvertimeCredit entity,
+                                             CompensatoryOvertimeCreditDTO dto,
+                                             String finalStatus) {
+        String previousStatus = entity.getStatus();
+        String recommendationStatus = normalizeRecommendationStatus(
+                dto.getRecommendationStatus(), entity.getRecommendationStatus());
+
+        entity.setStatus(finalStatus);
+        entity.setRecommendationStatus(recommendationStatus);
+        entity.setRecommendationRemarks(dto.getRecommendationRemarks());
+        entity.setApprovalRemarks(dto.getApprovalRemarks());
+
+        if ("Pending".equalsIgnoreCase(recommendationStatus)) {
+            entity.setRecommendedById(null);
+        } else {
+            entity.setRecommendedById(dto.getRecommendedById());
+        }
+
+        if ("Pending".equalsIgnoreCase(finalStatus)) {
+            entity.setApprovedById(null);
+            entity.setApprovedAt(null);
+        } else {
+            entity.setApprovedById(dto.getApprovedById());
+            if (entity.getApprovedAt() == null
+                    || previousStatus == null
+                    || !finalStatus.equalsIgnoreCase(previousStatus)) {
+                entity.setApprovedAt(LocalDateTime.now());
+            }
+        }
+    }
+
+    private String normalizeFinalStatus(String requested, String current) {
+        if (requested == null || requested.isBlank()) return current != null ? current : "Pending";
+        return switch (requested.trim().toLowerCase()) {
+            case "pending" -> "Pending";
+            case "approved" -> "Approved";
+            case "disapproved" -> "Disapproved";
+            case "cancel", "canceled", "cancelled" -> "Cancelled";
+            default -> throw new IllegalArgumentException("Unsupported final status: " + requested);
+        };
+    }
+
+    private String normalizeRecommendationStatus(String requested, String current) {
+        if (requested == null || requested.isBlank()) return current != null ? current : "Pending";
+        return switch (requested.trim().toLowerCase()) {
+            case "pending" -> "Pending";
+            case "approved" -> "Approved";
+            case "recommended" -> "Recommended";
+            case "disapproved" -> "Disapproved";
+            case "cancel", "canceled", "cancelled" -> "Cancelled";
+            default -> throw new IllegalArgumentException("Unsupported recommendation status: " + requested);
+        };
     }
 
     /**

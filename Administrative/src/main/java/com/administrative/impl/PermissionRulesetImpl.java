@@ -49,6 +49,7 @@ public class PermissionRulesetImpl implements PermissionRulesetService {
         entity.setPermissionName(dto.getPermissionName());
         entity.setIsAdministrator(dto.getIsAdministrator() != null ? dto.getIsAdministrator() : false);
         entity.setPermissionData(dto.getPermissionData());
+        entity.setPortalModuleAccess(dto.getPortalModuleAccess());
         return toDTO(repository.save(entity));
     }
 
@@ -66,7 +67,8 @@ public class PermissionRulesetImpl implements PermissionRulesetService {
                 entity.getPermissionId(),
                 entity.getPermissionName(),
                 entity.getIsAdministrator(),
-                entity.getPermissionData()
+                entity.getPermissionData(),
+                entity.getPortalModuleAccess()
         );
     }
 
@@ -74,7 +76,8 @@ public class PermissionRulesetImpl implements PermissionRulesetService {
         return new PermissionRuleset(
                 dto.getPermissionName(),
                 dto.getIsAdministrator() != null ? dto.getIsAdministrator() : false,
-                dto.getPermissionData()
+                dto.getPermissionData(),
+                dto.getPortalModuleAccess()
         );
     }
 }

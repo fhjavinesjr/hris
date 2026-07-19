@@ -60,6 +60,10 @@ public class OvertimeRequest implements Serializable {
     @Column(name = "workType", length = 50)
     private String workType;
 
+    /** Configured Time Shift followed for holiday/rest-day/day-off duty. */
+    @Column(name = "dutyShiftCode", length = 50)
+    private String dutyShiftCode;
+
     @Column(name = "authorityReference", length = 150)
     private String authorityReference;
 
@@ -162,6 +166,8 @@ public class OvertimeRequest implements Serializable {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public String getWorkType() { return workType; }
     public void setWorkType(String workType) { this.workType = workType; }
+    public String getDutyShiftCode() { return dutyShiftCode; }
+    public void setDutyShiftCode(String dutyShiftCode) { this.dutyShiftCode = dutyShiftCode; }
     public String getAuthorityReference() { return authorityReference; }
     public void setAuthorityReference(String authorityReference) { this.authorityReference = authorityReference; }
     public Boolean getEmergencyPostFiling() { return emergencyPostFiling; }

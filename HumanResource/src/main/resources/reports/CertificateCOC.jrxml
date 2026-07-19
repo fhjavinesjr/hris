@@ -3,6 +3,7 @@
 	<property name="ireport.zoom" value="1.9487171000000019"/>
 	<property name="ireport.x" value="334"/>
 	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
 	<parameter name="webAppPath" class="java.lang.String"/>
 	<parameter name="logoleft" class="java.lang.Object"/>
 	<parameter name="logoright" class="java.lang.Object"/>
@@ -198,28 +199,36 @@ WHERE c.cocId = $P{COC_ID}
 		</element>
 		<element kind="textField" uuid="70ecdf1f-83ca-4a7b-9573-07342abec402" x="131" y="112" width="241" height="14" blankWhenNull="true">
 			<expression><![CDATA[$F{authorityReference}]]></expression>
-			<box><bottomPen lineWidth="1.0"/></box>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
 		</element>
 		<element kind="staticText" uuid="730f70f5-35e0-4f73-bcda-f64b1a7ca803" x="31" y="130" width="100" height="14">
 			<text><![CDATA[Work Type:]]></text>
 		</element>
 		<element kind="textField" uuid="ac8fa389-574b-4ed4-a510-a1ef151a9004" x="131" y="130" width="241" height="14" blankWhenNull="true">
 			<expression><![CDATA[$F{workType} == null ? "" : $F{workType}.replace("_", " ")]]></expression>
-			<box><bottomPen lineWidth="1.0"/></box>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
 		</element>
 		<element kind="staticText" uuid="7ebf758a-eb17-460b-a8f0-d09fc5e22d05" x="31" y="148" width="100" height="14">
 			<text><![CDATA[Date Worked:]]></text>
 		</element>
 		<element kind="textField" uuid="61a2c862-edab-435a-b46b-25cb5c5c0f06" x="131" y="148" width="110" height="14" pattern="MMMMM dd, yyyy" blankWhenNull="true">
 			<expression><![CDATA[$F{dateWorked}]]></expression>
-			<box><bottomPen lineWidth="1.0"/></box>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
 		</element>
 		<element kind="staticText" uuid="44603212-c887-465b-b4fd-d8701a315507" x="31" y="166" width="100" height="14">
 			<text><![CDATA[COC Earned:]]></text>
 		</element>
 		<element kind="textField" uuid="78e7cab6-a033-4fc6-8131-7f63c0c57608" x="131" y="166" width="110" height="14" pattern="#,##0.00" blankWhenNull="true">
 			<expression><![CDATA[$F{cocHoursEarned}]]></expression>
-			<box><bottomPen lineWidth="1.0"/></box>
+			<box>
+				<bottomPen lineWidth="1.0"/>
+			</box>
 		</element>
 		<element kind="textField" uuid="a3d6b3dd-12cc-414c-87ab-2d5d5cb37709" x="245" y="166" width="127" height="14" blankWhenNull="true">
 			<expression><![CDATA[" hours (" + String.format("%.2f", $F{actualHoursWorked}) + " × " + String.format("%.2f", $F{cocMultiplier}) + ")"]]></expression>

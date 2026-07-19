@@ -56,14 +56,22 @@ DailyBase AS (
                  AND ISNULL(ws.isDayOff, 0) = 0
                  AND la.leaveType IS NULL
                  AND ob.officialEngagementApplicationId IS NULL
-                 AND cto.ctoId IS NULL THEN 480
+                 AND cto.ctoId IS NULL
+                 AND tc.timeCorrectionId IS NULL
+                 AND ps.passSlipId IS NULL THEN 480
             ELSE 0
         END AS absentMin,
         CASE
             WHEN d.dtr_daily_id IS NULL AND ISNULL(ws.isDayOff, 0) = 1 THEN 'REST DAY'
             WHEN d.dtr_daily_id IS NULL AND la.leaveType IS NOT NULL THEN la.leaveType
-            WHEN d.dtr_daily_id IS NULL AND ob.officialEngagementApplicationId IS NOT NULL THEN 'OB'
+            WHEN d.dtr_daily_id IS NULL AND ob.officialEngagementApplicationId IS NOT NULL THEN
+                CASE
+                    WHEN UPPER(LTRIM(RTRIM(ISNULL(ob.officialType, '')))) = 'OFFICIAL TIME' THEN 'OT'
+                    ELSE 'OB'
+                END
             WHEN d.dtr_daily_id IS NULL AND cto.ctoId IS NOT NULL THEN 'CTO'
+            WHEN d.dtr_daily_id IS NULL AND tc.timeCorrectionId IS NOT NULL THEN 'TIME CORRECTED'
+            WHEN d.dtr_daily_id IS NULL AND ps.passSlipId IS NOT NULL THEN 'PASS SLIP'
             WHEN d.dtr_daily_id IS NULL THEN 'ABSENT'
             ELSE ISNULL(d.attendance_status, '')
         END AS remarks,
@@ -71,13 +79,25 @@ DailyBase AS (
         CASE WHEN ISNULL(ws.isDayOff, 0) = 1 THEN 'REST DAY' ELSE '' END AS dayOff,
         CAST((ISNULL(d.total_late_minutes, 0) + ISNULL(d.total_undertime_minutes, 0)) / 60 AS int) AS underMinHours,
         ISNULL(la.leaveType, '') AS leaveType,
-        CASE WHEN ob.officialEngagementApplicationId IS NULL THEN '' ELSE 'OB' END AS ob,
+        CASE
+            WHEN ob.officialEngagementApplicationId IS NULL THEN ''
+            WHEN UPPER(LTRIM(RTRIM(ISNULL(ob.officialType, '')))) = 'OFFICIAL TIME' THEN 'OT'
+            ELSE 'OB'
+        END AS ob,
         CASE WHEN otx.overtimeRequestId IS NULL THEN '' ELSE 'OT' END AS ot,
         CASE WHEN cto.ctoId IS NULL THEN '' ELSE 'CTO' END AS cto,
         CASE WHEN ob.officialEngagementApplicationId IS NULL THEN NULL ELSE dr.work_date END AS obDate,
         CASE WHEN otx.overtimeRequestId IS NULL THEN NULL ELSE dr.work_date END AS otDate,
         CAST(NULL AS time) AS nextDayholder,
         CAST(0 AS bit) AS isForNextDay,
+        ps.passSlipId,
+        CAST(ps.departureTime AS time) AS psDepartureTime,
+        CAST(ps.arrivalTime AS time) AS psArrivalTime,
+        tc.timeCorrectionId,
+        CAST(tc.correctedTimeIn AS time) AS tcTimeIn,
+        CAST(tc.correctedBreakOut AS time) AS tcBreakOut,
+        CAST(tc.correctedBreakIn AS time) AS tcBreakIn,
+        CAST(tc.correctedTimeOut AS time) AS tcTimeOut,
         d.dtr_daily_id,
         ei.employeeId,
         ei.employeeNo
@@ -103,6 +123,30 @@ DailyBase AS (
     LEFT JOIN official_engagement_application ob ON ob.employeeId = ei.employeeId AND ob.status = 'Approved' AND dr.work_date BETWEEN ob.startDate AND ob.endDate
     LEFT JOIN overtime_request otx ON otx.employeeId = ei.employeeId AND otx.status = 'Approved' AND dr.work_date = CAST(otx.dateTimeFrom AS date)
     LEFT JOIN compensatory_time_off cto ON cto.employeeId = ei.employeeId AND cto.status = 'Approved' AND dr.work_date = cto.dateOfOffset
+    OUTER APPLY (
+        SELECT TOP 1
+            ps2.passSlipId,
+            ps2.departureTime,
+            ps2.arrivalTime
+        FROM pass_slip ps2
+        WHERE ps2.employeeId = ei.employeeId
+          AND ps2.status = 'Approved'
+          AND ps2.passSlipDate = dr.work_date
+        ORDER BY ps2.passSlipId DESC
+    ) ps
+    OUTER APPLY (
+        SELECT TOP 1
+            tc2.timeCorrectionId,
+            tc2.correctedTimeIn,
+            tc2.correctedBreakOut,
+            tc2.correctedBreakIn,
+            tc2.correctedTimeOut
+        FROM time_correction tc2
+        WHERE tc2.employeeId = ei.employeeId
+          AND tc2.status = 'Approved'
+          AND tc2.workDate = dr.work_date
+        ORDER BY tc2.timeCorrectionId DESC
+    ) tc
     OUTER APPLY (
         SELECT TOP 1 la2.leaveType
         FROM leave_application la2
@@ -236,6 +280,8 @@ WHERE NOT (
           AND (dx.employee_id = CAST(b.employeeId AS varchar(50)) OR dx.employee_id = b.employeeNo OR dx.employee_id = $P{EMPLOYEE_ID})
     )
 )
+AND NOT (b.passSlipId IS NOT NULL AND s.segmentNo IS NULL)
+AND b.timeCorrectionId IS NULL
 
 UNION ALL
 
@@ -273,6 +319,101 @@ SELECT
 FROM DailyBase b
 INNER JOIN Seg s ON s.dtr_daily_id = b.dtr_daily_id AND s.reportDate <> b.dtrDate
 WHERE s.reportDate BETWEEN $P{fromDate} AND $P{toDate}
+  AND NOT EXISTS (
+      SELECT 1
+      FROM time_correction tcx
+      WHERE tcx.employeeId = b.employeeId
+        AND tcx.status = 'Approved'
+        AND tcx.workDate = s.reportDate
+  )
+
+UNION ALL
+
+-- An approved Time Correction is authoritative for the four DTR punches.
+-- It replaces biometric/previous segment values for the corrected work date.
+SELECT
+    CAST(b.dtrDate AS date) AS dtrDate,
+    b.fullname,
+    b.tcTimeIn AS in1st,
+    b.tcBreakOut AS out1st,
+    b.tcBreakIn AS in2nd,
+    b.tcTimeOut AS out2nd,
+    b.regMin,
+    b.excessMin,
+    b.ndApproved,
+    b.otReg,
+    b.otExcess,
+    b.otRegApproved,
+    b.otExcessApproved,
+    b.lateMin,
+    b.underMin,
+    0 AS absentMin,
+    '' AS ob,
+    '' AS ot,
+    CAST(NULL AS date) AS obDate,
+    CAST(NULL AS date) AS otDate,
+    '' AS dayOff,
+    b.underMinHours,
+    'TIME CORRECTED' AS remarks,
+    '' AS leaveType,
+    CAST(NULL AS time) AS nextDayholder,
+    CAST(0 AS bit) AS isForNextDay,
+    '' AS cto,
+    DATENAME(WEEKDAY, b.dtrDate) AS dayDescription,
+    0 AS sortSegmentNo,
+    0 AS sortSplitOrder
+FROM DailyBase b
+WHERE b.timeCorrectionId IS NOT NULL
+
+UNION ALL
+
+-- Approved Pass Slip movements are separate report rows so they never
+-- overwrite biometric DTR segments recorded on the same date.
+SELECT
+    CAST(b.dtrDate AS date) AS dtrDate,
+    b.fullname,
+    CASE
+        WHEN b.psArrivalTime < CAST('12:00:00' AS time) THEN b.psArrivalTime
+        ELSE CAST(NULL AS time)
+    END AS in1st,
+    CASE
+        WHEN b.psDepartureTime < CAST('12:00:00' AS time) THEN b.psDepartureTime
+        ELSE CAST(NULL AS time)
+    END AS out1st,
+    CASE
+        WHEN b.psArrivalTime >= CAST('12:00:00' AS time) THEN b.psArrivalTime
+        ELSE CAST(NULL AS time)
+    END AS in2nd,
+    CASE
+        WHEN b.psDepartureTime >= CAST('12:00:00' AS time) THEN b.psDepartureTime
+        ELSE CAST(NULL AS time)
+    END AS out2nd,
+    0 AS regMin,
+    0 AS excessMin,
+    0.0 AS ndApproved,
+    0.0 AS otReg,
+    0.0 AS otExcess,
+    0.0 AS otRegApproved,
+    0.0 AS otExcessApproved,
+    0 AS lateMin,
+    0 AS underMin,
+    0 AS absentMin,
+    '' AS ob,
+    '' AS ot,
+    CAST(NULL AS date) AS obDate,
+    CAST(NULL AS date) AS otDate,
+    '' AS dayOff,
+    0 AS underMinHours,
+    'PASS SLIP' AS remarks,
+    '' AS leaveType,
+    CAST(NULL AS time) AS nextDayholder,
+    CAST(0 AS bit) AS isForNextDay,
+    '' AS cto,
+    DATENAME(WEEKDAY, b.dtrDate) AS dayDescription,
+    9999 AS sortSegmentNo,
+    0 AS sortSplitOrder
+FROM DailyBase b
+WHERE b.passSlipId IS NOT NULL
 ORDER BY dtrDate, sortSegmentNo, sortSplitOrder
 OPTION (MAXRECURSION 366)
 ]]></query>
@@ -956,16 +1097,6 @@ daily at the time of arrival and departure from office.]]></text>
 					<rightPen lineWidth="1.0"/>
 				</box>
 			</element>
-			<element kind="textField" uuid="020b924c-de1c-4fbd-b066-cc85528b1fda" mode="Opaque" x="378" y="0" width="40" height="11" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" pdfFontName="Helvetica-Bold" textAdjust="ScaleFont" blankWhenNull="true" printWhenDetailOverflows="false" hTextAlign="Center" vTextAlign="Middle">
-				<printWhenExpression><![CDATA[!$F{ot}.isEmpty()]]></printWhenExpression>
-				<expression><![CDATA[$F{otDate} != null ? $F{ot} : ""]]></expression>
-				<box leftPadding="0">
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-			</element>
 			<element kind="textField" uuid="a65b36f3-3537-43e5-a44a-43a8837a119f" mode="Opaque" x="378" y="0" width="40" height="11" forecolor="#000000" backcolor="#FFFFFF" markup="none" fontSize="6.0" pdfFontName="Helvetica-Bold" blankWhenNull="true" hTextAlign="Center" vTextAlign="Middle">
 				<printWhenExpression><![CDATA[!$F{ob}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[$F{obDate} != null ? $F{ob} : ""]]></expression>
@@ -1000,16 +1131,6 @@ daily at the time of arrival and departure from office.]]></text>
 				<printWhenExpression><![CDATA[!$F{dayOff}.isEmpty()]]></printWhenExpression>
 				<expression><![CDATA[$F{dayOff}]]></expression>
 				<box topPadding="2" leftPadding="5">
-					<topPen lineWidth="1.0"/>
-					<leftPen lineWidth="1.0"/>
-					<bottomPen lineWidth="1.0"/>
-					<rightPen lineWidth="1.0"/>
-				</box>
-			</element>
-			<element kind="textField" uuid="edc27589-2326-48ab-8c68-d62c22b3c2ff" mode="Opaque" x="56" y="0" width="40" height="11" forecolor="#000000" backcolor="#FFFFFF" fontSize="6.0" pdfFontName="Helvetica-Bold" textAdjust="ScaleFont" blankWhenNull="true" printWhenDetailOverflows="false" hTextAlign="Center" vTextAlign="Middle">
-				<printWhenExpression><![CDATA[!$F{ot}.isEmpty()]]></printWhenExpression>
-				<expression><![CDATA[$F{otDate} != null ? $F{ot} : ""]]></expression>
-				<box leftPadding="0">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>

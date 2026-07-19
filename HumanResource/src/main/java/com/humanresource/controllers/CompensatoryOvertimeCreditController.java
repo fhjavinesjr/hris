@@ -117,6 +117,23 @@ public class CompensatoryOvertimeCreditController {
         return ResponseEntity.ok(new MetadataResponse(cocId, "COC updated successfully"));
     }
 
+    /**
+     * HRM maintenance edit. The service updates COC business values regardless
+     * of status while preserving the existing recommendation/final-decision
+     * audit trail. Protect this endpoint with the HRM edit permission policy.
+     */
+    @PutMapping("/coc/hrm-update/{cocId}")
+    public ResponseEntity<MetadataResponse> administrativeUpdate(
+            @PathVariable Long cocId,
+            @RequestBody CompensatoryOvertimeCreditDTO dto) throws Exception {
+        CompensatoryOvertimeCreditDTO result = cocService.administrativeUpdate(cocId, dto);
+        if (result == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MetadataResponse("COC record not found"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(cocId, "COC record administratively updated successfully"));
+    }
+
     @DeleteMapping("/coc/delete/{cocId}")
     public ResponseEntity<MetadataResponse> delete(@PathVariable Long cocId) throws Exception {
         Boolean deleted = cocService.delete(cocId);
@@ -125,5 +142,20 @@ public class CompensatoryOvertimeCreditController {
                     .body(new MetadataResponse("Failed to delete COC"));
         }
         return ResponseEntity.ok(new MetadataResponse(cocId, "COC deleted successfully"));
+    }
+
+    /**
+     * HRM maintenance delete. This is deliberately independent of Pending,
+     * Recommended, Approved, or Disapproved status. Protect it with the HRM
+     * delete permission policy.
+     */
+    @DeleteMapping("/coc/hrm-delete/{cocId}")
+    public ResponseEntity<MetadataResponse> administrativeDelete(@PathVariable Long cocId) throws Exception {
+        Boolean deleted = cocService.administrativeDelete(cocId);
+        if (!deleted) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MetadataResponse("COC record not found or could not be deleted"));
+        }
+        return ResponseEntity.ok(new MetadataResponse(cocId, "COC record administratively deleted successfully"));
     }
 }

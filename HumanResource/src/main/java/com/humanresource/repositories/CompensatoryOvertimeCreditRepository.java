@@ -24,6 +24,10 @@ public interface CompensatoryOvertimeCreditRepository extends JpaRepository<Comp
      */
     boolean existsByOvertimeRequestIdAndStatusNot(Long overtimeRequestId, String status);
 
+    boolean existsByOvertimeRequestIdAndStatusNotAndCocIdNot(Long overtimeRequestId,
+                                                              String status,
+                                                              Long cocId);
+
     boolean existsByEmployeeIdAndDateWorkedAndStatusNot(Long employeeId, LocalDate dateWorked, String status);
 
     /**
@@ -38,4 +42,3 @@ public interface CompensatoryOvertimeCreditRepository extends JpaRepository<Comp
            "WHERE c.employeeId = :employeeId AND c.status = 'Approved' AND c.dateWorked BETWEEN :from AND :to")
     Double sumApprovedHoursByEmployeeIdAndDateWorkedBetween(@Param("employeeId") Long employeeId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }
-

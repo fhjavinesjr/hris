@@ -6,6 +6,7 @@ public class PermissionRulesetDTO {
     private String permissionName;
     private Boolean isAdministrator;
     private String permissionData; // JSON string of module permissions
+    private String portalModuleAccess; // JSON string of top-level systems shown in Employee Portal
 
     public PermissionRulesetDTO() {}
 
@@ -14,6 +15,12 @@ public class PermissionRulesetDTO {
         this.permissionName = permissionName;
         this.isAdministrator = isAdministrator;
         this.permissionData = permissionData;
+    }
+
+    public PermissionRulesetDTO(Long permissionId, String permissionName, Boolean isAdministrator,
+                                String permissionData, String portalModuleAccess) {
+        this(permissionId, permissionName, isAdministrator, permissionData);
+        this.portalModuleAccess = portalModuleAccess;
     }
 
     public Long getPermissionId() { return permissionId; }
@@ -27,4 +34,7 @@ public class PermissionRulesetDTO {
 
     public String getPermissionData() { return permissionData; }
     public void setPermissionData(String permissionData) { this.permissionData = permissionData; }
+
+    public String getPortalModuleAccess() { return portalModuleAccess; }
+    public void setPortalModuleAccess(String portalModuleAccess) { this.portalModuleAccess = portalModuleAccess; }
 }

@@ -22,6 +22,7 @@ public class OvertimeRequestDTO implements Serializable {
 
     private Double totalHours;
     private String workType;
+    private String dutyShiftCode;
     private String authorityReference;
     private Boolean emergencyPostFiling;
     private String emergencyJustification;
@@ -97,6 +98,8 @@ public class OvertimeRequestDTO implements Serializable {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public String getWorkType() { return workType; }
     public void setWorkType(String workType) { this.workType = workType; }
+    public String getDutyShiftCode() { return dutyShiftCode; }
+    public void setDutyShiftCode(String dutyShiftCode) { this.dutyShiftCode = dutyShiftCode; }
     public String getAuthorityReference() { return authorityReference; }
     public void setAuthorityReference(String authorityReference) { this.authorityReference = authorityReference; }
     public Boolean getEmergencyPostFiling() { return emergencyPostFiling; }

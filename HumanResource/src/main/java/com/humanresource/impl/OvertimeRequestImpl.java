@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 public class OvertimeRequestImpl implements OvertimeRequestService {
 
     private static final Logger log = LoggerFactory.getLogger(OvertimeRequestImpl.class);
-
     private final OvertimeRequestRepository overtimeRequestRepository;
     private final DataSource dataSource;
 
@@ -50,6 +49,7 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
         dto.setDateTimeTo(e.getDateTimeTo());
         dto.setTotalHours(e.getTotalHours());
         dto.setWorkType(e.getWorkType());
+        dto.setDutyShiftCode(e.getDutyShiftCode());
         dto.setAuthorityReference(e.getAuthorityReference());
         dto.setEmergencyPostFiling(e.getEmergencyPostFiling());
         dto.setEmergencyJustification(e.getEmergencyJustification());
@@ -71,30 +71,41 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
     @Transactional
     @Override
     public OvertimeRequestDTO create(OvertimeRequestDTO dto) throws Exception {
+        return createInternal(dto, false);
+    }
+
+    @Transactional
+    @Override
+    public OvertimeRequestDTO createEmergencyOverride(OvertimeRequestDTO dto) throws Exception {
+        return createInternal(dto, true);
+    }
+
+    private OvertimeRequestDTO createInternal(OvertimeRequestDTO dto,
+                                              boolean emergencyOverride) throws Exception {
         try {
             if (dto.getEmployeeId() == null || dto.getDateTimeFrom() == null || dto.getDateTimeTo() == null) {
                 log.warn("OvertimeRequest creation rejected: missing required fields");
-                return null;
+                throw new IllegalArgumentException("Employee and inclusive date/time are required.");
             }
             if (!dto.getDateTimeTo().isAfter(dto.getDateTimeFrom())) {
-                log.warn("OvertimeRequest creation rejected: dateTimeTo must be after dateTimeFrom");
-                return null;
+                throw new IllegalArgumentException("Date/time To must be after Date/time From.");
             }
 
-            boolean emergency = Boolean.TRUE.equals(dto.getEmergencyPostFiling());
-            if (dto.getDateTimeFrom().isBefore(LocalDateTime.now()) && !emergency) {
-                throw new IllegalArgumentException("Overtime/Holiday Duty authority must be filed before the scheduled work. Use Emergency/Post-filing only for duly justified exceptional cases.");
+            boolean employeePostFiling = Boolean.TRUE.equals(dto.getEmergencyPostFiling());
+            boolean postFilingAllowed = emergencyOverride || employeePostFiling;
+            if (dto.getDateTimeFrom().isBefore(LocalDateTime.now()) && !postFilingAllowed) {
+                throw new IllegalArgumentException("Overtime/Holiday Duty authority must be filed before the scheduled work. For duly justified work already rendered, select Emergency/Post-filing authority and provide the justification.");
             }
-            if (emergency && (dto.getEmergencyJustification() == null || dto.getEmergencyJustification().isBlank())) {
+            if (postFilingAllowed && (dto.getEmergencyJustification() == null || dto.getEmergencyJustification().isBlank())) {
                 throw new IllegalArgumentException("Emergency/post-filing justification is required.");
             }
-            int breakMinutes = dto.getBreakMinutes() != null ? Math.max(0, dto.getBreakMinutes()) : 0;
-            double totalHours = Duration.between(dto.getDateTimeFrom(), dto.getDateTimeTo()).toMinutes() / 60.0;
-            totalHours = Math.round(totalHours * 100.0) / 100.0;
-            double netAuthorizedHours = Math.round(Math.max(0, totalHours - (breakMinutes / 60.0)) * 100.0) / 100.0;
+
+            long totalMinutes = Duration.between(dto.getDateTimeFrom(), dto.getDateTimeTo()).toMinutes();
+            int breakMinutes = validateManualBreakMinutes(dto.getBreakMinutes(), totalMinutes);
+            double totalHours = roundHours(totalMinutes);
+            double netAuthorizedHours = roundHours(totalMinutes - breakMinutes);
             if (netAuthorizedHours <= 0) {
-                log.warn("OvertimeRequest creation rejected: computed totalHours is zero or negative");
-                return null;
+                throw new IllegalArgumentException("Computed overtime duration must be greater than zero.");
             }
 
             OvertimeRequest entity = new OvertimeRequest();
@@ -103,19 +114,22 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
             entity.setDateTimeFrom(dto.getDateTimeFrom());
             entity.setDateTimeTo(dto.getDateTimeTo());
             entity.setTotalHours(totalHours);
-            entity.setWorkType(dto.getWorkType() != null ? dto.getWorkType() : "REGULAR_OVERTIME");
+            String workType = dto.getWorkType() != null ? dto.getWorkType() : "REGULAR_OVERTIME";
+            entity.setWorkType(workType);
+            entity.setDutyShiftCode(validateDutyShiftCode(workType, dto.getDutyShiftCode()));
             entity.setAuthorityReference(dto.getAuthorityReference());
-            entity.setEmergencyPostFiling(emergency);
-            entity.setEmergencyJustification(dto.getEmergencyJustification());
+            entity.setEmergencyPostFiling(postFilingAllowed);
+            entity.setEmergencyJustification(postFilingAllowed ? dto.getEmergencyJustification().trim() : null);
             entity.setBreakMinutes(breakMinutes);
             entity.setNetAuthorizedHours(netAuthorizedHours);
             entity.setPurpose(dto.getPurpose());
-            entity.setStatus(dto.getStatus() != null ? dto.getStatus() : "Pending");
-            entity.setApprovedById(dto.getApprovedById());
-            entity.setApprovalRemarks(dto.getApprovalRemarks());
-            entity.setRecommendationStatus(dto.getRecommendationStatus());
-            entity.setRecommendedById(dto.getRecommendedById());
-            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
+            entity.setStatus(emergencyOverride && dto.getStatus() != null ? dto.getStatus() : "Pending");
+            entity.setApprovedById(emergencyOverride ? dto.getApprovedById() : null);
+            entity.setApprovedAt(emergencyOverride && dto.getApprovedById() != null ? LocalDateTime.now() : null);
+            entity.setApprovalRemarks(emergencyOverride ? dto.getApprovalRemarks() : null);
+            entity.setRecommendationStatus(emergencyOverride ? dto.getRecommendationStatus() : "Pending");
+            entity.setRecommendedById(emergencyOverride ? dto.getRecommendedById() : null);
+            entity.setRecommendationRemarks(emergencyOverride ? dto.getRecommendationRemarks() : null);
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
 
@@ -127,6 +141,29 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
             log.error("Error creating OvertimeRequest for employeeId {}: ", dto.getEmployeeId(), ex);
             return null;
         }
+    }
+
+    private int validateManualBreakMinutes(Integer requestedBreakMinutes, long totalMinutes) {
+        int breakMinutes = requestedBreakMinutes == null ? 0 : requestedBreakMinutes;
+        if (breakMinutes < 0 || breakMinutes >= totalMinutes) {
+            throw new IllegalArgumentException("Break minutes must be zero or greater and less than the requested duration.");
+        }
+        return breakMinutes;
+    }
+
+    private String validateDutyShiftCode(String workType, String dutyShiftCode) {
+        boolean specialDuty = "HOLIDAY_DUTY".equalsIgnoreCase(workType)
+                || "DAY_OFF_DUTY".equalsIgnoreCase(workType)
+                || "REST_DAY_DUTY".equalsIgnoreCase(workType);
+        String normalized = dutyShiftCode == null ? null : dutyShiftCode.trim();
+        if (specialDuty && (normalized == null || normalized.isEmpty())) {
+            throw new IllegalArgumentException("A configured Duty Shift is required for Holiday, Rest-Day, or Scheduled Day-Off duty.");
+        }
+        return specialDuty ? normalized : null;
+    }
+
+    private double roundHours(long minutes) {
+        return Math.round((minutes / 60.0) * 100.0) / 100.0;
     }
 
     @Override
@@ -167,39 +204,52 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
 
     @Transactional
     @Override
-    public OvertimeRequestDTO recommend(Long overtimeRequestId, Long recommendedById, String remarks) throws Exception {
-        try {
-            Optional<OvertimeRequest> optional = overtimeRequestRepository.findById(overtimeRequestId);
-            if (optional.isEmpty()) return null;
-            OvertimeRequest entity = optional.get();
-            entity.setRecommendationStatus("Recommended");
-            entity.setRecommendedById(recommendedById);
-            entity.setRecommendationRemarks(remarks);
-            entity.setUpdatedAt(LocalDateTime.now());
-            entity = overtimeRequestRepository.save(entity);
-            return toDTO(entity);
-        } catch (Exception ex) {
-            log.error("Error recommending OvertimeRequest for id {}: ", overtimeRequestId, ex);
-            return null;
+    public OvertimeRequestDTO recommend(Long overtimeRequestId, Long recommendedById, String remarks,
+                                        String dutyShiftCode, Integer requestedBreakMinutes) throws Exception {
+        OvertimeRequest entity = overtimeRequestRepository.findById(overtimeRequestId)
+                .orElseThrow(() -> new IllegalArgumentException("Overtime request not found."));
+        if (!"Pending".equalsIgnoreCase(entity.getStatus())) {
+            throw new IllegalStateException("Only pending overtime requests may be recommended.");
         }
+        if (recommendedById == null) {
+            throw new IllegalArgumentException("The IS recommending officer is required.");
+        }
+        entity.setDutyShiftCode(validateDutyShiftCode(
+                entity.getWorkType(),
+                dutyShiftCode != null ? dutyShiftCode : entity.getDutyShiftCode()
+        ));
+        if (requestedBreakMinutes != null) {
+            long totalMinutes = Duration.between(entity.getDateTimeFrom(), entity.getDateTimeTo()).toMinutes();
+            int breakMinutes = validateManualBreakMinutes(requestedBreakMinutes, totalMinutes);
+            entity.setBreakMinutes(breakMinutes);
+            entity.setNetAuthorizedHours(roundHours(totalMinutes - breakMinutes));
+        }
+        entity.setRecommendationStatus("Recommended");
+        entity.setRecommendedById(recommendedById);
+        entity.setRecommendationRemarks(remarks);
+        entity.setUpdatedAt(LocalDateTime.now());
+        return toDTO(overtimeRequestRepository.save(entity));
     }
 
     private OvertimeRequestDTO updateStatus(Long id, String newStatus, Long approvedById, String remarks) {
-        try {
-            Optional<OvertimeRequest> optional = overtimeRequestRepository.findById(id);
-            if (optional.isEmpty()) return null;
-            OvertimeRequest entity = optional.get();
-            entity.setStatus(newStatus);
-            entity.setApprovedById(approvedById);
-            entity.setApprovedAt(LocalDateTime.now());
-            entity.setApprovalRemarks(remarks);
-            entity.setUpdatedAt(LocalDateTime.now());
-            entity = overtimeRequestRepository.save(entity);
-            return toDTO(entity);
-        } catch (Exception ex) {
-            log.error("Error updating OvertimeRequest status for id {}: ", id, ex);
-            return null;
+        OvertimeRequest entity = overtimeRequestRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Overtime request not found."));
+        if (!"Recommended".equalsIgnoreCase(entity.getRecommendationStatus())) {
+            throw new IllegalStateException("The IS recommendation must be completed before the final decision.");
         }
+        entity.setDutyShiftCode(validateDutyShiftCode(entity.getWorkType(), entity.getDutyShiftCode()));
+        if (!"Pending".equalsIgnoreCase(entity.getStatus())) {
+            throw new IllegalStateException("A final decision has already been recorded for this overtime request.");
+        }
+        if (approvedById == null) {
+            throw new IllegalArgumentException("The final approving officer is required.");
+        }
+        entity.setStatus(newStatus);
+        entity.setApprovedById(approvedById);
+        entity.setApprovedAt(LocalDateTime.now());
+        entity.setApprovalRemarks(remarks);
+        entity.setUpdatedAt(LocalDateTime.now());
+        return toDTO(overtimeRequestRepository.save(entity));
     }
 
     @Transactional
@@ -209,36 +259,119 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
             Optional<OvertimeRequest> optional = overtimeRequestRepository.findById(overtimeRequestId);
             if (optional.isEmpty()) return null;
             OvertimeRequest entity = optional.get();
-            if (dto.getDateFiled() != null) entity.setDateFiled(dto.getDateFiled());
+
+            if (!"Pending".equalsIgnoreCase(entity.getStatus())
+                    || "Recommended".equalsIgnoreCase(entity.getRecommendationStatus())) {
+                throw new IllegalStateException("Only a pending overtime request that has not entered approval may be edited.");
+            }
+
             if (dto.getDateTimeFrom() != null) entity.setDateTimeFrom(dto.getDateTimeFrom());
             if (dto.getDateTimeTo() != null) entity.setDateTimeTo(dto.getDateTimeTo());
+            if (entity.getDateTimeFrom() == null || entity.getDateTimeTo() == null
+                    || !entity.getDateTimeTo().isAfter(entity.getDateTimeFrom())) {
+                throw new IllegalArgumentException("Date/time To must be after Date/time From.");
+            }
+            boolean postFilingRequested = dto.getEmergencyPostFiling() != null
+                    ? Boolean.TRUE.equals(dto.getEmergencyPostFiling())
+                    : Boolean.TRUE.equals(entity.getEmergencyPostFiling());
+            if (!postFilingRequested && entity.getDateTimeFrom().isBefore(LocalDateTime.now())) {
+                throw new IllegalArgumentException("A normal overtime request cannot be changed to a past start time.");
+            }
+            if (postFilingRequested
+                    && (dto.getEmergencyJustification() == null || dto.getEmergencyJustification().isBlank())
+                    && (entity.getEmergencyJustification() == null || entity.getEmergencyJustification().isBlank())) {
+                throw new IllegalArgumentException("Emergency/post-filing justification is required.");
+            }
+
             if (dto.getPurpose() != null) entity.setPurpose(dto.getPurpose());
             if (dto.getWorkType() != null) entity.setWorkType(dto.getWorkType());
+            entity.setDutyShiftCode(validateDutyShiftCode(entity.getWorkType(), dto.getDutyShiftCode()));
             if (dto.getAuthorityReference() != null) entity.setAuthorityReference(dto.getAuthorityReference());
-            if (dto.getEmergencyPostFiling() != null) entity.setEmergencyPostFiling(dto.getEmergencyPostFiling());
-            if (dto.getEmergencyJustification() != null) entity.setEmergencyJustification(dto.getEmergencyJustification());
-            if (dto.getBreakMinutes() != null) entity.setBreakMinutes(Math.max(0, dto.getBreakMinutes()));
-            if (dto.getDateTimeFrom() != null && dto.getDateTimeTo() != null) {
-                double raw = Duration.between(dto.getDateTimeFrom(), dto.getDateTimeTo()).toMinutes() / 60.0;
-                int brk = entity.getBreakMinutes() != null ? entity.getBreakMinutes() : 0;
-                entity.setNetAuthorizedHours(Math.round(Math.max(0, raw - brk / 60.0) * 100.0) / 100.0);
-            }
-            if (dto.getDateTimeFrom() != null && dto.getDateTimeTo() != null
-                    && dto.getDateTimeTo().isAfter(dto.getDateTimeFrom())) {
-                double totalHours = Duration.between(dto.getDateTimeFrom(), dto.getDateTimeTo()).toMinutes() / 60.0;
-                entity.setTotalHours(Math.round(totalHours * 100.0) / 100.0);
-            }
-            if (dto.getStatus() != null) entity.setStatus(dto.getStatus());
-            if (dto.getApprovedById() != null) entity.setApprovedById(dto.getApprovedById());
-            if (dto.getApprovalRemarks() != null) entity.setApprovalRemarks(dto.getApprovalRemarks());
-            if (dto.getRecommendationStatus() != null) entity.setRecommendationStatus(dto.getRecommendationStatus());
-            if (dto.getRecommendedById() != null) entity.setRecommendedById(dto.getRecommendedById());
-            if (dto.getRecommendationRemarks() != null) entity.setRecommendationRemarks(dto.getRecommendationRemarks());
+            entity.setEmergencyPostFiling(postFilingRequested);
+            entity.setEmergencyJustification(postFilingRequested
+                    ? (dto.getEmergencyJustification() != null
+                        ? dto.getEmergencyJustification().trim()
+                        : entity.getEmergencyJustification())
+                    : null);
+
+            long totalMinutes = Duration.between(entity.getDateTimeFrom(), entity.getDateTimeTo()).toMinutes();
+            int breakMinutes = validateManualBreakMinutes(
+                    dto.getBreakMinutes() != null ? dto.getBreakMinutes() : entity.getBreakMinutes(),
+                    totalMinutes
+            );
+            entity.setBreakMinutes(breakMinutes);
+            entity.setTotalHours(roundHours(totalMinutes));
+            entity.setNetAuthorizedHours(roundHours(totalMinutes - breakMinutes));
+
             entity.setUpdatedAt(LocalDateTime.now());
             entity = overtimeRequestRepository.save(entity);
             return toDTO(entity);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("Error updating OvertimeRequest id {}: ", overtimeRequestId, ex);
+            return null;
+        }
+    }
+
+    /**
+     * HRM maintenance edit. Request details and the administrator-selected
+     * workflow values are updated regardless of current status or whether the
+     * duty date is already in the past.
+     */
+    @Transactional
+    @Override
+    public OvertimeRequestDTO administrativeUpdate(Long overtimeRequestId,
+                                                   OvertimeRequestDTO dto) throws Exception {
+        try {
+            Optional<OvertimeRequest> optional = overtimeRequestRepository.findById(overtimeRequestId);
+            if (optional.isEmpty()) return null;
+            OvertimeRequest entity = optional.get();
+
+            if (dto.getDateTimeFrom() != null) entity.setDateTimeFrom(dto.getDateTimeFrom());
+            if (dto.getDateTimeTo() != null) entity.setDateTimeTo(dto.getDateTimeTo());
+            if (entity.getDateTimeFrom() == null || entity.getDateTimeTo() == null
+                    || !entity.getDateTimeTo().isAfter(entity.getDateTimeFrom())) {
+                throw new IllegalArgumentException("Date/time To must be after Date/time From.");
+            }
+
+            if (dto.getPurpose() != null) entity.setPurpose(dto.getPurpose());
+            if (dto.getWorkType() != null) entity.setWorkType(dto.getWorkType());
+            entity.setDutyShiftCode(validateDutyShiftCode(entity.getWorkType(),
+                    dto.getDutyShiftCode() != null ? dto.getDutyShiftCode() : entity.getDutyShiftCode()));
+            if (dto.getAuthorityReference() != null) entity.setAuthorityReference(dto.getAuthorityReference());
+
+            boolean postFilingRequested = dto.getEmergencyPostFiling() != null
+                    ? Boolean.TRUE.equals(dto.getEmergencyPostFiling())
+                    : Boolean.TRUE.equals(entity.getEmergencyPostFiling());
+            String postFilingJustification = dto.getEmergencyJustification() != null
+                    ? dto.getEmergencyJustification().trim()
+                    : entity.getEmergencyJustification();
+            if (postFilingRequested && (postFilingJustification == null || postFilingJustification.isBlank())) {
+                throw new IllegalArgumentException("Emergency/post-filing justification is required.");
+            }
+            entity.setEmergencyPostFiling(postFilingRequested);
+            entity.setEmergencyJustification(postFilingRequested ? postFilingJustification : null);
+
+            long totalMinutes = Duration.between(entity.getDateTimeFrom(), entity.getDateTimeTo()).toMinutes();
+            int breakMinutes = validateManualBreakMinutes(
+                    dto.getBreakMinutes() != null ? dto.getBreakMinutes() : entity.getBreakMinutes(),
+                    totalMinutes
+            );
+            entity.setBreakMinutes(breakMinutes);
+            entity.setTotalHours(roundHours(totalMinutes));
+            entity.setNetAuthorizedHours(roundHours(totalMinutes - breakMinutes));
+            if (entity.getNetAuthorizedHours() <= 0) {
+                throw new IllegalArgumentException("Computed overtime duration must be greater than zero.");
+            }
+
+            applyAdministrativeWorkflow(entity, dto);
+            entity.setUpdatedAt(LocalDateTime.now());
+            return toDTO(overtimeRequestRepository.save(entity));
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("Error administratively updating OvertimeRequest id {}: ", overtimeRequestId, ex);
             return null;
         }
     }
@@ -249,12 +382,82 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
         try {
             Optional<OvertimeRequest> optional = overtimeRequestRepository.findById(overtimeRequestId);
             if (optional.isEmpty()) return false;
+            OvertimeRequest entity = optional.get();
+            if (!"Pending".equalsIgnoreCase(entity.getStatus())
+                    || "Recommended".equalsIgnoreCase(entity.getRecommendationStatus())) {
+                throw new IllegalStateException("Only a pending overtime request that has not entered approval may be deleted.");
+            }
             overtimeRequestRepository.deleteById(overtimeRequestId);
             return true;
         } catch (Exception ex) {
             log.error("Error deleting OvertimeRequest id {}: ", overtimeRequestId, ex);
             return false;
         }
+    }
+
+    @Transactional
+    @Override
+    public Boolean administrativeDelete(Long overtimeRequestId) throws Exception {
+        if (!overtimeRequestRepository.existsById(overtimeRequestId)) return false;
+        overtimeRequestRepository.deleteById(overtimeRequestId);
+        return true;
+    }
+
+    /**
+     * HRM is the administrative maintenance surface, so its selected workflow
+     * values are authoritative even when a record already has a final decision.
+     */
+    private void applyAdministrativeWorkflow(OvertimeRequest entity, OvertimeRequestDTO dto) {
+        String previousStatus = entity.getStatus();
+        String finalStatus = normalizeFinalStatus(dto.getStatus(), previousStatus);
+        String recommendationStatus = normalizeRecommendationStatus(
+                dto.getRecommendationStatus(), entity.getRecommendationStatus());
+
+        entity.setStatus(finalStatus);
+        entity.setRecommendationStatus(recommendationStatus);
+        entity.setRecommendationRemarks(dto.getRecommendationRemarks());
+        entity.setApprovalRemarks(dto.getApprovalRemarks());
+
+        if ("Pending".equalsIgnoreCase(recommendationStatus)) {
+            entity.setRecommendedById(null);
+        } else {
+            entity.setRecommendedById(dto.getRecommendedById());
+        }
+
+        if ("Pending".equalsIgnoreCase(finalStatus)) {
+            entity.setApprovedById(null);
+            entity.setApprovedAt(null);
+        } else {
+            entity.setApprovedById(dto.getApprovedById());
+            if (entity.getApprovedAt() == null
+                    || previousStatus == null
+                    || !finalStatus.equalsIgnoreCase(previousStatus)) {
+                entity.setApprovedAt(LocalDateTime.now());
+            }
+        }
+    }
+
+    private String normalizeFinalStatus(String requested, String current) {
+        if (requested == null || requested.isBlank()) return current != null ? current : "Pending";
+        return switch (requested.trim().toLowerCase()) {
+            case "pending" -> "Pending";
+            case "approved" -> "Approved";
+            case "disapproved" -> "Disapproved";
+            case "cancel", "canceled", "cancelled" -> "Cancelled";
+            default -> throw new IllegalArgumentException("Unsupported final status: " + requested);
+        };
+    }
+
+    private String normalizeRecommendationStatus(String requested, String current) {
+        if (requested == null || requested.isBlank()) return current != null ? current : "Pending";
+        return switch (requested.trim().toLowerCase()) {
+            case "pending" -> "Pending";
+            case "approved" -> "Approved";
+            case "recommended" -> "Recommended";
+            case "disapproved" -> "Disapproved";
+            case "cancel", "canceled", "cancelled" -> "Cancelled";
+            default -> throw new IllegalArgumentException("Unsupported recommendation status: " + requested);
+        };
     }
 
     @Override

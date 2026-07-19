@@ -26,12 +26,26 @@ public class PermissionRuleset implements Serializable {
     @Column(name = "permissionData")
     private String permissionData;
 
+    /**
+     * JSON string holding Employee Portal visibility for the top-level systems.
+     * Structure: { "administrative": bool, "hrManagement": bool,
+     *              "timeKeeping": bool, "payroll": bool }
+     */
+    @Lob
+    @Column(name = "portalModuleAccess")
+    private String portalModuleAccess;
+
     public PermissionRuleset() {}
 
     public PermissionRuleset(String permissionName, Boolean isAdministrator, String permissionData) {
         this.permissionName = permissionName;
         this.isAdministrator = isAdministrator;
         this.permissionData = permissionData;
+    }
+
+    public PermissionRuleset(String permissionName, Boolean isAdministrator, String permissionData, String portalModuleAccess) {
+        this(permissionName, isAdministrator, permissionData);
+        this.portalModuleAccess = portalModuleAccess;
     }
 
     public Long getPermissionId() { return permissionId; }
@@ -45,4 +59,7 @@ public class PermissionRuleset implements Serializable {
 
     public String getPermissionData() { return permissionData; }
     public void setPermissionData(String permissionData) { this.permissionData = permissionData; }
+
+    public String getPortalModuleAccess() { return portalModuleAccess; }
+    public void setPortalModuleAccess(String portalModuleAccess) { this.portalModuleAccess = portalModuleAccess; }
 }

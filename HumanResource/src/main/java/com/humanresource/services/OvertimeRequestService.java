@@ -9,6 +9,8 @@ public interface OvertimeRequestService {
 
     OvertimeRequestDTO create(OvertimeRequestDTO dto) throws Exception;
 
+    OvertimeRequestDTO createEmergencyOverride(OvertimeRequestDTO dto) throws Exception;
+
     List<OvertimeRequestDTO> getAll() throws Exception;
 
     List<OvertimeRequestDTO> getAllByEmployeeId(Long employeeId) throws Exception;
@@ -22,11 +24,16 @@ public interface OvertimeRequestService {
 
     OvertimeRequestDTO disapprove(Long overtimeRequestId, Long approvedById, String remarks) throws Exception;
 
-    OvertimeRequestDTO recommend(Long overtimeRequestId, Long recommendedById, String remarks) throws Exception;
+    OvertimeRequestDTO recommend(Long overtimeRequestId, Long recommendedById, String remarks,
+                                 String dutyShiftCode, Integer breakMinutes) throws Exception;
 
     OvertimeRequestDTO update(Long overtimeRequestId, OvertimeRequestDTO dto) throws Exception;
 
+    OvertimeRequestDTO administrativeUpdate(Long overtimeRequestId, OvertimeRequestDTO dto) throws Exception;
+
     Boolean delete(Long overtimeRequestId) throws Exception;
+
+    Boolean administrativeDelete(Long overtimeRequestId) throws Exception;
 
     void generateOvertimeAuthorization(Long overtimeRequestId, OutputStream out) throws Exception;
 }
