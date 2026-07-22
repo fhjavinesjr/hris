@@ -9,7 +9,8 @@ import com.humanresource.entitymodels.Employee;
 import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.services.EmployeeService;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +22,10 @@ import java.util.stream.Collectors;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
+
+    private static final Logger log = LoggerFactory.getLogger(EmployeeServiceImpl.class);
+
+    private static final String INSTALL_ADMIN_EMPLOYEE_NO = "admin";
 
     // List of fields that should NOT be updated
     // Blacklisted
@@ -36,7 +41,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final JdbcTemplate jdbc;
 
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, @Qualifier("humanresourcePasswordEncoder") PasswordEncoder passwordEncoder, JwtUtil jwtUtil, JdbcTemplate jdbc) {
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, PasswordEncoder passwordEncoder, JwtUtil jwtUtil, JdbcTemplate jdbc) {
         this.employeeRepository = employeeRepository;
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;
@@ -47,7 +52,15 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Transactional
     @Override
     public void installAuth() throws Exception {
-        Employee employee = new Employee("admin", "!@#$%^&*()",
+        // The setup endpoint may be retried by Postman, Render, or a load
+        // balancer. Do not attempt to insert the same administrator twice.
+        if (employeeRepository.findByEmployeeNo(INSTALL_ADMIN_EMPLOYEE_NO).isPresent()) {
+            log.info("Installation account already exists; skipping duplicate creation");
+            return;
+        }
+
+        log.info("Creating installation account");
+        Employee employee = new Employee(INSTALL_ADMIN_EMPLOYEE_NO, "!@#$%^&*()",
                 "-", "1", "user", "super",
                 "", "", "",
                 "", UseUtils.getLocalDateTimeNow(), UseUtils.getLocalDateTimeNow());

@@ -1,12 +1,12 @@
 package com.humanresource.configs;
 
 import com.hris.common.utilities.JwtFilter;
+import jakarta.servlet.DispatcherType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -46,6 +46,9 @@ public class HumanResourceSecurityConfig {
                     return corsConfiguration;
                 }))
                 .authorizeHttpRequests(auth -> auth
+                        // Do not turn controller/service exceptions into a misleading 401.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/employee/login", "/api/employee/register", "/api/hris/installAuth").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/secure").hasRole("ADMIN")
@@ -53,7 +56,8 @@ public class HumanResourceSecurityConfig {
                 )
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())) // this is for h2-console
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .httpBasic(Customizer.withDefaults())
+                // This API authenticates with JWT bearer tokens, not HTTP Basic.
+                .httpBasic(httpBasic -> httpBasic.disable())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 //            .exceptionHandling(exception -> exception.authenticationEntryPoint((request, response, authException) -> {
 //                if (request.getRequestURI().startsWith("/h2-console")) {

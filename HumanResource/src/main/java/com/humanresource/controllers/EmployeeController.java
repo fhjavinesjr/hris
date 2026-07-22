@@ -4,6 +4,8 @@ import com.humanresource.dtos.EmployeeDTO;
 import com.humanresource.dtos.EmployeePayrollInfoResponse;
 import com.humanresource.services.EmployeeService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,8 @@ import java.util.Map;
 @RequestMapping("/api")
 public class EmployeeController {
 
+    private static final Logger log = LoggerFactory.getLogger(EmployeeController.class);
+
     private final EmployeeService employeeService;
 
     public EmployeeController(EmployeeService employeeService) {
@@ -22,8 +26,21 @@ public class EmployeeController {
     }
 
     @PostMapping("/hris/installAuth")
-    public void installAuth() throws Exception {
-        employeeService.installAuth();
+    public ResponseEntity<Map<String, String>> installAuth() throws Exception {
+        log.info("installAuth request received");
+
+        try {
+            employeeService.installAuth();
+            log.info("installAuth completed successfully");
+            return ResponseEntity.ok(Map.of(
+                    "message", "Installation account is ready."
+            ));
+        } catch (Exception exception) {
+            // The stack trace is intentionally logged so Render shows the
+            // underlying database/configuration error instead of only a 401/500.
+            log.error("installAuth failed", exception);
+            throw exception;
+        }
     }
 
     @PostMapping("/employee/login")

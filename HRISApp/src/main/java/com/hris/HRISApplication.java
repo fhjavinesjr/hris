@@ -21,7 +21,9 @@ import org.springframework.context.annotation.FilterType;
                 "com.humanresource",
                 "com.timekeeping",
                 "com.payroll",
-                "com.hris.common"
+                // Scan both the shared utilities and the combined application's
+                // configuration classes, including com.hris.configs.SecurityConfig.
+                "com.hris"
         },
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.ASSIGNABLE_TYPE,
