@@ -1,55 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" name="pds_c1_children_sub" pageWidth="612" pageHeight="936" columnWidth="572" leftMargin="20" rightMargin="20" topMargin="0" bottomMargin="20" uuid="f32bdfc0-7a87-4efb-8518-43f378be3ad9">
+<jasperReport name="pds_c1_children_sub" language="java" pageWidth="612" pageHeight="936" columnWidth="572" leftMargin="20" rightMargin="20" topMargin="0" bottomMargin="20" uuid="f32bdfc0-7a87-4efb-8518-43f378be3ad9">
 	<property name="ireport.zoom" value="1.6105100000000014"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
-	<parameter name="EMPLOYEE_ID" class="java.lang.Long"></parameter>
-	
-	<queryString language="SQL"><![CDATA[SELECT
-    '' AS firstname,
-    '' AS mi,
-    ISNULL(childFullname, '') AS lastname,
-    CAST(dob AS date) AS birthDate
-FROM children
-WHERE personalDataId = (SELECT TOP 1 personalDataId FROM personaldata WHERE employeeId = $P{EMPLOYEE_ID})
-ORDER BY dob, childFullname]]></queryString>
-<field name="lastname" class="java.lang.String"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
+	<field name="lastname" class="java.lang.String"/>
 	<field name="firstname" class="java.lang.String"/>
 	<field name="mi" class="java.lang.String"/>
 	<field name="birthDate" class="java.sql.Date"/>
 	<variable name="fullname" class="java.lang.String">
-		<variableExpression><![CDATA[$F{firstname}.trim() + " "
-+ ($F{mi} != null? $F{mi}.trim():"")
-+ " " + $F{lastname}.trim()]]></variableExpression>
+		<expression><![CDATA[$F{firstname}.trim() + " "
++ ($F{mi} != null ? $F{mi}.trim() : "")
++ " " + $F{lastname}.trim()]]></expression>
 	</variable>
 	<detail>
 		<band height="19" splitType="Stretch">
-			<textField>
-				<reportElement uuid="8eef847d-4ddf-4fd3-9df5-6cc75de94ee5" x="0" y="0" width="175" height="19"/>
+			<element kind="textField" uuid="8eef847d-4ddf-4fd3-9df5-6cc75de94ee5" x="0" y="0" width="175" height="19" fontSize="9.0" vTextAlign="Middle">
+				<expression><![CDATA[$V{fullname}]]></expression>
 				<box leftPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="9"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$V{fullname}]]></textFieldExpression>
-			</textField>
-			<textField pattern="MM/dd/yyyy">
-				<reportElement uuid="0de62a79-ce55-4422-9845-b5f3cdbfcbba" x="175" y="0" width="76" height="19"/>
+			</element>
+			<element kind="textField" uuid="0de62a79-ce55-4422-9845-b5f3cdbfcbba" x="175" y="0" width="76" height="19" fontSize="9.0" pattern="MM/dd/yyyy" blankWhenNull="true" vTextAlign="Middle">
+				<expression><![CDATA[$F{birthDate}]]></expression>
 				<box leftPadding="5">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement verticalAlignment="Middle">
-					<font size="9"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{birthDate}]]></textFieldExpression>
-			</textField>
+			</element>
 		</band>
 	</detail>
 </jasperReport>

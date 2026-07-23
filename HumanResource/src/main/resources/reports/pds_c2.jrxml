@@ -25,32 +25,9 @@
 	</style>
 	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
 	<parameter name="PDS_C2_WORKEXPERIENCE_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
+	<parameter name="PDS_C2_WORKEXPERIENCE_DATA_SOURCE" forPrompting="false" class="net.sf.jasperreports.engine.JRDataSource"/>
 	<parameter name="PDS_C2_CIVILSERVICE_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
-	<query language="SQL"><![CDATA[SELECT TOP 1
-    CAST(NULL AS varchar(max)) AS eligibility,
-    CAST(NULL AS varchar(max)) AS employment,
-    CAST(NULL AS varchar(max)) AS extraactivity,
-    CAST(NULL AS varchar(max)) AS training,
-    CAST(NULL AS varchar(max)) AS otherinformation,
-    CAST(NULL AS varchar(max)) AS reference,
-    CAST(NULL AS varchar(max)) AS career,
-    CAST(NULL AS varchar(max)) AS rating,
-    CAST(NULL AS varchar(max)) AS dateTaken,
-    CAST(NULL AS varchar(max)) AS placeTaken,
-    CAST(NULL AS varchar(max)) AS licenseNo,
-    CAST(NULL AS varchar(max)) AS licenseReleaseDate,
-    CAST(NULL AS varchar(max)) AS employmentDate,
-    CAST(NULL AS varchar(max)) AS separationDate,
-    CAST(NULL AS varchar(max)) AS position,
-    CAST(NULL AS varchar(max)) AS companyAndDepartment,
-    CAST(NULL AS varchar(max)) AS salary,
-    CAST(NULL AS varchar(max)) AS salaryIncStep,
-    CAST(NULL AS varchar(max)) AS appointmentStatus,
-    CAST(NULL AS varchar(max)) AS isGovernmentService
-
-FROM personaldata pd
-JOIN employee e ON e.employeeId = pd.employeeId
-WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
+	<parameter name="PDS_C2_CIVILSERVICE_DATA_SOURCE" forPrompting="false" class="net.sf.jasperreports.engine.JRDataSource"/>
 	<field name="career" class="java.lang.String"/>
 	<field name="rating" class="java.lang.Double"/>
 	<field name="dateTaken" class="java.sql.Date"/>
@@ -2963,7 +2940,7 @@ INCREMENT]]></text>
 			</box>
 		</element>
 		<element kind="subreport" uuid="79b2f180-92b7-46c1-b5c7-bd74d8d026f7" x="0" y="267" width="200" height="107" removeLineWhenBlank="true">
-			<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+			<dataSourceExpression><![CDATA[$P{PDS_C2_WORKEXPERIENCE_DATA_SOURCE}]]></dataSourceExpression>
 			<expression><![CDATA[$P{PDS_C2_WORKEXPERIENCE_SUBREPORT} != null ? $P{PDS_C2_WORKEXPERIENCE_SUBREPORT} : "pds_c2_workexperience_sub.jasper"]]></expression>
 			<parameter name="EMPLOYEE_ID">
 				<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>
@@ -3053,7 +3030,7 @@ Validity]]></text>
 			</box>
 		</element>
 		<element kind="subreport" uuid="543fecc9-e99c-413f-8f96-31d8a0f7a2a7" x="0" y="53" width="578" height="19" removeLineWhenBlank="true">
-			<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+			<dataSourceExpression><![CDATA[$P{PDS_C2_CIVILSERVICE_DATA_SOURCE}]]></dataSourceExpression>
 			<expression><![CDATA[$P{PDS_C2_CIVILSERVICE_SUBREPORT} != null ? $P{PDS_C2_CIVILSERVICE_SUBREPORT} : "pds_c2_civilservice_sub.jasper"]]></expression>
 			<parameter name="EMPLOYEE_ID">
 				<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>

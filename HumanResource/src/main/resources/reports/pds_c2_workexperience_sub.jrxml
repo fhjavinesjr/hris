@@ -4,20 +4,6 @@
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
-	<query language="SQL"><![CDATA[SELECT
-    CAST(fromDate AS date) AS employmentDate,
-    CAST(toDate AS date) AS separationDate,
-    ISNULL(positionTitle, '') AS position,
-    ISNULL(agencyName, '') AS companyAndDepartment,
-    TRY_CONVERT(float, monthlySalary) AS salary,
-    TRY_CONVERT(float, payGrade) AS salaryIncStep,
-    ISNULL(workStatus, '') AS appointmentStatus,
-    CASE WHEN LOWER(ISNULL(boolGovernmentService,'')) IN ('yes','y','true','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS isGovernmentService,
-    CASE WHEN toDate IS NULL THEN 'Present' ELSE CONVERT(varchar(10), CAST(toDate AS date), 101) END AS separationDateTo,
-    CASE WHEN payGrade IS NULL THEN '' ELSE CAST(payGrade AS varchar(30)) END AS salaryIncStepString
-FROM workexperience
-WHERE personalDataId = (SELECT TOP 1 personalDataId FROM personaldata WHERE employeeId = $P{EMPLOYEE_ID})
-ORDER BY fromDate DESC]]></query>
 	<field name="employmentDate" class="java.sql.Date"/>
 	<field name="separationDate" class="java.sql.Date"/>
 	<field name="position" class="java.lang.String"/>

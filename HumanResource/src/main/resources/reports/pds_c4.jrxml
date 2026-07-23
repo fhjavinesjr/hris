@@ -5,48 +5,7 @@
 	<property name="ireport.y" value="902"/>
 	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
 	<parameter name="PDS_C4_REFERENCES_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
-	<query language="SQL"><![CDATA[SELECT TOP 1
-    CASE WHEN LOWER(CAST(ISNULL(pd.q34a, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa1,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q34b, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa2,
-    ISNULL(pd.q34bDetails, '') AS qa2Detail,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q35a, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa3,
-    ISNULL(pd.q35aDetails, '') AS qa3Detail,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q35b, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa4,
-    ISNULL(pd.q35bDetails, '') AS qa4Detail,
-    ISNULL(pd.q35bStatus, '') AS qa4Detail2,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q36, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa5,
-    ISNULL(pd.q36Details, '') AS qa5Detail,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q37a, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa6,
-    ISNULL(pd.q37aDetails, '') AS qa6Detail,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q37b, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa7,
-    ISNULL(pd.q37bDetails, '') AS qa7Detail,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q37c, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa8,
-    ISNULL(pd.q37cDetails, '') AS qa8Detail,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q38, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa9,
-    ISNULL(pd.q38Details, '') AS qa9Detail,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q39a, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa10,
-    ISNULL(pd.q39aDetails, '') AS qa10Detail,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q39b, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa11,
-    ISNULL(pd.q39bDetails, '') AS qa11Detail,
-    CASE WHEN LOWER(CAST(ISNULL(pd.q39c, 'false') AS varchar(20))) IN ('true','yes','y','1') THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS qa12,
-    ISNULL(pd.q39cDetails, '') AS qa12Detail,
-    pd.employeePicture AS picture,
-    ISNULL(pd.govIdType, '') AS govtIssuedId,
-    ISNULL(pd.govIdNumber, '') AS govtIssuedIdNo,
-    CAST(pd.govIdDate AS date) AS ctcIssueDate,
-    ISNULL(pd.govIdPlace, '') AS ctcIssuePlace,
-    pd.employeeSignature AS signature,
-    '' AS personAdministerOath,
-    CAST(NULL AS date) AS personAdministerOathDate,
-    ISNULL(pd.surname, '') AS lastname,
-    ISNULL(pd.firstname, '') AS firstname,
-    ISNULL(pd.middlename, '') AS middlename,
-    CAST(GETDATE() AS date) AS dateSignature,
-    CAST(NULL AS varchar(max)) AS reference,
-    ISNULL(pd.firstname, '') + ' ' + ISNULL(pd.middlename, '') + ' ' + ISNULL(pd.surname, '') AS fullnameEmp
-FROM personaldata pd
-JOIN employee e ON e.employeeId = pd.employeeId
-WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
+	<parameter name="PDS_C4_REFERENCES_DATA_SOURCE" forPrompting="false" class="net.sf.jasperreports.engine.JRDataSource"/>
 	<field name="qa1" class="java.lang.Boolean"/>
 	<field name="qa2" class="java.lang.Boolean"/>
 	<field name="qa2Detail" class="java.lang.String"/>
@@ -980,7 +939,7 @@ SUBCRIBED AND SWORN to before me this __________________ , affiant exhibiting hi
 			<expression><![CDATA[$F{dateSignature}]]></expression>
 		</element>
 		<element kind="subreport" uuid="eff6d7d3-494a-4921-95ac-34f0180d95e4" x="0" y="516" width="430" height="95" removeLineWhenBlank="true">
-			<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+			<dataSourceExpression><![CDATA[$P{PDS_C4_REFERENCES_DATA_SOURCE}]]></dataSourceExpression>
 			<expression><![CDATA[$P{PDS_C4_REFERENCES_SUBREPORT} != null ? $P{PDS_C4_REFERENCES_SUBREPORT} : "pds_c4_references_sub.jasper"]]></expression>
 			<parameter name="EMPLOYEE_ID">
 				<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>

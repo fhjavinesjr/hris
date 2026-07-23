@@ -5,108 +5,7 @@
 	<property name="ireport.y" value="2786"/>
 	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
 	<parameter name="PDS_C1_CHILDREN_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
-	<query language="SQL"><![CDATA[SELECT TOP 1
-    ISNULL(pd.surname, '') AS lastname,
-    ISNULL(pd.firstname, '') AS firstname,
-    ISNULL(pd.middlename, '') AS middlename,
-    ISNULL(pd.extname, '') AS nameExtension,
-    CAST(pd.dob AS date) AS birthDate,
-    ISNULL(pd.citizenship, '') AS country,
-    ISNULL(pd.pob, '') AS birthPlace,
-    ISNULL(pd.resAddress, '') AS residentaddress,
-    ISNULL(pd.resZip, '') AS residentzipcode,
-    TRY_CONVERT(float, NULLIF(pd.height, '')) AS height,
-    TRY_CONVERT(float, NULLIF(pd.weight, '')) AS weight,
-    ISNULL(pd.bloodType, '') AS bloodType,
-    ISNULL(pd.gsisId, '') AS gsisNo,
-    ISNULL(pd.pagibigId, '') AS pagibigNo,
-    ISNULL(pd.philhealthNo, '') AS philHealthNo,
-    ISNULL(pd.sssNo, '') AS sssNo,
-    ISNULL(pd.tinNo, '') AS tinNo,
-    ISNULL(pd.agencyEmpNo, '') AS agencyEmployeeNo,
-    ISNULL(pd.telNo, '') AS telNo,
-    ISNULL(pd.mobileNo, '') AS mobileNo,
-    ISNULL(pd.email, '') AS email,
-    ISNULL(pd.spouseSurname, '') AS spLastname,
-    ISNULL(pd.spouseFirstname, '') AS spFirstname,
-    ISNULL(pd.spouseMiddlename, '') AS spMiddlename,
-    CAST(NULL AS varchar(max)) AS children,
-    CAST(NULL AS date) AS chbirthDate,
-    ISNULL(pd.spouseOccupation, '') AS spOccupation,
-    ISNULL(pd.spouseEmployer, '') AS spBusinessName,
-    ISNULL(pd.spouseBusinessAddress, '') AS spBusinessAddress,
-    ISNULL(pd.spouseTelNo, '') AS spBusinessTelNo,
-    ISNULL(pd.fatherSurname, '') AS faLastname,
-    ISNULL(pd.fatherFirstname, '') AS faFirstname,
-    ISNULL(pd.fatherMiddlename, '') AS faMiddlename,
-    ISNULL(pd.motherSurname, '') AS moLastname,
-    ISNULL(pd.motherFirstname, '') AS moFirstname,
-    ISNULL(pd.motherMiddlename, '') AS moMiddlename,
-    '' AS csIdNo,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN eb.nameOfSchool END), '') AS edu1SchoolName,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN eb.degreeCourse END), '') AS edu1DegreeCourse,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN CAST(eb.fromDate AS date) END) AS edu1DateFrom,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN CAST(eb.toDate AS date) END) AS edu1DateTo,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN TRY_CONVERT(float, eb.scoreGrade) END) AS edu1GradesUnits,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN TRY_CONVERT(int, eb.yearGraduated) END) AS edu1YearGraduated,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN eb.honorsReceived END), '') AS edu1ScholarshipHonors,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN eb.nameOfSchool END), '') AS edu2SchoolName,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN eb.degreeCourse END), '') AS edu2DegreeCourse,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN CAST(eb.fromDate AS date) END) AS edu2DateFrom,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN CAST(eb.toDate AS date) END) AS edu2DateTo,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN TRY_CONVERT(float, eb.scoreGrade) END) AS edu2GradesUnits,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN TRY_CONVERT(int, eb.yearGraduated) END) AS edu2YearGraduated,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN eb.honorsReceived END), '') AS edu2ScholarshipHonors,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN eb.nameOfSchool END), '') AS edu3SchoolName,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN eb.degreeCourse END), '') AS edu3DegreeCourse,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN CAST(eb.fromDate AS date) END) AS edu3DateFrom,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN CAST(eb.toDate AS date) END) AS edu3DateTo,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN TRY_CONVERT(float, eb.scoreGrade) END) AS edu3GradesUnits,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN TRY_CONVERT(int, eb.yearGraduated) END) AS edu3YearGraduated,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN eb.honorsReceived END), '') AS edu3ScholarshipHonors,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN eb.nameOfSchool END), '') AS edu4SchoolName,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN eb.degreeCourse END), '') AS edu4DegreeCourse,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN CAST(eb.fromDate AS date) END) AS edu4DateFrom,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN CAST(eb.toDate AS date) END) AS edu4DateTo,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN TRY_CONVERT(float, eb.scoreGrade) END) AS edu4GradesUnits,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN TRY_CONVERT(int, eb.yearGraduated) END) AS edu4YearGraduated,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN eb.honorsReceived END), '') AS edu4ScholarshipHonors,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN eb.nameOfSchool END), '') AS edu5SchoolName,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN eb.degreeCourse END), '') AS edu5DegreeCourse,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN CAST(eb.fromDate AS date) END) AS edu5DateFrom,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN CAST(eb.toDate AS date) END) AS edu5DateTo,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN TRY_CONVERT(float, eb.scoreGrade) END) AS edu5GradesUnits,
-    MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN TRY_CONVERT(int, eb.yearGraduated) END) AS edu5YearGraduated,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN eb.honorsReceived END), '') AS edu5ScholarshipHonors,
-    CASE pd.sex_id WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' ELSE '' END AS gender,
-    CASE WHEN UPPER(ISNULL(pd.citizenship,'')) LIKE '%FILIPINO%' THEN 'Filipino' ELSE ISNULL(pd.citizenship,'') END AS nationality,
-    CASE pd.civilStatus_id WHEN 1 THEN 'Single' WHEN 2 THEN 'Married' WHEN 3 THEN 'Widowed' WHEN 4 THEN 'Separated' WHEN 5 THEN 'Other/s' ELSE '' END AS civilStatus,
-    ISNULL(pd.permAddress, '') AS permanentAddress,
-    ISNULL(pd.permZip, '') AS zipCode,
-    '' AS spnameExtension,
-    '' AS fanameExtenshion,
-    CASE WHEN UPPER(ISNULL(pd.citizenship,'')) LIKE '%DUAL%' THEN 'Dual Citizenship' ELSE '' END AS nationalityDualCitizenship,
-    '' AS nationalityIndicateCountry,
-    '' AS maidenName,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN CONVERT(varchar(10), CAST(eb.toDate AS date), 101) END), '') AS eduDateToString,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN CONVERT(varchar(10), CAST(eb.toDate AS date), 101) END), '') AS eduDateToString2,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN CONVERT(varchar(10), CAST(eb.toDate AS date), 101) END), '') AS eduDateToString3,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN CONVERT(varchar(10), CAST(eb.toDate AS date), 101) END), '') AS eduDateToString4,
-    '' AS eduDateToString5,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN CONVERT(varchar(10), CAST(eb.toDate AS date), 101) END), '') AS eduDateToString6,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Elementary%' THEN CONVERT(varchar(10), CAST(eb.fromDate AS date), 101) END), '') AS edu1DateFromString,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Secondary%' THEN CONVERT(varchar(10), CAST(eb.fromDate AS date), 101) END), '') AS edu2DateFromString,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Vocational%' THEN CONVERT(varchar(10), CAST(eb.fromDate AS date), 101) END), '') AS edu3DateFromString,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'College%' THEN CONVERT(varchar(10), CAST(eb.fromDate AS date), 101) END), '') AS edu4DateFromString,
-    '' AS edu4DateFrom2String,
-    ISNULL(MAX(CASE WHEN eb.levelOfEducation LIKE 'Graduate%' THEN CONVERT(varchar(10), CAST(eb.fromDate AS date), 101) END), '') AS edu5DateFromString,
-    '' AS edu5DateFrom2String,
-    '' AS edu5DateFrom3String
-FROM personaldata pd
-JOIN employee e ON e.employeeId = pd.employeeId
-LEFT JOIN educationalbackground eb ON eb.personalDataId = pd.personalDataId
-WHERE e.employeeId = $P{EMPLOYEE_ID}
-GROUP BY pd.personalDataId, pd.surname, pd.firstname, pd.middlename, pd.extname, pd.dob, pd.citizenship, pd.pob, pd.resAddress, pd.resZip, pd.height, pd.weight, pd.bloodType, pd.gsisId, pd.pagibigId, pd.philhealthNo, pd.sssNo, pd.tinNo, pd.agencyEmpNo, pd.telNo, pd.mobileNo, pd.email, pd.spouseSurname, pd.spouseFirstname, pd.spouseMiddlename, pd.spouseOccupation, pd.spouseEmployer, pd.spouseBusinessAddress, pd.spouseTelNo, pd.fatherSurname, pd.fatherFirstname, pd.fatherMiddlename, pd.motherSurname, pd.motherFirstname, pd.motherMiddlename, pd.sex_id, pd.civilStatus_id, pd.permAddress, pd.permZip]]></query>
+	<parameter name="PDS_C1_CHILDREN_DATA_SOURCE" forPrompting="false" class="net.sf.jasperreports.engine.JRDataSource"/>
 	<field name="lastname" class="java.lang.String"/>
 	<field name="firstname" class="java.lang.String"/>
 	<field name="middlename" class="java.lang.String"/>
@@ -2009,7 +1908,7 @@ please indicate the details.
 	<detail>
 		<band height="100">
 			<element kind="subreport" uuid="e5d0db55-ba8e-457e-bdb3-dc49bf8b5753" x="306" y="0" width="251" height="100" removeLineWhenBlank="true">
-				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<dataSourceExpression><![CDATA[$P{PDS_C1_CHILDREN_DATA_SOURCE}]]></dataSourceExpression>
 				<expression><![CDATA[$P{PDS_C1_CHILDREN_SUBREPORT} != null ? $P{PDS_C1_CHILDREN_SUBREPORT} : "pds_c1_children_sub.jasper"]]></expression>
 				<parameter name="EMPLOYEE_ID">
 					<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>

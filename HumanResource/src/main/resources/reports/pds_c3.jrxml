@@ -5,18 +5,11 @@
 	<property name="ireport.y" value="1592"/>
 	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
 	<parameter name="PDS_C3_OTHERINFORMATION_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
+	<parameter name="PDS_C3_OTHERINFORMATION_DATA_SOURCE" forPrompting="false" class="net.sf.jasperreports.engine.JRDataSource"/>
 	<parameter name="PDS_C3_VOLUNTARYWORK_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
+	<parameter name="PDS_C3_VOLUNTARYWORK_DATA_SOURCE" forPrompting="false" class="net.sf.jasperreports.engine.JRDataSource"/>
 	<parameter name="PDS_C3_LND_SUBREPORT" forPrompting="false" class="net.sf.jasperreports.engine.JasperReport"/>
-	<query language="SQL"><![CDATA[SELECT TOP 1
-    CAST(NULL AS varchar(max)) AS eligibility,
-    CAST(NULL AS varchar(max)) AS employment,
-    CAST(NULL AS varchar(max)) AS extraactivity,
-    CAST(NULL AS varchar(max)) AS training,
-    CAST(NULL AS varchar(max)) AS otherinformation,
-    CAST(NULL AS varchar(max)) AS reference
-FROM personaldata pd
-JOIN employee e ON e.employeeId = pd.employeeId
-WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
+	<parameter name="PDS_C3_LND_DATA_SOURCE" forPrompting="false" class="net.sf.jasperreports.engine.JRDataSource"/>
 	<field name="extraactivity" class="java.util.List"/>
 	<field name="otherinformation" class="java.util.List"/>
 	<field name="training" class="java.util.List"/>
@@ -1134,7 +1127,7 @@ WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
 			</box>
 		</element>
 		<element kind="subreport" uuid="e0d85cad-5486-469f-a9f7-ed4b1770f34e" x="0" y="709" width="578" height="57" removeLineWhenBlank="true">
-			<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+			<dataSourceExpression><![CDATA[$P{PDS_C3_OTHERINFORMATION_DATA_SOURCE}]]></dataSourceExpression>
 			<expression><![CDATA[$P{PDS_C3_OTHERINFORMATION_SUBREPORT} != null ? $P{PDS_C3_OTHERINFORMATION_SUBREPORT} : "pds_c3_otherinformation_sub.jasper"]]></expression>
 			<parameter name="EMPLOYEE_ID">
 				<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>
@@ -1697,7 +1690,7 @@ WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
 			</box>
 		</element>
 		<element kind="subreport" uuid="4e1f8c43-8aa1-43ce-bc55-d1bda44f4c14" x="0" y="42" width="578" height="57" removeLineWhenBlank="true">
-			<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+			<dataSourceExpression><![CDATA[$P{PDS_C3_VOLUNTARYWORK_DATA_SOURCE}]]></dataSourceExpression>
 			<expression><![CDATA[$P{PDS_C3_VOLUNTARYWORK_SUBREPORT} != null ? $P{PDS_C3_VOLUNTARYWORK_SUBREPORT} : "pds_c3_voluntarywork_sub.jasper"]]></expression>
 			<parameter name="EMPLOYEE_ID">
 				<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>
@@ -1707,7 +1700,7 @@ WHERE e.employeeId = $P{EMPLOYEE_ID}]]></query>
 	<detail>
 		<band height="158" splitType="Stretch">
 			<element kind="subreport" uuid="9254a273-4566-4907-b08c-a9f4ed85f6bd" x="0" y="58" width="578" height="100" runToBottom="false" printRepeatedValues="false">
-				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<dataSourceExpression><![CDATA[$P{PDS_C3_LND_DATA_SOURCE}]]></dataSourceExpression>
 				<expression><![CDATA[$P{PDS_C3_LND_SUBREPORT} != null ? $P{PDS_C3_LND_SUBREPORT} : "pds_c3_lnd_sub.jasper"]]></expression>
 				<parameter name="EMPLOYEE_ID">
 					<expression><![CDATA[$P{EMPLOYEE_ID}]]></expression>

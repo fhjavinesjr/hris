@@ -1,46 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" name="pds_c4_references_sub" pageWidth="612" pageHeight="936" columnWidth="612" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="8554ff14-1631-4baf-aa06-9fbb439055a0">
+<jasperReport name="pds_c4_references_sub" language="java" pageWidth="612" pageHeight="936" columnWidth="612" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="8554ff14-1631-4baf-aa06-9fbb439055a0">
 	<property name="ireport.zoom" value="1.9487171000000014"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
-	<parameter name="EMPLOYEE_ID" class="java.lang.Long"></parameter>
-	
-	<queryString language="SQL"><![CDATA[SELECT
-    ISNULL(refName, '') AS name,
-    ISNULL(address, '') AS address,
-    ISNULL(contactNo, '') AS telNo
-FROM characterreferences
-WHERE personalDataId = (SELECT TOP 1 personalDataId FROM personaldata WHERE employeeId = $P{EMPLOYEE_ID})
-ORDER BY referencesId]]></queryString>
-<field name="name" class="java.lang.String"/>
+	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
+	<field name="name" class="java.lang.String"/>
 	<field name="address" class="java.lang.String"/>
 	<field name="telNo" class="java.lang.String"/>
 	<detail>
 		<band height="19" splitType="Stretch">
-			<textField>
-				<reportElement uuid="a78f27ec-161b-449c-9e3e-974b1c8cd9b1" x="0" y="0" width="201" height="19"/>
+			<element kind="textField" uuid="a78f27ec-161b-449c-9e3e-974b1c8cd9b1" x="0" y="0" width="201" height="19" fontSize="7.0" vTextAlign="Middle">
+				<expression><![CDATA[$F{name}]]></expression>
 				<box leftPadding="5"/>
-				<textElement verticalAlignment="Middle">
-					<font size="7"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{name}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="c890f592-3fe0-4443-a293-e95921eb12c2" x="201" y="0" width="163" height="19"/>
+			</element>
+			<element kind="textField" uuid="c890f592-3fe0-4443-a293-e95921eb12c2" x="201" y="0" width="163" height="19" fontSize="7.0" vTextAlign="Middle">
+				<expression><![CDATA[$F{address}]]></expression>
 				<box leftPadding="5"/>
-				<textElement verticalAlignment="Middle">
-					<font size="7"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{address}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement uuid="7bfe40ae-330d-4f66-be5b-e62a7ac11598" x="364" y="0" width="66" height="19"/>
+			</element>
+			<element kind="textField" uuid="7bfe40ae-330d-4f66-be5b-e62a7ac11598" x="364" y="0" width="66" height="19" fontSize="7.0" vTextAlign="Middle">
+				<expression><![CDATA[$F{telNo}]]></expression>
 				<box leftPadding="5"/>
-				<textElement verticalAlignment="Middle">
-					<font size="7"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{telNo}]]></textFieldExpression>
-			</textField>
+			</element>
 		</band>
 	</detail>
 </jasperReport>

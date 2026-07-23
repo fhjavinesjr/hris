@@ -4,18 +4,6 @@
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
-	<query language="SQL"><![CDATA[SELECT
-    ISNULL(careerServiceName, '') AS career,
-    TRY_CONVERT(float, civilServiceRating) AS rating,
-    CAST(dateOfExamination AS date) AS dateTaken,
-    ISNULL(licenseNumber, '') AS licenseNo,
-    CAST(licenseValidityDate AS date) AS licenseReleaseDate,
-    '' AS remarks,
-    ISNULL(placeOfExamination, '') AS placeTaken,
-    ISNULL(CONVERT(varchar(10), CAST(dateOfExamination AS date), 101), '') AS dateTakenString
-FROM civilserviceeligibility
-WHERE personalDataId = (SELECT TOP 1 personalDataId FROM personaldata WHERE employeeId = $P{EMPLOYEE_ID})
-ORDER BY dateOfExamination DESC]]></query>
 	<field name="career" class="java.lang.String"/>
 	<field name="rating" class="java.lang.Double"/>
 	<field name="dateTaken" class="java.sql.Date"/>
