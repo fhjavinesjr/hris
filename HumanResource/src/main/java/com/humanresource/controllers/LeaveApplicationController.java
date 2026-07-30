@@ -2,9 +2,12 @@ package com.humanresource.controllers;
 
 import com.hris.common.dtos.MetadataResponse;
 import com.humanresource.dtos.ApprovedLeaveDTO;
+import com.humanresource.dtos.LeaveApprovalActionRequest;
 import com.humanresource.dtos.LeaveApplicationDTO;
+import com.humanresource.dtos.LeaveRecommendationActionRequest;
 import com.humanresource.services.LeaveFormReportService;
 import com.humanresource.services.LeaveApplicationService;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -87,6 +90,51 @@ public class LeaveApplicationController {
                     .body(new MetadataResponse("Failed to update Leave Application"));
         }
         return ResponseEntity.ok(new MetadataResponse(leaveApplicationDTO.getLeaveApplicationId(), "Successfully updated Leave Application"));
+    }
+
+    @PutMapping("/leave-application/recommend/{leaveApplicationId}")
+    public ResponseEntity<MetadataResponse> recommendLeaveApplication(
+            @PathVariable Long leaveApplicationId,
+            @Valid @RequestBody LeaveRecommendationActionRequest request) throws Exception {
+        leaveApplicationService.recommendLeaveApplication(
+                leaveApplicationId,
+                request.recommendedById(),
+                request.remarks()
+        );
+        return ResponseEntity.ok(new MetadataResponse(
+                leaveApplicationId,
+                "Leave Application recommended"
+        ));
+    }
+
+    @PutMapping("/leave-application/approve/{leaveApplicationId}")
+    public ResponseEntity<MetadataResponse> approveLeaveApplication(
+            @PathVariable Long leaveApplicationId,
+            @Valid @RequestBody LeaveApprovalActionRequest request) throws Exception {
+        leaveApplicationService.approveLeaveApplication(
+                leaveApplicationId,
+                request.approvedById(),
+                request.remarks()
+        );
+        return ResponseEntity.ok(new MetadataResponse(
+                leaveApplicationId,
+                "Leave Application approved"
+        ));
+    }
+
+    @PutMapping("/leave-application/disapprove/{leaveApplicationId}")
+    public ResponseEntity<MetadataResponse> disapproveLeaveApplication(
+            @PathVariable Long leaveApplicationId,
+            @Valid @RequestBody LeaveApprovalActionRequest request) throws Exception {
+        leaveApplicationService.disapproveLeaveApplication(
+                leaveApplicationId,
+                request.approvedById(),
+                request.remarks()
+        );
+        return ResponseEntity.ok(new MetadataResponse(
+                leaveApplicationId,
+                "Leave Application disapproved"
+        ));
     }
 
     @DeleteMapping("/leave-application/delete/{leaveApplicationId}")

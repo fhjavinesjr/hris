@@ -1,18 +1,11 @@
 <!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
 <jasperReport name="payslip_dynamic" language="java" pageWidth="780" pageHeight="842" columnWidth="740" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="f90f61ce-d3dc-4fee-bff8-2a8dbb34c17a">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
-	<parameter name="employeeNo" class="java.lang.String"/>
-	<parameter name="salaryPeriodKey" class="java.lang.String"/>
-	<parameter name="releasedOnly" class="java.lang.Integer">
-		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
-	</parameter>
+	<parameter name="payrollDetailId" class="java.lang.Long"/>
 	<query language="SQL"><![CDATA[WITH selected_detail AS (
-    SELECT TOP 1 pd.*
+    SELECT pd.*
     FROM payroll_detail pd
-    WHERE pd.employeeNo = $P{employeeNo}
-      AND pd.salaryPeriodKey = $P{salaryPeriodKey}
-      AND ($P{releasedOnly} = 0 OR pd.isLocked = 1)
-    ORDER BY pd.id DESC
+    WHERE pd.id = $P{payrollDetailId}
 ),
 adjustment_summary AS (
     SELECT

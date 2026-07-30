@@ -137,34 +137,78 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
     @Transactional
     @Override
     public LeaveApplicationDTO updateLeaveApplication(Long leaveApplicationId, LeaveApplicationDTO dto) throws Exception {
-        try {
-            LeaveApplication entity = leaveApplicationRepository.findById(leaveApplicationId)
-                    .orElseThrow(() -> new RuntimeException("LeaveApplication not found with id: " + leaveApplicationId));
+        LeaveApplication entity = findLeaveApplication(leaveApplicationId);
 
-            entity.setEmployeeId(dto.getEmployeeId());
-            entity.setDateFiled(dto.getDateFiled());
-            entity.setLeaveType(dto.getLeaveType());
-            entity.setStartDate(dto.getStartDate());
-            entity.setEndDate(dto.getEndDate());
-            entity.setNoOfDays(dto.getNoOfDays());
-            entity.setCommutation(dto.getCommutation());
-            entity.setDetails(dto.getDetails());
-            entity.setStatus(dto.getApprovedStatus());
-            entity.setRecommendingApprovalById(dto.getRecommendingApprovalById());
-            entity.setAuthorizedOfficialId(dto.getAuthorizedOfficialId());
-            entity.setApprovedById(dto.getApprovedById());
-            entity.setRecommendationStatus(dto.getRecommendationStatus());
-            entity.setRecommendationMessage(dto.getRecommendationMessage());
-            entity.setApprovedStatus(dto.getApprovedStatus());
-            entity.setApprovalMessage(dto.getApprovalMessage());
-            entity.setDueExigencyService(dto.getDueExigencyService());
-
-            entity = leaveApplicationRepository.save(entity);
-            return toDTO(entity);
-        } catch (Exception e) {
-            log.error("Error updating LeaveApplication: ", e);
-            return null;
+        entity.setEmployeeId(dto.getEmployeeId());
+        entity.setDateFiled(dto.getDateFiled());
+        entity.setLeaveType(dto.getLeaveType());
+        entity.setStartDate(dto.getStartDate());
+        entity.setEndDate(dto.getEndDate());
+        entity.setNoOfDays(dto.getNoOfDays());
+        entity.setCommutation(dto.getCommutation());
+        entity.setDetails(dto.getDetails());
+        if (dto.getStatus() != null && !dto.getStatus().isBlank()) {
+            entity.setStatus(dto.getStatus());
         }
+        entity.setRecommendingApprovalById(dto.getRecommendingApprovalById());
+        entity.setAuthorizedOfficialId(dto.getAuthorizedOfficialId());
+        entity.setApprovedById(dto.getApprovedById());
+        entity.setRecommendationStatus(dto.getRecommendationStatus());
+        entity.setRecommendationMessage(dto.getRecommendationMessage());
+        entity.setApprovedStatus(dto.getApprovedStatus());
+        entity.setApprovalMessage(dto.getApprovalMessage());
+        entity.setDueExigencyService(dto.getDueExigencyService());
+
+        entity = leaveApplicationRepository.save(entity);
+        return toDTO(entity);
+    }
+
+    @Transactional
+    @Override
+    public LeaveApplicationDTO recommendLeaveApplication(
+            Long leaveApplicationId,
+            Long recommendedById,
+            String remarks) throws Exception {
+        if (recommendedById == null) {
+            throw new IllegalArgumentException("The recommending officer is required.");
+        }
+
+        LeaveApplication entity = findPendingLeaveApplication(
+                leaveApplicationId,
+                "recommended"
+        );
+        entity.setRecommendationStatus("Recommended");
+        entity.setRecommendingApprovalById(recommendedById);
+        entity.setRecommendationMessage(normalizeRemarks(remarks));
+        return toDTO(leaveApplicationRepository.save(entity));
+    }
+
+    @Transactional
+    @Override
+    public LeaveApplicationDTO approveLeaveApplication(
+            Long leaveApplicationId,
+            Long approvedById,
+            String remarks) throws Exception {
+        return finalizeLeaveApplication(
+                leaveApplicationId,
+                approvedById,
+                remarks,
+                "Approved"
+        );
+    }
+
+    @Transactional
+    @Override
+    public LeaveApplicationDTO disapproveLeaveApplication(
+            Long leaveApplicationId,
+            Long approvedById,
+            String remarks) throws Exception {
+        return finalizeLeaveApplication(
+                leaveApplicationId,
+                approvedById,
+                remarks,
+                "Disapproved"
+        );
     }
 
     @Transactional
@@ -228,6 +272,49 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
             log.error("Error fetching bulk approved leaves: ", e);
             throw e;
         }
+    }
+
+    private LeaveApplicationDTO finalizeLeaveApplication(
+            Long leaveApplicationId,
+            Long approvedById,
+            String remarks,
+            String finalStatus) {
+        if (approvedById == null) {
+            throw new IllegalArgumentException("The approving officer is required.");
+        }
+
+        LeaveApplication entity = findPendingLeaveApplication(
+                leaveApplicationId,
+                finalStatus.toLowerCase()
+        );
+        entity.setStatus(finalStatus);
+        entity.setApprovedStatus(finalStatus);
+        entity.setApprovedById(approvedById);
+        entity.setApprovalMessage(normalizeRemarks(remarks));
+        return toDTO(leaveApplicationRepository.save(entity));
+    }
+
+    private LeaveApplication findPendingLeaveApplication(
+            Long leaveApplicationId,
+            String action) {
+        LeaveApplication entity = findLeaveApplication(leaveApplicationId);
+        if (!"Pending".equalsIgnoreCase(entity.getStatus())) {
+            throw new IllegalArgumentException(
+                    "Only pending leave applications may be " + action + "."
+            );
+        }
+        return entity;
+    }
+
+    private LeaveApplication findLeaveApplication(Long leaveApplicationId) {
+        return leaveApplicationRepository.findById(leaveApplicationId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Leave Application not found with id: " + leaveApplicationId
+                ));
+    }
+
+    private String normalizeRemarks(String remarks) {
+        return remarks == null ? "" : remarks;
     }
 }
 

@@ -15,40 +15,81 @@
 	<parameter name="requestedByPos" class="java.lang.String"/>
 	<parameter name="OVERTIME_REQUEST_ID" class="java.lang.Long"/>
 	<query language="sql"><![CDATA[
+WITH ranked_personnel AS (
+	SELECT
+		mp.employeeId,
+		mp.businessUnitId,
+		ROW_NUMBER() OVER (
+			PARTITION BY mp.employeeId
+			ORDER BY mp.id DESC
+		) AS row_num
+	FROM manage_personnel mp
+),
+ranked_settings AS (
+	SELECT
+		s.companyName,
+		s.address,
+		s.hospitalAgency,
+		s.leftHeaderLogo,
+		s.rightHeaderLogo,
+		ROW_NUMBER() OVER (ORDER BY s.settingsId DESC) AS row_num
+	FROM settings s
+),
+ranked_appointments AS (
+	SELECT
+		ea.employeeId,
+		ea.jobPositionId,
+		ea.natureOfAppointmentId,
+		ROW_NUMBER() OVER (
+			PARTITION BY ea.employeeId
+			ORDER BY
+				CASE
+					WHEN LOWER(CAST(ea.activeAppointment AS varchar(5))) IN ('1', 'true', 't') THEN 0
+					ELSE 1
+				END,
+				CASE WHEN ea.assumptionToDutyDate IS NULL THEN 1 ELSE 0 END,
+				ea.assumptionToDutyDate DESC,
+				ea.employeeAppointmentId DESC
+		) AS row_num
+	FROM employeeappointment ea
+)
 SELECT
 	CONCAT(
-		ISNULL(pd.firstname, ISNULL(e.firstname, '')),
-		CASE WHEN ISNULL(pd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', pd.middlename, ' ') END,
-		ISNULL(pd.surname, ISNULL(e.lastname, ''))
+		COALESCE(pd.firstname, COALESCE(e.firstname, '')),
+		CASE WHEN COALESCE(pd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', pd.middlename, ' ') END,
+		COALESCE(pd.surname, COALESCE(e.lastname, ''))
 	) AS fullname,
-	ISNULL(bu.businessUnitsName, '') AS businessUnit,
-	CAST(ot.dateTimeFrom AS DATE) AS dateCovered,
-	ISNULL(ot.netAuthorizedHours, ISNULL(ot.totalHours, 0)) AS noOfHours,
-	ISNULL(ot.purpose, '') AS purpose,
-	CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
-	ISNULL(st.companyName, '') AS currentCompanySetting,
-	ISNULL(st.address, '') AS currentCompanyAddressSetting,
+	COALESCE(bu.businessUnitsName, '') AS businessUnit,
+	CAST(ot.dateTimeFrom AS date) AS dateCovered,
+	COALESCE(ot.netAuthorizedHours, COALESCE(ot.totalHours, 0)) AS noOfHours,
+	COALESCE(ot.purpose, '') AS purpose,
+	CASE
+		WHEN LOWER(CAST(st.hospitalAgency AS varchar(5))) IN ('1', 'true', 't') THEN 1
+		ELSE 0
+	END AS hospitalAgency,
+	COALESCE(st.companyName, '') AS currentCompanySetting,
+	COALESCE(st.address, '') AS currentCompanyAddressSetting,
 	st.leftHeaderLogo,
 	st.rightHeaderLogo,
-	CAST(CASE WHEN LOWER(ISNULL(reqNoa.nature, '')) LIKE '%job order%' THEN 1 ELSE 0 END AS bit) AS isJobOrder,
+	CASE WHEN LOWER(COALESCE(reqNoa.nature, '')) LIKE '%job order%' THEN 1 ELSE 0 END AS isJobOrder,
 	CONCAT(
-		ISNULL(reqPd.firstname, ISNULL(reqEmp.firstname, '')),
-		CASE WHEN ISNULL(reqPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', reqPd.middlename, ' ') END,
-		ISNULL(reqPd.surname, ISNULL(reqEmp.lastname, ''))
+		COALESCE(reqPd.firstname, COALESCE(reqEmp.firstname, '')),
+		CASE WHEN COALESCE(reqPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', reqPd.middlename, ' ') END,
+		COALESCE(reqPd.surname, COALESCE(reqEmp.lastname, ''))
 	) AS requestedBy,
-	ISNULL(reqPos.jobPositionName, '') AS requestedByPos,
+	COALESCE(reqPos.jobPositionName, '') AS requestedByPos,
 	CONCAT(
-		ISNULL(recPd.firstname, ISNULL(recEmp.firstname, '')),
-		CASE WHEN ISNULL(recPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', recPd.middlename, ' ') END,
-		ISNULL(recPd.surname, ISNULL(recEmp.lastname, ''))
+		COALESCE(recPd.firstname, COALESCE(recEmp.firstname, '')),
+		CASE WHEN COALESCE(recPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', recPd.middlename, ' ') END,
+		COALESCE(recPd.surname, COALESCE(recEmp.lastname, ''))
 	) AS recommendedBy,
-	ISNULL(recPos.jobPositionName, '') AS recommendedByPos,
+	COALESCE(recPos.jobPositionName, '') AS recommendedByPos,
 	CONCAT(
-		ISNULL(appPd.firstname, ISNULL(appEmp.firstname, '')),
-		CASE WHEN ISNULL(appPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', appPd.middlename, ' ') END,
-		ISNULL(appPd.surname, ISNULL(appEmp.lastname, ''))
+		COALESCE(appPd.firstname, COALESCE(appEmp.firstname, '')),
+		CASE WHEN COALESCE(appPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', appPd.middlename, ' ') END,
+		COALESCE(appPd.surname, COALESCE(appEmp.lastname, ''))
 	) AS approvedBy,
-	ISNULL(appPos.jobPositionName, '') AS approvedByPos
+	COALESCE(appPos.jobPositionName, '') AS approvedByPos
 FROM overtime_request ot
 LEFT JOIN employee e ON e.employeeId = ot.employeeId
 LEFT JOIN personaldata pd ON pd.employeeId = ot.employeeId
@@ -58,50 +99,15 @@ LEFT JOIN employee recEmp ON recEmp.employeeId = ot.recommendedById
 LEFT JOIN personaldata recPd ON recPd.employeeId = recEmp.employeeId
 LEFT JOIN employee appEmp ON appEmp.employeeId = ot.approvedById
 LEFT JOIN personaldata appPd ON appPd.employeeId = appEmp.employeeId
-OUTER APPLY (
-	SELECT TOP 1 mp.businessUnitId
-	FROM manage_personnel mp
-	WHERE mp.employeeId = ot.employeeId
-	ORDER BY mp.id DESC
-) mp
+LEFT JOIN ranked_personnel mp ON mp.employeeId = ot.employeeId AND mp.row_num = 1
 LEFT JOIN businessunits bu ON bu.businessUnitsId = mp.businessUnitId
-OUTER APPLY (
-	SELECT TOP 1
-		s.companyName,
-		s.address,
-		s.hospitalAgency,
-		s.leftHeaderLogo,
-		s.rightHeaderLogo
-	FROM settings s
-	ORDER BY s.settingsId DESC
-) st
-OUTER APPLY (
-	SELECT TOP 1 ea.jobPositionId, ea.natureOfAppointmentId
-	FROM employeeappointment ea
-	WHERE ea.employeeId = reqEmp.employeeId
-	ORDER BY CASE WHEN ea.activeAppointment = 1 THEN 0 ELSE 1 END,
-		ea.assumptionToDutyDate DESC,
-		ea.employeeAppointmentId DESC
-) reqAppt
+LEFT JOIN ranked_settings st ON st.row_num = 1
+LEFT JOIN ranked_appointments reqAppt ON reqAppt.employeeId = reqEmp.employeeId AND reqAppt.row_num = 1
 LEFT JOIN job_position reqPos ON reqPos.jobPositionId = reqAppt.jobPositionId
 LEFT JOIN natureofappointment reqNoa ON reqNoa.natureofappointmentId = reqAppt.natureOfAppointmentId
-OUTER APPLY (
-	SELECT TOP 1 ea.jobPositionId
-	FROM employeeappointment ea
-	WHERE ea.employeeId = recEmp.employeeId
-	ORDER BY CASE WHEN ea.activeAppointment = 1 THEN 0 ELSE 1 END,
-		ea.assumptionToDutyDate DESC,
-		ea.employeeAppointmentId DESC
-) recAppt
+LEFT JOIN ranked_appointments recAppt ON recAppt.employeeId = recEmp.employeeId AND recAppt.row_num = 1
 LEFT JOIN job_position recPos ON recPos.jobPositionId = recAppt.jobPositionId
-OUTER APPLY (
-	SELECT TOP 1 ea.jobPositionId
-	FROM employeeappointment ea
-	WHERE ea.employeeId = appEmp.employeeId
-	ORDER BY CASE WHEN ea.activeAppointment = 1 THEN 0 ELSE 1 END,
-		ea.assumptionToDutyDate DESC,
-		ea.employeeAppointmentId DESC
-) appAppt
+LEFT JOIN ranked_appointments appAppt ON appAppt.employeeId = appEmp.employeeId AND appAppt.row_num = 1
 LEFT JOIN job_position appPos ON appPos.jobPositionId = appAppt.jobPositionId
 WHERE ot.overtimeRequestId = $P{OVERTIME_REQUEST_ID}
 ]]></query>

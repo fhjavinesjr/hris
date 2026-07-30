@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCreditService {
 
     private static final Logger log = LoggerFactory.getLogger(CompensatoryOvertimeCreditImpl.class);
+    private static final DateTimeFormatter REPORT_DATE_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yyyy");
 
     private final CompensatoryOvertimeCreditRepository cocRepository;
     private final CompensatoryTimeOffRepository ctoRepository;
@@ -525,11 +527,19 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
 
         Map<String, Object> params = new HashMap<>();
         params.put("COC_ID", cocId);
+        CompensatoryOvertimeCredit coc = cocId == null
+                ? null
+                : cocRepository.findById(cocId).orElse(null);
+        params.put("VALID_UNTIL", certificateValidUntil(coc == null ? null : coc.getDateFiled()));
 
         try (Connection conn = dataSource.getConnection()) {
             JasperPrint print = JasperFillManager.fillReport(report, params, conn);
             JasperExportManager.exportReportToPdfStream(print, out);
         }
+    }
+
+    static String certificateValidUntil(LocalDate dateFiled) {
+        return dateFiled == null ? "" : REPORT_DATE_FORMAT.format(dateFiled.plusYears(1));
     }
 
     private JasperReport compile(String classpathPath) throws Exception {

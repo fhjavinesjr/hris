@@ -11,12 +11,22 @@
 	<parameter name="logoright" class="java.lang.Object"/>
 	<parameter name="isDOH" class="java.lang.Boolean"/>
 	<parameter name="passSlipId" class="java.lang.Long"/>
-	<query language="sql"><![CDATA[SELECT
+	<query language="sql"><![CDATA[WITH ranked_settings AS (
+    SELECT
+        s.companyName,
+        s.address,
+        s.hospitalAgency,
+        s.leftHeaderLogo,
+        s.rightHeaderLogo,
+        ROW_NUMBER() OVER (ORDER BY s.settingsId DESC) AS settings_rank
+    FROM settings s
+)
+SELECT
     CONCAT(
         COALESCE(emp.lastname, ''),
         CASE WHEN COALESCE(emp.lastname, '') <> '' AND COALESCE(emp.firstname, '') <> '' THEN ', ' ELSE '' END,
         COALESCE(emp.firstname, ''),
-        CASE WHEN COALESCE(emp.suffix, '') <> '' THEN ' ' + emp.suffix ELSE '' END
+        CASE WHEN COALESCE(emp.suffix, '') <> '' THEN CONCAT(' ', emp.suffix) ELSE '' END
     ) AS employee,
     ps.passSlipDate AS permitDate,
     ps.purpose AS purpose,
@@ -26,30 +36,21 @@
             COALESCE(appr.lastname, ''),
             CASE WHEN COALESCE(appr.lastname, '') <> '' AND COALESCE(appr.firstname, '') <> '' THEN ', ' ELSE '' END,
             COALESCE(appr.firstname, ''),
-            CASE WHEN COALESCE(appr.suffix, '') <> '' THEN ' ' + appr.suffix ELSE '' END
+            CASE WHEN COALESCE(appr.suffix, '') <> '' THEN CONCAT(' ', appr.suffix) ELSE '' END
         ),
         ''
     ) AS approvalBy,
     ps.departureTime AS departureOut,
     ps.arrivalTime AS arrivalIn,
-    CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
-    ISNULL(st.companyName, '') AS currentCompanySetting,
-    ISNULL(st.address, '') AS currentCompanyAddressSetting,
+    st.hospitalAgency AS hospitalAgency,
+    COALESCE(st.companyName, '') AS currentCompanySetting,
+    COALESCE(st.address, '') AS currentCompanyAddressSetting,
     st.leftHeaderLogo AS leftHeaderLogo,
     st.rightHeaderLogo AS rightHeaderLogo
 FROM pass_slip ps
 LEFT JOIN employee emp ON emp.employeeId = ps.employeeId
 LEFT JOIN employee appr ON appr.employeeId = ps.approvedById
-OUTER APPLY (
-    SELECT TOP 1
-        s.companyName,
-        s.address,
-        s.hospitalAgency,
-        s.leftHeaderLogo,
-        s.rightHeaderLogo
-    FROM settings s
-    ORDER BY s.settingsId DESC
-) st
+LEFT JOIN ranked_settings st ON st.settings_rank = 1
 WHERE ps.passSlipId = $P{passSlipId}
 ORDER BY ps.passSlipDate ASC, ps.departureTime ASC, ps.passSlipId ASC]]></query>
 	<field name="employee" class="java.lang.String"/>

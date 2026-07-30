@@ -11,7 +11,6 @@ import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -56,25 +55,25 @@ public class PayslipServiceImpl implements PayslipService {
         params.put("employeeNo", employeeNo.trim());
         params.put("salaryPeriodKey", salaryPeriodKey.trim());
         boolean periodLocked = payrollPeriodLockService.isPeriodLocked(salaryPeriodKey.trim());
-        params.put("releasedOnly", releasedOnly ? 1 : 0);
-        params.put("periodLocked", periodLocked ? 1 : 0);
 
         String detailSql = """
-            SELECT TOP 1 *
+            SELECT *
             FROM payroll_detail
             WHERE employeeNo = :employeeNo
               AND salaryPeriodKey = :salaryPeriodKey
-              AND (:releasedOnly = 0 OR isLocked = 1 OR :periodLocked = 1)
             ORDER BY id DESC
             """;
 
-        Map<String, Object> row;
-        try {
-            row = jdbc.queryForMap(detailSql, params);
-        } catch (EmptyResultDataAccessException ex) {
+        List<Map<String, Object>> detailRows = jdbc.queryForList(detailSql, params);
+        Optional<Map<String, Object>> selectedRow = detailRows.stream()
+                .filter(candidate ->
+                        !releasedOnly || periodLocked || booleanValue(candidate.get("isLocked")))
+                .findFirst();
+        if (selectedRow.isEmpty()) {
             throw new NoSuchElementException(
                     "No payroll detail found for " + employeeNo + " in period " + salaryPeriodKey + ".");
         }
+        Map<String, Object> row = selectedRow.get();
 
         PayslipDTO dto = mapDetail(row);
         applyPeriodLockStatus(dto, periodLocked);
@@ -105,15 +104,24 @@ public class PayslipServiceImpl implements PayslipService {
     public List<String> getSalaryPeriods(String employeeNo) {
         Map<String, Object> params = new HashMap<>();
         String cleanEmployeeNo = employeeNo != null && !employeeNo.isBlank() ? employeeNo.trim() : null;
-        params.put("employeeNo", cleanEmployeeNo);
+        String employeeFilter = "";
+        if (cleanEmployeeNo != null) {
+            params.put("employeeNo", cleanEmployeeNo);
+            employeeFilter = "WHERE employeeNo = :employeeNo";
+        }
 
         String sql = """
             SELECT salaryPeriodKey
             FROM payroll_detail
-            WHERE (:employeeNo IS NULL OR employeeNo = :employeeNo)
+            %s
             GROUP BY salaryPeriodKey
-            ORDER BY MAX(salaryDate) DESC, MAX(cutoffEndDate) DESC, salaryPeriodKey DESC
-            """;
+            ORDER BY
+                CASE WHEN MAX(salaryDate) IS NULL THEN 1 ELSE 0 END,
+                MAX(salaryDate) DESC,
+                CASE WHEN MAX(cutoffEndDate) IS NULL THEN 1 ELSE 0 END,
+                MAX(cutoffEndDate) DESC,
+                salaryPeriodKey DESC
+            """.formatted(employeeFilter);
 
         return jdbc.query(sql, params, (rs, rowNum) -> rs.getString("salaryPeriodKey"));
     }
@@ -296,17 +304,18 @@ public class PayslipServiceImpl implements PayslipService {
             throw new IllegalArgumentException("Salary period is required.");
         }
 
-        // Keep the same friendly validation behavior as the UI JSON endpoint.
-        // If there is no record, this throws NoSuchElementException before Jasper runs.
+        // Keep the same friendly validation and released-only behavior as the UI JSON endpoint.
+        // If there is no eligible record, this throws NoSuchElementException before Jasper runs.
         PayslipDTO validatedPayslip = getPayslip(employeeNo, salaryPeriodKey, releasedOnly);
+        Long payrollDetailId = validatedPayslip.getPayrollDetailId();
+        if (payrollDetailId == null) {
+            throw new IllegalStateException("Validated payslip is missing its payroll detail ID.");
+        }
 
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("employeeNo", employeeNo.trim());
-        parameters.put("salaryPeriodKey", salaryPeriodKey.trim());
-        // The JRXML still filters by payroll_detail.isLocked. If the period is locked,
-        // the payslip is already validated as released, so do not let Jasper hide it
-        // just because payroll_detail.isLocked itself is still false.
-        parameters.put("releasedOnly", Boolean.TRUE.equals(validatedPayslip.getLocked()) ? 0 : (releasedOnly ? 1 : 0));
+        // Jasper renders the exact record already authorized above. This keeps provider-specific
+        // boolean and row-limiting rules out of the report query.
+        parameters.put("payrollDetailId", payrollDetailId);
 
         Resource reportResource = resourceLoader.getResource("classpath:reports/payslip.jrxml");
         if (!reportResource.exists()) {
@@ -350,7 +359,12 @@ public class PayslipServiceImpl implements PayslipService {
         if (value == null) return false;
         if (value instanceof Boolean b) return b;
         if (value instanceof Number n) return n.intValue() != 0;
-        return Boolean.parseBoolean(String.valueOf(value));
+        String text = String.valueOf(value).trim();
+        return "true".equalsIgnoreCase(text)
+                || "t".equalsIgnoreCase(text)
+                || "yes".equalsIgnoreCase(text)
+                || "y".equalsIgnoreCase(text)
+                || "1".equals(text);
     }
 
     private LocalDate localDateValue(Object value) {

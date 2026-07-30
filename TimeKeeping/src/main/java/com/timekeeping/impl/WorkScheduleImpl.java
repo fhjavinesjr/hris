@@ -1,7 +1,9 @@
 package com.timekeeping.impl;
 
 import com.timekeeping.dtos.WorkScheduleDTO;
+import com.timekeeping.dtos.WorkScheduleReportRow;
 import com.timekeeping.entitymodels.WorkSchedule;
+import com.timekeeping.reports.WorkScheduleReportDataLoader;
 import com.timekeeping.repositories.WorkScheduleRepository;
 import com.timekeeping.services.WorkScheduleService;
 import jakarta.transaction.Transactional;
@@ -10,6 +12,7 @@ import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -22,7 +25,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -155,19 +157,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
         params.put("webAppPath", "");
         params.put("supervisingNurse", "");
 
-        Map<String, Object> settings = jdbc.query(
-                "SELECT TOP 1 companyName, address, hospitalAgency, leftHeaderLogo, rightHeaderLogo FROM settings ORDER BY settingsId DESC",
-                rs -> {
-                    if (!rs.next()) return Collections.<String, Object>emptyMap();
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("companyName", rs.getString("companyName"));
-                    m.put("address", rs.getString("address"));
-                    m.put("hospitalAgency", rs.getObject("hospitalAgency"));
-                    m.put("leftHeaderLogo", rs.getBytes("leftHeaderLogo"));
-                    m.put("rightHeaderLogo", rs.getBytes("rightHeaderLogo"));
-                    return m;
-                }
-        );
+        Map<String, Object> settings = loadLatestReportSettings();
 
         params.put("currentCompany", settings.getOrDefault("companyName", ""));
         params.put("currentCompanyAddress", settings.getOrDefault("address", ""));
@@ -175,10 +165,38 @@ public class WorkScheduleImpl implements WorkScheduleService {
         params.put("logoleft", toValidImageInputStream((byte[]) settings.get("leftHeaderLogo")));
         params.put("logoright", toValidImageInputStream((byte[]) settings.get("rightHeaderLogo")));
 
-        try (Connection conn = dataSource.getConnection()) {
-            JasperPrint print = JasperFillManager.fillReport(report, params, conn);
-            JasperExportManager.exportReportToPdfStream(print, out);
-        }
+        List<WorkScheduleReportRow> reportRows =
+                new WorkScheduleReportDataLoader(jdbc).load(areaId, businessUnitId, fromDate, toDate);
+        JasperPrint print = JasperFillManager.fillReport(
+                report,
+                params,
+                new JRBeanCollectionDataSource(reportRows)
+        );
+        JasperExportManager.exportReportToPdfStream(print, out);
+    }
+
+    Map<String, Object> loadLatestReportSettings() {
+        Map<String, Object> settings = jdbc.query(
+                connection -> {
+                    java.sql.PreparedStatement statement = connection.prepareStatement(
+                            "SELECT companyName, address, hospitalAgency, leftHeaderLogo, rightHeaderLogo "
+                                    + "FROM settings ORDER BY settingsId DESC"
+                    );
+                    statement.setMaxRows(1);
+                    return statement;
+                },
+                rs -> {
+                    if (!rs.next()) return Collections.<String, Object>emptyMap();
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("companyName", rs.getString("companyName"));
+                    result.put("address", rs.getString("address"));
+                    result.put("hospitalAgency", rs.getObject("hospitalAgency"));
+                    result.put("leftHeaderLogo", rs.getBytes("leftHeaderLogo"));
+                    result.put("rightHeaderLogo", rs.getBytes("rightHeaderLogo"));
+                    return result;
+                }
+        );
+        return settings == null ? Collections.emptyMap() : settings;
     }
 
 
@@ -194,31 +212,43 @@ public class WorkScheduleImpl implements WorkScheduleService {
             return result;
         }
 
+        Long numericEmployeeId;
+        try {
+            numericEmployeeId = Long.valueOf(employeeId.trim());
+        } catch (NumberFormatException ex) {
+            return result;
+        }
+
         String sql = """
-                SELECT
-                    LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''),
-                        CASE WHEN ISNULL(e.suffix, '') = '' THEN '' ELSE CONCAT(' ', e.suffix) END,
-                        CASE WHEN ISNULL(e.firstname, '') = '' THEN '' ELSE CONCAT(', ', e.firstname) END
-                    ))) AS fullName,
-                    ISNULL(jp.jobPositionName, ISNULL(e.position, '')) AS position,
-                    ISNULL(TRY_CAST(ea.salaryGrade AS varchar(20)), '') AS salaryGrade
-                FROM employee e
-                OUTER APPLY (
-                    SELECT TOP 1
+                WITH ranked_appointments AS (
+                    SELECT
+                        ea0.employeeId,
                         ea0.jobPositionId,
                         ea0.salaryGrade,
-                        ea0.assumptionToDutyDate,
-                        ea0.activeAppointment,
-                        ea0.employeeAppointmentId
+                        ROW_NUMBER() OVER (
+                            PARTITION BY ea0.employeeId
+                            ORDER BY
+                                CASE WHEN ea0.activeAppointment IS NULL THEN 1 ELSE 0 END,
+                                ea0.activeAppointment DESC,
+                                CASE WHEN ea0.assumptionToDutyDate IS NULL THEN 1 ELSE 0 END,
+                                ea0.assumptionToDutyDate DESC,
+                                ea0.employeeAppointmentId DESC
+                        ) AS appointmentRank
                     FROM employeeAppointment ea0
-                    WHERE TRY_CAST(ea0.employeeId AS bigint) = e.employeeId
-                    ORDER BY
-                        CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-                        ea0.assumptionToDutyDate DESC,
-                        ea0.employeeAppointmentId DESC
-                ) ea
+                )
+                SELECT
+                    LTRIM(RTRIM(CONCAT(COALESCE(e.lastname, ''),
+                        CASE WHEN COALESCE(e.suffix, '') = '' THEN '' ELSE CONCAT(' ', e.suffix) END,
+                        CASE WHEN COALESCE(e.firstname, '') = '' THEN '' ELSE CONCAT(', ', e.firstname) END
+                    ))) AS fullName,
+                    COALESCE(jp.jobPositionName, COALESCE(e.position, '')) AS position,
+                    COALESCE(CAST(ea.salaryGrade AS VARCHAR(20)), '') AS salaryGrade
+                FROM employee e
+                LEFT JOIN ranked_appointments ea
+                    ON ea.employeeId = e.employeeId
+                    AND ea.appointmentRank = 1
                 LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-                WHERE e.employeeId = TRY_CAST(? AS bigint)
+                WHERE e.employeeId = ?
                 """;
 
         return jdbc.query(sql, rs -> {
@@ -230,7 +260,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
             result.put("position", blankIfNull(rs.getString("position")));
             result.put("salaryGrade", blankIfNull(rs.getString("salaryGrade")));
             return result;
-        }, employeeId.trim());
+        }, numericEmployeeId);
     }
 
     private String resolveAreaName(Long areaId) {

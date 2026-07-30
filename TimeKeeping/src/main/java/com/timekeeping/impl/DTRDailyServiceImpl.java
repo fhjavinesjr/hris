@@ -1,9 +1,11 @@
 package com.timekeeping.impl;
 
 import com.timekeeping.dtos.DTRDailyDTO;
+import com.timekeeping.dtos.DtrReportRow;
 import com.timekeeping.dtos.DTRSegmentDTO;
 import com.timekeeping.entitymodels.DTRDaily;
 import com.timekeeping.entitymodels.DTRSegment;
+import com.timekeeping.reports.DtrReportDataLoader;
 import com.timekeeping.repositories.DTRDailyRepository;
 import com.timekeeping.repositories.DTRSegmentRepository;
 import com.timekeeping.services.DTRDailyService;
@@ -12,6 +14,7 @@ import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -23,7 +26,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import javax.imageio.ImageIO;
-import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -156,10 +158,10 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "        COALESCE(d.total_late_minutes, 0) AS lateMinutes, " +
                 "        COALESCE(d.total_undertime_minutes, 0) AS undertimeMinutes, " +
                 "        COALESCE(d.total_overtime_minutes, 0) AS overtimeMinutes, " +
-            "        ws.isDayOff AS isRestDay " +
+            "        CAST(ws.isDayOff AS VARCHAR(5)) AS isRestDay " +
                 "    FROM work_schedule ws " +
-                "    INNER JOIN employee e ON e.employeeId = ws.employeeId " +
-                "    LEFT JOIN dtr_daily d ON d.employee_id = CAST(ws.employeeId AS VARCHAR) " +
+                "    INNER JOIN employee e ON CAST(e.employeeId AS VARCHAR(64)) = ws.employeeId " +
+                "    LEFT JOIN dtr_daily d ON d.employee_id = ws.employeeId " +
             "        AND d.work_date = CAST(ws.wsDateTime AS DATE) " +
             "    WHERE CAST(ws.wsDateTime AS DATE) BETWEEN ? AND ? " +
                 "    UNION " +
@@ -172,13 +174,13 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "        d.total_late_minutes AS lateMinutes, " +
                 "        d.total_undertime_minutes AS undertimeMinutes, " +
                 "        d.total_overtime_minutes AS overtimeMinutes, " +
-                "        0 AS isRestDay " +
+                "        CAST(0 AS VARCHAR(5)) AS isRestDay " +
                 "    FROM dtr_daily d " +
-                "    INNER JOIN employee e ON e.employeeId = CAST(d.employee_id AS INT) " +
+                "    INNER JOIN employee e ON CAST(e.employeeId AS VARCHAR(64)) = d.employee_id " +
                 "    WHERE d.work_date BETWEEN ? AND ? " +
                 "        AND NOT EXISTS ( " +
                 "            SELECT 1 FROM work_schedule ws2 " +
-                "            WHERE ws2.employeeId = CAST(d.employee_id AS INT) " +
+                "            WHERE ws2.employeeId = d.employee_id " +
                 "            AND CAST(ws2.wsDateTime AS DATE) = d.work_date " +
                 "        ) " +
                 ") " +
@@ -290,19 +292,7 @@ public class DTRDailyServiceImpl implements DTRDailyService {
         params.put("lastDtrDate", java.sql.Date.valueOf(toDate));
         params.put("webAppPath", "");
 
-        Map<String, Object> settings = jdbc.query(
-                "SELECT TOP 1 companyName, address, hospitalAgency, leftHeaderLogo, rightHeaderLogo FROM settings ORDER BY settingsId DESC",
-                rs -> {
-                    if (!rs.next()) return Collections.<String, Object>emptyMap();
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("companyName", rs.getString("companyName"));
-                    m.put("address", rs.getString("address"));
-                    m.put("hospitalAgency", rs.getObject("hospitalAgency"));
-                    m.put("leftHeaderLogo", rs.getBytes("leftHeaderLogo"));
-                    m.put("rightHeaderLogo", rs.getBytes("rightHeaderLogo"));
-                    return m;
-                }
-        );
+        Map<String, Object> settings = loadLatestReportSettings();
 
         params.put("currentCompany", settings.getOrDefault("companyName", ""));
         params.put("currentCompanyAddress", settings.getOrDefault("address", ""));
@@ -313,10 +303,38 @@ public class DTRDailyServiceImpl implements DTRDailyService {
         params.put("logoleft", toValidImageInputStream(leftLogo));
         params.put("logoright", toValidImageInputStream(rightLogo));
 
-        try (Connection conn = dataSource.getConnection()) {
-            JasperPrint print = JasperFillManager.fillReport(report, params, conn);
-            JasperExportManager.exportReportToPdfStream(print, out);
-        }
+        List<DtrReportRow> reportRows =
+                new DtrReportDataLoader(jdbc).load(employeeId, fromDate, toDate);
+        JasperPrint print = JasperFillManager.fillReport(
+                report,
+                params,
+                new JRBeanCollectionDataSource(reportRows)
+        );
+        JasperExportManager.exportReportToPdfStream(print, out);
+    }
+
+    Map<String, Object> loadLatestReportSettings() {
+        Map<String, Object> settings = jdbc.query(
+                connection -> {
+                    java.sql.PreparedStatement statement = connection.prepareStatement(
+                            "SELECT companyName, address, hospitalAgency, leftHeaderLogo, rightHeaderLogo "
+                                    + "FROM settings ORDER BY settingsId DESC"
+                    );
+                    statement.setMaxRows(1);
+                    return statement;
+                },
+                rs -> {
+                    if (!rs.next()) return Collections.<String, Object>emptyMap();
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("companyName", rs.getString("companyName"));
+                    result.put("address", rs.getString("address"));
+                    result.put("hospitalAgency", rs.getObject("hospitalAgency"));
+                    result.put("leftHeaderLogo", rs.getBytes("leftHeaderLogo"));
+                    result.put("rightHeaderLogo", rs.getBytes("rightHeaderLogo"));
+                    return result;
+                }
+        );
+        return settings == null ? Collections.emptyMap() : settings;
     }
 
     private InputStream toValidImageInputStream(byte[] imageBytes) {
@@ -421,4 +439,3 @@ public class DTRDailyServiceImpl implements DTRDailyService {
         return entity;
     }
 }
-

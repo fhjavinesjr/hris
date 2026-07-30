@@ -23,10 +23,14 @@ public class RemittanceReportServiceImpl implements RemittanceReportService {
 
     private final DataSource dataSource;
     private final ResourceLoader resourceLoader;
+    private final ReportSignatoryPositionResolver positionResolver;
 
-    public RemittanceReportServiceImpl(DataSource dataSource, ResourceLoader resourceLoader) {
+    public RemittanceReportServiceImpl(DataSource dataSource,
+                                       ResourceLoader resourceLoader,
+                                       ReportSignatoryPositionResolver positionResolver) {
         this.dataSource = dataSource;
         this.resourceLoader = resourceLoader;
+        this.positionResolver = positionResolver;
     }
 
     @Override
@@ -46,6 +50,10 @@ public class RemittanceReportServiceImpl implements RemittanceReportService {
         params.put("certifiedBy", nvl(certifiedBy));
         params.put("preparedByEmployeeNo", nvl(preparedByEmployeeNo));
         params.put("certifiedByEmployeeNo", nvl(certifiedByEmployeeNo));
+        params.put("preparedByPos", positionResolver.resolve(
+                salaryPeriodKey, preparedByEmployeeNo, preparedBy));
+        params.put("certifiedByPos", positionResolver.resolve(
+                salaryPeriodKey, certifiedByEmployeeNo, certifiedBy));
         export("reports/gsis_remittance.jrxml", params, out);
     }
 
@@ -68,6 +76,8 @@ public class RemittanceReportServiceImpl implements RemittanceReportService {
         params.put("perCov", nvl(periodCovered));
         params.put("certifiedBy", nvl(certifiedBy));
         params.put("certifiedByEmployeeNo", nvl(certifiedByEmployeeNo));
+        params.put("certifiedByPosition", positionResolver.resolve(
+                salaryPeriodKey, certifiedByEmployeeNo, certifiedBy));
         export("reports/pagibigmembershipremittance.jrxml", params, out);
     }
 
@@ -85,9 +95,15 @@ public class RemittanceReportServiceImpl implements RemittanceReportService {
         params.put("salaryDate", nvl(salaryDate));
         params.put("companyPhilhealthNo", nvl(companyPhilhealthNo));
         params.put("preparedBy", nvl(preparedBy));
-        params.put("preparedByPos", nvl(preparedByPos));
+        params.put("preparedByPos", nvl(
+                positionResolver.resolve(salaryPeriodKey, "", preparedBy),
+                nvl(preparedByPos)
+        ));
         params.put("certifiedBy", nvl(certifiedBy));
-        params.put("certifiedByPos", nvl(certifiedByPos));
+        params.put("certifiedByPos", nvl(
+                positionResolver.resolve(salaryPeriodKey, "", certifiedBy),
+                nvl(certifiedByPos)
+        ));
         export("reports/philhealth_remittance.jrxml", params, out);
     }
 

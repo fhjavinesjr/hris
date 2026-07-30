@@ -20,6 +20,21 @@ public interface LeaveApplicationService {
 
     LeaveApplicationDTO updateLeaveApplication(Long leaveApplicationId, LeaveApplicationDTO leaveApplicationDTO) throws Exception;
 
+    LeaveApplicationDTO recommendLeaveApplication(
+            Long leaveApplicationId,
+            Long recommendedById,
+            String remarks) throws Exception;
+
+    LeaveApplicationDTO approveLeaveApplication(
+            Long leaveApplicationId,
+            Long approvedById,
+            String remarks) throws Exception;
+
+    LeaveApplicationDTO disapproveLeaveApplication(
+            Long leaveApplicationId,
+            Long approvedById,
+            String remarks) throws Exception;
+
     Boolean deleteLeaveApplication(Long leaveApplicationId) throws Exception;
 
     /**

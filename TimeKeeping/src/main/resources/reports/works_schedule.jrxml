@@ -3,7 +3,6 @@
 	<property name="ireport.zoom" value="1.4641000000000115"/>
 	<property name="ireport.x" value="1117"/>
 	<property name="ireport.y" value="0"/>
-	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
 	<style name="Crosstab Data Text" hTextAlign="Center" hImageAlign="Center"/>
 	<parameter name="approvedBy" class="java.lang.String"/>
 	<parameter name="printedBy" class="java.lang.String"/>
@@ -26,85 +25,6 @@
 	<parameter name="reportArea" class="java.lang.String"/>
 	<parameter name="reportBusinessUnit" class="java.lang.String"/>
 	<parameter name="dateRangeLabel" class="java.lang.String"/>
-	<query language="SQL"><![CDATA[SELECT
-    p.areasName AS department,
-    p.fullname AS fullname,
-    d.dtrDate AS dtrDate,
-    CASE
-        WHEN ws.wsId IS NULL THEN ''
-        WHEN ISNULL(ws.isDayOff, 0) = 1 THEN 'DAY OFF / REST DAY'
-        WHEN ts.tsCode IS NULL THEN ISNULL(ws.tsCode, '')
-        ELSE CONCAT(
-            ts.tsCode, ' - ',
-            FORMAT(CAST(ts.timeIn AS datetime), 'hh:mm tt'),
-            CASE
-                WHEN ts.breakOut IS NULL OR ts.breakIn IS NULL THEN ' - '
-                ELSE CONCAT(' / ', FORMAT(CAST(ts.breakOut AS datetime), 'hh:mm tt'), ' - ', FORMAT(CAST(ts.breakIn AS datetime), 'hh:mm tt'), ' / ')
-            END,
-            FORMAT(CAST(ts.timeOut AS datetime), 'hh:mm tt')
-        )
-    END AS sched,
-    '' AS actual,
-    ISNULL(jp.jobPositionName, ISNULL(p.position, '')) AS jobPosition,
-    TRY_CAST(ea.salaryGrade AS int) AS salaryGrade
-FROM (
-    SELECT DISTINCT
-        mp.employeeId,
-        mp.areaId,
-        mp.businessUnitId,
-        a.areasName,
-        bu.businessUnitsName,
-        e.employeeNo,
-        e.position,
-        LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''),
-            CASE WHEN ISNULL(e.suffix, '') = '' THEN '' ELSE CONCAT(' ', e.suffix) END,
-            CASE WHEN ISNULL(e.firstname, '') = '' THEN '' ELSE CONCAT(', ', e.firstname) END
-        ))) AS fullname
-    FROM manage_personnel mp
-    INNER JOIN areas a ON a.areasId = mp.areaId
-    INNER JOIN businessunits bu ON bu.businessUnitsId = mp.businessUnitId
-    INNER JOIN employee e ON e.employeeId = mp.employeeId
-    WHERE mp.areaId = $P{areaId}
-      AND ($P{businessUnitId} IS NULL OR mp.businessUnitId = $P{businessUnitId})
-) p
-CROSS JOIN (
-    SELECT DATEADD(day, n.n, CAST($P{fromDate} AS date)) AS dtrDate
-    FROM (
-        SELECT TOP (DATEDIFF(day, CAST($P{fromDate} AS date), CAST($P{toDate} AS date)) + 1)
-            ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) - 1 AS n
-        FROM sys.all_objects a
-        CROSS JOIN sys.all_objects b
-    ) n
-) d
-OUTER APPLY (
-    SELECT TOP 1
-        ea0.jobPositionId,
-        ea0.salaryGrade,
-        ea0.assumptionToDutyDate,
-        ea0.activeAppointment,
-        ea0.employeeAppointmentId
-    FROM employeeAppointment ea0
-    WHERE TRY_CAST(ea0.employeeId AS bigint) = p.employeeId
-      AND (
-            ea0.assumptionToDutyDate IS NULL
-            OR CAST(ea0.assumptionToDutyDate AS date) <= d.dtrDate
-          )
-    ORDER BY
-        CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-        ea0.assumptionToDutyDate DESC,
-        ea0.employeeAppointmentId DESC
-) ea
-LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-LEFT JOIN work_schedule ws
-       ON TRY_CAST(ws.employeeId AS bigint) = p.employeeId
-      AND CAST(ws.wsDateTime AS date) = d.dtrDate
-LEFT JOIN time_shift ts ON UPPER(LTRIM(RTRIM(ts.tsCode))) = UPPER(LTRIM(RTRIM(ws.tsCode)))
-ORDER BY
-    p.businessUnitsName,
-    p.fullname,
-    d.dtrDate,
-    ws.wsDateTime,
-    ws.wsId]]></query>
 	<field name="department" class="java.lang.String"/>
 	<field name="fullname" class="java.lang.String"/>
 	<field name="dtrDate" class="java.util.Date"/>

@@ -13,6 +13,9 @@
 	<parameter name="CERTIFIED_BY_EMPLOYEE_NO" class="java.lang.String"/>
 	<parameter name="APPROVED_BY" class="java.lang.String"/>
 	<parameter name="APPROVED_BY_EMPLOYEE_NO" class="java.lang.String"/>
+	<parameter name="PREPARED_BY_POSITION" class="java.lang.String"/>
+	<parameter name="CERTIFIED_BY_POSITION" class="java.lang.String"/>
+	<parameter name="APPROVED_BY_POSITION" class="java.lang.String"/>
 	<query language="SQL"><![CDATA[WITH lock_state AS (
     SELECT CASE
         WHEN EXISTS (
@@ -23,22 +26,22 @@
     END AS isLocked
 ), filter_values AS (
     SELECT
-        UPPER(LTRIM(RTRIM(ISNULL($P{DEDUCTION_TYPE_CODE}, '')))) AS rawCode,
-        UPPER(LTRIM(RTRIM(ISNULL($P{DEDUCTION_TYPE_NAME}, '')))) AS rawName,
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL($P{DEDUCTION_TYPE_CODE}, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') AS normCode,
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL($P{DEDUCTION_TYPE_NAME}, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') AS normName
+        UPPER(LTRIM(RTRIM(COALESCE($P{DEDUCTION_TYPE_CODE}, '')))) AS rawCode,
+        UPPER(LTRIM(RTRIM(COALESCE($P{DEDUCTION_TYPE_NAME}, '')))) AS rawName,
+        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE($P{DEDUCTION_TYPE_CODE}, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') AS normCode,
+        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE($P{DEDUCTION_TYPE_NAME}, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') AS normName
 ), report_lines AS (
     -- Original computed deduction lines from payroll computation.
     SELECT
         pd.employeeNo,
         pd.employeeName,
-        ISNULL(pd.department, '') AS department,
+        COALESCE(pd.department, '') AS department,
         pd.salaryGrade,
         pd.salaryStep,
         pd.basicPerSalary,
-        ISNULL(pdd.amount, 0) AS amount,
-        ISNULL(pdd.employerShare, 0) AS employerShare,
-        ISNULL(pdd.reference, '') AS referenceNo,
+        COALESCE(pdd.amount, 0) AS amount,
+        COALESCE(pdd.employerShare, 0) AS employerShare,
+        COALESCE(pdd.reference, '') AS referenceNo,
         pdd.loanTotalAmount,
         pdd.loanPaymentsMade
     FROM payroll_detail pd
@@ -46,11 +49,11 @@
     CROSS JOIN filter_values fv
     WHERE pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
       AND (
-            REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL(pdd.deductionCode, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN (fv.normCode, fv.normName)
-            OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL(pdd.deductionName, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN (fv.normCode, fv.normName)
-            OR (fv.normCode = 'PHIC' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL(pdd.deductionName, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('PHILHEALTH', 'PHILHEALTHCONTRIBUTION'))
-            OR (fv.normCode = 'HDMF' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL(pdd.deductionName, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('PAGIBIG', 'PAGIBIGCONTRIBUTION'))
-            OR (fv.normCode = 'WTX' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL(pdd.deductionName, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('WITHHOLDINGTAX', 'BIRWITHHOLDINGTAX'))
+            REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE(pdd.deductionCode, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN (fv.normCode, fv.normName)
+            OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE(pdd.deductionName, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN (fv.normCode, fv.normName)
+            OR (fv.normCode = 'PHIC' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE(pdd.deductionName, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('PHILHEALTH', 'PHILHEALTHCONTRIBUTION'))
+            OR (fv.normCode = 'HDMF' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE(pdd.deductionName, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('PAGIBIG', 'PAGIBIGCONTRIBUTION'))
+            OR (fv.normCode = 'WTX' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE(pdd.deductionName, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('WITHHOLDINGTAX', 'BIRWITHHOLDINGTAX'))
           )
 
     UNION ALL
@@ -61,13 +64,13 @@
     SELECT
         pd.employeeNo,
         pd.employeeName,
-        ISNULL(pd.department, '') AS department,
+        COALESCE(pd.department, '') AS department,
         pd.salaryGrade,
         pd.salaryStep,
         pd.basicPerSalary,
-        ABS(ISNULL(pal.amount, 0)) AS amount,
+        ABS(COALESCE(pal.amount, 0)) AS amount,
         CAST(0 AS float) AS employerShare,
-        ISNULL(pah.authorityNo, '') AS referenceNo,
+        COALESCE(pah.authorityNo, '') AS referenceNo,
         CAST(NULL AS float) AS loanTotalAmount,
         CAST(NULL AS int) AS loanPaymentsMade
     FROM payroll_detail pd
@@ -79,71 +82,20 @@
     CROSS JOIN lock_state ls
     CROSS JOIN filter_values fv
     WHERE pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
-      AND UPPER(LTRIM(RTRIM(ISNULL(pal.type, '')))) = 'DEDUCTION'
+      AND UPPER(LTRIM(RTRIM(COALESCE(pal.type, '')))) = 'DEDUCTION'
       AND (
-            (ls.isLocked = 1 AND UPPER(LTRIM(RTRIM(ISNULL(pah.status, '')))) = 'POSTED')
+            (ls.isLocked = 1 AND UPPER(LTRIM(RTRIM(COALESCE(pah.status, '')))) = 'POSTED')
             OR
-            (ls.isLocked = 0 AND UPPER(LTRIM(RTRIM(ISNULL(pah.status, '')))) IN ('POSTED', 'PENDING'))
+            (ls.isLocked = 0 AND UPPER(LTRIM(RTRIM(COALESCE(pah.status, '')))) IN ('POSTED', 'PENDING'))
           )
-      AND UPPER(LTRIM(RTRIM(ISNULL(pah.status, '')))) <> 'SUPERSEDED'
+      AND UPPER(LTRIM(RTRIM(COALESCE(pah.status, '')))) <> 'SUPERSEDED'
       AND (
-            REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL(pal.code, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN (fv.normCode, fv.normName)
-            OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL(pal.name, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN (fv.normCode, fv.normName)
-            OR (fv.normCode = 'PHIC' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL(pal.name, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('PHILHEALTH', 'PHILHEALTHCONTRIBUTION'))
-            OR (fv.normCode = 'HDMF' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL(pal.name, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('PAGIBIG', 'PAGIBIGCONTRIBUTION'))
-            OR (fv.normCode = 'WTX' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(ISNULL(pal.name, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('WITHHOLDINGTAX', 'BIRWITHHOLDINGTAX'))
+            REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE(pal.code, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN (fv.normCode, fv.normName)
+            OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE(pal.name, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN (fv.normCode, fv.normName)
+            OR (fv.normCode = 'PHIC' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE(pal.name, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('PHILHEALTH', 'PHILHEALTHCONTRIBUTION'))
+            OR (fv.normCode = 'HDMF' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE(pal.name, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('PAGIBIG', 'PAGIBIGCONTRIBUTION'))
+            OR (fv.normCode = 'WTX' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(UPPER(LTRIM(RTRIM(COALESCE(pal.name, '')))), ' ', ''), '-', ''), '.', ''), '/', ''), '_', '') IN ('WITHHOLDINGTAX', 'BIRWITHHOLDINGTAX'))
           )
-), signatory_positions AS (
-    SELECT
-        ISNULL(prep.position, '') AS preparedByPosition,
-        ISNULL(cert.position, '') AS certifiedByPosition,
-        ISNULL(appr.position, '') AS approvedByPosition
-    FROM (SELECT 1 AS oneRow) oneRow
-    OUTER APPLY (
-        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
-        FROM employee e
-        OUTER APPLY (
-            SELECT TOP 1 ea0.jobPositionId, ea0.assumptionToDutyDate, ea0.activeAppointment, ea0.employeeAppointmentId
-            FROM employeeappointment ea0
-            WHERE ea0.employeeId = e.employeeId
-            ORDER BY CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-                     ea0.assumptionToDutyDate DESC,
-                     ea0.employeeAppointmentId DESC
-        ) ea
-        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
-        WHERE e.employeeNo = $P{PREPARED_BY_EMPLOYEE_NO}
-    ) prep
-    OUTER APPLY (
-        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
-        FROM employee e
-        OUTER APPLY (
-            SELECT TOP 1 ea0.jobPositionId, ea0.assumptionToDutyDate, ea0.activeAppointment, ea0.employeeAppointmentId
-            FROM employeeappointment ea0
-            WHERE ea0.employeeId = e.employeeId
-            ORDER BY CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-                     ea0.assumptionToDutyDate DESC,
-                     ea0.employeeAppointmentId DESC
-        ) ea
-        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
-        WHERE e.employeeNo = $P{CERTIFIED_BY_EMPLOYEE_NO}
-    ) cert
-    OUTER APPLY (
-        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
-        FROM employee e
-        OUTER APPLY (
-            SELECT TOP 1 ea0.jobPositionId, ea0.assumptionToDutyDate, ea0.activeAppointment, ea0.employeeAppointmentId
-            FROM employeeappointment ea0
-            WHERE ea0.employeeId = e.employeeId
-            ORDER BY CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-                     ea0.assumptionToDutyDate DESC,
-                     ea0.employeeAppointmentId DESC
-        ) ea
-        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
-        WHERE e.employeeNo = $P{APPROVED_BY_EMPLOYEE_NO}
-    ) appr
 )
 
 SELECT
@@ -154,17 +106,13 @@ SELECT
     rl.salaryGrade AS salaryGrade,
     rl.salaryStep AS salaryStep,
     rl.basicPerSalary AS basicPerSalary,
-    CAST(SUM(ISNULL(rl.amount, 0)) AS float) AS deductionAmount,
-    CAST(SUM(ISNULL(rl.employerShare, 0)) AS float) AS employerShare,
-    MAX(ISNULL(rl.referenceNo, '')) AS referenceNo,
+    CAST(SUM(COALESCE(rl.amount, 0)) AS float) AS deductionAmount,
+    CAST(SUM(COALESCE(rl.employerShare, 0)) AS float) AS employerShare,
+    MAX(COALESCE(rl.referenceNo, '')) AS referenceNo,
     MAX(rl.loanTotalAmount) AS loanTotalAmount,
     MAX(rl.loanPaymentsMade) AS loanPaymentsMade,
-    CAST(-1 * SUM(ISNULL(rl.amount, 0)) AS float) AS netEffect,
-    MAX(sp.preparedByPosition) AS preparedByPosition,
-    MAX(sp.certifiedByPosition) AS certifiedByPosition,
-    MAX(sp.approvedByPosition) AS approvedByPosition
+    CAST(-1 * SUM(COALESCE(rl.amount, 0)) AS float) AS netEffect
 FROM report_lines rl
-CROSS JOIN signatory_positions sp
 GROUP BY
     rl.employeeNo,
     rl.employeeName,
@@ -172,7 +120,7 @@ GROUP BY
     rl.salaryGrade,
     rl.salaryStep,
     rl.basicPerSalary
-HAVING SUM(ISNULL(rl.amount, 0)) <> 0
+HAVING SUM(COALESCE(rl.amount, 0)) <> 0
 ORDER BY rl.employeeName, rl.employeeNo]]></query>
 	<field name="no" class="java.lang.Integer"/>
 	<field name="employeeNo" class="java.lang.String"/>
@@ -187,9 +135,6 @@ ORDER BY rl.employeeName, rl.employeeNo]]></query>
 	<field name="loanTotalAmount" class="java.lang.Double"/>
 	<field name="loanPaymentsMade" class="java.lang.Integer"/>
 	<field name="netEffect" class="java.lang.Double"/>
-	<field name="preparedByPosition" class="java.lang.String"/>
-	<field name="certifiedByPosition" class="java.lang.String"/>
-	<field name="approvedByPosition" class="java.lang.String"/>
 	<variable name="TOTAL_DEDUCTION" calculation="Sum" class="java.lang.Double">
 		<expression><![CDATA[$F{deductionAmount}]]></expression>
 		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
@@ -397,7 +342,7 @@ ORDER BY rl.employeeName, rl.employeeNo]]></query>
 			<box><pen lineWidth="0.5"/></box>
 		</element>
 		<element kind="textField" uuid="469df5ed-be5b-4b59-ae24-ae1ba509da40" x="0" y="90" width="260" height="16" fontSize="7.0" blankWhenNull="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
-			<expression><![CDATA[$F{preparedByPosition}]]></expression>
+			<expression><![CDATA[$P{PREPARED_BY_POSITION}]]></expression>
 			<box><pen lineWidth="0.5"/></box>
 		</element>
 		<element kind="textField" uuid="51d6b83a-7381-47f9-b5da-c842cbfa79d6" x="320" y="72" width="260" height="18" fontSize="8.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
@@ -405,7 +350,7 @@ ORDER BY rl.employeeName, rl.employeeNo]]></query>
 			<box><pen lineWidth="0.5"/></box>
 		</element>
 		<element kind="textField" uuid="efb50a7e-b369-443b-a24c-e441c40d17f2" x="320" y="90" width="260" height="16" fontSize="7.0" blankWhenNull="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
-			<expression><![CDATA[$F{certifiedByPosition}]]></expression>
+			<expression><![CDATA[$P{CERTIFIED_BY_POSITION}]]></expression>
 			<box><pen lineWidth="0.5"/></box>
 		</element>
 		<element kind="textField" uuid="01795ad0-cbba-40ce-a405-b320869789b7" x="640" y="72" width="260" height="18" fontSize="8.0" blankWhenNull="true" bold="true" hTextAlign="Center" vTextAlign="Middle">
@@ -413,7 +358,7 @@ ORDER BY rl.employeeName, rl.employeeNo]]></query>
 			<box><pen lineWidth="0.5"/></box>
 		</element>
 		<element kind="textField" uuid="d5f83c56-320e-43aa-901b-15d349dd367f" x="640" y="90" width="260" height="16" fontSize="7.0" blankWhenNull="true" italic="true" hTextAlign="Center" vTextAlign="Middle">
-			<expression><![CDATA[$F{approvedByPosition}]]></expression>
+			<expression><![CDATA[$P{APPROVED_BY_POSITION}]]></expression>
 			<box><pen lineWidth="0.5"/></box>
 		</element>
 	</summary>

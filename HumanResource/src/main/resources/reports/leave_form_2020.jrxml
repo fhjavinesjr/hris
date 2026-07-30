@@ -14,74 +14,9 @@
 	<parameter name="isDOH" class="java.lang.Boolean"/>
 	<parameter name="LEAVE_APPLICATION_ID" class="java.lang.Long"/>
 	<parameter name="LEAVE_MONETIZATION_ID" class="java.lang.Long"/>
-	<query language="sql"><![CDATA[SELECT
-			ISNULL(pd.surname, '') AS lastname,
-			ISNULL(pd.firstname, '') AS firstname,
-			ISNULL(pd.middlename, '') AS middlename,
-			CAST(src.dateFiled AS datetime) AS dateFiling,
-			ISNULL(st.companyName, ISNULL('[' + ISNULL(e.employeeNo, '') + '] ' + ISNULL(pd.firstname, '') + ' ' + ISNULL(pd.surname, ''), '')) AS agency,
-			ISNULL(jp.jobPositionName, ISNULL(e.position, '')) AS jobPosition,
-			CAST(ISNULL(ap.salaryPerMonth, 0) AS float) AS salaryMonthly,
-			CASE WHEN src.leaveType = 'Vacation Leave' THEN src.leaveType ELSE '' END AS otherLeaveA,
-			CASE WHEN src.leaveType <> 'Vacation Leave' THEN src.leaveType ELSE '' END AS otherLeaveB,
-			CASE
-				WHEN src.leaveType = 'Vacation Leave' THEN 1
-				WHEN src.leaveType = 'Sick Leave' THEN 2
-				ELSE 3
-			END AS leaveType,
-			wd.workingDaysApplied AS noOfDaysApplied,
-			CAST(CASE WHEN src.leaveType = 'Vacation Leave' THEN 1 ELSE 0 END AS bit) AS isVlInCountry,
-			ISNULL(src.details, '') AS vlLocationAt,
-			CAST(CASE WHEN src.leaveType = 'Sick Leave' THEN 1 ELSE 0 END AS bit) AS isSlInHospital,
-			ISNULL(src.details, '') AS slLocationAt,
-			ISNULL(CONVERT(varchar(10), src.startDate, 101) + ' - ' + CONVERT(varchar(10), src.endDate, 101), CONVERT(varchar(10), src.dateFiled, 101)) AS inclusiveDates,
-			CAST(CASE WHEN LOWER(ISNULL(src.commutation, '')) = 'requested' THEN 1 ELSE 0 END AS bit) AS isCommutation,
-			CAST(CASE WHEN ISNULL(src.approvedStatus, '') = 'Approved' THEN 1 ELSE 0 END AS bit) AS isApproved,
-			CAST(src.dateFiled AS datetime) AS creditDateAsOf,
-			CAST(ISNULL(li.vacationLeaveBalance, 0) AS float) AS vlCredit,
-			CAST(ISNULL(li.sickLeaveBalance, 0) AS float) AS slCredit,
-			CAST(ISNULL(li.vacationLeaveBalance, 0) + ISNULL(li.sickLeaveBalance, 0) AS float) AS totalCredit,
-			CAST(CASE WHEN ISNULL(src.approvedStatus, '') = 'Approved' THEN wd.workingDaysApplied ELSE 0 END AS float) AS daysApprovedWithPay,
-			CAST(0 AS float) AS daysApprovedWithoutPay,
-			CAST(0 AS float) AS daysApprovedOther,
-			CASE WHEN ISNULL(src.approvedStatus, '') = 'Disapproved' THEN ISNULL(src.approvalMessage, '') ELSE '' END AS disapprovedDueTo,
-			ISNULL(auth.firstname + ' ' + auth.lastname, '') AS authorizedOfficial,
-			ISNULL(auth.position, '') AS authorizedOfficialTitle,
-			ISNULL(rec.firstname + ' ' + rec.lastname, '') AS recommendBy,
-			ISNULL(rec.position, '') AS recommendByTitle,
-			ISNULL(app.firstname + ' ' + app.lastname, '') AS approvedBy,
-			ISNULL(app.position, '') AS approvedByTitle,
-			CAST(CASE WHEN ISNULL(src.recommendationStatus, '') = 'Approved' THEN 1 ELSE 0 END AS bit) AS isRecommendApproved,
-			ISNULL(src.recommendationMessage, '') AS recommendationDueTo,
-			'' AS leaveAppHeader1,
-			'' AS leaveAppHeader2,
-			'' AS leaveAppFooter1,
-			'' AS leaveAppFooter2,
-			'' AS leaveAppFooter3,
-			ISNULL(pd.surname, '') + ', ' + ISNULL(pd.firstname, '') + ' ' + ISNULL(pd.middlename, '') AS fullname,
-			CASE WHEN ISNULL(src.approvedStatus, '') = 'Approved' THEN 1 ELSE 2 END AS approvalType,
-			CASE WHEN ISNULL(src.recommendationStatus, '') = 'Approved' THEN 1 ELSE 2 END AS recommendationApproval,
-			CAST(0 AS bit) AS isVlAbroad,
-			CAST(CASE WHEN src.leaveType = 'Sick Leave' THEN 1 ELSE 0 END AS bit) AS isSlOutHospital,
-			'' AS formCode,
-			CAST(ISNULL(src.endDate, src.dateFiled) AS date) AS lastDate,
-			ISNULL(CONVERT(varchar(10), src.startDate, 101) + ' - ' + CONVERT(varchar(10), src.endDate, 101), CONVERT(varchar(10), src.dateFiled, 101)) AS combined,
-			'' AS inclusiveDatesWOPay,
-			ISNULL(CAST(wd.workingDaysApplied AS varchar(20)), '0') AS noofDaysApplied,
-			0 AS caseSTL,
-			CAST(src.isMone AS bit) AS isMone,
-			CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
-			ISNULL(st.companyName, '') AS currentCompanySetting,
-			ISNULL(st.address, '') AS currentCompanyAddressSetting,
-			st.leftHeaderLogo AS leftHeaderLogo,
-			st.rightHeaderLogo AS rightHeaderLogo,
-			CAST(CASE WHEN src.isMone = 1 THEN ISNULL(src.noOfDaysVL, 0) ELSE CASE WHEN src.leaveType = 'Vacation Leave' THEN wd.workingDaysApplied ELSE 0 END END AS float) AS lessVlThisApplication,
-			CAST(CASE WHEN src.isMone = 1 THEN ISNULL(src.noOfDaysSL, 0) ELSE CASE WHEN src.leaveType = 'Sick Leave' THEN wd.workingDaysApplied ELSE 0 END END AS float) AS lessSlThisApplication,
-			CAST(CASE WHEN src.isMone = 1 THEN ISNULL(src.noOfDaysSL, 0) + ISNULL(src.noOfDaysVL, 0) ELSE CASE WHEN src.leaveType IN ('Vacation Leave', 'Sick Leave') THEN wd.workingDaysApplied ELSE 0 END END AS float) AS lessTotalThisApplication,
-			CAST(ISNULL(li.vacationLeaveBalance, 0) - (CASE WHEN src.isMone = 1 THEN ISNULL(src.noOfDaysVL, 0) ELSE CASE WHEN src.leaveType = 'Vacation Leave' THEN wd.workingDaysApplied ELSE 0 END END) AS float) AS balanceVl,
-			CAST(ISNULL(li.sickLeaveBalance, 0) - (CASE WHEN src.isMone = 1 THEN ISNULL(src.noOfDaysSL, 0) ELSE CASE WHEN src.leaveType = 'Sick Leave' THEN wd.workingDaysApplied ELSE 0 END END) AS float) AS balanceSl,
-			CAST((ISNULL(li.vacationLeaveBalance, 0) + ISNULL(li.sickLeaveBalance, 0)) - (CASE WHEN src.isMone = 1 THEN ISNULL(src.noOfDaysSL, 0) + ISNULL(src.noOfDaysVL, 0) ELSE CASE WHEN src.leaveType IN ('Vacation Leave', 'Sick Leave') THEN wd.workingDaysApplied ELSE 0 END END) AS float) AS balanceTotal
-		FROM (
+	<parameter name="WORKING_DAYS_APPLIED" class="java.lang.Double"/>
+	<parameter name="INCLUSIVE_DATES" class="java.lang.String"/>
+	<query language="sql"><![CDATA[WITH source_data AS (
 			SELECT
 				la.leaveApplicationId AS sourceId,
 				la.employeeId,
@@ -101,7 +36,7 @@
 				la.approvedById,
 				CAST(NULL AS float) AS noOfDaysSL,
 				CAST(NULL AS float) AS noOfDaysVL,
-				CAST(0 AS int) AS isMone
+				CAST(0 AS integer) AS isMone
 			FROM leave_application la
 			WHERE $P{LEAVE_APPLICATION_ID} IS NOT NULL
 			  AND la.leaveApplicationId = $P{LEAVE_APPLICATION_ID}
@@ -116,62 +51,212 @@
 				CAST(NULL AS date) AS startDate,
 				CAST(NULL AS date) AS endDate,
 				lm.totalDays AS noOfDays,
-				ISNULL(lm.reason, '') AS details,
+				COALESCE(lm.reason, '') AS details,
 				'not requested' AS commutation,
 				lm.approvalStatus AS approvedStatus,
-				ISNULL(lm.approvalRemarks, '') AS approvalMessage,
+				COALESCE(lm.approvalRemarks, '') AS approvalMessage,
 				lm.recommendationStatus AS recommendationStatus,
-				ISNULL(lm.recommendationRemarks, '') AS recommendationMessage,
+				COALESCE(lm.recommendationRemarks, '') AS recommendationMessage,
 				lm.recommendedById AS recommendingApprovalById,
 				lm.recommendedById AS authorizedOfficialId,
 				lm.approvedById,
-				ISNULL(lm.noOfDaysSL, 0) AS noOfDaysSL,
-				ISNULL(lm.noOfDaysVL, 0) AS noOfDaysVL,
-				CAST(1 AS int) AS isMone
+				COALESCE(lm.noOfDaysSL, 0) AS noOfDaysSL,
+				COALESCE(lm.noOfDaysVL, 0) AS noOfDaysVL,
+				CAST(1 AS integer) AS isMone
 			FROM leave_monetization lm
 			WHERE $P{LEAVE_MONETIZATION_ID} IS NOT NULL
 			  AND lm.leaveMonetizationId = $P{LEAVE_MONETIZATION_ID}
-		) src
+		),
+		ranked_settings AS (
+			SELECT
+				s.companyName,
+				s.address,
+				s.hospitalAgency,
+				s.leftHeaderLogo,
+				s.rightHeaderLogo,
+				ROW_NUMBER() OVER (ORDER BY s.settingsId DESC) AS row_num
+			FROM settings s
+		),
+		ranked_appointments AS (
+			SELECT
+				ea.employeeId,
+				ea.salaryPerMonth,
+				ea.jobPositionId,
+				ROW_NUMBER() OVER (
+					PARTITION BY ea.employeeId
+					ORDER BY
+						CASE WHEN ea.assumptionToDutyDate IS NULL THEN 1 ELSE 0 END,
+						ea.assumptionToDutyDate DESC,
+						ea.employeeAppointmentId DESC
+				) AS row_num
+			FROM employeeappointment ea
+		),
+		ranked_leave_information AS (
+			SELECT
+				lix.employeeId,
+				lix.vacationLeaveBalance,
+				lix.sickLeaveBalance,
+				ROW_NUMBER() OVER (
+					PARTITION BY lix.employeeId
+					ORDER BY
+						CASE WHEN lix.cutoffEndDate IS NULL THEN 1 ELSE 0 END,
+						lix.cutoffEndDate DESC,
+						lix.leaveInformationId DESC
+				) AS row_num
+			FROM leave_information lix
+		)
+		SELECT
+			COALESCE(pd.surname, '') AS lastname,
+			COALESCE(pd.firstname, '') AS firstname,
+			COALESCE(pd.middlename, '') AS middlename,
+			CAST(src.dateFiled AS date) AS dateFiling,
+			COALESCE(
+				st.companyName,
+				CONCAT(
+					'[',
+					COALESCE(e.employeeNo, ''),
+					'] ',
+					COALESCE(pd.firstname, ''),
+					' ',
+					COALESCE(pd.surname, '')
+				)
+			) AS agency,
+			COALESCE(jp.jobPositionName, COALESCE(e.position, '')) AS jobPosition,
+			CAST(COALESCE(ap.salaryPerMonth, 0) AS float) AS salaryMonthly,
+			CASE WHEN src.leaveType = 'Vacation Leave' THEN src.leaveType ELSE '' END AS otherLeaveA,
+			CASE WHEN src.leaveType <> 'Vacation Leave' THEN src.leaveType ELSE '' END AS otherLeaveB,
+			CASE
+				WHEN src.leaveType = 'Vacation Leave' THEN 1
+				WHEN src.leaveType = 'Sick Leave' THEN 2
+				ELSE 3
+			END AS leaveType,
+			CAST($P{WORKING_DAYS_APPLIED} AS float) AS noOfDaysApplied,
+			CASE WHEN src.leaveType = 'Vacation Leave' THEN 1 ELSE 0 END AS isVlInCountry,
+			COALESCE(src.details, '') AS vlLocationAt,
+			CASE WHEN src.leaveType = 'Sick Leave' THEN 1 ELSE 0 END AS isSlInHospital,
+			COALESCE(src.details, '') AS slLocationAt,
+			CAST($P{INCLUSIVE_DATES} AS varchar(50)) AS inclusiveDates,
+			CASE WHEN LOWER(COALESCE(src.commutation, '')) = 'requested' THEN 1 ELSE 0 END AS isCommutation,
+			CASE WHEN COALESCE(src.approvedStatus, '') = 'Approved' THEN 1 ELSE 0 END AS isApproved,
+			CAST(src.dateFiled AS date) AS creditDateAsOf,
+			CAST(COALESCE(li.vacationLeaveBalance, 0) AS float) AS vlCredit,
+			CAST(COALESCE(li.sickLeaveBalance, 0) AS float) AS slCredit,
+			CAST(COALESCE(li.vacationLeaveBalance, 0) + COALESCE(li.sickLeaveBalance, 0) AS float) AS totalCredit,
+			CAST(
+				CASE
+					WHEN COALESCE(src.approvedStatus, '') = 'Approved' THEN $P{WORKING_DAYS_APPLIED}
+					ELSE 0
+				END
+			AS float) AS daysApprovedWithPay,
+			CAST(0 AS float) AS daysApprovedWithoutPay,
+			CAST(0 AS float) AS daysApprovedOther,
+			CASE
+				WHEN COALESCE(src.approvedStatus, '') = 'Disapproved' THEN COALESCE(src.approvalMessage, '')
+				ELSE ''
+			END AS disapprovedDueTo,
+			CASE
+				WHEN auth.firstname IS NULL OR auth.lastname IS NULL THEN ''
+				ELSE CONCAT(auth.firstname, ' ', auth.lastname)
+			END AS authorizedOfficial,
+			COALESCE(auth.position, '') AS authorizedOfficialTitle,
+			CASE
+				WHEN rec.firstname IS NULL OR rec.lastname IS NULL THEN ''
+				ELSE CONCAT(rec.firstname, ' ', rec.lastname)
+			END AS recommendBy,
+			COALESCE(rec.position, '') AS recommendByTitle,
+			CASE
+				WHEN app.firstname IS NULL OR app.lastname IS NULL THEN ''
+				ELSE CONCAT(app.firstname, ' ', app.lastname)
+			END AS approvedBy,
+			COALESCE(app.position, '') AS approvedByTitle,
+			CASE WHEN COALESCE(src.recommendationStatus, '') = 'Approved' THEN 1 ELSE 0 END AS isRecommendApproved,
+			COALESCE(src.recommendationMessage, '') AS recommendationDueTo,
+			'' AS leaveAppHeader1,
+			'' AS leaveAppHeader2,
+			'' AS leaveAppFooter1,
+			'' AS leaveAppFooter2,
+			'' AS leaveAppFooter3,
+			CONCAT(
+				COALESCE(pd.surname, ''),
+				', ',
+				COALESCE(pd.firstname, ''),
+				' ',
+				COALESCE(pd.middlename, '')
+			) AS fullname,
+			CASE WHEN COALESCE(src.approvedStatus, '') = 'Approved' THEN 1 ELSE 2 END AS approvalType,
+			CASE WHEN COALESCE(src.recommendationStatus, '') = 'Approved' THEN 1 ELSE 2 END AS recommendationApproval,
+			0 AS isVlAbroad,
+			CASE WHEN src.leaveType = 'Sick Leave' THEN 1 ELSE 0 END AS isSlOutHospital,
+			'' AS formCode,
+			CAST(COALESCE(src.endDate, src.dateFiled) AS date) AS lastDate,
+			CAST($P{INCLUSIVE_DATES} AS varchar(50)) AS combined,
+			'' AS inclusiveDatesWOPay,
+			COALESCE(CAST($P{WORKING_DAYS_APPLIED} AS varchar(20)), '0') AS noofDaysApplied,
+			0 AS caseSTL,
+			src.isMone AS isMone,
+			CASE
+				WHEN LOWER(CAST(st.hospitalAgency AS varchar(5))) IN ('1', 'true', 't') THEN 1
+				ELSE 0
+			END AS hospitalAgency,
+			COALESCE(st.companyName, '') AS currentCompanySetting,
+			COALESCE(st.address, '') AS currentCompanyAddressSetting,
+			st.leftHeaderLogo AS leftHeaderLogo,
+			st.rightHeaderLogo AS rightHeaderLogo,
+			CAST(
+				CASE
+					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysVL, 0)
+					WHEN src.leaveType = 'Vacation Leave' THEN $P{WORKING_DAYS_APPLIED}
+					ELSE 0
+				END
+			AS float) AS lessVlThisApplication,
+			CAST(
+				CASE
+					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysSL, 0)
+					WHEN src.leaveType = 'Sick Leave' THEN $P{WORKING_DAYS_APPLIED}
+					ELSE 0
+				END
+			AS float) AS lessSlThisApplication,
+			CAST(
+				CASE
+					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysSL, 0) + COALESCE(src.noOfDaysVL, 0)
+					WHEN src.leaveType IN ('Vacation Leave', 'Sick Leave') THEN $P{WORKING_DAYS_APPLIED}
+					ELSE 0
+				END
+			AS float) AS lessTotalThisApplication,
+			CAST(
+				COALESCE(li.vacationLeaveBalance, 0) -
+				CASE
+					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysVL, 0)
+					WHEN src.leaveType = 'Vacation Leave' THEN $P{WORKING_DAYS_APPLIED}
+					ELSE 0
+				END
+			AS float) AS balanceVl,
+			CAST(
+				COALESCE(li.sickLeaveBalance, 0) -
+				CASE
+					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysSL, 0)
+					WHEN src.leaveType = 'Sick Leave' THEN $P{WORKING_DAYS_APPLIED}
+					ELSE 0
+				END
+			AS float) AS balanceSl,
+			CAST(
+				(COALESCE(li.vacationLeaveBalance, 0) + COALESCE(li.sickLeaveBalance, 0)) -
+				CASE
+					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysSL, 0) + COALESCE(src.noOfDaysVL, 0)
+					WHEN src.leaveType IN ('Vacation Leave', 'Sick Leave') THEN $P{WORKING_DAYS_APPLIED}
+					ELSE 0
+				END
+			AS float) AS balanceTotal
+		FROM source_data src
 		LEFT JOIN employee e ON e.employeeId = src.employeeId
 		LEFT JOIN personaldata pd ON pd.employeeId = src.employeeId
 		LEFT JOIN employee rec ON rec.employeeId = src.recommendingApprovalById
 		LEFT JOIN employee auth ON auth.employeeId = src.authorizedOfficialId
 		LEFT JOIN employee app ON app.employeeId = src.approvedById
-		OUTER APPLY (
-			SELECT TOP 1
-				s.companyName,
-				s.address,
-				s.hospitalAgency,
-				s.leftHeaderLogo,
-				s.rightHeaderLogo
-			FROM settings s
-			ORDER BY s.settingsId DESC
-		) st
-		OUTER APPLY (
-			SELECT TOP 1
-				ea.salaryPerMonth,
-				ea.jobPositionId
-			FROM employeeappointment ea
-			WHERE ea.employeeId = src.employeeId
-			ORDER BY ea.assumptionToDutyDate DESC, ea.employeeAppointmentId DESC
-		) ap
+		LEFT JOIN ranked_settings st ON st.row_num = 1
+		LEFT JOIN ranked_appointments ap ON ap.employeeId = src.employeeId AND ap.row_num = 1
 		LEFT JOIN job_position jp ON jp.jobPositionId = ap.jobPositionId
-		OUTER APPLY (
-			SELECT TOP 1
-				lix.vacationLeaveBalance,
-				lix.sickLeaveBalance
-			FROM leave_information lix
-			WHERE lix.employeeId = src.employeeId
-			ORDER BY lix.cutoffEndDate DESC, lix.leaveInformationId DESC
-		) li
-		OUTER APPLY (
-			SELECT CAST(
-				CASE
-					WHEN src.startDate IS NULL OR src.endDate IS NULL OR src.endDate < src.startDate THEN ISNULL(src.noOfDays, 0)
-					ELSE DATEDIFF(DAY, src.startDate, src.endDate) + 1
-				END AS float
-			) AS workingDaysApplied
-		) wd
+		LEFT JOIN ranked_leave_information li ON li.employeeId = src.employeeId AND li.row_num = 1
 		WHERE ($P{LEAVE_APPLICATION_ID} IS NOT NULL OR $P{LEAVE_MONETIZATION_ID} IS NOT NULL)]]></query>
 	<field name="lastname" class="java.lang.String"/>
 	<field name="firstname" class="java.lang.String"/>

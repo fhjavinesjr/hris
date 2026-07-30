@@ -75,7 +75,7 @@ public class PagIbigContributionImpl implements PagIbigContributionService {
 
     @Override
     public PagIbigContributionDTO getCurrent() throws Exception {
-        return repository.findLatest()
+        return repository.findFirstByOrderByEffectivityDateDesc()
                 .map(e -> new PagIbigContributionDTO(
                         e.getPagIbigContributionId(),
                         e.getEffectivityDate(),

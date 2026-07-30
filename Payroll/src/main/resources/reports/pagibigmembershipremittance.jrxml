@@ -18,6 +18,7 @@
 	<parameter name="periodCovered" forPrompting="false" class="java.lang.String"/>
 	<parameter name="certifiedBy" forPrompting="false" class="java.lang.String"/>
 	<parameter name="certifiedByEmployeeNo" forPrompting="false" class="java.lang.String"/>
+	<parameter name="certifiedByPosition" forPrompting="false" class="java.lang.String"/>
 	<parameter name="perCov" class="java.lang.String"/>
 	<query language="SQL"><![CDATA[WITH remittance_lines AS (
     SELECT
@@ -62,48 +63,22 @@
     GROUP BY employeeNo, employeeName
 )
 SELECT
-    ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName) AS lastname,
+    COALESCE(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName) AS lastname,
     CAST(COALESCE(eeAmount,0) AS FLOAT) AS eeAmount,
-    ISNULL(NULLIF(LTRIM(RTRIM(per.pagibigId)), ''), '') AS pagIbigNo,
-    ISNULL(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '') AS firstname,
-    ISNULL(NULLIF(LTRIM(RTRIM(per.middlename)), ''), '') AS middlename,
+    COALESCE(NULLIF(LTRIM(RTRIM(per.pagibigId)), ''), '') AS pagIbigNo,
+    COALESCE(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '') AS firstname,
+    COALESCE(NULLIF(LTRIM(RTRIM(per.middlename)), ''), '') AS middlename,
     CAST(COALESCE(erAmount,0) AS FLOAT) AS erAmount,
     '' AS accountNo,
     '' AS me,
-    ISNULL(NULLIF(LTRIM(RTRIM(per.extname)), ''), '') AS extName,
+    COALESCE(NULLIF(LTRIM(RTRIM(per.extname)), ''), '') AS extName,
     '' AS remarks,
-    CAST(ROW_NUMBER() OVER (ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), ISNULL(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '')) AS INT) AS countNum,
-    ISNULL(cert.position, '') AS certifiedByPosition
+    CAST(ROW_NUMBER() OVER (ORDER BY COALESCE(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), COALESCE(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '')) AS INT) AS countNum
 FROM grouped
 LEFT JOIN employee emp ON emp.employeeNo = grouped.employeeNo
 LEFT JOIN personaldata per ON per.employeeId = emp.employeeId
-OUTER APPLY (
-    SELECT TOP 1 COALESCE(jp.jobPositionName, certEmp.position, pdCert.department, '') AS position
-    FROM employee certEmp
-    OUTER APPLY (
-        SELECT TOP 1
-            ea0.jobPositionId,
-            ea0.assumptionToDutyDate,
-            ea0.activeAppointment,
-            ea0.employeeAppointmentId
-        FROM employeeappointment ea0
-        WHERE ea0.employeeId = certEmp.employeeId
-        ORDER BY
-            CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-            ea0.assumptionToDutyDate DESC,
-            ea0.employeeAppointmentId DESC
-    ) ea
-    LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-    LEFT JOIN payroll_detail pdCert ON pdCert.employeeNo = certEmp.employeeNo AND pdCert.salaryPeriodKey = $P{salaryPeriodKey}
-    WHERE (
-        certEmp.employeeNo = $P{certifiedByEmployeeNo}
-        OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pdCert.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{certifiedBy})), ' ', ''), '.', ''), '-', ''))
-        OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(certEmp.firstname, ''), ' ', ISNULL(certEmp.lastname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{certifiedBy})), ' ', ''), '.', ''), '-', ''))
-        OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(certEmp.lastname, ''), ' ', ISNULL(certEmp.firstname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{certifiedBy})), ' ', ''), '.', ''), '-', ''))
-    )
-) cert
 WHERE COALESCE(eeAmount,0) <> 0 OR COALESCE(erAmount,0) <> 0
-ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), ISNULL(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '')]]></query>
+ORDER BY COALESCE(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), COALESCE(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '')]]></query>
 	<field name="lastname" class="java.lang.String"/>
 	<field name="eeAmount" class="java.lang.Double"/>
 	<field name="pagIbigNo" class="java.lang.String"/>
@@ -115,7 +90,6 @@ ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), IS
 	<field name="extName" class="java.lang.String"/>
 	<field name="remarks" class="java.lang.String"/>
 	<field name="countNum" class="java.lang.Integer"/>
-	<field name="certifiedByPosition" class="java.lang.String"/>
 	<variable name="totalEEAmountPerPage" calculation="Sum" class="java.lang.Double">
 		<expression><![CDATA[Math.round($F{eeAmount} * 100.0) / 100.0]]></expression>
 	</variable>
@@ -402,7 +376,7 @@ ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), IS
 			<expression><![CDATA[$P{certifiedBy} + " "]]></expression>
 		</element>
 		<element kind="textField" uuid="2585c9f5-94d9-451f-932d-44c03ad1a0f8" key="textField" x="509" y="127" width="303" height="25" fontSize="12.0" blankWhenNull="false" hTextAlign="Center" vTextAlign="Middle">
-			<expression><![CDATA[$F{certifiedByPosition} + " "]]></expression>
+			<expression><![CDATA[$P{certifiedByPosition} + " "]]></expression>
 		</element>
 		<element kind="textField" uuid="db9cc73f-eb96-40e1-9fd6-e7c5fc78d459" key="textField-7" x="708" y="15" width="104" height="25" fontSize="12.0" pdfFontName="Helvetica-Bold" pattern="#,##0.00" blankWhenNull="true" bold="false" hTextAlign="Right" vTextAlign="Middle">
 			<expression><![CDATA[Math.round($V{totalERAmountPerPage} * 100.0) / 100.0]]></expression>

@@ -78,7 +78,7 @@ public class PayrollSettingsImpl implements PayrollSettingsService {
 
     @Override
     public PayrollSettingsDTO getCurrent() throws Exception {
-        return repository.findLatest()
+        return repository.findFirstByOrderByEffectivityDateDesc()
                 .map(e -> new PayrollSettingsDTO(
                         e.getPayrollSettingsId(),
                         e.getEffectivityDate(),
@@ -126,7 +126,7 @@ public class PayrollSettingsImpl implements PayrollSettingsService {
     public Boolean updateHazardAutoCompute(Boolean autoCompute) throws Exception {
         try {
             // Update the most recent (current) payroll settings record
-            return repository.findLatest().map(entity -> {
+            return repository.findFirstByOrderByEffectivityDateDesc().map(entity -> {
                 entity.setAutoComputeHazardPay(autoCompute);
                 repository.save(entity);
                 log.info("Updated autoComputeHazardPay to: {}", autoCompute);

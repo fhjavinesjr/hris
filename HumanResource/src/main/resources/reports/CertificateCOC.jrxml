@@ -11,75 +11,96 @@
 	<parameter name="currentCompanyAddress" class="java.lang.String"/>
 	<parameter name="isDOH" class="java.lang.Boolean"/>
 	<parameter name="COC_ID" class="java.lang.Long"/>
+	<parameter name="VALID_UNTIL" class="java.lang.String"/>
 	<query language="sql"><![CDATA[
+WITH ranked_appointments AS (
+	SELECT
+		ea.employeeId,
+		ea.jobPositionId,
+		ROW_NUMBER() OVER (
+			PARTITION BY ea.employeeId
+			ORDER BY
+				CASE
+					WHEN LOWER(CAST(ea.activeAppointment AS varchar(5))) IN ('1', 'true', 't') THEN 0
+					ELSE 1
+				END,
+				CASE WHEN ea.assumptionToDutyDate IS NULL THEN 1 ELSE 0 END,
+				ea.assumptionToDutyDate DESC,
+				ea.employeeAppointmentId DESC
+		) AS row_num
+	FROM employeeappointment ea
+),
+approved_coc_totals AS (
+	SELECT
+		c2.employeeId,
+		SUM(COALESCE(c2.hoursWorked, 0)) AS totalApprovedCocHours
+	FROM compensatory_overtime_credit c2
+	WHERE c2.status = 'Approved'
+	GROUP BY c2.employeeId
+),
+approved_cto_totals AS (
+	SELECT
+		cto.employeeId,
+		SUM(COALESCE(cto.hoursUsed, 0)) AS totalApprovedCtoHours
+	FROM compensatory_time_off cto
+	WHERE cto.status = 'Approved'
+	GROUP BY cto.employeeId
+),
+ranked_settings AS (
+	SELECT
+		s.companyName,
+		s.address,
+		s.hospitalAgency,
+		s.leftHeaderLogo,
+		s.rightHeaderLogo,
+		ROW_NUMBER() OVER (ORDER BY s.settingsId DESC) AS row_num
+	FROM settings s
+)
 SELECT
 	CONCAT(
-		ISNULL(pd.firstname, ISNULL(e.firstname, '')),
-		CASE WHEN ISNULL(pd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', pd.middlename, ' ') END,
-		ISNULL(pd.surname, ISNULL(e.lastname, ''))
+		COALESCE(pd.firstname, COALESCE(e.firstname, '')),
+		CASE WHEN COALESCE(pd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', pd.middlename, ' ') END,
+		COALESCE(pd.surname, COALESCE(e.lastname, ''))
 	) AS employee,
-	ISNULL(jp.jobPositionName, ISNULL(e.position, '')) AS position,
+	COALESCE(jp.jobPositionName, COALESCE(e.position, '')) AS position,
 	CAST(
-		ISNULL(bb.accumulatedHours, 0)
-		+ ISNULL(appr.totalApprovedCocHours, 0)
-		- ISNULL(used.totalApprovedCtoHours, 0)
+		COALESCE(bb.accumulatedHours, 0)
+		+ COALESCE(appr.totalApprovedCocHours, 0)
+		- COALESCE(used.totalApprovedCtoHours, 0)
 	AS float) AS payOffBalance,
 	CONCAT(
-		ISNULL(headPd.firstname, ISNULL(headEmp.firstname, '')),
-		CASE WHEN ISNULL(headPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', headPd.middlename, ' ') END,
-		ISNULL(headPd.surname, ISNULL(headEmp.lastname, ''))
+		COALESCE(headPd.firstname, COALESCE(headEmp.firstname, '')),
+		CASE WHEN COALESCE(headPd.middlename, '') = '' THEN ' ' ELSE CONCAT(' ', headPd.middlename, ' ') END,
+		COALESCE(headPd.surname, COALESCE(headEmp.lastname, ''))
 	) AS deptHead,
 	CAST(c.dateFiled AS date) AS dateFile,
 	CAST(c.dateWorked AS date) AS dateWorked,
-	ISNULL(c.workType, '') AS workType,
-	ISNULL(c.hoursWorked, 0) AS cocHoursEarned,
-	ISNULL(c.actualHoursWorked, 0) AS actualHoursWorked,
-	ISNULL(c.cocMultiplier, 1) AS cocMultiplier,
-	ISNULL(ot.authorityReference, '') AS authorityReference,
-	CONVERT(varchar(10), DATEADD(YEAR, 1, c.dateFiled), 101) AS validUntil,
-	CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
-	ISNULL(st.companyName, '') AS currentCompanySetting,
-	ISNULL(st.address, '') AS currentCompanyAddressSetting,
+	COALESCE(c.workType, '') AS workType,
+	COALESCE(c.hoursWorked, 0) AS cocHoursEarned,
+	COALESCE(c.actualHoursWorked, 0) AS actualHoursWorked,
+	COALESCE(c.cocMultiplier, 1) AS cocMultiplier,
+	COALESCE(ot.authorityReference, '') AS authorityReference,
+	CAST($P{VALID_UNTIL} AS varchar(10)) AS validUntil,
+	CASE
+		WHEN LOWER(CAST(st.hospitalAgency AS varchar(5))) IN ('1', 'true', 't') THEN 1
+		ELSE 0
+	END AS hospitalAgency,
+	COALESCE(st.companyName, '') AS currentCompanySetting,
+	COALESCE(st.address, '') AS currentCompanyAddressSetting,
 	st.leftHeaderLogo,
 	st.rightHeaderLogo
 FROM compensatory_overtime_credit c
 LEFT JOIN employee e ON e.employeeId = c.employeeId
 LEFT JOIN overtime_request ot ON ot.overtimeRequestId = c.overtimeRequestId
 LEFT JOIN personaldata pd ON pd.employeeId = c.employeeId
-OUTER APPLY (
-	SELECT TOP 1 ea.jobPositionId
-	FROM employeeappointment ea
-	WHERE ea.employeeId = c.employeeId
-	ORDER BY CASE WHEN ea.activeAppointment = 1 THEN 0 ELSE 1 END,
-		ea.assumptionToDutyDate DESC,
-		ea.employeeAppointmentId DESC
-) ap
+LEFT JOIN ranked_appointments ap ON ap.employeeId = c.employeeId AND ap.row_num = 1
 LEFT JOIN job_position jp ON jp.jobPositionId = ap.jobPositionId
 LEFT JOIN employee headEmp ON headEmp.employeeId = c.approvedById
 LEFT JOIN personaldata headPd ON headPd.employeeId = headEmp.employeeId
 LEFT JOIN coc_beginning_balance bb ON bb.employeeId = c.employeeId
-OUTER APPLY (
-	SELECT SUM(ISNULL(c2.hoursWorked, 0)) AS totalApprovedCocHours
-	FROM compensatory_overtime_credit c2
-	WHERE c2.employeeId = c.employeeId
-	  AND c2.status = 'Approved'
-) appr
-OUTER APPLY (
-	SELECT SUM(ISNULL(cto.hoursUsed, 0)) AS totalApprovedCtoHours
-	FROM compensatory_time_off cto
-	WHERE cto.employeeId = c.employeeId
-	  AND cto.status = 'Approved'
-) used
-OUTER APPLY (
-	SELECT TOP 1
-		s.companyName,
-		s.address,
-		s.hospitalAgency,
-		s.leftHeaderLogo,
-		s.rightHeaderLogo
-	FROM settings s
-	ORDER BY s.settingsId DESC
-) st
+LEFT JOIN approved_coc_totals appr ON appr.employeeId = c.employeeId
+LEFT JOIN approved_cto_totals used ON used.employeeId = c.employeeId
+LEFT JOIN ranked_settings st ON st.row_num = 1
 WHERE c.cocId = $P{COC_ID}
 ]]></query>
 	<field name="employee" class="java.lang.String"/>

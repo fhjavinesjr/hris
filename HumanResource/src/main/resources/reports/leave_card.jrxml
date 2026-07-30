@@ -30,91 +30,114 @@
 	<parameter name="isSeparated" class="java.lang.String"/>
 	<parameter name="EMPLOYEE_ID" class="java.lang.Long"/>
 	<parameter name="REPORT_YEAR" class="java.lang.Integer"/>
-	<query language="SQL"><![CDATA[SELECT
-			CAST(li.cutoffStartDate AS date) AS cutOffStartDate,
-			CAST(ISNULL(li.earnedVl, 0) AS float) AS earnedVl,
-			CAST(ISNULL(li.earnedSl, 0) AS float) AS earnedSl,
-			CAST(ISNULL(li.vacationLeaveUsed, 0) AS float) AS vacationLeaveUsed,
-			CAST(ISNULL(li.sickLeaveUsed, 0) AS float) AS sickLeaveUsed,
-			CAST(ISNULL(li.lateUndertimeEquivalent, 0) AS float) AS lateUndertimeEquivalent,
-			ISNULL(li.lateCount, 0) AS lateCount,
-			ISNULL(li.undertimeCount, 0) AS utCount,
-			ISNULL(li.leaveParticulars, '') AS leaveParticulars,
-			CAST(ISNULL(li.absentCount, 0) AS float) AS absentCount,
-			CAST(ISNULL(li.leaveWithoutPaySl, 0) AS float) AS leaveWithoutPaySl,
-			CAST(ISNULL(li.leaveWithoutPayVl, 0) AS float) AS leaveWithoutPayVl,
-			CAST(li.cutoffEndDate AS date) AS cutOffEndDate,
-			CAST(li.processDate AS date) AS processDate,
-			CAST(ISNULL(li.sickLeaveBalance, 0) AS float) AS sickLeaveBalance,
-			CAST(ISNULL(li.vacationLeaveBalance, 0) AS float) AS vacationLeaveBalance,
-			CAST(ISNULL(li.lateUndertimeMinutes, 0) AS float) AS lateUndertimeMin,
-			CAST(CASE WHEN ISNULL(li.isBegBalance, 0) = 1 THEN 'true' ELSE 'false' END AS varchar(5)) AS isBegBalance,
-			CAST(CASE WHEN YEAR(li.cutoffStartDate) < $P{REPORT_YEAR} THEN 'true' ELSE 'false' END AS varchar(5)) AS isPreviousYear,
-			CAST(CASE WHEN ISNULL(li.isLocked, 0) = 1 THEN 'true' ELSE 'false' END AS varchar(5)) AS isLocked,
-			ISNULL(pd.surname, ISNULL(e.lastname, '')) AS lastname,
-			ISNULL(pd.firstname, ISNULL(e.firstname, '')) AS firstname,
-			CASE WHEN ISNULL(pd.middlename, '') = '' THEN '' ELSE LEFT(pd.middlename, 1) + '.' END AS mi,
-			ISNULL(jp.jobPositionName, ISNULL(e.position, '')) AS position,
-			ISNULL(noa.nature, '') AS status,
-			ISNULL(cs.name, '') AS civilstat,
-			ISNULL(bu.businessUnitsName, '') AS unitName,
-			CAST(ap.assumptionToDutyDate AS date) AS datehire,
-			ISNULL(pd.tinNo, '') AS tinno,
-			ISNULL(pd.gsisId, '') AS gsisno,
-			CAST(ISNULL(st.hospitalAgency, 0) AS bit) AS hospitalAgency,
-			ISNULL(st.companyName, '') AS currentCompanySetting,
-			ISNULL(st.address, '') AS currentCompanyAddressSetting,
-			st.leftHeaderLogo AS leftHeaderLogo,
-			st.rightHeaderLogo AS rightHeaderLogo,
-			CAST(ISNULL(li.previousVacationLeaveBalance, 0) AS float) AS previousVacationLeaveBalance,
-			CAST(ISNULL(li.previousSickLeaveBalance, 0) AS float) AS previousSickLeaveBalance,
-			CONCAT('Forwarded balance as of 12/31/', CAST($P{REPORT_YEAR} - 1 AS varchar(4))) AS forwardstatus,
-			CASE
-				WHEN sep.separationDate IS NOT NULL THEN 'Separated effective ' + CONVERT(varchar(10), sep.separationDate, 101)
-				ELSE ''
-			END AS isSeparated
-		FROM leave_information li
-		JOIN employee e ON e.employeeId = li.employeeId
-		LEFT JOIN personaldata pd ON pd.employeeId = li.employeeId
-		OUTER APPLY (
-			SELECT TOP 1
+	<parameter name="SEPARATION_TEXT" class="java.lang.String"/>
+	<query language="SQL"><![CDATA[WITH ranked_appointments AS (
+			SELECT
+				ea.employeeId,
 				ea.assumptionToDutyDate,
 				ea.jobPositionId,
-				ea.natureOfAppointmentId
+				ea.natureOfAppointmentId,
+				ROW_NUMBER() OVER (
+					PARTITION BY ea.employeeId
+					ORDER BY
+						CASE
+							WHEN LOWER(CAST(ea.activeAppointment AS varchar(5))) IN ('1', 'true', 't') THEN 0
+							ELSE 1
+						END,
+						CASE WHEN ea.assumptionToDutyDate IS NULL THEN 1 ELSE 0 END,
+						ea.assumptionToDutyDate DESC,
+						ea.employeeAppointmentId DESC
+				) AS row_num
 			FROM employeeappointment ea
-			WHERE ea.employeeId = li.employeeId
-			ORDER BY CASE WHEN ea.activeAppointment = 1 THEN 0 ELSE 1 END,
-				ea.assumptionToDutyDate DESC,
-				ea.employeeAppointmentId DESC
-		) ap
-		LEFT JOIN job_position jp ON jp.jobPositionId = ap.jobPositionId
-		LEFT JOIN natureofappointment noa ON noa.natureofappointmentId = ap.natureOfAppointmentId
-		LEFT JOIN civilstatus cs ON cs.civilStatusId = pd.civilStatus_id
-		OUTER APPLY (
-			SELECT TOP 1 mp.businessUnitId
+		),
+		ranked_personnel AS (
+			SELECT
+				mp.employeeId,
+				mp.businessUnitId,
+				ROW_NUMBER() OVER (
+					PARTITION BY mp.employeeId
+					ORDER BY mp.id DESC
+				) AS row_num
 			FROM manage_personnel mp
-			WHERE mp.employeeId = li.employeeId
-			ORDER BY mp.id DESC
-		) mp
-		LEFT JOIN businessunits bu ON bu.businessUnitsId = mp.businessUnitId
-		OUTER APPLY (
-			SELECT TOP 1
+		),
+		ranked_settings AS (
+			SELECT
 				s.companyName,
 				s.address,
 				s.hospitalAgency,
 				s.leftHeaderLogo,
-				s.rightHeaderLogo
+				s.rightHeaderLogo,
+				ROW_NUMBER() OVER (ORDER BY s.settingsId DESC) AS row_num
 			FROM settings s
-			ORDER BY s.settingsId DESC
-		) st
-		OUTER APPLY (
-			SELECT TOP 1 s2.separationDate
-			FROM separation s2
-			WHERE s2.employeeId = li.employeeId
-			ORDER BY s2.separationDate DESC
-		) sep
+		)
+		SELECT
+			CAST(li.cutoffStartDate AS date) AS cutOffStartDate,
+			CAST(COALESCE(li.earnedVl, 0) AS float) AS earnedVl,
+			CAST(COALESCE(li.earnedSl, 0) AS float) AS earnedSl,
+			CAST(COALESCE(li.vacationLeaveUsed, 0) AS float) AS vacationLeaveUsed,
+			CAST(COALESCE(li.sickLeaveUsed, 0) AS float) AS sickLeaveUsed,
+			CAST(COALESCE(li.lateUndertimeEquivalent, 0) AS float) AS lateUndertimeEquivalent,
+			COALESCE(li.lateCount, 0) AS lateCount,
+			COALESCE(li.undertimeCount, 0) AS utCount,
+			COALESCE(li.leaveParticulars, '') AS leaveParticulars,
+			CAST(COALESCE(li.absentCount, 0) AS float) AS absentCount,
+			CAST(COALESCE(li.leaveWithoutPaySl, 0) AS float) AS leaveWithoutPaySl,
+			CAST(COALESCE(li.leaveWithoutPayVl, 0) AS float) AS leaveWithoutPayVl,
+			CAST(li.cutoffEndDate AS date) AS cutOffEndDate,
+			CAST(li.processDate AS date) AS processDate,
+			CAST(COALESCE(li.sickLeaveBalance, 0) AS float) AS sickLeaveBalance,
+			CAST(COALESCE(li.vacationLeaveBalance, 0) AS float) AS vacationLeaveBalance,
+			CAST(COALESCE(li.lateUndertimeMinutes, 0) AS float) AS lateUndertimeMin,
+			CASE
+				WHEN LOWER(CAST(li.isBegBalance AS varchar(5))) IN ('1', 'true', 't') THEN 'true'
+				ELSE 'false'
+			END AS isBegBalance,
+			CASE
+				WHEN li.cutoffStartDate < CAST(CONCAT($P{REPORT_YEAR}, '-01-01') AS date) THEN 'true'
+				ELSE 'false'
+			END AS isPreviousYear,
+			CASE
+				WHEN LOWER(CAST(li.isLocked AS varchar(5))) IN ('1', 'true', 't') THEN 'true'
+				ELSE 'false'
+			END AS isLocked,
+			COALESCE(pd.surname, COALESCE(e.lastname, '')) AS lastname,
+			COALESCE(pd.firstname, COALESCE(e.firstname, '')) AS firstname,
+			CASE
+				WHEN COALESCE(pd.middlename, '') = '' THEN ''
+				ELSE CONCAT(LEFT(pd.middlename, 1), '.')
+			END AS mi,
+			COALESCE(jp.jobPositionName, COALESCE(e.position, '')) AS position,
+			COALESCE(noa.nature, '') AS status,
+			COALESCE(cs.name, '') AS civilstat,
+			COALESCE(bu.businessUnitsName, '') AS unitName,
+			CAST(ap.assumptionToDutyDate AS date) AS datehire,
+			COALESCE(pd.tinNo, '') AS tinno,
+			COALESCE(pd.gsisId, '') AS gsisno,
+			CASE
+				WHEN LOWER(CAST(st.hospitalAgency AS varchar(5))) IN ('1', 'true', 't') THEN 1
+				ELSE 0
+			END AS hospitalAgency,
+			COALESCE(st.companyName, '') AS currentCompanySetting,
+			COALESCE(st.address, '') AS currentCompanyAddressSetting,
+			st.leftHeaderLogo AS leftHeaderLogo,
+			st.rightHeaderLogo AS rightHeaderLogo,
+			CAST(COALESCE(li.previousVacationLeaveBalance, 0) AS float) AS previousVacationLeaveBalance,
+			CAST(COALESCE(li.previousSickLeaveBalance, 0) AS float) AS previousSickLeaveBalance,
+			CONCAT('Forwarded balance as of 12/31/', ($P{REPORT_YEAR} - 1)) AS forwardstatus,
+			CAST($P{SEPARATION_TEXT} AS varchar(64)) AS isSeparated
+		FROM leave_information li
+		JOIN employee e ON e.employeeId = li.employeeId
+		LEFT JOIN personaldata pd ON pd.employeeId = li.employeeId
+		LEFT JOIN ranked_appointments ap ON ap.employeeId = li.employeeId AND ap.row_num = 1
+		LEFT JOIN job_position jp ON jp.jobPositionId = ap.jobPositionId
+		LEFT JOIN natureofappointment noa ON noa.natureofappointmentId = ap.natureOfAppointmentId
+		LEFT JOIN civilstatus cs ON cs.civilStatusId = pd.civilStatus_id
+		LEFT JOIN ranked_personnel mp ON mp.employeeId = li.employeeId AND mp.row_num = 1
+		LEFT JOIN businessunits bu ON bu.businessUnitsId = mp.businessUnitId
+		LEFT JOIN ranked_settings st ON st.row_num = 1
 		WHERE li.employeeId = $P{EMPLOYEE_ID}
-		  AND YEAR(li.cutoffStartDate) = $P{REPORT_YEAR}
+		  AND li.cutoffStartDate >= CAST(CONCAT($P{REPORT_YEAR}, '-01-01') AS date)
+		  AND li.cutoffStartDate < CAST(CONCAT(($P{REPORT_YEAR} + 1), '-01-01') AS date)
 		ORDER BY li.cutoffStartDate ASC, li.leaveInformationId ASC]]></query>
 	<field name="cutOffStartDate" class="java.sql.Date"/>
 	<field name="earnedVl" class="java.lang.Double"/>

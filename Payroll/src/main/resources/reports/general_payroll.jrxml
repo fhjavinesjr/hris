@@ -1,7 +1,6 @@
-<!-- SQL-only dynamic General Payroll Register for ISOFT HRIS. Dynamic earnings/deductions are rendered as multiline breakdowns so no earning/deduction is lost to a limited Other column. -->
+<!-- Bean-backed dynamic General Payroll Register for ISOFT HRIS. Dynamic earnings/deductions are rendered as multiline breakdowns so no earning/deduction is lost to a limited Other column. -->
 <jasperReport name="general_payroll" language="java" pageWidth="1230" pageHeight="900" columnWidth="1223" leftMargin="5" rightMargin="2" topMargin="5" bottomMargin="5" uuid="9b7e3792-e1af-4e0f-a346-3d1db14a5cc2">
 	<property name="net.sf.jasperreports.compiler.xml.parser.validation" value="false"/>
-	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
 	<parameter name="salaryPeriodKey" class="java.lang.String"/>
 	<parameter name="payrollGroup" forPrompting="false" class="java.lang.String">
 		<defaultValueExpression><![CDATA["REGULAR"]]></defaultValueExpression>
@@ -36,306 +35,6 @@
 	<parameter name="cashierByPosition" forPrompting="false" class="java.lang.String">
 		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
 	</parameter>
-	<query language="SQL"><![CDATA[WITH base AS (
-    SELECT
-        pd.id,
-        pd.employeeNo,
-        pd.employeeName,
-        pd.department,
-        pd.salaryGrade,
-        pd.salaryStep,
-        pd.salaryPeriodKey,
-        pd.cutoffStartDate,
-        pd.cutoffEndDate,
-        pd.salaryDate,
-        pd.actualBasic,
-        pd.grossAmount AS computedGrossAmount,
-        pd.totalDeduction AS computedTotalDeduction,
-        pd.netAmount AS computedNetAmount,
-        pd.displayToLastPage,
-        ROW_NUMBER() OVER (
-            ORDER BY
-                CASE WHEN ISNULL(pd.displayToLastPage, 0) = 1 THEN 1 ELSE 0 END,
-                ISNULL(pd.department, ''),
-                pd.employeeName,
-                pd.employeeNo
-        ) AS rowNo
-    FROM payroll_detail pd
-    WHERE pd.salaryPeriodKey = $P{salaryPeriodKey}
-      AND (
-            UPPER(ISNULL($P{payrollGroup}, 'REGULAR')) = 'ALL'
-            OR (UPPER(ISNULL($P{payrollGroup}, 'REGULAR')) = 'REGULAR' AND UPPER(ISNULL(pd.payrollGroup, 'REGULAR')) = 'REGULAR')
-            OR (UPPER(ISNULL($P{payrollGroup}, 'REGULAR')) = 'CONTRACTUAL' AND UPPER(ISNULL(pd.payrollGroup, 'REGULAR')) = 'CONTRACTUAL')
-          )
-      AND ISNULL(CAST(pd.status AS varchar(30)), 'COMPUTED') <> 'CANCELLED'
-),
-base_earnings AS (
-    SELECT
-        b.employeeNo,
-        pde.earningCode AS code,
-        pde.earningName AS displayName,
-        ISNULL(pde.indexNo, 0) AS indexNo,
-        SUM(ISNULL(pde.amount, 0)) AS amount
-    FROM base b
-    INNER JOIN payroll_detail_earning pde ON pde.payroll_detail_id = b.id
-    GROUP BY b.employeeNo, pde.earningCode, pde.earningName, ISNULL(pde.indexNo, 0)
-),
-adjustment_earnings AS (
-    SELECT
-        pah.employeeNo,
-        pal.code,
-        CONCAT(
-            pal.name,
-            ' [ADJ-', UPPER(ISNULL(pah.status, '')), 
-            CASE WHEN ISNULL(pah.authorityNo, '') <> '' THEN CONCAT(' / ', pah.authorityNo) ELSE '' END,
-            ']'
-        ) AS displayName,
-        9000 + ISNULL(pal.indexNo, 0) AS indexNo,
-        SUM(ISNULL(pal.amount, 0)) AS amount
-    FROM payroll_adjustment_header pah
-    INNER JOIN payroll_adjustment_line pal ON pal.header_id = pah.id
-    WHERE pah.salaryPeriodKey = $P{salaryPeriodKey}
-      AND (
-            UPPER(ISNULL(pah.status, '')) = 'POSTED'
-            OR (
-                UPPER(ISNULL(pah.status, '')) = 'PENDING'
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM payroll_period_lock ppl
-                    WHERE ppl.salaryPeriodKey = $P{salaryPeriodKey}
-                )
-            )
-      )
-      AND UPPER(ISNULL(pal.type, '')) = 'EARNING'
-    GROUP BY pah.employeeNo, pal.code, pal.name, UPPER(ISNULL(pah.status, '')), pah.authorityNo, ISNULL(pal.indexNo, 0)
-),
-earning_source AS (
-    SELECT * FROM base_earnings
-    UNION ALL
-    SELECT * FROM adjustment_earnings
-),
-earning_lines AS (
-    SELECT
-        employeeNo,
-        STRING_AGG(
-            CAST(CONCAT(displayName, ' [', code, ']: ', CONVERT(varchar(50), CAST(amount AS money), 1)) AS varchar(max)),
-            CHAR(10)
-        ) WITHIN GROUP (ORDER BY indexNo, displayName, code) AS earningBreakdown,
-        SUM(amount) AS grossAmount
-    FROM earning_source
-    GROUP BY employeeNo
-),
-base_deductions AS (
-    SELECT
-        b.employeeNo,
-        pdd.deductionCode AS code,
-        pdd.deductionName AS displayName,
-        ISNULL(pdd.indexNo, 0) AS indexNo,
-        SUM(ISNULL(pdd.amount, 0)) AS amount
-    FROM base b
-    INNER JOIN payroll_detail_deduction pdd ON pdd.payroll_detail_id = b.id
-    GROUP BY b.employeeNo, pdd.deductionCode, pdd.deductionName, ISNULL(pdd.indexNo, 0)
-),
-adjustment_deductions AS (
-    SELECT
-        pah.employeeNo,
-        pal.code,
-        CONCAT(
-            pal.name,
-            ' [ADJ-', UPPER(ISNULL(pah.status, '')), 
-            CASE WHEN ISNULL(pah.authorityNo, '') <> '' THEN CONCAT(' / ', pah.authorityNo) ELSE '' END,
-            ']'
-        ) AS displayName,
-        9000 + ISNULL(pal.indexNo, 0) AS indexNo,
-        SUM(ISNULL(pal.amount, 0)) AS amount
-    FROM payroll_adjustment_header pah
-    INNER JOIN payroll_adjustment_line pal ON pal.header_id = pah.id
-    WHERE pah.salaryPeriodKey = $P{salaryPeriodKey}
-      AND (
-            UPPER(ISNULL(pah.status, '')) = 'POSTED'
-            OR (
-                UPPER(ISNULL(pah.status, '')) = 'PENDING'
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM payroll_period_lock ppl
-                    WHERE ppl.salaryPeriodKey = $P{salaryPeriodKey}
-                )
-            )
-      )
-      AND UPPER(ISNULL(pal.type, '')) = 'DEDUCTION'
-    GROUP BY pah.employeeNo, pal.code, pal.name, UPPER(ISNULL(pah.status, '')), pah.authorityNo, ISNULL(pal.indexNo, 0)
-),
-deduction_source AS (
-    SELECT * FROM base_deductions
-    UNION ALL
-    SELECT * FROM adjustment_deductions
-),
-deduction_lines AS (
-    SELECT
-        employeeNo,
-        STRING_AGG(
-            CAST(CONCAT(displayName, ' [', code, ']: ', CONVERT(varchar(50), CAST(amount AS money), 1)) AS varchar(max)),
-            CHAR(10)
-        ) WITHIN GROUP (ORDER BY indexNo, displayName, code) AS deductionBreakdown,
-        SUM(amount) AS totalDeduction
-    FROM deduction_source
-    GROUP BY employeeNo
-),
-grand_earnings AS (
-    SELECT STRING_AGG(
-        CAST(CONCAT(displayName, ' [', code, ']: ', CONVERT(varchar(50), CAST(amount AS money), 1)) AS varchar(max)),
-        CHAR(10)
-    ) WITHIN GROUP (ORDER BY indexNo, displayName, code) AS grandEarningsBreakdown
-    FROM (
-        SELECT code, displayName, MIN(indexNo) AS indexNo, SUM(amount) AS amount
-        FROM earning_source
-        GROUP BY code, displayName
-    ) x
-),
-grand_deductions AS (
-    SELECT STRING_AGG(
-        CAST(CONCAT(displayName, ' [', code, ']: ', CONVERT(varchar(50), CAST(amount AS money), 1)) AS varchar(max)),
-        CHAR(10)
-    ) WITHIN GROUP (ORDER BY indexNo, displayName, code) AS grandDeductionsBreakdown
-    FROM (
-        SELECT code, displayName, MIN(indexNo) AS indexNo, SUM(amount) AS amount
-        FROM deduction_source
-        GROUP BY code, displayName
-    ) x
-),
-final_rows AS (
-    SELECT
-        b.*,
-        ISNULL(el.earningBreakdown, '') AS earningBreakdown,
-        ISNULL(el.grossAmount, 0) AS grossAmount,
-        ISNULL(dl.deductionBreakdown, '') AS deductionBreakdown,
-        ISNULL(dl.totalDeduction, 0) AS totalDeduction,
-        ISNULL(el.grossAmount, 0) - ISNULL(dl.totalDeduction, 0) AS netAmount
-    FROM base b
-    LEFT JOIN earning_lines el ON el.employeeNo = b.employeeNo
-    LEFT JOIN deduction_lines dl ON dl.employeeNo = b.employeeNo
-),
-signatory_positions AS (
-    SELECT
-        ISNULL(prep.position, '') AS preparedByPositionResolved,
-        ISNULL(appr.position, '') AS approvedByPositionResolved,
-        ISNULL(cash.position, '') AS cashierByPositionResolved
-    FROM (SELECT 1 AS oneRow) oneRow
-    OUTER APPLY (
-        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
-        FROM employee e
-        OUTER APPLY (
-            SELECT TOP 1
-                ea0.jobPositionId,
-                ea0.assumptionToDutyDate,
-                ea0.activeAppointment,
-                ea0.employeeAppointmentId
-            FROM employeeappointment ea0
-            WHERE ea0.employeeId = e.employeeId
-            ORDER BY
-                CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-                ea0.assumptionToDutyDate DESC,
-                ea0.employeeAppointmentId DESC
-        ) ea
-        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{salaryPeriodKey}
-        WHERE (
-            e.employeeNo = $P{preparedByEmployeeNo}
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pd.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{preparedBy})), ' ', ''), '.', ''), '-', ''))
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.firstname, ''), ' ', ISNULL(e.lastname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{preparedBy})), ' ', ''), '.', ''), '-', ''))
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''), ' ', ISNULL(e.firstname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{preparedBy})), ' ', ''), '.', ''), '-', ''))
-        )
-    ) prep
-    OUTER APPLY (
-        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
-        FROM employee e
-        OUTER APPLY (
-            SELECT TOP 1
-                ea0.jobPositionId,
-                ea0.assumptionToDutyDate,
-                ea0.activeAppointment,
-                ea0.employeeAppointmentId
-            FROM employeeappointment ea0
-            WHERE ea0.employeeId = e.employeeId
-            ORDER BY
-                CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-                ea0.assumptionToDutyDate DESC,
-                ea0.employeeAppointmentId DESC
-        ) ea
-        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{salaryPeriodKey}
-        WHERE (
-            e.employeeNo = $P{approvedByEmployeeNo}
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pd.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{approvedBy})), ' ', ''), '.', ''), '-', ''))
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.firstname, ''), ' ', ISNULL(e.lastname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{approvedBy})), ' ', ''), '.', ''), '-', ''))
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''), ' ', ISNULL(e.firstname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{approvedBy})), ' ', ''), '.', ''), '-', ''))
-        )
-    ) appr
-    OUTER APPLY (
-        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
-        FROM employee e
-        OUTER APPLY (
-            SELECT TOP 1
-                ea0.jobPositionId,
-                ea0.assumptionToDutyDate,
-                ea0.activeAppointment,
-                ea0.employeeAppointmentId
-            FROM employeeappointment ea0
-            WHERE ea0.employeeId = e.employeeId
-            ORDER BY
-                CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-                ea0.assumptionToDutyDate DESC,
-                ea0.employeeAppointmentId DESC
-        ) ea
-        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{salaryPeriodKey}
-        WHERE (
-            e.employeeNo = $P{cashierByEmployeeNo}
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pd.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{cashierBy})), ' ', ''), '.', ''), '-', ''))
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.firstname, ''), ' ', ISNULL(e.lastname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{cashierBy})), ' ', ''), '.', ''), '-', ''))
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CONCAT(ISNULL(e.lastname, ''), ' ', ISNULL(e.firstname, '')))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{cashierBy})), ' ', ''), '.', ''), '-', ''))
-        )
-    ) cash
-)
-SELECT
-    fr.rowNo,
-    fr.employeeNo,
-    fr.employeeName,
-    fr.department,
-    fr.salaryGrade,
-    fr.salaryStep,
-    fr.salaryPeriodKey,
-    fr.cutoffStartDate,
-    fr.cutoffEndDate,
-    fr.salaryDate,
-    fr.actualBasic,
-    fr.earningBreakdown,
-    fr.grossAmount,
-    fr.deductionBreakdown,
-    fr.totalDeduction,
-    fr.netAmount,
-    SUM(fr.actualBasic) OVER () AS grandActualBasic,
-    SUM(fr.grossAmount) OVER () AS grandGrossAmount,
-    SUM(fr.totalDeduction) OVER () AS grandTotalDeduction,
-    SUM(fr.netAmount) OVER () AS grandNetAmount,
-    ISNULL(ge.grandEarningsBreakdown, '') AS grandEarningsBreakdown,
-    ISNULL(gd.grandDeductionsBreakdown, '') AS grandDeductionsBreakdown,
-    CASE WHEN EXISTS (
-        SELECT 1
-        FROM payroll_period_lock ppl
-        WHERE ppl.salaryPeriodKey = $P{salaryPeriodKey}
-    )
-    THEN 'FINAL / LOCKED - POSTED ADJUSTMENTS ONLY'
-    ELSE 'DRAFT / PREVIEW - POSTED + PENDING ADJUSTMENTS INCLUDED'
-    END AS reportMode,
-    sp.preparedByPositionResolved,
-    sp.approvedByPositionResolved,
-    sp.cashierByPositionResolved
-FROM final_rows fr
-CROSS JOIN grand_earnings ge
-CROSS JOIN grand_deductions gd
-CROSS JOIN signatory_positions sp
-ORDER BY fr.rowNo]]></query>
 	<field name="rowNo" class="java.lang.Integer"/>
 	<field name="employeeNo" class="java.lang.String"/>
 	<field name="employeeName" class="java.lang.String"/>
@@ -359,9 +58,6 @@ ORDER BY fr.rowNo]]></query>
 	<field name="grandEarningsBreakdown" class="java.lang.String"/>
 	<field name="grandDeductionsBreakdown" class="java.lang.String"/>
 	<field name="reportMode" class="java.lang.String"/>
-	<field name="preparedByPositionResolved" class="java.lang.String"/>
-	<field name="approvedByPositionResolved" class="java.lang.String"/>
-	<field name="cashierByPositionResolved" class="java.lang.String"/>
 	<group name="PayrollHeader" reprintHeaderOnEachPage="true">
 		<expression><![CDATA["ALL"]]></expression>
 		<groupHeader>
@@ -405,13 +101,13 @@ ORDER BY fr.rowNo]]></query>
 				<element kind="textField" uuid="c221fef8-175b-4e5d-b80c-dad23851c0de" x="715" y="42" width="360" height="48" fontName="Arial" fontSize="5.5" textAdjust="StretchHeight" hTextAlign="Left" vTextAlign="Top"><expression><![CDATA[$F{grandDeductionsBreakdown}]]></expression><box><pen lineWidth="0.25"/></box></element>
 				<element kind="staticText" uuid="6f5b9e71-ebaf-421f-b13b-9d167e175577" x="0" y="115" width="220" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle"><text><![CDATA[Prepared by:]]></text><box><pen lineWidth="0.25"/></box></element>
 				<element kind="textField" uuid="e406e673-918d-4388-a617-93626c79844d" x="0" y="145" width="220" height="16" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{preparedBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
-				<element kind="textField" uuid="95903995-d8c2-4598-a689-64bab89104d9" x="0" y="161" width="220" height="14" fontName="Arial" fontSize="6.0" italic="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$F{preparedByPositionResolved}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="95903995-d8c2-4598-a689-64bab89104d9" x="0" y="161" width="220" height="14" fontName="Arial" fontSize="6.0" italic="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{preparedByPosition}]]></expression><box><pen lineWidth="0.25"/></box></element>
 				<element kind="staticText" uuid="ef97fa03-2eef-43b1-ae8e-34b279779eb3" x="260" y="115" width="220" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle"><text><![CDATA[Approved by:]]></text><box><pen lineWidth="0.25"/></box></element>
 				<element kind="textField" uuid="d8f03d1a-2cd7-4dbe-a540-30d4aa69f14b" x="260" y="145" width="220" height="16" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{approvedBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
-				<element kind="textField" uuid="dafbb27f-a97f-4fcd-8b3c-8751f4afe6de" x="260" y="161" width="220" height="14" fontName="Arial" fontSize="6.0" italic="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$F{approvedByPositionResolved}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="dafbb27f-a97f-4fcd-8b3c-8751f4afe6de" x="260" y="161" width="220" height="14" fontName="Arial" fontSize="6.0" italic="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{approvedByPosition}]]></expression><box><pen lineWidth="0.25"/></box></element>
 				<element kind="staticText" uuid="a1f3e7ef-df6a-4f73-a79f-27c66ad4d05e" x="520" y="115" width="220" height="14" fontName="Arial" fontSize="7.0" hTextAlign="Left" vTextAlign="Middle"><text><![CDATA[Cashier:]]></text><box><pen lineWidth="0.25"/></box></element>
 				<element kind="textField" uuid="6093a116-e0d9-48d4-94ef-66506be76a19" x="520" y="145" width="220" height="16" fontName="Arial" fontSize="7.0" bold="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{cashierBy}]]></expression><box><pen lineWidth="0.25"/></box></element>
-				<element kind="textField" uuid="51514e83-6a81-4873-b9ad-35cb3b5cf1a8" x="520" y="161" width="220" height="14" fontName="Arial" fontSize="6.0" italic="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$F{cashierByPositionResolved}]]></expression><box><pen lineWidth="0.25"/></box></element>
+				<element kind="textField" uuid="51514e83-6a81-4873-b9ad-35cb3b5cf1a8" x="520" y="161" width="220" height="14" fontName="Arial" fontSize="6.0" italic="true" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$P{cashierByPosition}]]></expression><box><pen lineWidth="0.25"/></box></element>
 			</band>
 		</groupFooter>
 	</group>

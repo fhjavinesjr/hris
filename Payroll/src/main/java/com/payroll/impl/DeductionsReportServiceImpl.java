@@ -22,10 +22,14 @@ public class DeductionsReportServiceImpl implements DeductionsReportService {
 
     private final ResourceLoader resourceLoader;
     private final DataSource dataSource;
+    private final ReportSignatoryPositionResolver positionResolver;
 
-    public DeductionsReportServiceImpl(ResourceLoader resourceLoader, DataSource dataSource) {
+    public DeductionsReportServiceImpl(ResourceLoader resourceLoader,
+                                       DataSource dataSource,
+                                       ReportSignatoryPositionResolver positionResolver) {
         this.resourceLoader = resourceLoader;
         this.dataSource = dataSource;
+        this.positionResolver = positionResolver;
     }
 
     @Override
@@ -65,6 +69,12 @@ public class DeductionsReportServiceImpl implements DeductionsReportService {
         params.put("CERTIFIED_BY_EMPLOYEE_NO", safe(certifiedByEmployeeNo));
         params.put("APPROVED_BY", safe(approvedBy));
         params.put("APPROVED_BY_EMPLOYEE_NO", safe(approvedByEmployeeNo));
+        params.put("PREPARED_BY_POSITION", positionResolver.resolve(
+                salaryPeriodKey, preparedByEmployeeNo, preparedBy));
+        params.put("CERTIFIED_BY_POSITION", positionResolver.resolve(
+                salaryPeriodKey, certifiedByEmployeeNo, certifiedBy));
+        params.put("APPROVED_BY_POSITION", positionResolver.resolve(
+                salaryPeriodKey, approvedByEmployeeNo, approvedBy));
 
         try (Connection conn = dataSource.getConnection()) {
             JasperPrint print = JasperFillManager.fillReport(report, params, conn);

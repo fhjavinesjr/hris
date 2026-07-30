@@ -55,67 +55,14 @@
     SELECT employeeNo, employeeName, SUM(ps) AS ps, SUM(gs) AS gs
     FROM remittance_lines
     GROUP BY employeeNo, employeeName
-), signatory_positions AS (
-    SELECT
-        ISNULL(prep.position, '') AS preparedByPositionResolved,
-        ISNULL(cert.position, '') AS certifiedByPositionResolved
-    FROM (SELECT 1 AS oneRow) oneRow
-    OUTER APPLY (
-        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
-        FROM employee e
-        OUTER APPLY (
-            SELECT TOP 1
-                ea0.jobPositionId,
-                ea0.assumptionToDutyDate,
-                ea0.activeAppointment,
-                ea0.employeeAppointmentId
-            FROM employeeappointment ea0
-            WHERE ea0.employeeId = e.employeeId
-            ORDER BY
-                CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-                ea0.assumptionToDutyDate DESC,
-                ea0.employeeAppointmentId DESC
-        ) ea
-        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{salaryPeriodKey}
-        WHERE (
-            e.employeeNo = $P{preparedByEmployeeNo}
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pd.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{preparedBy})), ' ', ''), '.', ''), '-', ''))
-        )
-    ) prep
-    OUTER APPLY (
-        SELECT TOP 1 COALESCE(jp.jobPositionName, e.position, pd.department, '') AS position
-        FROM employee e
-        OUTER APPLY (
-            SELECT TOP 1
-                ea0.jobPositionId,
-                ea0.assumptionToDutyDate,
-                ea0.activeAppointment,
-                ea0.employeeAppointmentId
-            FROM employeeappointment ea0
-            WHERE ea0.employeeId = e.employeeId
-            ORDER BY
-                CASE WHEN ISNULL(ea0.activeAppointment, 0) = 1 THEN 0 ELSE 1 END,
-                ea0.assumptionToDutyDate DESC,
-                ea0.employeeAppointmentId DESC
-        ) ea
-        LEFT JOIN job_position jp ON jp.jobPositionId = ea.jobPositionId
-        LEFT JOIN payroll_detail pd ON pd.employeeNo = e.employeeNo AND pd.salaryPeriodKey = $P{salaryPeriodKey}
-        WHERE (
-            e.employeeNo = $P{certifiedByEmployeeNo}
-            OR UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(pd.employeeName, ''))), ' ', ''), '.', ''), '-', '')) = UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM($P{certifiedBy})), ' ', ''), '.', ''), '-', ''))
-        )
-    ) cert
 )
 SELECT
-    signatory_positions.preparedByPositionResolved,
-    signatory_positions.certifiedByPositionResolved,
     '' AS policyNo,
-    ISNULL(NULLIF(LTRIM(RTRIM(per.gsisId)), ''), '') AS bpNo,
-    ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName) AS lastname,
-    ISNULL(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '') AS firstname,
-    ISNULL(NULLIF(LTRIM(RTRIM(per.middlename)), ''), '') AS middlename,
-    ISNULL(NULLIF(LTRIM(RTRIM(per.extname)), ''), '') AS pref,
+    COALESCE(NULLIF(LTRIM(RTRIM(per.gsisId)), ''), '') AS bpNo,
+    COALESCE(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName) AS lastname,
+    COALESCE(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '') AS firstname,
+    COALESCE(NULLIF(LTRIM(RTRIM(per.middlename)), ''), '') AS middlename,
+    COALESCE(NULLIF(LTRIM(RTRIM(per.extname)), ''), '') AS pref,
     '' AS app,
     CAST(COALESCE(ps,0) AS FLOAT) AS ps,
     CAST(COALESCE(gs,0) AS FLOAT) AS gs,
@@ -129,13 +76,10 @@ SELECT
     CAST(0 AS FLOAT) AS gmpl,
     CAST(0 AS FLOAT) AS gcom
 FROM grouped
-CROSS JOIN signatory_positions
 LEFT JOIN employee emp ON emp.employeeNo = grouped.employeeNo
 LEFT JOIN personaldata per ON per.employeeId = emp.employeeId
 WHERE COALESCE(ps,0) <> 0 OR COALESCE(gs,0) <> 0
-ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), ISNULL(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '')]]></query>
-	<field name="preparedByPositionResolved" class="java.lang.String"/>
-	<field name="certifiedByPositionResolved" class="java.lang.String"/>
+ORDER BY COALESCE(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), COALESCE(NULLIF(LTRIM(RTRIM(per.firstname)), ''), '')]]></query>
 	<field name="policyNo" class="java.lang.String"/>
 	<field name="bpNo" class="java.lang.String"/>
 	<field name="lastname" class="java.lang.String"/>
@@ -461,7 +405,7 @@ ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), IS
 			<text><![CDATA[Certified corrected by:]]></text>
 		</element>
 		<element kind="textField" uuid="572e87b6-139f-482c-96e2-3d3a7e3f5f63" x="15" y="54" width="147" height="14">
-			<expression><![CDATA[$F{preparedByPositionResolved}]]></expression>
+			<expression><![CDATA[$P{preparedByPos}]]></expression>
 		</element>
 		<element kind="textField" uuid="10158112-5c55-4026-a313-d1b0dce11a0a" x="15" y="39" width="147" height="15" pdfFontName="Helvetica-Bold">
 			<expression><![CDATA[$P{preparedBy}]]></expression>
@@ -470,7 +414,7 @@ ORDER BY ISNULL(NULLIF(LTRIM(RTRIM(per.surname)), ''), grouped.employeeName), IS
 			<expression><![CDATA[$P{certifiedBy}]]></expression>
 		</element>
 		<element kind="textField" uuid="19f8be78-666d-404f-aa12-7a77d5e56435" x="285" y="54" width="144" height="14">
-			<expression><![CDATA[$F{certifiedByPositionResolved}]]></expression>
+			<expression><![CDATA[$P{certifiedByPos}]]></expression>
 		</element>
 		<element kind="staticText" uuid="c3c7fcce-03b8-453a-8077-e2b25b5aa64b" x="1" y="0" width="1236" height="10" fontSize="9.0" hTextAlign="Right">
 			<text><![CDATA[]]></text>

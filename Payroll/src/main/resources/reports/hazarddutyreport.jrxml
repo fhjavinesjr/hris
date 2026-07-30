@@ -12,21 +12,21 @@
     CAST(ROW_NUMBER() OVER (ORDER BY pd.employeeName, pd.employeeNo) AS int) AS no,
     pd.employeeNo AS employeeNo,
     pd.employeeName AS fullname,
-    ISNULL(pd.department, '') AS department,
+    COALESCE(pd.department, '') AS department,
     pd.salaryGrade AS salaryGrade,
     pd.salaryStep AS salaryStep,
     pd.basicPerSalary AS basicPerSalary,
-    CAST(SUM(ISNULL(pde.amount, 0)) AS float) AS grossAmount,
+    CAST(SUM(COALESCE(pde.amount, 0)) AS float) AS grossAmount,
     CAST(0 AS float) AS tax,
-    CAST(SUM(ISNULL(pde.amount, 0)) AS float) AS netAmount,
-    ISNULL(pd.department, '') AS position,
+    CAST(SUM(COALESCE(pde.amount, 0)) AS float) AS netAmount,
+    COALESCE(pd.department, '') AS position,
     pd.basicPerSalary AS salaryMo
 FROM payroll_detail pd
 INNER JOIN payroll_detail_earning pde ON pde.payroll_detail_id = pd.id
 WHERE pd.salaryPeriodKey = $P{SALARY_PERIOD_KEY}
   AND (
-        UPPER(LTRIM(RTRIM(ISNULL(pde.earningCode, '')))) = UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_CODE}, ''))))
-        OR UPPER(LTRIM(RTRIM(ISNULL(pde.earningName, '')))) = UPPER(LTRIM(RTRIM(ISNULL($P{EARNING_TYPE_NAME}, ''))))
+        UPPER(LTRIM(RTRIM(COALESCE(pde.earningCode, '')))) = UPPER(LTRIM(RTRIM(COALESCE($P{EARNING_TYPE_CODE}, ''))))
+        OR UPPER(LTRIM(RTRIM(COALESCE(pde.earningName, '')))) = UPPER(LTRIM(RTRIM(COALESCE($P{EARNING_TYPE_NAME}, ''))))
       )
 GROUP BY
     pd.employeeNo,
