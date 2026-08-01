@@ -3,7 +3,6 @@
 	<property name="ireport.zoom" value="1.9487171000000019"/>
 	<property name="ireport.x" value="334"/>
 	<property name="ireport.y" value="0"/>
-	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
 	<parameter name="webAppPath" class="java.lang.String"/>
 	<parameter name="logoleft" class="java.lang.Object"/>
 	<parameter name="logoright" class="java.lang.Object"/>
@@ -51,8 +50,6 @@ ranked_settings AS (
 		s.companyName,
 		s.address,
 		s.hospitalAgency,
-		s.leftHeaderLogo,
-		s.rightHeaderLogo,
 		ROW_NUMBER() OVER (ORDER BY s.settingsId DESC) AS row_num
 	FROM settings s
 )
@@ -86,9 +83,7 @@ SELECT
 		ELSE 0
 	END AS hospitalAgency,
 	COALESCE(st.companyName, '') AS currentCompanySetting,
-	COALESCE(st.address, '') AS currentCompanyAddressSetting,
-	st.leftHeaderLogo,
-	st.rightHeaderLogo
+	COALESCE(st.address, '') AS currentCompanyAddressSetting
 FROM compensatory_overtime_credit c
 LEFT JOIN employee e ON e.employeeId = c.employeeId
 LEFT JOIN overtime_request ot ON ot.overtimeRequestId = c.overtimeRequestId
@@ -118,8 +113,6 @@ WHERE c.cocId = $P{COC_ID}
 	<field name="hospitalAgency" class="java.lang.Boolean"/>
 	<field name="currentCompanySetting" class="java.lang.String"/>
 	<field name="currentCompanyAddressSetting" class="java.lang.String"/>
-	<field name="leftHeaderLogo" class="java.lang.Object"/>
-	<field name="rightHeaderLogo" class="java.lang.Object"/>
 	<title height="52" splitType="Stretch">
 		<element kind="textField" uuid="c1be3749-e4ef-4dd0-96e8-f301e811d5c6" x="0" y="-1" width="640" height="53" markup="styled" fontName="Tahoma" fontSize="8.0" pdfEmbedded="false" hTextAlign="Center">
 			<printWhenExpression><![CDATA[$F{hospitalAgency} != null && $F{hospitalAgency}]]></printWhenExpression>
@@ -135,10 +128,10 @@ WHERE c.cocId = $P{COC_ID}
 			</box>
 		</element>
 		<element kind="image" uuid="b0b6c4be-fa26-442b-8d2c-2790426b972e" x="465" y="-1" width="56" height="53" hImageAlign="Center" vImageAlign="Middle">
-			<expression><![CDATA[$F{rightHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{rightHeaderLogo})]]></expression>
+			<expression><![CDATA[$P{logoright}]]></expression>
 		</element>
 		<element kind="image" uuid="6afb33f6-0cd8-484d-85a4-9f01e69fe766" x="131" y="-1" width="55" height="53" hImageAlign="Center" vImageAlign="Middle">
-			<expression><![CDATA[$F{leftHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{leftHeaderLogo})]]></expression>
+			<expression><![CDATA[$P{logoleft}]]></expression>
 		</element>
 	</title>
 	<pageHeader height="52" splitType="Stretch">

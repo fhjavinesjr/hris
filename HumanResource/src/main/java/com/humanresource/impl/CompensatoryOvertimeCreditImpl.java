@@ -4,7 +4,9 @@ import com.humanresource.dtos.CompensatoryOvertimeCreditDTO;
 import com.humanresource.entitymodels.CompensatoryOvertimeCredit;
 import com.humanresource.entitymodels.CocBeginningBalance;
 import com.humanresource.entitymodels.OvertimeRequest;
+import com.humanresource.entitymodels.ReportHeaderSettings;
 import com.humanresource.repositories.OvertimeRequestRepository;
+import com.humanresource.repositories.ReportHeaderSettingsRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import com.humanresource.repositories.CompensatoryOvertimeCreditRepository;
 import com.humanresource.repositories.CompensatoryTimeOffRepository;
@@ -22,6 +24,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Connection;
@@ -45,18 +48,21 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
     private final CocBeginningBalanceRepository cocBegBalRepository;
     private final DataSource dataSource;
     private final OvertimeRequestRepository overtimeRequestRepository;
+    private final ReportHeaderSettingsRepository reportHeaderSettingsRepository;
     private final JdbcTemplate jdbc;
 
     public CompensatoryOvertimeCreditImpl(CompensatoryOvertimeCreditRepository cocRepository,
                                           CompensatoryTimeOffRepository ctoRepository,
                                           CocBeginningBalanceRepository cocBegBalRepository,
                                           OvertimeRequestRepository overtimeRequestRepository,
+                                          ReportHeaderSettingsRepository reportHeaderSettingsRepository,
                                           DataSource dataSource) {
         this.cocRepository = cocRepository;
         this.ctoRepository = ctoRepository;
         this.cocBegBalRepository = cocBegBalRepository;
         this.dataSource = dataSource;
         this.overtimeRequestRepository = overtimeRequestRepository;
+        this.reportHeaderSettingsRepository = reportHeaderSettingsRepository;
         this.jdbc = new JdbcTemplate(dataSource);
     }
 
@@ -521,6 +527,7 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
                 - (usedHours != null ? usedHours : 0.0);
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     @Override
     public void generateCertificateCoc(Long cocId, OutputStream out) throws Exception {
         JasperReport report = compile("reports/CertificateCOC.jrxml");
@@ -531,11 +538,24 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
                 ? null
                 : cocRepository.findById(cocId).orElse(null);
         params.put("VALID_UNTIL", certificateValidUntil(coc == null ? null : coc.getDateFiled()));
+        putHeaderLogoParameters(params);
 
         try (Connection conn = dataSource.getConnection()) {
             JasperPrint print = JasperFillManager.fillReport(report, params, conn);
             JasperExportManager.exportReportToPdfStream(print, out);
         }
+    }
+
+    private void putHeaderLogoParameters(Map<String, Object> params) {
+        ReportHeaderSettings settings = reportHeaderSettingsRepository
+                .findFirstByOrderBySettingsIdDesc()
+                .orElse(null);
+        params.put("logoleft", imageStream(settings == null ? null : settings.getLeftHeaderLogo()));
+        params.put("logoright", imageStream(settings == null ? null : settings.getRightHeaderLogo()));
+    }
+
+    private static InputStream imageStream(byte[] bytes) {
+        return bytes == null ? null : new ByteArrayInputStream(bytes);
     }
 
     static String certificateValidUntil(LocalDate dateFiled) {

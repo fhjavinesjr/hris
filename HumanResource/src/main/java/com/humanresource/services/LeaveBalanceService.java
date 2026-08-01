@@ -9,4 +9,13 @@ public interface LeaveBalanceService {
      * This is a read-only computation — it does NOT modify any records.
      */
     LeaveBalanceDTO getCurrentBalance(Long employeeId) throws Exception;
+
+    /**
+     * Computes the same running balance while excluding one monetization record.
+     * Used when editing/finalizing that record so its existing reservation is not
+     * counted twice during validation.
+     */
+    LeaveBalanceDTO getCurrentBalanceExcludingMonetization(
+            Long employeeId,
+            Long leaveMonetizationId) throws Exception;
 }

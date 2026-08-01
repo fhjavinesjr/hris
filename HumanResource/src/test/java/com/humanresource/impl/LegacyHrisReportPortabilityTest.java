@@ -26,7 +26,27 @@ class LegacyHrisReportPortabilityTest {
             "reports/CertificateCOC.jrxml",
             "reports/OvertimeAuthorization.jrxml",
             "reports/leave_card.jrxml",
-            "reports/leave_form_2020.jrxml"
+            "reports/leave_form_2020.jrxml",
+            "reports/permitSlip.jrxml"
+    );
+
+    private static final List<String> ALL_REPORTS = List.of(
+            "reports/CertificateCOC.jrxml",
+            "reports/OvertimeAuthorization.jrxml",
+            "reports/leave_card.jrxml",
+            "reports/leave_form_2020.jrxml",
+            "reports/permitSlip.jrxml",
+            "reports/pds_c1.jrxml",
+            "reports/pds_c1_children_sub.jrxml",
+            "reports/pds_c2.jrxml",
+            "reports/pds_c2_civilservice_sub.jrxml",
+            "reports/pds_c2_workexperience_sub.jrxml",
+            "reports/pds_c3.jrxml",
+            "reports/pds_c3_lnd_sub.jrxml",
+            "reports/pds_c3_otherinformation_sub.jrxml",
+            "reports/pds_c3_voluntarywork_sub.jrxml",
+            "reports/pds_c4.jrxml",
+            "reports/pds_c4_references_sub.jrxml"
     );
 
     private static final Pattern QUERY_PATTERN = Pattern.compile(
@@ -91,6 +111,69 @@ class LegacyHrisReportPortabilityTest {
         assertTrue(leaveCardParameters.contains("SEPARATION_TEXT"));
         assertTrue(leaveFormParameters.contains("WORKING_DAYS_APPLIED"));
         assertTrue(leaveFormParameters.contains("INCLUSIVE_DATES"));
+    }
+
+    @Test
+    void leaveFormReadsHeaderLogosFromPortableParameters() throws Exception {
+        ClassPathResource resource = new ClassPathResource("reports/leave_form_2020.jrxml");
+        String source;
+        try (InputStream input = resource.getInputStream()) {
+            source = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        assertTrue(source.contains("$P{logoleft}"));
+        assertTrue(source.contains("$P{logoright}"));
+        assertFalse(source.contains("$F{leftHeaderLogo}"));
+        assertFalse(source.contains("$F{rightHeaderLogo}"));
+        assertFalse(source.contains("st.leftHeaderLogo AS leftHeaderLogo"));
+        assertFalse(source.contains("st.rightHeaderLogo AS rightHeaderLogo"));
+    }
+
+    @Test
+    void everyPackagedHrmJrxmlCompiles() throws Exception {
+        for (String reportPath : ALL_REPORTS) {
+            ClassPathResource resource = new ClassPathResource(reportPath);
+            try (InputStream input = resource.getInputStream()) {
+                assertNotNull(JasperCompileManager.compileReport(input), reportPath);
+            }
+        }
+    }
+
+    @Test
+    void overtimeAuthorizationReadsHeaderLogosFromPortableParameters() throws Exception {
+        ClassPathResource resource = new ClassPathResource("reports/OvertimeAuthorization.jrxml");
+        String source;
+        try (InputStream input = resource.getInputStream()) {
+            source = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        assertTrue(source.contains("$P{logoleft}"));
+        assertTrue(source.contains("$P{logoright}"));
+        assertFalse(source.contains("$F{leftHeaderLogo}"));
+        assertFalse(source.contains("$F{rightHeaderLogo}"));
+        assertFalse(source.contains("s.leftHeaderLogo"));
+        assertFalse(source.contains("s.rightHeaderLogo"));
+    }
+
+    @Test
+    void remainingSqlReportsReadHeaderLogosFromPortableParameters() throws Exception {
+        for (String reportPath : List.of(
+                "reports/CertificateCOC.jrxml",
+                "reports/leave_card.jrxml",
+                "reports/permitSlip.jrxml")) {
+            ClassPathResource resource = new ClassPathResource(reportPath);
+            String source;
+            try (InputStream input = resource.getInputStream()) {
+                source = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+            }
+
+            assertTrue(source.contains("$P{logoleft}"), reportPath);
+            assertTrue(source.contains("$P{logoright}"), reportPath);
+            assertFalse(source.contains("$F{leftHeaderLogo}"), reportPath);
+            assertFalse(source.contains("$F{rightHeaderLogo}"), reportPath);
+            assertFalse(source.contains("s.leftHeaderLogo"), reportPath);
+            assertFalse(source.contains("s.rightHeaderLogo"), reportPath);
+        }
     }
 
     private static Set<String> parameterNames(String reportPath) throws Exception {

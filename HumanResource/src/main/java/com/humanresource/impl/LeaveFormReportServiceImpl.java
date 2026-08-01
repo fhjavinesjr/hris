@@ -2,9 +2,11 @@ package com.humanresource.impl;
 
 import com.humanresource.entitymodels.LeaveApplication;
 import com.humanresource.entitymodels.LeaveMonetization;
+import com.humanresource.entitymodels.ReportHeaderSettings;
 import com.humanresource.entitymodels.Separation;
 import com.humanresource.repositories.LeaveApplicationRepository;
 import com.humanresource.repositories.LeaveMonetizationRepository;
+import com.humanresource.repositories.ReportHeaderSettingsRepository;
 import com.humanresource.repositories.SeparationRepository;
 import com.humanresource.services.LeaveFormReportService;
 import jakarta.annotation.PostConstruct;
@@ -16,8 +18,10 @@ import net.sf.jasperreports.engine.JasperReport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Connection;
@@ -46,11 +50,15 @@ public class LeaveFormReportServiceImpl implements LeaveFormReportService {
     @Autowired
     private SeparationRepository separationRepository;
 
+    @Autowired
+    private ReportHeaderSettingsRepository reportHeaderSettingsRepository;
+
     @PostConstruct
     private void disableSchemaValidation() {
         System.setProperty("net.sf.jasperreports.compiler.xml.parser.validation", "false");
     }
 
+    @Transactional(readOnly = true)
     @Override
     public void generateLeaveForm(Long leaveApplicationId, OutputStream out) throws Exception {
         JasperReport report = compile("reports/leave_form_2020.jrxml");
@@ -69,12 +77,14 @@ public class LeaveFormReportServiceImpl implements LeaveFormReportService {
                 leaveApplication == null ? null : leaveApplication.getNoOfDays()
         );
 
+        putHeaderLogoParameters(params);
         try (Connection conn = dataSource.getConnection()) {
             JasperPrint print = JasperFillManager.fillReport(report, params, conn);
             JasperExportManager.exportReportToPdfStream(print, out);
         }
     }
 
+    @Transactional(readOnly = true)
     @Override
     public void generateLeaveFormForMonetization(Long leaveMonetizationId, OutputStream out) throws Exception {
         JasperReport report = compile("reports/leave_form_2020.jrxml");
@@ -93,12 +103,14 @@ public class LeaveFormReportServiceImpl implements LeaveFormReportService {
                 leaveMonetization == null ? null : leaveMonetization.getTotalDays()
         );
 
+        putHeaderLogoParameters(params);
         try (Connection conn = dataSource.getConnection()) {
             JasperPrint print = JasperFillManager.fillReport(report, params, conn);
             JasperExportManager.exportReportToPdfStream(print, out);
         }
     }
 
+    @Transactional(readOnly = true)
     @Override
     public void generateLeaveCard(Long employeeId, Integer year, OutputStream out) throws Exception {
         JasperReport report = compile("reports/leave_card.jrxml");
@@ -110,6 +122,7 @@ public class LeaveFormReportServiceImpl implements LeaveFormReportService {
                 ? List.of()
                 : separationRepository.findByEmployeeId(employeeId);
         params.put("SEPARATION_TEXT", separationText(separations));
+        putHeaderLogoParameters(params);
 
         try (Connection conn = dataSource.getConnection()) {
             JasperPrint print = JasperFillManager.fillReport(report, params, conn);
@@ -158,6 +171,18 @@ public class LeaveFormReportServiceImpl implements LeaveFormReportService {
                 .map(separation -> "Separated effective "
                         + REPORT_DATE_FORMAT.format(separation.getSeparationDate()))
                 .orElse("");
+    }
+
+    private void putHeaderLogoParameters(Map<String, Object> params) {
+        ReportHeaderSettings settings = reportHeaderSettingsRepository
+                .findFirstByOrderBySettingsIdDesc()
+                .orElse(null);
+        params.put("logoleft", imageStream(settings == null ? null : settings.getLeftHeaderLogo()));
+        params.put("logoright", imageStream(settings == null ? null : settings.getRightHeaderLogo()));
+    }
+
+    private static InputStream imageStream(byte[] bytes) {
+        return bytes == null ? null : new ByteArrayInputStream(bytes);
     }
 
     private JasperReport compile(String classpathPath) throws Exception {

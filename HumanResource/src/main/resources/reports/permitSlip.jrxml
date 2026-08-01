@@ -3,7 +3,6 @@
 	<property name="ireport.zoom" value="1.4641000000000022"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
-	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
 	<parameter name="webAppPath" class="java.lang.String"/>
 	<parameter name="currentCompany" class="java.lang.String"/>
 	<parameter name="currentCompanyAddress" class="java.lang.String"/>
@@ -16,8 +15,6 @@
         s.companyName,
         s.address,
         s.hospitalAgency,
-        s.leftHeaderLogo,
-        s.rightHeaderLogo,
         ROW_NUMBER() OVER (ORDER BY s.settingsId DESC) AS settings_rank
     FROM settings s
 )
@@ -44,9 +41,7 @@ SELECT
     ps.arrivalTime AS arrivalIn,
     st.hospitalAgency AS hospitalAgency,
     COALESCE(st.companyName, '') AS currentCompanySetting,
-    COALESCE(st.address, '') AS currentCompanyAddressSetting,
-    st.leftHeaderLogo AS leftHeaderLogo,
-    st.rightHeaderLogo AS rightHeaderLogo
+    COALESCE(st.address, '') AS currentCompanyAddressSetting
 FROM pass_slip ps
 LEFT JOIN employee emp ON emp.employeeId = ps.employeeId
 LEFT JOIN employee appr ON appr.employeeId = ps.approvedById
@@ -63,14 +58,12 @@ ORDER BY ps.passSlipDate ASC, ps.departureTime ASC, ps.passSlipId ASC]]></query>
 	<field name="hospitalAgency" class="java.lang.Boolean"/>
 	<field name="currentCompanySetting" class="java.lang.String"/>
 	<field name="currentCompanyAddressSetting" class="java.lang.String"/>
-	<field name="leftHeaderLogo" class="java.lang.Object"/>
-	<field name="rightHeaderLogo" class="java.lang.Object"/>
 	<title height="105" splitType="Stretch">
 		<element kind="image" onErrorType="Blank" uuid="2b8ac8f6-4405-415b-966d-ff32016a0298" x="70" y="12" width="55" height="55" scaleImage="FillFrame" hImageAlign="Center" vImageAlign="Middle">
-			<expression><![CDATA[$F{leftHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[])$F{leftHeaderLogo})]]></expression>
+			<expression><![CDATA[$P{logoleft}]]></expression>
 		</element>
 		<element kind="image" onErrorType="Blank" uuid="9423539b-5603-4fe4-90bd-d9ac41225fa5" x="515" y="12" width="55" height="55" scaleImage="FillFrame" hImageAlign="Center" vImageAlign="Middle">
-			<expression><![CDATA[$F{rightHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[])$F{rightHeaderLogo})]]></expression>
+			<expression><![CDATA[$P{logoright}]]></expression>
 		</element>
 		<element kind="textField" uuid="0747ecaa-b09a-4ede-9e7d-f330ff10401c" x="130" y="10" width="380" height="58" markup="styled" fontName="Tahoma" fontSize="8.0" hTextAlign="Center" vTextAlign="Middle">
 			<expression><![CDATA[

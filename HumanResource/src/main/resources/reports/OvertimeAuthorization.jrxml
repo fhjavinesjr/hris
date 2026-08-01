@@ -3,7 +3,6 @@
 	<property name="ireport.zoom" value="1.9487171000000014"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
-	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
 	<parameter name="currentCompany" class="java.lang.String"/>
 	<parameter name="currentCompanyAddress" class="java.lang.String"/>
 	<parameter name="recommendedBy" class="java.lang.String"/>
@@ -13,6 +12,8 @@
 	<parameter name="isJobOrder" class="java.lang.Boolean"/>
 	<parameter name="requestedBy" class="java.lang.String"/>
 	<parameter name="requestedByPos" class="java.lang.String"/>
+	<parameter name="logoleft" class="java.lang.Object"/>
+	<parameter name="logoright" class="java.lang.Object"/>
 	<parameter name="OVERTIME_REQUEST_ID" class="java.lang.Long"/>
 	<query language="sql"><![CDATA[
 WITH ranked_personnel AS (
@@ -30,8 +31,6 @@ ranked_settings AS (
 		s.companyName,
 		s.address,
 		s.hospitalAgency,
-		s.leftHeaderLogo,
-		s.rightHeaderLogo,
 		ROW_NUMBER() OVER (ORDER BY s.settingsId DESC) AS row_num
 	FROM settings s
 ),
@@ -69,8 +68,6 @@ SELECT
 	END AS hospitalAgency,
 	COALESCE(st.companyName, '') AS currentCompanySetting,
 	COALESCE(st.address, '') AS currentCompanyAddressSetting,
-	st.leftHeaderLogo,
-	st.rightHeaderLogo,
 	CASE WHEN LOWER(COALESCE(reqNoa.nature, '')) LIKE '%job order%' THEN 1 ELSE 0 END AS isJobOrder,
 	CONCAT(
 		COALESCE(reqPd.firstname, COALESCE(reqEmp.firstname, '')),
@@ -119,8 +116,6 @@ WHERE ot.overtimeRequestId = $P{OVERTIME_REQUEST_ID}
 	<field name="hospitalAgency" class="java.lang.Boolean"/>
 	<field name="currentCompanySetting" class="java.lang.String"/>
 	<field name="currentCompanyAddressSetting" class="java.lang.String"/>
-	<field name="leftHeaderLogo" class="java.lang.Object"/>
-	<field name="rightHeaderLogo" class="java.lang.Object"/>
 	<field name="isJobOrder" class="java.lang.Boolean"/>
 	<field name="requestedBy" class="java.lang.String"/>
 	<field name="requestedByPos" class="java.lang.String"/>
@@ -198,10 +193,10 @@ WHERE ot.overtimeRequestId = $P{OVERTIME_REQUEST_ID}
 			</box>
 		</element>
 		<element kind="image" uuid="a6154806-3014-4e84-bdab-c41a1a749661" x="410" y="0" width="72" height="56" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Middle">
-			<expression><![CDATA[$F{rightHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{rightHeaderLogo})]]></expression>
+			<expression><![CDATA[$P{logoright}]]></expression>
 		</element>
 		<element kind="image" uuid="b1df21f0-bb5c-45f4-8079-7aea0bd9dfce" x="70" y="0" width="66" height="56" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Middle">
-			<expression><![CDATA[$F{leftHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{leftHeaderLogo})]]></expression>
+			<expression><![CDATA[$P{logoleft}]]></expression>
 		</element>
 		<element kind="staticText" uuid="db289fbb-cb14-4bd3-8e40-b12628ab50f4" key="staticText-18" mode="Transparent" x="0" y="0" width="70" height="56" fontName="Times New Roman" fontSize="14.0" pdfFontName="Times-Roman" bold="true" hTextAlign="Center">
 			<text><![CDATA[]]></text>

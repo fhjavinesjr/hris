@@ -3,7 +3,6 @@
 	<property name="ireport.zoom" value="1.5000000000000209"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
-	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="HRISOF SQL Server"/>
 	<import>net.sf.jasperreports.engine.*</import>
 	<parameter name="vlBalance" class="java.lang.Double"/>
 	<parameter name="slBalance" class="java.lang.Double"/>
@@ -65,8 +64,6 @@
 				s.companyName,
 				s.address,
 				s.hospitalAgency,
-				s.leftHeaderLogo,
-				s.rightHeaderLogo,
 				ROW_NUMBER() OVER (ORDER BY s.settingsId DESC) AS row_num
 			FROM settings s
 		)
@@ -119,8 +116,6 @@
 			END AS hospitalAgency,
 			COALESCE(st.companyName, '') AS currentCompanySetting,
 			COALESCE(st.address, '') AS currentCompanyAddressSetting,
-			st.leftHeaderLogo AS leftHeaderLogo,
-			st.rightHeaderLogo AS rightHeaderLogo,
 			CAST(COALESCE(li.previousVacationLeaveBalance, 0) AS float) AS previousVacationLeaveBalance,
 			CAST(COALESCE(li.previousSickLeaveBalance, 0) AS float) AS previousSickLeaveBalance,
 			CONCAT('Forwarded balance as of 12/31/', ($P{REPORT_YEAR} - 1)) AS forwardstatus,
@@ -172,8 +167,6 @@
 	<field name="hospitalAgency" class="java.lang.Boolean"/>
 	<field name="currentCompanySetting" class="java.lang.String"/>
 	<field name="currentCompanyAddressSetting" class="java.lang.String"/>
-	<field name="leftHeaderLogo" class="java.lang.Object"/>
-	<field name="rightHeaderLogo" class="java.lang.Object"/>
 	<field name="previousVacationLeaveBalance" class="java.lang.Double"/>
 	<field name="previousSickLeaveBalance" class="java.lang.Double"/>
 	<field name="forwardstatus" class="java.lang.String"/>
@@ -220,10 +213,10 @@
 			</box>
 		</element>
 		<element kind="image" uuid="1f191b35-c98b-4812-8ee3-518498b49443" x="513" y="0" width="72" height="56" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Middle">
-			<expression><![CDATA[$F{rightHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{rightHeaderLogo})]]></expression>
+			<expression><![CDATA[$P{logoright}]]></expression>
 		</element>
 		<element kind="image" uuid="47307b54-26e6-4215-bc24-9e49cf396842" x="191" y="0" width="66" height="56" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Middle">
-			<expression><![CDATA[$F{leftHeaderLogo} == null ? null : new java.io.ByteArrayInputStream((byte[]) $F{leftHeaderLogo})]]></expression>
+			<expression><![CDATA[$P{logoleft}]]></expression>
 		</element>
 		<element kind="staticText" uuid="6710d9f7-e16e-47a4-b172-a4be36967a77" key="staticText-18" mode="Transparent" x="0" y="0" width="191" height="56" fontName="Times New Roman" fontSize="14.0" pdfFontName="Times-Roman" bold="true" hTextAlign="Center">
 			<text><![CDATA[]]></text>

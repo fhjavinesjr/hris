@@ -4,9 +4,11 @@ import com.humanresource.dtos.LeaveBalanceDTO;
 import com.humanresource.entitymodels.LeaveApplication;
 import com.humanresource.entitymodels.LeaveBeginningBalance;
 import com.humanresource.entitymodels.LeaveInformation;
+import com.humanresource.entitymodels.LeaveMonetization;
 import com.humanresource.repositories.LeaveApplicationRepository;
 import com.humanresource.repositories.LeaveBeginningBalanceRepository;
 import com.humanresource.repositories.LeaveInformationRepository;
+import com.humanresource.repositories.LeaveMonetizationRepository;
 import com.humanresource.services.LeaveBalanceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,24 +46,40 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
 
     // Statuses that mean the application is NOT consuming leave credit
     private static final Set<String> INACTIVE_STATUSES = Set.of(
-            "Rejected", "Cancelled"
+            "rejected", "disapproved", "cancelled", "canceled"
     );
 
     private final LeaveInformationRepository leaveInfoRepository;
     private final LeaveBeginningBalanceRepository begBalanceRepository;
     private final LeaveApplicationRepository leaveApplicationRepository;
+    private final LeaveMonetizationRepository leaveMonetizationRepository;
 
     public LeaveBalanceImpl(
             LeaveInformationRepository leaveInfoRepository,
             LeaveBeginningBalanceRepository begBalanceRepository,
-            LeaveApplicationRepository leaveApplicationRepository) {
+            LeaveApplicationRepository leaveApplicationRepository,
+            LeaveMonetizationRepository leaveMonetizationRepository) {
         this.leaveInfoRepository = leaveInfoRepository;
         this.begBalanceRepository = begBalanceRepository;
         this.leaveApplicationRepository = leaveApplicationRepository;
+        this.leaveMonetizationRepository = leaveMonetizationRepository;
     }
 
     @Override
     public LeaveBalanceDTO getCurrentBalance(Long employeeId) throws Exception {
+        return getCurrentBalanceInternal(employeeId, null);
+    }
+
+    @Override
+    public LeaveBalanceDTO getCurrentBalanceExcludingMonetization(
+            Long employeeId,
+            Long leaveMonetizationId) throws Exception {
+        return getCurrentBalanceInternal(employeeId, leaveMonetizationId);
+    }
+
+    private LeaveBalanceDTO getCurrentBalanceInternal(
+            Long employeeId,
+            Long excludedMonetizationId) throws Exception {
         LeaveBalanceDTO result = new LeaveBalanceDTO();
         result.setEmployeeId(employeeId);
 
@@ -108,7 +126,7 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
         for (LeaveApplication app : allApps) {
             if (app.getStartDate() == null) continue;
             if (!app.getStartDate().isAfter(cutoffFinal)) continue;
-            if (INACTIVE_STATUSES.contains(app.getStatus())) continue;
+            if (isInactiveStatus(app.getStatus())) continue;
 
             double days = nvl(app.getNoOfDays());
             // If noOfDays is not stored, estimate from inclusive date range
@@ -125,8 +143,34 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
             }
         }
 
-        result.setVacationLeaveBalance(round3(baseVL - unpostedVL));
-        result.setSickLeaveBalance(round3(baseSL - unpostedSL));
+        // Pending monetizations reserve credit immediately. Approved
+        // monetizations remain reserved until Leave Process posts them into a
+        // LeaveInformation period. Disapproved/cancelled records release it.
+        double reservedMonetizationVL = 0.0;
+        double reservedMonetizationSL = 0.0;
+        for (LeaveMonetization monetization :
+                leaveMonetizationRepository.findByEmployeeIdOrderByDateFiledDesc(employeeId)) {
+            if (excludedMonetizationId != null
+                    && excludedMonetizationId.equals(monetization.getLeaveMonetizationId())) {
+                continue;
+            }
+
+            String status = monetization.getApprovalStatus();
+            if (isInactiveStatus(status)) continue;
+
+            boolean pending = status == null || status.isBlank()
+                    || "Pending".equalsIgnoreCase(status);
+            boolean approvedButUnposted = "Approved".equalsIgnoreCase(status)
+                    && monetization.getApprovedAt() != null
+                    && monetization.getApprovedAt().isAfter(cutoffFinal);
+            if (!pending && !approvedButUnposted) continue;
+
+            reservedMonetizationVL += nvl(monetization.getNoOfDaysVL());
+            reservedMonetizationSL += nvl(monetization.getNoOfDaysSL());
+        }
+
+        result.setVacationLeaveBalance(round3(baseVL - unpostedVL - reservedMonetizationVL));
+        result.setSickLeaveBalance(round3(baseSL - unpostedSL - reservedMonetizationSL));
 
         // ── Step 4: SPL — beginning balance minus approved SPL in current year ───
         int currentYear = LocalDate.now().getYear();
@@ -136,7 +180,7 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
 
         double usedSPL = allApps.stream()
                 .filter(a -> "Special Privilege Leave".equalsIgnoreCase(a.getLeaveType()))
-                .filter(a -> !INACTIVE_STATUSES.contains(a.getStatus()))
+                .filter(a -> !isInactiveStatus(a.getStatus()))
                 .filter(a -> a.getStartDate() != null && a.getStartDate().getYear() == currentYear)
                 .mapToDouble(a -> {
                     double d = nvl(a.getNoOfDays());
@@ -154,7 +198,7 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
 
         double usedFL = allApps.stream()
                 .filter(a -> "Forced Leave".equalsIgnoreCase(a.getLeaveType()))
-                .filter(a -> !INACTIVE_STATUSES.contains(a.getStatus()))
+                .filter(a -> !isInactiveStatus(a.getStatus()))
                 .filter(a -> a.getStartDate() != null && a.getStartDate().getYear() == currentYear)
                 .mapToDouble(a -> {
                     double d = nvl(a.getNoOfDays());
@@ -176,6 +220,10 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
 
     private double nvl(Double v) {
         return v == null ? 0.0 : v;
+    }
+
+    private boolean isInactiveStatus(String status) {
+        return status != null && INACTIVE_STATUSES.contains(status.trim().toLowerCase());
     }
 
     private double round3(double v) {

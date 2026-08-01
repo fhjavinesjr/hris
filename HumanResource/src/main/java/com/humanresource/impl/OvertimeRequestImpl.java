@@ -3,8 +3,9 @@ package com.humanresource.impl;
 import com.humanresource.dtos.OvertimeRequestDTO;
 import com.humanresource.entitymodels.OvertimeRequest;
 import com.humanresource.repositories.OvertimeRequestRepository;
+import com.humanresource.entitymodels.ReportHeaderSettings;
+import com.humanresource.repositories.ReportHeaderSettingsRepository;
 import com.humanresource.services.OvertimeRequestService;
-import jakarta.transaction.Transactional;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -14,8 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Connection;
@@ -32,11 +35,14 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
 
     private static final Logger log = LoggerFactory.getLogger(OvertimeRequestImpl.class);
     private final OvertimeRequestRepository overtimeRequestRepository;
+    private final ReportHeaderSettingsRepository reportHeaderSettingsRepository;
     private final DataSource dataSource;
 
     public OvertimeRequestImpl(OvertimeRequestRepository overtimeRequestRepository,
+                               ReportHeaderSettingsRepository reportHeaderSettingsRepository,
                                DataSource dataSource) {
         this.overtimeRequestRepository = overtimeRequestRepository;
+        this.reportHeaderSettingsRepository = reportHeaderSettingsRepository;
         this.dataSource = dataSource;
     }
 
@@ -460,17 +466,31 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
         };
     }
 
+    @Transactional(readOnly = true)
     @Override
     public void generateOvertimeAuthorization(Long overtimeRequestId, OutputStream out) throws Exception {
         JasperReport report = compile("reports/OvertimeAuthorization.jrxml");
 
         Map<String, Object> params = new HashMap<>();
         params.put("OVERTIME_REQUEST_ID", overtimeRequestId);
+        putHeaderLogoParameters(params);
 
         try (Connection conn = dataSource.getConnection()) {
             JasperPrint print = JasperFillManager.fillReport(report, params, conn);
             JasperExportManager.exportReportToPdfStream(print, out);
         }
+    }
+
+    private void putHeaderLogoParameters(Map<String, Object> params) {
+        ReportHeaderSettings settings = reportHeaderSettingsRepository
+                .findFirstByOrderBySettingsIdDesc()
+                .orElse(null);
+        params.put("logoleft", imageStream(settings == null ? null : settings.getLeftHeaderLogo()));
+        params.put("logoright", imageStream(settings == null ? null : settings.getRightHeaderLogo()));
+    }
+
+    private static InputStream imageStream(byte[] bytes) {
+        return bytes == null ? null : new ByteArrayInputStream(bytes);
     }
 
     private JasperReport compile(String classpathPath) throws Exception {

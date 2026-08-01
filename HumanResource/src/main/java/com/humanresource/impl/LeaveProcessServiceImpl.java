@@ -8,6 +8,7 @@ import com.humanresource.entitymodels.EmployeeAppointment;
 import com.humanresource.entitymodels.LeaveApplication;
 import com.humanresource.entitymodels.LeaveBeginningBalance;
 import com.humanresource.entitymodels.LeaveInformation;
+import com.humanresource.entitymodels.LeaveMonetization;
 import com.humanresource.entitymodels.CompensatoryTimeOff;
 import com.humanresource.entitymodels.OfficialEngagementApplication;
 import com.humanresource.entitymodels.PassSlip;
@@ -18,6 +19,7 @@ import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.repositories.LeaveApplicationRepository;
 import com.humanresource.repositories.LeaveBeginningBalanceRepository;
 import com.humanresource.repositories.LeaveInformationRepository;
+import com.humanresource.repositories.LeaveMonetizationRepository;
 import com.humanresource.repositories.CompensatoryTimeOffRepository;
 import com.humanresource.repositories.OfficialEngagementApplicationRepository;
 import com.humanresource.repositories.PassSlipRepository;
@@ -93,6 +95,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
     private final LeaveBeginningBalanceRepository begBalanceRepository;
     private final LeaveApplicationRepository leaveApplicationRepository;
     private final LeaveInformationRepository leaveInfoRepository;
+    private final LeaveMonetizationRepository leaveMonetizationRepository;
     private final PassSlipRepository passSlipRepository;
     private final CompensatoryTimeOffRepository ctoRepository;
     private final OfficialEngagementApplicationRepository oeRepository;
@@ -106,6 +109,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
             LeaveBeginningBalanceRepository begBalanceRepository,
             LeaveApplicationRepository leaveApplicationRepository,
             LeaveInformationRepository leaveInfoRepository,
+            LeaveMonetizationRepository leaveMonetizationRepository,
             PassSlipRepository passSlipRepository,
             CompensatoryTimeOffRepository ctoRepository,
             OfficialEngagementApplicationRepository oeRepository,
@@ -117,6 +121,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         this.begBalanceRepository = begBalanceRepository;
         this.leaveApplicationRepository = leaveApplicationRepository;
         this.leaveInfoRepository = leaveInfoRepository;
+        this.leaveMonetizationRepository = leaveMonetizationRepository;
         this.passSlipRepository = passSlipRepository;
         this.ctoRepository = ctoRepository;
         this.oeRepository = oeRepository;
@@ -385,6 +390,12 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                             && "Disapproved".equalsIgnoreCase(la.getApprovedStatus())))
                 .collect(Collectors.toList());
 
+        // Post approved monetizations only when HR processes their cutoff.
+        // Until then, all filing screens continue to use the dashboard balance.
+        List<LeaveMonetization> approvedMonetizations = leaveMonetizationRepository
+                .findByEmployeeIdAndApprovalStatusAndApprovedAtBetween(
+                        employeeId, "Approved", periodStart, periodEnd);
+
         // ── Pre-load approved pass slips for this employee ───────────────────
         // Approved pass slips represent official-business absences; minutes covered
         // by a pass slip must not be charged to VL via the day equivalent deduction.
@@ -598,12 +609,25 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         int totalLateUt = totalLateMinutes + totalUndertimeMinutes;
         double dayEquivFraction = computeDayEquivalent(totalLateUt, periodEnd);
 
+        double[] monetizedDays = totalMonetizedDays(approvedMonetizations);
+        double monetizedSL = monetizedDays[0];
+        double monetizedVL = monetizedDays[1];
+        if (monetizedSL > 0 || monetizedVL > 0) {
+            if (particulars.length() > 0) particulars.append(' ');
+            particulars.append("[MONETIZATION SL=")
+                    .append(round3(monetizedSL))
+                    .append(", VL=")
+                    .append(round3(monetizedVL))
+                    .append(']');
+        }
+
         // ── Compute new balances ─────────────────────────────────────────────
         //   newSL = prevSL + earnedSL - lwopSL - slUsed
         //     (unexcused absences are charged to VL, not SL — CSC standard)
         //   newVL = prevVL + earnedVL - absentCount - lwopVL - vlUsed - dayEquivFraction
-        double newSL = prevSL + earnedSL - lwopSL - slUsed;
-        double newVL = prevVL + earnedVL - absentCount - lwopVL - vlUsed - dayEquivFraction;
+        double newSL = prevSL + earnedSL - lwopSL - slUsed - monetizedSL;
+        double newVL = prevVL + earnedVL - absentCount - lwopVL - vlUsed
+                - dayEquivFraction - monetizedVL;
 
         // ── Build and save LeaveInformation row ──────────────────────────────
         LeaveInformation entity;
@@ -648,6 +672,19 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         dto.setEmployeeName(emp.getLastname() + ", " + emp.getFirstname());
         dto.setEmployeeNo(emp.getEmployeeNo());
         return dto;
+    }
+
+    static double[] totalMonetizedDays(List<LeaveMonetization> monetizations) {
+        double sl = 0.0;
+        double vl = 0.0;
+        for (LeaveMonetization monetization : monetizations) {
+            sl += monetization.getNoOfDaysSL() == null ? 0.0 : monetization.getNoOfDaysSL();
+            vl += monetization.getNoOfDaysVL() == null ? 0.0 : monetization.getNoOfDaysVL();
+        }
+        return new double[]{
+                Math.round(sl * 1000.0) / 1000.0,
+                Math.round(vl * 1000.0) / 1000.0
+        };
     }
 
     // ─────────────────────────────────────────────────────────────────────────

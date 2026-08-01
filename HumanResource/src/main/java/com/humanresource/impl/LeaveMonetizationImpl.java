@@ -1,12 +1,12 @@
 package com.humanresource.impl;
 
+import com.humanresource.dtos.LeaveBalanceDTO;
 import com.humanresource.dtos.LeaveMonetizationDTO;
 import com.humanresource.entitymodels.Employee;
-import com.humanresource.entitymodels.LeaveInformation;
 import com.humanresource.entitymodels.LeaveMonetization;
 import com.humanresource.repositories.EmployeeRepository;
-import com.humanresource.repositories.LeaveInformationRepository;
 import com.humanresource.repositories.LeaveMonetizationRepository;
+import com.humanresource.services.LeaveBalanceService;
 import com.humanresource.services.LeaveMonetizationService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,14 +24,14 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
     private static final Logger log = LoggerFactory.getLogger(LeaveMonetizationImpl.class);
 
     private final LeaveMonetizationRepository leaveMonetizationRepository;
-    private final LeaveInformationRepository leaveInformationRepository;
+    private final LeaveBalanceService leaveBalanceService;
     private final EmployeeRepository employeeRepository;
 
     public LeaveMonetizationImpl(LeaveMonetizationRepository leaveMonetizationRepository,
-                                 LeaveInformationRepository leaveInformationRepository,
+                                 LeaveBalanceService leaveBalanceService,
                                  EmployeeRepository employeeRepository) {
         this.leaveMonetizationRepository = leaveMonetizationRepository;
-        this.leaveInformationRepository = leaveInformationRepository;
+        this.leaveBalanceService = leaveBalanceService;
         this.employeeRepository = employeeRepository;
     }
 
@@ -75,26 +74,13 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
 
     // ─── Current balance snapshot ─────────────────────────────────────────────
 
-    /**
-     * Returns the employee's SL balance from the latest processed LeaveInformation record.
-     * Returns 0.0 if no record exists yet.
-     */
-    private double currentSLBalance(Long employeeId) {
-        Optional<LeaveInformation> latest = leaveInformationRepository
-                .findTopByEmployeeIdAndCutoffEndDateBeforeOrderByCutoffEndDateDesc(
-                        employeeId, LocalDate.now().plusYears(100));
-        return latest.map(li -> li.getSickLeaveBalance() != null ? li.getSickLeaveBalance() : 0.0).orElse(0.0);
-    }
-
-    /**
-     * Returns the employee's VL balance from the latest processed LeaveInformation record.
-     * Returns 0.0 if no record exists yet.
-     */
-    private double currentVLBalance(Long employeeId) {
-        Optional<LeaveInformation> latest = leaveInformationRepository
-                .findTopByEmployeeIdAndCutoffEndDateBeforeOrderByCutoffEndDateDesc(
-                        employeeId, LocalDate.now().plusYears(100));
-        return latest.map(li -> li.getVacationLeaveBalance() != null ? li.getVacationLeaveBalance() : 0.0).orElse(0.0);
+    private void refreshCurrentBalanceSnapshot(LeaveMonetization entity) throws Exception {
+        LeaveBalanceDTO balance = entity.getLeaveMonetizationId() == null
+                ? leaveBalanceService.getCurrentBalance(entity.getEmployeeId())
+                : leaveBalanceService.getCurrentBalanceExcludingMonetization(
+                        entity.getEmployeeId(), entity.getLeaveMonetizationId());
+        entity.setSlBalanceBefore(nvl(balance.getSickLeaveBalance()));
+        entity.setVlBalanceBefore(nvl(balance.getVacationLeaveBalance()));
     }
 
     // ─── Service methods ─────────────────────────────────────────────────────
@@ -110,23 +96,19 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
         double noOfDaysVL = dto.getNoOfDaysVL() != null ? dto.getNoOfDaysVL() : 0.0;
         double totalDays = noOfDaysSL + noOfDaysVL;
 
+        validatePerLeaveTypeCaps(noOfDaysVL, noOfDaysSL);
         if (totalDays <= 0) {
             throw new IllegalArgumentException("Total days to monetize must be greater than zero");
         }
 
         try {
-            // Snapshot the current leave balance at filing time
-            double slBefore = currentSLBalance(dto.getEmployeeId());
-            double vlBefore = currentVLBalance(dto.getEmployeeId());
-
             LeaveMonetization entity = new LeaveMonetization();
             entity.setEmployeeId(dto.getEmployeeId());
             entity.setDateFiled(dto.getDateFiled() != null ? dto.getDateFiled() : LocalDate.now());
             entity.setNoOfDaysSL(noOfDaysSL);
             entity.setNoOfDaysVL(noOfDaysVL);
             entity.setTotalDays(totalDays);
-            entity.setSlBalanceBefore(slBefore);
-            entity.setVlBalanceBefore(vlBefore);
+            refreshCurrentBalanceSnapshot(entity);
             entity.setReason(dto.getReason());
             applyAdministrativeWorkflow(entity, dto);
             entity.setPayrollIncluded(false);
@@ -247,11 +229,16 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
         double slBefore = entity.getSlBalanceBefore() != null ? entity.getSlBalanceBefore() : 0.0;
         double vlBefore = entity.getVlBalanceBefore() != null ? entity.getVlBalanceBefore() : 0.0;
 
+        validatePerLeaveTypeCaps(noOfDaysVL, noOfDaysSL);
         // CSC Rule 1: Minimum 10 days (CSC MC No. 41 s. 1998)
         if (totalDays < 10.0) {
             throw new IllegalArgumentException(
                     "Leave monetization requires a minimum of 10 days. Total days filed: " + totalDays);
         }
+
+        refreshCurrentBalanceSnapshot(entity);
+        slBefore = entity.getSlBalanceBefore();
+        vlBefore = entity.getVlBalanceBefore();
 
         // CSC Rule 2: VL mandatory reserve — at least 5 days VL must remain after deduction
         double vlAfter = vlBefore - noOfDaysVL;
@@ -330,8 +317,10 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
         if (dto.getNoOfDaysVL() != null) entity.setNoOfDaysVL(dto.getNoOfDaysVL());
         double total = (dto.getNoOfDaysVL() != null ? dto.getNoOfDaysVL() : entity.getNoOfDaysVL())
                      + (dto.getNoOfDaysSL() != null ? dto.getNoOfDaysSL() : entity.getNoOfDaysSL());
+        validatePerLeaveTypeCaps(entity.getNoOfDaysVL(), entity.getNoOfDaysSL());
         entity.setTotalDays(round3(total));
         if (dto.getReason() != null) entity.setReason(dto.getReason());
+        refreshCurrentBalanceSnapshot(entity);
         applyAdministrativeWorkflow(entity, dto);
         entity.setUpdatedAt(LocalDateTime.now());
         entity = leaveMonetizationRepository.save(entity);
@@ -398,6 +387,7 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
         double slBefore = entity.getSlBalanceBefore() != null ? entity.getSlBalanceBefore() : 0.0;
         double vlBefore = entity.getVlBalanceBefore() != null ? entity.getVlBalanceBefore() : 0.0;
 
+        validatePerLeaveTypeCaps(noOfDaysVL, noOfDaysSL);
         if (totalDays < 10.0) {
             throw new IllegalArgumentException(
                     "Leave monetization requires a minimum of 10 days. Total days filed: " + totalDays);
@@ -436,6 +426,22 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
     }
 
     // ─── Utility ─────────────────────────────────────────────────────────────
+
+    private static void validatePerLeaveTypeCaps(double noOfDaysVL, double noOfDaysSL) {
+        if (noOfDaysVL < 0 || noOfDaysSL < 0) {
+            throw new IllegalArgumentException("Days to monetize cannot be negative.");
+        }
+        if (noOfDaysVL > 10.0) {
+            throw new IllegalArgumentException("Vacation Leave monetization is limited to 10 days per filing.");
+        }
+        if (noOfDaysSL > 10.0) {
+            throw new IllegalArgumentException("Sick Leave monetization is limited to 10 days per filing.");
+        }
+    }
+
+    private static double nvl(Double value) {
+        return value == null ? 0.0 : value;
+    }
 
     private static double round3(double value) {
         return Math.round(value * 1000.0) / 1000.0;

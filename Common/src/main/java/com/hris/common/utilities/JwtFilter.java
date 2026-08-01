@@ -45,7 +45,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if(authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-            log.info("Extracting claims from token: {}", token);
 
             try {
                 DecodedJWT decodedJWT = jwtUtil.extractClaims(token);
