@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 public interface PermissionRulesetRepository extends JpaRepository<PermissionRuleset, Long> {
     boolean existsByPermissionNameAndPermissionIdNot(String permissionName, Long permissionId);
     boolean existsByPermissionName(String permissionName);
+    java.util.Optional<PermissionRuleset> findByPermissionNameIgnoreCase(String permissionName);
 }

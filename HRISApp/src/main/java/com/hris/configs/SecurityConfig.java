@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/employee/login", "/api/employee/register", "/api/hris/installAuth").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/sso/exchange").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/secure").hasRole("ADMIN")
                         .anyRequest().authenticated()

@@ -33,6 +33,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if(request.getRequestURI().startsWith("/h2-console") ||
             request.getRequestURI().startsWith("/api/employee/login") ||
             request.getRequestURI().startsWith("/api/employee/register") ||
+            request.getRequestURI().startsWith("/api/sso/exchange") ||
             request.getRequestURI().startsWith("/api/hris/installAuth")) {
 
             filterChain.doFilter(request, response);
