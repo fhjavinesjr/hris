@@ -1,5 +1,6 @@
 package com.payroll.impl;
 
+import com.hris.common.config.SystemConfigRuntimeResolver;
 import com.payroll.dtos.*;
 import com.payroll.entitymodels.PayrollAdjustmentHeader;
 import com.payroll.entitymodels.PayrollAdjustmentLine;
@@ -48,6 +49,7 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
     private final PayrollDetailRepository detailRepo;
     private final RestTemplate restTemplate;
     private final PayrollPeriodLockService lockService;
+    private final SystemConfigRuntimeResolver systemConfigResolver;
 
     @Value("${hris.services.administrative.url:http://localhost:8082}")
     private String adminServiceUrl;
@@ -55,11 +57,13 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
     public PayrollAdjustmentServiceImpl(PayrollAdjustmentHeaderRepository headerRepo,
                                          PayrollDetailRepository detailRepo,
                                          RestTemplate restTemplate,
-                                         PayrollPeriodLockService lockService) {
+                                         PayrollPeriodLockService lockService,
+                                         SystemConfigRuntimeResolver systemConfigResolver) {
         this.headerRepo = headerRepo;
         this.detailRepo = detailRepo;
         this.restTemplate = restTemplate;
         this.lockService = lockService;
+        this.systemConfigResolver = systemConfigResolver;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -422,7 +426,7 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
     private double fetchGsisRate(HttpHeaders h) {
         try {
             ResponseEntity<List<Map<String, Object>>> resp = restTemplate.exchange(
-                    adminServiceUrl + "/api/gsisContribution/get-all",
+                    currentAdministrativeUrl() + "/api/gsisContribution/get-all",
                     HttpMethod.GET, new HttpEntity<>(h),
                     new ParameterizedTypeReference<List<Map<String, Object>>>() {});
             List<Map<String, Object>> body = resp.getBody();
@@ -439,7 +443,7 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
     private double fetchPhicRate(HttpHeaders h) {
         try {
             ResponseEntity<List<Map<String, Object>>> resp = restTemplate.exchange(
-                    adminServiceUrl + "/api/philhealth/brackets",
+                    currentAdministrativeUrl() + "/api/philhealth/brackets",
                     HttpMethod.GET, new HttpEntity<>(h),
                     new ParameterizedTypeReference<List<Map<String, Object>>>() {});
             List<Map<String, Object>> body = resp.getBody();
@@ -463,7 +467,7 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
         try {
             ResponseEntity<Map<String, List<PayrollDataSnapshot.WHoldingTaxBracketDTO>>> resp =
                     restTemplate.exchange(
-                            adminServiceUrl + "/api/wh-tax/brackets",
+                            currentAdministrativeUrl() + "/api/wh-tax/brackets",
                             HttpMethod.GET, new HttpEntity<>(h),
                             new ParameterizedTypeReference<Map<String, List<PayrollDataSnapshot.WHoldingTaxBracketDTO>>>() {});
             return resp.getBody() != null ? resp.getBody() : Collections.emptyMap();
@@ -567,5 +571,10 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
         entity.setIsAutoComputed(Boolean.TRUE.equals(dto.getIsAutoComputed()));
         entity.setIndexNo(indexNo);
         return entity;
+    }
+
+    private String currentAdministrativeUrl() {
+        return systemConfigResolver.resolveApiUrl(
+                SystemConfigRuntimeResolver.API_ADMINISTRATIVE, adminServiceUrl);
     }
 }

@@ -1,5 +1,6 @@
 package com.payroll.impl;
 
+import com.hris.common.config.SystemConfigRuntimeResolver;
 import com.payroll.dtos.*;
 import com.payroll.entitymodels.*;
 import com.payroll.repositories.EmployeeDeductionRepository;
@@ -13,7 +14,6 @@ import com.payroll.repositories.PayrollEmployeeConfigRepository;
 import com.payroll.services.EarningAllowanceService;
 import com.payroll.services.PayrollBatchService;
 import com.payroll.services.PayrollPeriodLockService;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -93,16 +93,17 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
     private final PayrollAdjustmentHeaderRepository adjustmentHeaderRepo;
     private final PayrollAdjustmentLineRepository adjustmentLineRepo;
     private final PayrollPeriodLockService lockService;
+    private final SystemConfigRuntimeResolver systemConfigResolver;
 
-    // ── Downstream service URLs (from application.properties, overridden by SystemConfig @PostConstruct) ──
+    // Bootstrap fallbacks only; the shared resolver reads SystemConfig for every batch.
     @Value("${hris.services.administrative.url:http://localhost:8082}")
-    private String adminServiceUrl;
+    private volatile String adminServiceUrl;
 
     @Value("${hris.services.timekeeping.url:http://localhost:8083}")
-    private String timeKeepingServiceUrl;
+    private volatile String timeKeepingServiceUrl;
 
     @Value("${hris.services.hrmanagement.url:http://localhost:8085}")
-    private String hrServiceUrl;
+    private volatile String hrServiceUrl;
 
     public PayrollBatchServiceImpl(PayrollComputationEngine engine,
                                    PayrollDetailRepository detailRepo,
@@ -117,7 +118,8 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
                                    PayrollEmployeeConfigRepository configRepo,
                                    PayrollAdjustmentHeaderRepository adjustmentHeaderRepo,
                                    PayrollAdjustmentLineRepository adjustmentLineRepo,
-                                   PayrollPeriodLockService lockService) {
+                                   PayrollPeriodLockService lockService,
+                                   SystemConfigRuntimeResolver systemConfigResolver) {
         this.engine = engine;
         this.detailRepo = detailRepo;
         this.batchJobRepo = batchJobRepo;
@@ -132,39 +134,7 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         this.adjustmentHeaderRepo = adjustmentHeaderRepo;
         this.adjustmentLineRepo = adjustmentLineRepo;
         this.lockService = lockService;
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Startup: override service URLs from SystemConfig
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * After Spring injects all @Value fields, override the mutable service URLs
-     * with whatever the Administrative SystemConfig module says.
-     * Falls back silently to application.properties if the admin service is not yet up.
-     */
-    @PostConstruct
-    private void loadServiceUrlsFromSystemConfig() {
-        try {
-            String configUrl = adminServiceUrl + "/api/system-config/get-all";
-            ResponseEntity<List<Map<String, String>>> resp = restTemplate.exchange(
-                    configUrl, HttpMethod.GET, new HttpEntity<>(new HttpHeaders()),
-                    new ParameterizedTypeReference<List<Map<String, String>>>() {});
-            if (resp.getBody() != null) {
-                Map<String, String> configMap = new HashMap<>();
-                for (Map<String, String> entry : resp.getBody()) {
-                    String key = entry.get("configKey");
-                    String val = entry.get("configValue");
-                    if (key != null && val != null) configMap.put(key, val);
-                }
-                String tkUrl  = configMap.get("api.url.timekeeping");
-                String hrmUrl = configMap.get("api.url.hrm");
-                if (tkUrl  != null && !tkUrl.isBlank())  { timeKeepingServiceUrl = tkUrl;  log.info("PayrollBatch: TimeKeeping URL from SystemConfig → {}", tkUrl); }
-                if (hrmUrl != null && !hrmUrl.isBlank()) { hrServiceUrl = hrmUrl;          log.info("PayrollBatch: HRM URL from SystemConfig → {}", hrmUrl); }
-            }
-        } catch (Exception ex) {
-            log.warn("PayrollBatch: Cannot reach SystemConfig at startup; using application.properties defaults. Reason: {}", ex.getMessage());
-        }
+        this.systemConfigResolver = systemConfigResolver;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -405,6 +375,7 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
      * This replaces tens of thousands of individual per-employee DB/API queries.
      */
     private PayrollDataSnapshot fetchAllData(PayrollComputationRequest req, String token) {
+        refreshServiceUrlsFromSystemConfig();
         HttpHeaders headers = bearerHeaders(token);
         LocalDate from = req.getCutoffStartDate();
         LocalDate to   = req.getCutoffEndDate();
@@ -576,6 +547,16 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         snap.setPreviousBalanceMap(loadPreviousBalances(snap.getEmployeeMap().keySet(), req));
 
         return snap;
+    }
+
+    /** Resolve the latest centralized endpoints for every payroll batch run. */
+    private void refreshServiceUrlsFromSystemConfig() {
+        adminServiceUrl = systemConfigResolver.resolveApiUrl(
+                SystemConfigRuntimeResolver.API_ADMINISTRATIVE, adminServiceUrl);
+        timeKeepingServiceUrl = systemConfigResolver.resolveApiUrl(
+                SystemConfigRuntimeResolver.API_TIMEKEEPING, timeKeepingServiceUrl);
+        hrServiceUrl = systemConfigResolver.resolveApiUrl(
+                SystemConfigRuntimeResolver.API_HRM, hrServiceUrl);
     }
 
     // ── Individual HTTP fetchers ───────────────────────────────────────────────

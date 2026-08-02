@@ -1,11 +1,11 @@
 package com.payroll.impl;
 
+import com.hris.common.config.SystemConfigRuntimeResolver;
 import com.payroll.dtos.EmployeePayrollInfoDTO;
 import com.payroll.dtos.PayrollEmployeeConfigDTO;
 import com.payroll.entitymodels.PayrollEmployeeConfig;
 import com.payroll.repositories.PayrollEmployeeConfigRepository;
 import com.payroll.services.PayrollEmployeeConfigService;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,7 +13,9 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -26,42 +28,17 @@ public class PayrollEmployeeConfigServiceImpl implements PayrollEmployeeConfigSe
 
     private final PayrollEmployeeConfigRepository configRepo;
     private final RestTemplate restTemplate;
-
-    @Value("${hris.services.administrative.url:http://localhost:8082}")
-    private String adminServiceUrl;
+    private final SystemConfigRuntimeResolver systemConfigResolver;
 
     @Value("${hris.services.hrmanagement.url:http://localhost:8085}")
     private String hrServiceUrl;
 
     public PayrollEmployeeConfigServiceImpl(PayrollEmployeeConfigRepository configRepo,
-                                             RestTemplate restTemplate) {
+                                             RestTemplate restTemplate,
+                                             SystemConfigRuntimeResolver systemConfigResolver) {
         this.configRepo = configRepo;
         this.restTemplate = restTemplate;
-    }
-
-    /** Mirror the same SystemConfig URL override pattern used by PayrollBatchServiceImpl. */
-    @PostConstruct
-    private void loadServiceUrls() {
-        try {
-            String url = adminServiceUrl + "/api/system-config/get-all";
-            ResponseEntity<List<Map<String, String>>> resp = restTemplate.exchange(
-                    url, HttpMethod.GET, new HttpEntity<>(new HttpHeaders()),
-                    new ParameterizedTypeReference<List<Map<String, String>>>() {});
-            if (resp.getBody() != null) {
-                Map<String, String> cfg = new HashMap<>();
-                for (Map<String, String> e : resp.getBody()) {
-                    if (e.get("configKey") != null && e.get("configValue") != null)
-                        cfg.put(e.get("configKey"), e.get("configValue"));
-                }
-                String hrmUrl = cfg.get("api.url.hrm");
-                if (hrmUrl != null && !hrmUrl.isBlank()) {
-                    hrServiceUrl = hrmUrl;
-                    log.info("PayrollEmployeeConfig: HRM URL from SystemConfig → {}", hrmUrl);
-                }
-            }
-        } catch (Exception ex) {
-            log.warn("PayrollEmployeeConfig: Cannot reach SystemConfig at startup; using defaults. Reason: {}", ex.getMessage());
-        }
+        this.systemConfigResolver = systemConfigResolver;
     }
 
     @Override
@@ -170,19 +147,26 @@ public class PayrollEmployeeConfigServiceImpl implements PayrollEmployeeConfigSe
     // ── Private ───────────────────────────────────────────────────────────────
 
     private List<EmployeePayrollInfoDTO> fetchEmployeesFromHr(String authHeader) {
-        String url = hrServiceUrl + "/api/employee/payroll-info/bulk";
+        String baseUrl = systemConfigResolver.resolveApiUrl(
+                SystemConfigRuntimeResolver.API_HRM, hrServiceUrl);
+        HttpHeaders headers = new HttpHeaders();
+        if (StringUtils.hasText(authHeader)) {
+            headers.set(HttpHeaders.AUTHORIZATION, authHeader);
+        }
         try {
-            HttpHeaders headers = new HttpHeaders();
-            if (authHeader != null && !authHeader.isBlank()) {
-                headers.set(HttpHeaders.AUTHORIZATION, authHeader);
-            }
             ResponseEntity<List<EmployeePayrollInfoDTO>> resp = restTemplate.exchange(
-                    url, HttpMethod.GET, new HttpEntity<>(headers),
+                    baseUrl + "/api/employee/payroll-info/bulk",
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
                     new ParameterizedTypeReference<List<EmployeePayrollInfoDTO>>() {});
             return resp.getBody() != null ? resp.getBody() : Collections.emptyList();
         } catch (Exception ex) {
-            log.error("Failed to fetch employees from HumanResource for config setup: {}", ex.getMessage());
-            return Collections.emptyList();
+            log.error("PayrollEmployeeConfig: HRM employee lookup failed at {}: {}",
+                    baseUrl, ex.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Unable to load employees from the HR Management URL in SystemConfig",
+                    ex);
         }
     }
+
 }
