@@ -97,6 +97,11 @@
             <artifactId>jasperreports</artifactId>
             <version>7.0.6</version>
         </dependency>
+        <dependency>
+            <groupId>net.sf.jasperreports</groupId>
+            <artifactId>jasperreports-jdt</artifactId>
+            <version>7.0.6</version>
+        </dependency>
         <!-- Required in JasperReports 7.x: PDF export split into separate module -->
         <dependency>
             <groupId>net.sf.jasperreports</groupId>
