@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,10 +38,12 @@ public class PayrollSettingsImpl implements PayrollSettingsService {
                     LocalDateTime.of(2024, 1, 1, 0, 0),
                     22,   // cutoffDays
                     22,   // peraProrationDivisor
-                    false // autoComputeHazardPay - disabled by default
+                    false, // autoComputeHazardPay - disabled by default
+                    PayrollSettings.DEFAULT_REGULAR_DAY_MULTIPLIER,
+                    PayrollSettings.DEFAULT_REGULAR_OVERTIME_MULTIPLIER
             );
             repository.save(defaults);
-            log.info("PayrollSettings: seeded defaults (cutoffDays=22, peraProrationDivisor=22, autoComputeHazardPay=false)");
+            log.info("PayrollSettings: seeded defaults (cutoffDays=22, peraProrationDivisor=22, regularDayMultiplier=1.0, regularOvertimeMultiplier=1.25, autoComputeHazardPay=false)");
         }
     }
 
@@ -53,10 +56,14 @@ public class PayrollSettingsImpl implements PayrollSettingsService {
                     dto.getEffectivityDate(),
                     dto.getCutoffDays(),
                     dto.getPeraProrationDivisor(),
-                    dto.getAutoComputeHazardPay()
+                    dto.getAutoComputeHazardPay(),
+                    positiveOrDefault(dto.getRegularDayMultiplier(), PayrollSettings.DEFAULT_REGULAR_DAY_MULTIPLIER),
+                    positiveOrDefault(dto.getRegularOvertimeMultiplier(), PayrollSettings.DEFAULT_REGULAR_OVERTIME_MULTIPLIER)
             );
             entity = repository.save(entity);
             dto.setPayrollSettingsId(entity.getPayrollSettingsId());
+            dto.setRegularDayMultiplier(entity.getRegularDayMultiplier());
+            dto.setRegularOvertimeMultiplier(entity.getRegularOvertimeMultiplier());
             return dto;
         } catch (Exception e) {
             log.error("Error creating PayrollSettings: ", e);
@@ -72,7 +79,9 @@ public class PayrollSettingsImpl implements PayrollSettingsService {
                         e.getEffectivityDate(),
                         e.getCutoffDays(),
                         e.getPeraProrationDivisor(),
-                        e.getAutoComputeHazardPay()))
+                        e.getAutoComputeHazardPay(),
+                        valueOrDefault(e.getRegularDayMultiplier(), PayrollSettings.DEFAULT_REGULAR_DAY_MULTIPLIER),
+                        valueOrDefault(e.getRegularOvertimeMultiplier(), PayrollSettings.DEFAULT_REGULAR_OVERTIME_MULTIPLIER)))
                 .collect(Collectors.toList());
     }
 
@@ -84,8 +93,12 @@ public class PayrollSettingsImpl implements PayrollSettingsService {
                         e.getEffectivityDate(),
                         e.getCutoffDays(),
                         e.getPeraProrationDivisor(),
-                        e.getAutoComputeHazardPay()))
-                .orElse(new PayrollSettingsDTO(null, null, 22, 22, false));
+                        e.getAutoComputeHazardPay(),
+                        valueOrDefault(e.getRegularDayMultiplier(), PayrollSettings.DEFAULT_REGULAR_DAY_MULTIPLIER),
+                        valueOrDefault(e.getRegularOvertimeMultiplier(), PayrollSettings.DEFAULT_REGULAR_OVERTIME_MULTIPLIER)))
+                .orElse(new PayrollSettingsDTO(null, null, 22, 22, false,
+                        PayrollSettings.DEFAULT_REGULAR_DAY_MULTIPLIER,
+                        PayrollSettings.DEFAULT_REGULAR_OVERTIME_MULTIPLIER));
     }
 
     @Transactional
@@ -99,8 +112,16 @@ public class PayrollSettingsImpl implements PayrollSettingsService {
                 if (dto.getAutoComputeHazardPay() != null) {
                     entity.setAutoComputeHazardPay(dto.getAutoComputeHazardPay());
                 }
+                entity.setRegularDayMultiplier(positiveOrDefault(
+                        dto.getRegularDayMultiplier(),
+                        valueOrDefault(entity.getRegularDayMultiplier(), PayrollSettings.DEFAULT_REGULAR_DAY_MULTIPLIER)));
+                entity.setRegularOvertimeMultiplier(positiveOrDefault(
+                        dto.getRegularOvertimeMultiplier(),
+                        valueOrDefault(entity.getRegularOvertimeMultiplier(), PayrollSettings.DEFAULT_REGULAR_OVERTIME_MULTIPLIER)));
                 repository.save(entity);
                 dto.setPayrollSettingsId(entity.getPayrollSettingsId());
+                dto.setRegularDayMultiplier(entity.getRegularDayMultiplier());
+                dto.setRegularOvertimeMultiplier(entity.getRegularOvertimeMultiplier());
                 return dto;
             }).orElse(null);
         } catch (Exception e) {
@@ -136,5 +157,19 @@ public class PayrollSettingsImpl implements PayrollSettingsService {
             log.error("Error updating hazard auto-compute: ", e);
             return false;
         }
+    }
+
+    private BigDecimal positiveOrDefault(BigDecimal value, BigDecimal defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        if (value.signum() <= 0) {
+            throw new IllegalArgumentException("Payroll multipliers must be greater than zero");
+        }
+        return value;
+    }
+
+    private BigDecimal valueOrDefault(BigDecimal value, BigDecimal defaultValue) {
+        return value != null ? value : defaultValue;
     }
 }

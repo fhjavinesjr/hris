@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -16,6 +17,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "payroll_settings")
 public class PayrollSettings implements Serializable {
+
+    public static final BigDecimal DEFAULT_REGULAR_DAY_MULTIPLIER = new BigDecimal("1.0000");
+    public static final BigDecimal DEFAULT_REGULAR_OVERTIME_MULTIPLIER = new BigDecimal("1.2500");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,16 +54,36 @@ public class PayrollSettings implements Serializable {
     @Column(name = "autoComputeHazardPay")
     private Boolean autoComputeHazardPay;
 
+    /** Base multiplier applied to regular-day hours in premium-pay computations. */
+    @Column(name = "regularDayMultiplier", precision = 10, scale = 4)
+    private BigDecimal regularDayMultiplier;
+
+    /** Multiplier applied to regular-day overtime hours in premium-pay computations. */
+    @Column(name = "regularOvertimeMultiplier", precision = 10, scale = 4)
+    private BigDecimal regularOvertimeMultiplier;
+
     public PayrollSettings() {}
 
     public PayrollSettings(Long payrollSettingsId, LocalDateTime effectivityDate,
                            Integer cutoffDays, Integer peraProrationDivisor,
                            Boolean autoComputeHazardPay) {
+        this(payrollSettingsId, effectivityDate, cutoffDays, peraProrationDivisor,
+                autoComputeHazardPay, DEFAULT_REGULAR_DAY_MULTIPLIER,
+                DEFAULT_REGULAR_OVERTIME_MULTIPLIER);
+    }
+
+    public PayrollSettings(Long payrollSettingsId, LocalDateTime effectivityDate,
+                           Integer cutoffDays, Integer peraProrationDivisor,
+                           Boolean autoComputeHazardPay,
+                           BigDecimal regularDayMultiplier,
+                           BigDecimal regularOvertimeMultiplier) {
         this.payrollSettingsId = payrollSettingsId;
         this.effectivityDate = effectivityDate;
         this.cutoffDays = cutoffDays;
         this.peraProrationDivisor = peraProrationDivisor;
         this.autoComputeHazardPay = autoComputeHazardPay;
+        this.regularDayMultiplier = regularDayMultiplier;
+        this.regularOvertimeMultiplier = regularOvertimeMultiplier;
     }
 
     public Long getPayrollSettingsId() { return payrollSettingsId; }
@@ -76,4 +100,10 @@ public class PayrollSettings implements Serializable {
 
     public Boolean getAutoComputeHazardPay() { return autoComputeHazardPay; }
     public void setAutoComputeHazardPay(Boolean autoComputeHazardPay) { this.autoComputeHazardPay = autoComputeHazardPay; }
+
+    public BigDecimal getRegularDayMultiplier() { return regularDayMultiplier; }
+    public void setRegularDayMultiplier(BigDecimal regularDayMultiplier) { this.regularDayMultiplier = regularDayMultiplier; }
+
+    public BigDecimal getRegularOvertimeMultiplier() { return regularOvertimeMultiplier; }
+    public void setRegularOvertimeMultiplier(BigDecimal regularOvertimeMultiplier) { this.regularOvertimeMultiplier = regularOvertimeMultiplier; }
 }

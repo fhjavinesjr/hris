@@ -3,6 +3,7 @@ package com.administrative.controllers;
 import com.administrative.dtos.PayrollSettingsDTO;
 import com.administrative.services.PayrollSettingsService;
 import com.hris.common.dtos.MetadataResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class PayrollSettingsController {
     }
 
     @PostMapping("/payrollSettings/create")
-    public ResponseEntity<MetadataResponse> create(@RequestBody PayrollSettingsDTO dto) throws Exception {
+    public ResponseEntity<MetadataResponse> create(@Valid @RequestBody PayrollSettingsDTO dto) throws Exception {
         dto = payrollSettingsService.createPayrollSettings(dto);
         if (dto == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -41,7 +42,7 @@ public class PayrollSettingsController {
 
     @PutMapping("/payrollSettings/update/{id}")
     public ResponseEntity<MetadataResponse> update(@PathVariable Long id,
-                                                   @RequestBody PayrollSettingsDTO dto) throws Exception {
+                                                   @Valid @RequestBody PayrollSettingsDTO dto) throws Exception {
         dto = payrollSettingsService.updatePayrollSettings(id, dto);
         if (dto == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
