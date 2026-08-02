@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fontFamilies>
   <!--
-    Maps "Arial" and "SansSerif" JRXML font names to DejaVu Sans TTF files
+    Maps legacy desktop fonts to portable DejaVu TTF files
     bundled inside jasperreports-fonts-6.20.0.jar on the classpath.
     pdfEmbedded=true ensures characters render correctly in the exported PDF.
   -->
   <fontFamily name="Arial">
+    <normal>net/sf/jasperreports/fonts/dejavu/DejaVuSans.ttf</normal>
+    <bold>net/sf/jasperreports/fonts/dejavu/DejaVuSans-Bold.ttf</bold>
+    <italic>net/sf/jasperreports/fonts/dejavu/DejaVuSans-Oblique.ttf</italic>
+    <boldItalic>net/sf/jasperreports/fonts/dejavu/DejaVuSans-BoldOblique.ttf</boldItalic>
+    <pdfEncoding>Identity-H</pdfEncoding>
+    <pdfEmbedded>true</pdfEmbedded>
+  </fontFamily>
+  <fontFamily name="Tahoma">
     <normal>net/sf/jasperreports/fonts/dejavu/DejaVuSans.ttf</normal>
     <bold>net/sf/jasperreports/fonts/dejavu/DejaVuSans-Bold.ttf</bold>
     <italic>net/sf/jasperreports/fonts/dejavu/DejaVuSans-Oblique.ttf</italic>
@@ -18,6 +26,22 @@
     <bold>net/sf/jasperreports/fonts/dejavu/DejaVuSans-Bold.ttf</bold>
     <italic>net/sf/jasperreports/fonts/dejavu/DejaVuSans-Oblique.ttf</italic>
     <boldItalic>net/sf/jasperreports/fonts/dejavu/DejaVuSans-BoldOblique.ttf</boldItalic>
+    <pdfEncoding>Identity-H</pdfEncoding>
+    <pdfEmbedded>true</pdfEmbedded>
+  </fontFamily>
+  <fontFamily name="Times New Roman">
+    <normal>net/sf/jasperreports/fonts/dejavu/DejaVuSerif.ttf</normal>
+    <bold>net/sf/jasperreports/fonts/dejavu/DejaVuSerif-Bold.ttf</bold>
+    <italic>net/sf/jasperreports/fonts/dejavu/DejaVuSerif-Italic.ttf</italic>
+    <boldItalic>net/sf/jasperreports/fonts/dejavu/DejaVuSerif-BoldItalic.ttf</boldItalic>
+    <pdfEncoding>Identity-H</pdfEncoding>
+    <pdfEmbedded>true</pdfEmbedded>
+  </fontFamily>
+  <fontFamily name="Serif">
+    <normal>net/sf/jasperreports/fonts/dejavu/DejaVuSerif.ttf</normal>
+    <bold>net/sf/jasperreports/fonts/dejavu/DejaVuSerif-Bold.ttf</bold>
+    <italic>net/sf/jasperreports/fonts/dejavu/DejaVuSerif-Italic.ttf</italic>
+    <boldItalic>net/sf/jasperreports/fonts/dejavu/DejaVuSerif-BoldItalic.ttf</boldItalic>
     <pdfEncoding>Identity-H</pdfEncoding>
     <pdfEmbedded>true</pdfEmbedded>
   </fontFamily>
