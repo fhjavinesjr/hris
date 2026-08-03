@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: ISOFT PRIME-HRM Read-Only Competency API
-  version: 1.0.0-phase-1a
-  description: Phase 1A.1 contract. All operations are read-only, require an ISOFT employee JWT and Competency read permission, and use server-resolved agency scope.
+  title: ISOFT PRIME-HRM Competency API
+  version: 1.1.0-phase-1b
+  description: Phase 1A reads and Phase 1B draft administration. All operations require an ISOFT employee JWT and server-resolved agency scope; admin actions are authorized by Administrative feature permissions.
 servers:
   - url: /api/primehr/v1
 security:
@@ -99,6 +99,128 @@ paths:
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
+  /admin/competency-categories:
+    get:
+      operationId: adminListCompetencyCategories
+      parameters: [{$ref: '#/components/parameters/Status'}, {$ref: '#/components/parameters/Search'}, {$ref: '#/components/parameters/AsOf'}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
+      responses: {'200': {$ref: '#/components/responses/AdminPage'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '503': {$ref: '#/components/responses/AuthorizationUnavailable'}}
+    post:
+      operationId: createCompetencyCategoryDraft
+      requestBody: {$ref: '#/components/requestBodies/CategoryDraft'}
+      responses: {'201': {$ref: '#/components/responses/AdminRecord'}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '503': {$ref: '#/components/responses/AuthorizationUnavailable'}}
+  /admin/competency-categories/{id}:
+    put:
+      operationId: updateCompetencyCategoryDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/CategoryDraft'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/competency-categories/{id}/versions:
+    post:
+      operationId: createCompetencyCategorySuccessorDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses: {'201': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/competency-categories/{id}/archive:
+    post:
+      operationId: archiveCompetencyCategoryDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/proficiency-scales:
+    get:
+      operationId: adminListProficiencyScales
+      parameters: [{$ref: '#/components/parameters/Status'}, {$ref: '#/components/parameters/Search'}, {$ref: '#/components/parameters/AsOf'}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
+      responses: {'200': {$ref: '#/components/responses/AdminPage'}, '503': {$ref: '#/components/responses/AuthorizationUnavailable'}}
+    post:
+      operationId: createProficiencyScaleDraft
+      requestBody: {$ref: '#/components/requestBodies/ScaleDraft'}
+      responses: {'201': {$ref: '#/components/responses/AdminRecord'}, '400': {$ref: '#/components/responses/BadRequest'}}
+  /admin/proficiency-scales/{id}:
+    put:
+      operationId: updateProficiencyScaleDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/ScaleDraft'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/proficiency-scales/{id}/versions:
+    post:
+      operationId: createProficiencyScaleSuccessorDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses: {'201': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/proficiency-scales/{id}/archive:
+    post:
+      operationId: archiveProficiencyScaleDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/proficiency-scales/{scaleId}/levels:
+    post:
+      operationId: createProficiencyLevelDraft
+      parameters: [{$ref: '#/components/parameters/ScaleId'}]
+      requestBody: {$ref: '#/components/requestBodies/LevelDraft'}
+      responses: {'201': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/proficiency-scales/{scaleId}/levels/{levelId}:
+    put:
+      operationId: updateProficiencyLevelDraft
+      parameters: [{$ref: '#/components/parameters/ScaleId'}, {$ref: '#/components/parameters/LevelId'}]
+      requestBody: {$ref: '#/components/requestBodies/LevelDraft'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/proficiency-scales/{scaleId}/levels/{levelId}/archive:
+    post:
+      operationId: archiveProficiencyLevelDraft
+      parameters: [{$ref: '#/components/parameters/ScaleId'}, {$ref: '#/components/parameters/LevelId'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/competencies:
+    get:
+      operationId: adminListCompetencies
+      parameters: [{$ref: '#/components/parameters/Status'}, {$ref: '#/components/parameters/CategoryId'}, {$ref: '#/components/parameters/Search'}, {$ref: '#/components/parameters/AsOf'}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
+      responses: {'200': {$ref: '#/components/responses/AdminPage'}, '503': {$ref: '#/components/responses/AuthorizationUnavailable'}}
+    post:
+      operationId: createCompetencyDraft
+      requestBody: {$ref: '#/components/requestBodies/CompetencyDraft'}
+      responses: {'201': {$ref: '#/components/responses/AdminRecord'}, '400': {$ref: '#/components/responses/BadRequest'}}
+  /admin/competencies/{id}:
+    put:
+      operationId: updateCompetencyDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/CompetencyDraft'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/competencies/{id}/versions:
+    post:
+      operationId: createCompetencySuccessorDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses: {'201': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/competencies/{id}/archive:
+    post:
+      operationId: archiveCompetencyDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/competencies/{competencyId}/indicators:
+    post:
+      operationId: createBehavioralIndicatorDraft
+      parameters: [{$ref: '#/components/parameters/CompetencyId'}]
+      requestBody: {$ref: '#/components/requestBodies/IndicatorDraft'}
+      responses: {'201': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/competencies/{competencyId}/indicators/{indicatorId}:
+    put:
+      operationId: updateBehavioralIndicatorDraft
+      parameters: [{$ref: '#/components/parameters/CompetencyId'}, {$ref: '#/components/parameters/IndicatorId'}]
+      requestBody: {$ref: '#/components/requestBodies/IndicatorDraft'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/competencies/{competencyId}/indicators/{indicatorId}/archive:
+    post:
+      operationId: archiveBehavioralIndicatorDraft
+      parameters: [{$ref: '#/components/parameters/CompetencyId'}, {$ref: '#/components/parameters/IndicatorId'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/audit-events:
+    get:
+      operationId: listCompetencyAuditEvents
+      parameters: [{$ref: '#/components/parameters/AggregateType'}, {$ref: '#/components/parameters/AggregateId'}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
+      responses: {'200': {$ref: '#/components/responses/AdminPage'}, '503': {$ref: '#/components/responses/AuthorizationUnavailable'}}
 components:
   securitySchemes:
     bearerAuth:
@@ -116,6 +238,25 @@ components:
       in: query
       description: Effectivity evaluation date; defaults to the service's current date.
       schema: {type: string, format: date}
+    Status: {name: status, in: query, schema: {type: string, enum: [DRAFT, ACTIVE, ARCHIVED]}}
+    Search: {name: search, in: query, schema: {type: string}}
+    Page: {name: page, in: query, schema: {type: integer, minimum: 0, default: 0}}
+    Size: {name: size, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+    CategoryId: {name: categoryId, in: query, schema: {type: string, maxLength: 36}}
+    Id: {name: id, in: path, required: true, schema: {type: string, maxLength: 36}}
+    ScaleId: {name: scaleId, in: path, required: true, schema: {type: string, maxLength: 36}}
+    LevelId: {name: levelId, in: path, required: true, schema: {type: string, maxLength: 36}}
+    CompetencyId: {name: competencyId, in: path, required: true, schema: {type: string, maxLength: 36}}
+    IndicatorId: {name: indicatorId, in: path, required: true, schema: {type: string, maxLength: 36}}
+    AggregateType: {name: aggregateType, in: query, required: true, schema: {type: string}}
+    AggregateId: {name: aggregateId, in: query, required: true, schema: {type: string, maxLength: 36}}
+  requestBodies:
+    CategoryDraft: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CategoryDraftRequest'}}}}
+    ScaleDraft: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ScaleDraftRequest'}}}}
+    LevelDraft: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LevelDraftRequest'}}}}
+    CompetencyDraft: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CompetencyDraftRequest'}}}}
+    IndicatorDraft: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/IndicatorDraftRequest'}}}}
+    Transition: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TransitionRequest'}}}}
   responses:
     BadRequest:
       description: Request validation failed
@@ -132,7 +273,46 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/ApiError'}
+    Conflict: {description: Optimistic conflict or illegal lifecycle transition, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    AuthorizationUnavailable: {description: Administrative authorization could not be verified, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    AdminRecord: {description: Agency-scoped administration record, content: {application/json: {schema: {$ref: '#/components/schemas/AdminRecord'}}}}
+    AdminPage: {description: Page of agency-scoped administration records, content: {application/json: {schema: {$ref: '#/components/schemas/AdminPage'}}}}
   schemas:
+    DraftBase:
+      type: object
+      required: [code, name, displayOrder]
+      properties:
+        code: {type: string, maxLength: 50}
+        name: {type: string, maxLength: 200}
+        displayOrder: {type: integer, minimum: 0}
+        effectiveFrom: {type: string, format: date, nullable: true}
+        effectiveTo: {type: string, format: date, nullable: true}
+        recordVersion: {type: integer, format: int64, minimum: 0, nullable: true}
+    CategoryDraftRequest: {allOf: [{$ref: '#/components/schemas/DraftBase'}, {type: object, properties: {description: {type: string, maxLength: 1000}}}]}
+    ScaleDraftRequest: {allOf: [{$ref: '#/components/schemas/DraftBase'}, {type: object, properties: {description: {type: string, maxLength: 1000}}}]}
+    LevelDraftRequest:
+      type: object
+      required: [code, label, levelOrder]
+      properties: {code: {type: string}, label: {type: string}, levelOrder: {type: integer, minimum: 1}, description: {type: string}, recordVersion: {type: integer, format: int64, nullable: true}}
+    CompetencyDraftRequest:
+      allOf: [{$ref: '#/components/schemas/DraftBase'}, {type: object, required: [definition, categoryId, proficiencyScaleId], properties: {definition: {type: string, maxLength: 4000}, categoryId: {type: string}, proficiencyScaleId: {type: string}}}]
+    IndicatorDraftRequest:
+      type: object
+      required: [proficiencyLevelId, behaviorDescription, displayOrder]
+      properties: {proficiencyLevelId: {type: string}, behaviorDescription: {type: string, maxLength: 2000}, evidenceGuidance: {type: string, maxLength: 2000}, displayOrder: {type: integer, minimum: 0}, recordVersion: {type: integer, format: int64, nullable: true}}
+    TransitionRequest:
+      type: object
+      required: [recordVersion, reason]
+      properties: {recordVersion: {type: integer, format: int64, minimum: 0}, reason: {type: string, minLength: 1, maxLength: 1000}}
+    AdminRecord:
+      type: object
+      required: [id, status, definitionVersion, recordVersion]
+      additionalProperties: true
+      properties: {id: {type: string}, status: {type: string, enum: [DRAFT, ACTIVE, ARCHIVED]}, definitionVersion: {type: integer, minimum: 1}, supersedesId: {type: string, nullable: true}, recordVersion: {type: integer, format: int64, minimum: 0}}
+    AdminPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties: {content: {type: array, items: {$ref: '#/components/schemas/AdminRecord'}}, page: {type: integer}, size: {type: integer}, totalElements: {type: integer, format: int64}, totalPages: {type: integer}, first: {type: boolean}, last: {type: boolean}}
     Effectivity:
       type: object
       required: [active, effective, displayOrder, version]

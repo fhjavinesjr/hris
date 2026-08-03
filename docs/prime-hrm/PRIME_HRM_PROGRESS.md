@@ -1,8 +1,8 @@
 # ISOFT PRIME-HRM Progress Ledger
 
 Last updated: 2026-08-03
-Current phase: Phase 1A.1 - Competency Foundation Hardening
-Status: Complete for independent review; Phase 1B not started
+Current phase: Phase 1B - Competency Draft Administration
+Status: Implemented; final commit-readiness review pending
 
 Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DISCOVERY.md)
 
@@ -13,7 +13,7 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 | 0 — Architecture Discovery | Complete | repository inventory; architecture correction; ownership, integration, migration, security and Phase 1 decisions |
 | 1A — Standalone Competency Foundation | Complete | standalone module, isolated datasource profiles, dual migrations, read-only APIs, OpenAPI and tests |
 | 1A.1 - Foundation Hardening | Complete | trusted configured agency scope, competency-read authority, Flyway-created-schema tests, real PostgreSQL and SQL Server validation |
-| 1B — Competency Draft Administration | Not started | requires separate approval |
+| 1B — Competency Draft Administration | Implemented | dual-provider lifecycle/audit backend, Administrative authorization, SSO, permission configuration, and standalone management UI |
 | 2+ | Not started | none |
 
 ## Decisions recorded
@@ -61,9 +61,9 @@ contracts/openapi/primehr-v1.yaml
 - Maven: `PrimeHR` added to the root reactor; not to HRISApp.
 - Tables: category, competency, proficiency scale, proficiency level, and behavioral indicator.
 - Migrations: equivalent PostgreSQL and SQL Server V1 scripts.
-- APIs: four permission-protected GET operations under `/api/primehr/v1`, with agency resolved server-side; public minimal Actuator health.
+- APIs: Phase 1A reads plus audited permission-protected draft administration under `/api/primehr/v1/admin`, with agency resolved server-side; public minimal Actuator health.
 - Contract: `contracts/openapi/primehr-v1.yaml`.
-- UI routes/pages: none.
+- UI routes/pages: standalone `prime-hr-software` SSO and competency administration; Employee Portal launch integration.
 - Existing module behavior, Jasper reports, messaging, storage, and deployment: unchanged.
 
 ## Verification
@@ -103,12 +103,12 @@ Phase 1A.1 real-provider validation passed against Neon PostgreSQL 17.10 and loc
 
 1. Critical: direct HRISApp inclusion would bind PrimeHR to the legacy datasource.
 2. Critical: tracked configuration/source contains secret material requiring externalization and rotation.
-3. Critical: frontend permissions alone do not protect data/decisions; Phase 1A.1 protects current reads server-side, and future writes still require live Administrative authorization.
+3. Critical: frontend permissions alone do not protect data/decisions; Phase 1B protects PrimeHR administration server-side through live fail-closed Administrative authorization, while unrelated legacy endpoints retain their existing enforcement maturity.
 4. Medium: Flyway 9.22.3 reports PostgreSQL 17.10 newer than its tested maximum PostgreSQL 15, although the real migration/integration suite passed.
 5. High: supervisor and complete Qualification Standards ownership remain unresolved.
 6. High: applicant/employee identity separation must be enforced.
 7. Medium: duplicated frontend helpers may drift.
-8. Medium: Administrative PrimeHR permission UI/module key and dynamic identity-to-agency contract are not yet implemented; the temporary required single-agency scope is intentionally safe but not multi-agency capable.
+8. Medium: dynamic identity-to-agency resolution is not yet implemented; the required server-side single-agency scope is intentionally safe but not multi-agency capable.
 
 ## Decisions needed before affected phases
 
@@ -117,11 +117,11 @@ Phase 1A.1 real-provider validation passed against Neon PostgreSQL 17.10 and loc
 - acceptance of standalone-first deployment;
 - applicant authentication, document storage, and retention policy;
 - repeatable CI credentials/containers for PostgreSQL and SQL Server;
-- whether Phase 1 is read-only or includes audited draft CRUD.
+- governance, approval roles, and the dedicated `canPublish` permission required before activation/publishing is designed.
 
 ## Next phase
 
-Phase 1B is not authorized. Recommended scope is limited to permission/SSO integration and audited, optimistic-locked draft administration for the same five competency concepts. Active versions must remain immutable. Position profiles, assessments, gap analysis, all other PRIME-HRM domains, frontend work unless explicitly approved, and HRISApp assembly remain excluded.
+Phase 1B was explicitly authorized and is implemented. See `PHASE_1B_COMPETENCY_DRAFT_ADMINISTRATION.md` for the lifecycle, authorization, dual-provider, API, UI, and verification record, and `PHASE_1B_REVIEW_MANIFEST.md` for the exact independent-review inventory. Publishing remains excluded; active versions stay immutable and may only be cloned into successor drafts.
 
 ## Proactive execution and approval workflow
 
@@ -146,22 +146,22 @@ The recurring phase gate is:
 
 | Gate | Status | Evidence/action |
 |---|---|---|
-| Phase 1A implementation | Complete | standalone competency foundation and read-only contract |
-| Phase 1A.1 hardening | Complete | trusted agency scope, read authority, real dual-provider validation |
-| Full reactor test | Passed | 119 tests; zero failures, errors, or skips |
-| Full reactor package | Passed | all nine reactor projects built successfully |
+| Phase 1B.1 backend | Passed | lifecycle, audit, Administrative authorization, OpenAPI, and SSO implemented |
+| Real provider gates | Passed | fresh V1+V2 and populated V1-to-V2 on PostgreSQL 17.10 and SQL Server 14.0 |
+| Phase 1B.2 UI | Passed | Administrative and Employee Portal builds; standalone lint, strict type-check, and build |
+| Full reactor package | Passed | all nine reactor projects built successfully after Phase 1B.1 |
 | Secret/configuration audit | Passed for this change set | runtime credentials are environment placeholders; test values are synthetic |
 | Generated/IDE artifact audit | Passed | `target/` is ignored; `.idea` changes reverted |
-| Phase-boundary audit | Passed | no PrimeHR write mappings, frontend work, HRISApp integration, or later-domain implementation |
+| Phase-boundary audit | Passed | no publishing, activation, hard delete, HRISApp integration, or later-domain implementation |
 | Git whitespace check | Passed | `git diff --check` and new-file trailing-whitespace scan clean |
-| Commit | Awaiting user action | exact staging and commit commands supplied in the Phase 1A/1A.1 handoff |
+| Commit | Awaiting independent review | Exact file inventory and exclusions are in `PHASE_1B_REVIEW_MANIFEST.md`; stage each repository separately |
 | Push | Awaiting user action | push only after reviewing the staged diff |
-| Phase 1B | Not authorized | begin only after explicit user approval |
+| Phase 1B | Implemented | final commit-readiness and independent review remain |
 
 ### Next recommended action
 
-Commit and push the reviewed Phase 1A/1A.1 checkpoint. After that, the next approval gate is Phase 1B Competency Draft Administration. Before Phase 1B implementation, Codex must restate its exact API, persistence, authorization, audit, migration, test, and UI exclusions and receive explicit approval.
+Perform independent diff review and manual end-to-end smoke testing across the backend, Administrative UI, Employee Portal, and standalone PrimeHR UI, then commit each repository separately. Do not begin publishing or Phase 1C/2 without a separately approved exact scope.
 
 ## Rollback
 
-Before deployment, rollback is removal of the `PrimeHR` reactor entry, module, OpenAPI file, and Phase 1A documentation. After a migration reaches an environment, use an explicit reviewed forward migration; do not delete tables automatically.
+Before Phase 1B deployment, rollback is reverting the Phase 1B changes while retaining the committed Phase 1A/1A.1 foundation. After V2 reaches an environment, use an explicit reviewed forward migration; do not delete tables or edit an applied migration automatically.

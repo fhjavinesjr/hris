@@ -20,4 +20,5 @@ public interface CompetencyRepository extends JpaRepository<Competency, String>,
     Optional<Competency> findByIdAndAgencyId(String id, String agencyId);
 
     boolean existsByAgencyIdAndCodeIgnoreCase(String agencyId, String code);
+    boolean existsByAgencyIdAndCodeIgnoreCaseAndStatus(String agencyId, String code, String status);
 }

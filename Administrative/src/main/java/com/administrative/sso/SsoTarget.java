@@ -6,7 +6,8 @@ public enum SsoTarget {
     ADMINISTRATIVE("administrative", "administrative"),
     HRM("hrm", "hrManagement"),
     TIMEKEEPING("timekeeping", "timeKeeping"),
-    PAYROLL("payroll", "payroll");
+    PAYROLL("payroll", "payroll"),
+    PRIMEHR("primehr", "primeHr");
 
     private final String value;
     private final String permissionKey;

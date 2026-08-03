@@ -119,7 +119,8 @@ public class SsoServiceImpl implements SsoService {
     }
 
     private PermissionRuleset requireTargetAccess(String employeeNo, String employeeRole, SsoTarget target) {
-        if (INSTALL_ADMIN_EMPLOYEE_NO.equalsIgnoreCase(employeeNo)) {
+        if (INSTALL_ADMIN_EMPLOYEE_NO.equalsIgnoreCase(employeeNo)
+                || "1".equals(employeeRole == null ? "" : employeeRole.trim().replaceFirst("(?i)^ROLE_", ""))) {
             return null;
         }
 

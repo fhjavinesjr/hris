@@ -5,12 +5,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.List;
 
 @ConfigurationProperties(prefix = "primehr")
-public record PrimeHrProperties(Security security, Cors cors, Agency agency) {
+public record PrimeHrProperties(Security security, Cors cors, Agency agency, Administrative administrative) {
 
     public PrimeHrProperties {
         security = security == null ? new Security(null, null) : security;
         cors = cors == null ? new Cors(null, null) : cors;
         agency = agency == null ? new Agency(null) : agency;
+        administrative = administrative == null ? new Administrative(null, null, null) : administrative;
     }
 
     public record Security(String jwtSecret, List<String> competencyReaderRoles) {
@@ -37,6 +38,14 @@ public record PrimeHrProperties(Security security, Cors cors, Agency agency) {
     public record Agency(String id) {
         public Agency {
             id = id == null ? "" : id.trim();
+        }
+    }
+
+    public record Administrative(String baseUrl, Integer connectTimeoutMillis, Integer readTimeoutMillis) {
+        public Administrative {
+            baseUrl = baseUrl == null ? "" : baseUrl.trim().replaceAll("/+$", "");
+            connectTimeoutMillis = connectTimeoutMillis == null ? 3000 : Math.max(250, connectTimeoutMillis);
+            readTimeoutMillis = readTimeoutMillis == null ? 5000 : Math.max(250, readTimeoutMillis);
         }
     }
 }

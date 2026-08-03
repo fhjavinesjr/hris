@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProficiencyScaleRepository extends JpaRepository<ProficiencyScale, String>,
         JpaSpecificationExecutor<ProficiencyScale> {
@@ -16,4 +17,7 @@ public interface ProficiencyScaleRepository extends JpaRepository<ProficiencySca
                                    org.springframework.data.domain.Sort sort);
 
     boolean existsByAgencyIdAndCodeIgnoreCase(String agencyId, String code);
+    @EntityGraph(attributePaths = "levels")
+    Optional<ProficiencyScale> findByIdAndAgencyId(String id, String agencyId);
+    boolean existsByAgencyIdAndCodeIgnoreCaseAndStatus(String agencyId, String code, String status);
 }

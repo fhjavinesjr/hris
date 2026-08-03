@@ -12,6 +12,7 @@ import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDate;
 import java.util.Locale;
+import com.primehr.shared.exception.IllegalLifecycleTransitionException;
 
 @Entity
 @Table(name = "prime_proficiency_level", uniqueConstraints = {
@@ -55,6 +56,36 @@ public class ProficiencyLevel extends AgencyAuditableEntity {
 
     void attachTo(ProficiencyScale scale) {
         this.scale = scale;
+    }
+
+    public void updateDraft(String code, String label, int levelOrder, String description,
+                            LocalDate effectiveFrom, LocalDate effectiveTo) {
+        requireDraftScale();
+        if (levelOrder < 1) {
+            throw new IllegalArgumentException("levelOrder must be at least 1");
+        }
+        this.code = requireText(code, "code").toUpperCase(Locale.ROOT);
+        this.label = requireText(label, "label");
+        this.levelOrder = levelOrder;
+        this.description = description == null ? null : description.trim();
+        updateDefinitionFields(levelOrder, effectiveFrom, effectiveTo);
+    }
+
+    public void archiveDraft() {
+        requireDraftScale();
+        setDefinitionActive(false);
+    }
+
+    ProficiencyLevel copyForDraft() {
+        return new ProficiencyLevel(getAgencyId(), code, label, levelOrder, description, true,
+                getEffectiveFrom(), getEffectiveTo());
+    }
+
+    private void requireDraftScale() {
+        if (scale == null || !scale.isDraft()) {
+            throw new IllegalLifecycleTransitionException(
+                    "Proficiency levels may be changed only on a draft scale");
+        }
     }
 
     public ProficiencyScale getScale() { return scale; }

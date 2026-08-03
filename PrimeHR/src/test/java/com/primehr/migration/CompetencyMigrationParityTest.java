@@ -15,6 +15,8 @@ class CompetencyMigrationParityTest {
 
     private static final String POSTGRES = "db/migration/postgresql/V1__competency_foundation.sql";
     private static final String SQL_SERVER = "db/migration/sqlserver/V1__competency_foundation.sql";
+    private static final String POSTGRES_V2 = "db/migration/postgresql/V2__competency_draft_administration.sql";
+    private static final String SQL_SERVER_V2 = "db/migration/sqlserver/V2__competency_draft_administration.sql";
     private static final Set<String> TABLES = Set.of(
             "prime_competency_category", "prime_proficiency_scale", "prime_proficiency_level",
             "prime_competency", "prime_behavioral_indicator");
@@ -47,6 +49,21 @@ class CompetencyMigrationParityTest {
                     .doesNotContain("payroll_detail")
                     .doesNotContain("dtrdaily");
         }
+    }
+
+    @Test
+    void phase1BDraftMigrationsHaveEquivalentLifecycleAuditAndLineageObjects() throws IOException {
+        String postgres = read(POSTGRES_V2);
+        String sqlServer = read(SQL_SERVER_V2);
+        for (String required : Set.of("definition_version", "supersedes_id", "prime_audit_event",
+                "uk_prime_category_agency_code_version", "uk_prime_scale_agency_code_version",
+                "uk_prime_competency_agency_code_version", "ck_prime_category_status",
+                "ck_prime_scale_status", "ck_prime_competency_status", "ix_prime_audit_aggregate")) {
+            assertThat(postgres).contains(required);
+            assertThat(sqlServer).contains(required);
+        }
+        assertThat(postgres.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table");
     }
 
     private static Set<String> tableNames(String sql) {

@@ -11,6 +11,7 @@ import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDate;
+import com.primehr.shared.exception.IllegalLifecycleTransitionException;
 
 @Entity
 @Table(name = "prime_behavioral_indicator", uniqueConstraints =
@@ -44,7 +45,7 @@ public class BehavioralIndicator extends AgencyAuditableEntity {
         if (!agencyId.equals(competency.getAgencyId()) || !agencyId.equals(proficiencyLevel.getAgencyId())) {
             throw new IllegalArgumentException("Indicator and related records must use the same agency");
         }
-        if (proficiencyLevel.getScale() != competency.getProficiencyScale()) {
+        if (!sameScale(proficiencyLevel.getScale(), competency.getProficiencyScale())) {
             throw new IllegalArgumentException("Indicator level must belong to the competency scale");
         }
         this.competency = competency;
@@ -57,4 +58,40 @@ public class BehavioralIndicator extends AgencyAuditableEntity {
     public ProficiencyLevel getProficiencyLevel() { return proficiencyLevel; }
     public String getBehaviorDescription() { return behaviorDescription; }
     public String getEvidenceGuidance() { return evidenceGuidance; }
+
+    public void updateDraft(ProficiencyLevel proficiencyLevel, String behaviorDescription,
+                            String evidenceGuidance, int displayOrder, LocalDate effectiveFrom,
+                            LocalDate effectiveTo) {
+        requireDraftCompetency();
+        if (!getAgencyId().equals(proficiencyLevel.getAgencyId())
+                || !sameScale(proficiencyLevel.getScale(), competency.getProficiencyScale())) {
+            throw new IllegalArgumentException("Indicator level must belong to the competency scale and agency");
+        }
+        this.proficiencyLevel = proficiencyLevel;
+        this.behaviorDescription = requireText(behaviorDescription, "behaviorDescription");
+        this.evidenceGuidance = evidenceGuidance == null ? null : evidenceGuidance.trim();
+        updateDefinitionFields(displayOrder, effectiveFrom, effectiveTo);
+    }
+
+    public void archiveDraft() {
+        requireDraftCompetency();
+        setDefinitionActive(false);
+    }
+
+    public BehavioralIndicator copyForDraft(Competency successor) {
+        return new BehavioralIndicator(getAgencyId(), successor, proficiencyLevel, behaviorDescription,
+                evidenceGuidance, isActive(), getDisplayOrder(), getEffectiveFrom(), getEffectiveTo());
+    }
+
+    private void requireDraftCompetency() {
+        if (!competency.isDraft()) {
+            throw new IllegalLifecycleTransitionException(
+                    "Behavioral indicators may be changed only on a draft competency");
+        }
+    }
+
+    private static boolean sameScale(ProficiencyScale first, ProficiencyScale second) {
+        if (first == second) return true;
+        return first != null && second != null && first.getId() != null && first.getId().equals(second.getId());
+    }
 }

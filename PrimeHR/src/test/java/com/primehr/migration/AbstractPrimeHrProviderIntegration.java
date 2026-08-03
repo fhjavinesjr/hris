@@ -43,10 +43,12 @@ abstract class AbstractPrimeHrProviderIntegration {
 
     private static final Set<String> EXPECTED_TABLES = Set.of(
             "prime_competency_category", "prime_proficiency_scale", "prime_proficiency_level",
-            "prime_competency", "prime_behavioral_indicator", "flyway_schema_history");
+            "prime_competency", "prime_behavioral_indicator", "prime_audit_event", "flyway_schema_history");
     private static final Set<String> EXPECTED_INDEXES = Set.of(
             "ix_prime_category_agency_active", "ix_prime_scale_agency_active",
             "ix_prime_level_agency_scale", "ix_prime_competency_filter", "ix_prime_indicator_lookup");
+    private static final Set<String> PHASE_1B_INDEXES = Set.of(
+            "ix_prime_audit_aggregate", "ix_prime_audit_actor_time");
 
     @Autowired private Flyway flyway;
     @Autowired private DataSource dataSource;
@@ -58,15 +60,16 @@ abstract class AbstractPrimeHrProviderIntegration {
     @Value("${spring.flyway.default-schema}") private String databaseSchema;
 
     @Test
-    void flywayV1CreatesTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
+    void flywayV1AndV2CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
         assertThat(flyway.info().current()).isNotNull();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("1");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("2");
 
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
-            assertThat(readNames(metadata.getTables(connection.getCatalog(), null, "%", new String[]{"TABLE"}),
+            assertThat(readNames(metadata.getTables(connection.getCatalog(), databaseSchema, "%", new String[]{"TABLE"}),
                     "TABLE_NAME")).containsAll(EXPECTED_TABLES);
-            assertThat(indexNames(metadata, connection)).containsAll(EXPECTED_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(EXPECTED_INDEXES)
+                    .containsAll(PHASE_1B_INDEXES);
 
             assertThat(importedKeyCount(metadata, connection, "prime_proficiency_level")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "prime_competency")).isGreaterThanOrEqualTo(2);
@@ -168,10 +171,10 @@ abstract class AbstractPrimeHrProviderIntegration {
         return names;
     }
 
-    private static int importedKeyCount(DatabaseMetaData metadata, Connection connection, String table)
+    private int importedKeyCount(DatabaseMetaData metadata, Connection connection, String table)
             throws Exception {
         for (String candidate : List.of(table, table.toUpperCase(Locale.ROOT), table.toLowerCase(Locale.ROOT))) {
-            try (ResultSet resultSet = metadata.getImportedKeys(connection.getCatalog(), null, candidate)) {
+            try (ResultSet resultSet = metadata.getImportedKeys(connection.getCatalog(), databaseSchema, candidate)) {
                 int count = 0;
                 while (resultSet.next()) {
                     count++;
@@ -184,14 +187,14 @@ abstract class AbstractPrimeHrProviderIntegration {
         return 0;
     }
 
-    private static Set<String> indexNames(DatabaseMetaData metadata, Connection connection) throws Exception {
+    private Set<String> indexNames(DatabaseMetaData metadata, Connection connection) throws Exception {
         Set<String> names = new HashSet<>();
         for (String table : EXPECTED_TABLES) {
             if ("flyway_schema_history".equals(table)) {
                 continue;
             }
             for (String candidate : List.of(table, table.toUpperCase(Locale.ROOT), table.toLowerCase(Locale.ROOT))) {
-                names.addAll(readNames(metadata.getIndexInfo(connection.getCatalog(), null, candidate,
+                names.addAll(readNames(metadata.getIndexInfo(connection.getCatalog(), databaseSchema, candidate,
                         false, false), "INDEX_NAME"));
             }
         }

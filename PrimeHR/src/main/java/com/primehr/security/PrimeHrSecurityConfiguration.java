@@ -37,6 +37,9 @@ public class PrimeHrSecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/primehr/v1/admin/**").denyAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/primehr/v1/admin/**").denyAll()
+                        .requestMatchers("/api/primehr/v1/admin/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/primehr/v1/**")
                         .hasAuthority(PrimeHrAuthorities.COMPETENCY_READ)
                         .anyRequest().denyAll())
@@ -56,7 +59,7 @@ public class PrimeHrSecurityConfiguration {
         CorsConfiguration cors = new CorsConfiguration();
         cors.setAllowedOrigins(properties.cors().allowedOrigins());
         cors.setAllowedOriginPatterns(properties.cors().allowedOriginPatterns());
-        cors.setAllowedMethods(List.of("GET", "OPTIONS"));
+        cors.setAllowedMethods(List.of("GET", "POST", "PUT", "OPTIONS"));
         cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Correlation-Id"));
         cors.setExposedHeaders(List.of("X-Correlation-Id"));
         cors.setAllowCredentials(true);

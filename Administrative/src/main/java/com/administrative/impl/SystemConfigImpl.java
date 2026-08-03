@@ -33,6 +33,7 @@ public class SystemConfigImpl implements SystemConfigService {
         seed("api.url.hrm",            "http://localhost:8085", "Base URL of the HR Management backend service",    "API Endpoints", true);
         seed("api.url.timekeeping",    "http://localhost:8083", "Base URL of the TimeKeeping backend service",      "API Endpoints", true);
         seed("api.url.payroll",        "http://localhost:8087", "Base URL of the Payroll backend service",          "API Endpoints", true);
+        seed("api.url.primehr",        "http://localhost:8086", "Base URL of the PrimeHR backend service",          "API Endpoints", true);
 
         seed("security.inactivity.timeout", "1800", "Session inactivity timeout in seconds (default: 1800 = 30 min)", "Security", true);
 
@@ -43,6 +44,7 @@ public class SystemConfigImpl implements SystemConfigService {
         seed("ui.url.timekeeping",    "http://localhost:3083", "URL of the TimeKeeping UI application",    "UI Navigation", true);
         seed("ui.url.payroll",        "http://localhost:3087", "URL of the Payroll UI application",        "UI Navigation", true);
         seed("ui.url.employee-portal","http://localhost:3081", "URL of the Employee Portal UI application","UI Navigation", true);
+        seed("ui.url.primehr",        "http://localhost:3086", "URL of the PrimeHR UI application",        "UI Navigation", true);
     }
 
     private void seed(String key, String value, String description, String category, Boolean editable) {

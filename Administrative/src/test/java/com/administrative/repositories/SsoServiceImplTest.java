@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -105,6 +106,52 @@ class SsoServiceImplTest {
 
         assertThrows(ResponseStatusException.class,
                 () -> service.exchange(launch.code(), "payroll"));
+    }
+
+    @Test
+    void primeHrLaunchAndExchangeUseTheDedicatedPortalPermission() throws Exception {
+        when(permissionRepository.findById(2L))
+                .thenReturn(Optional.of(ruleset("{\"primeHr\":true}")));
+        when(jwtUtil.generateToken("001", "2")).thenReturn("prime-jwt");
+        when(systemConfigService.getAllConfigs()).thenReturn(List.of());
+
+        SsoLaunchResponse launch = service.launch("001", "2", "primehr");
+        ArgumentCaptor<SsoLoginTicket> captor = ArgumentCaptor.forClass(SsoLoginTicket.class);
+        verify(ticketRepository).save(captor.capture());
+        when(ticketRepository.findForUpdateByCodeHash(anyString())).thenReturn(Optional.of(captor.getValue()));
+
+        var exchange = service.exchange(launch.code(), "primehr");
+        assertEquals("primehr", exchange.target());
+        assertEquals("prime-jwt", exchange.token());
+    }
+
+    @Test
+    void primeHrLaunchRejectsMissingModulePermission() {
+        when(permissionRepository.findById(2L))
+                .thenReturn(Optional.of(ruleset("{\"primeHr\":false}")));
+        assertThrows(ResponseStatusException.class, () -> service.launch("001", "2", "primehr"));
+    }
+
+    @Test
+    void installAdministratorCanLaunchPrimeHrWithoutARuleset() {
+        SsoLaunchResponse launch = service.launch("admin", "1", "primehr");
+        assertNotNull(launch.code());
+        verify(ticketRepository).save(org.mockito.ArgumentMatchers.any(SsoLoginTicket.class));
+    }
+
+    @Test
+    void establishedRoleOneCanLaunchPrimeHrWithoutARuleset() {
+        SsoLaunchResponse launch = service.launch("001", "ROLE_1", "primehr");
+        assertNotNull(launch.code());
+        verify(ticketRepository).save(org.mockito.ArgumentMatchers.any(SsoLoginTicket.class));
+    }
+
+    @Test
+    void primeHrExchangeRejectsExpiredTicket() {
+        SsoLoginTicket expired = new SsoLoginTicket("hash", "001", "2", "primehr",
+                Instant.now().minusSeconds(120), Instant.now().minusSeconds(60));
+        when(ticketRepository.findForUpdateByCodeHash(anyString())).thenReturn(Optional.of(expired));
+        assertThrows(ResponseStatusException.class, () -> service.exchange("expired-code", "primehr"));
     }
 
     private PermissionRuleset ruleset(String portalModuleAccess) {

@@ -12,10 +12,12 @@ import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDate;
 import java.util.Locale;
+import com.primehr.shared.exception.IllegalLifecycleTransitionException;
 
 @Entity
 @Table(name = "prime_competency", uniqueConstraints =
-        @UniqueConstraint(name = "uk_prime_competency_agency_code", columnNames = {"agency_id", "code"}))
+        @UniqueConstraint(name = "uk_prime_competency_agency_code_version",
+                columnNames = {"agency_id", "code", "definition_version"}))
 public class Competency extends AgencyAuditableEntity {
 
     @Column(name = "code", length = 50, nullable = false)
@@ -31,6 +33,12 @@ public class Competency extends AgencyAuditableEntity {
 
     @Column(name = "status", length = 30, nullable = false)
     private String status;
+
+    @Column(name = "definition_version", nullable = false)
+    private int definitionVersion;
+
+    @Column(name = "supersedes_id", length = 36)
+    private String supersedesId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
@@ -54,14 +62,64 @@ public class Competency extends AgencyAuditableEntity {
         this.name = requireText(name, "name");
         this.definition = requireText(definition, "definition");
         this.status = requireText(status, "status").toUpperCase(Locale.ROOT);
+        DefinitionStatus.valueOf(this.status);
+        this.definitionVersion = 1;
         this.category = category;
         this.proficiencyScale = proficiencyScale;
+    }
+
+    public static Competency draft(String agencyId, String code, String name, String definition,
+                                   CompetencyCategory category, ProficiencyScale scale, int displayOrder,
+                                   LocalDate effectiveFrom, LocalDate effectiveTo) {
+        return new Competency(agencyId, code, name, definition, DefinitionStatus.DRAFT.name(), category, scale,
+                false, displayOrder, effectiveFrom, effectiveTo);
+    }
+
+    public Competency successorDraft() {
+        requireStatus(DefinitionStatus.ACTIVE);
+        Competency successor = draft(getAgencyId(), code, name, definition, category, proficiencyScale,
+                getDisplayOrder(), getEffectiveFrom(), getEffectiveTo());
+        successor.definitionVersion = definitionVersion + 1;
+        successor.supersedesId = getId();
+        return successor;
+    }
+
+    public void updateDraft(String code, String name, String definition, CompetencyCategory category,
+                            ProficiencyScale scale, int displayOrder, LocalDate effectiveFrom,
+                            LocalDate effectiveTo) {
+        requireStatus(DefinitionStatus.DRAFT);
+        if (!getAgencyId().equals(category.getAgencyId()) || !getAgencyId().equals(scale.getAgencyId())) {
+            throw new IllegalArgumentException("Competency, category, and scale must use the same agency");
+        }
+        this.code = requireText(code, "code").toUpperCase(Locale.ROOT);
+        this.name = requireText(name, "name");
+        this.definition = requireText(definition, "definition");
+        this.category = category;
+        this.proficiencyScale = scale;
+        updateDefinitionFields(displayOrder, effectiveFrom, effectiveTo);
+    }
+
+    public void archiveDraft() {
+        requireStatus(DefinitionStatus.DRAFT);
+        status = DefinitionStatus.ARCHIVED.name();
+        setDefinitionActive(false);
+    }
+
+    public boolean isDraft() { return DefinitionStatus.DRAFT.name().equals(status); }
+
+    private void requireStatus(DefinitionStatus expected) {
+        if (!expected.name().equals(status)) {
+            throw new IllegalLifecycleTransitionException("Only " + expected + " competencies may be changed");
+        }
     }
 
     public String getCode() { return code; }
     public String getName() { return name; }
     public String getDefinition() { return definition; }
     public String getStatus() { return status; }
+    public DefinitionStatus getDefinitionStatus() { return DefinitionStatus.valueOf(status); }
+    public int getDefinitionVersion() { return definitionVersion; }
+    public String getSupersedesId() { return supersedesId; }
     public CompetencyCategory getCategory() { return category; }
     public ProficiencyScale getProficiencyScale() { return proficiencyScale; }
 }

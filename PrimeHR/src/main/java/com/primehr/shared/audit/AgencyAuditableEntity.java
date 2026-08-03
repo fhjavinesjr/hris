@@ -103,6 +103,20 @@ public abstract class AgencyAuditableEntity {
         }
     }
 
+    protected void updateDefinitionFields(int displayOrder, LocalDate effectiveFrom, LocalDate effectiveTo) {
+        if (displayOrder < 0) {
+            throw new IllegalArgumentException("displayOrder cannot be negative");
+        }
+        validateEffectivity(effectiveFrom, effectiveTo);
+        this.displayOrder = displayOrder;
+        this.effectiveFrom = effectiveFrom;
+        this.effectiveTo = effectiveTo;
+    }
+
+    protected void setDefinitionActive(boolean active) {
+        this.active = active;
+    }
+
     public String getId() { return id; }
     public String getAgencyId() { return agencyId; }
     public boolean isActive() { return active; }
