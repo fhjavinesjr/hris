@@ -1,8 +1,8 @@
 # ISOFT PRIME-HRM Progress Ledger
 
-Last updated: 2026-08-02  
-Current phase: Phase 0 — Architecture Discovery  
-Status: Complete; implementation intentionally not started
+Last updated: 2026-08-03
+Current phase: Phase 1A.1 - Competency Foundation Hardening
+Status: Complete for independent review; Phase 1B not started
 
 Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DISCOVERY.md)
 
@@ -11,7 +11,9 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 | Phase | Status | Delivered |
 |---|---|---|
 | 0 — Architecture Discovery | Complete | repository inventory; architecture correction; ownership, integration, migration, security and Phase 1 decisions |
-| 1 — Competency Foundation | Not started | none; requires a later instruction |
+| 1A — Standalone Competency Foundation | Complete | standalone module, isolated datasource profiles, dual migrations, read-only APIs, OpenAPI and tests |
+| 1A.1 - Foundation Hardening | Complete | trusted configured agency scope, competency-read authority, Flyway-created-schema tests, real PostgreSQL and SQL Server validation |
+| 1B — Competency Draft Administration | Not started | requires separate approval |
 | 2+ | Not started | none |
 
 ## Decisions recorded
@@ -29,6 +31,8 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 - Backend enforcement combines action, data scope, process role, state, and module access.
 - New reports favor service DTOs/bean data sources.
 - Storage, notifications, analytics, gateway, and separate reporting service are deferred.
+- Common JWT classes are not reused directly in PrimeHR because their hardcoded secret/logging cannot be changed without affecting existing modules; PrimeHR preserves the token contract with mandatory environment configuration.
+- Phase 1A.1 exposes authorized reads only. The current safe scope is a required server-side single-agency configuration because the verified identity model has no agency claim or directory relationship. Full Administrative action/dynamic-agency authorization remains a Phase 1B prerequisite for writes.
 
 ## Current-state corrections
 
@@ -46,15 +50,21 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 ```text
 docs/prime-hrm/PHASE_0_ARCHITECTURE_DISCOVERY.md
 docs/prime-hrm/PRIME_HRM_PROGRESS.md
+docs/prime-hrm/PHASE_1A_COMPETENCY_FOUNDATION.md
+docs/prime-hrm/PHASE_1A_1_HARDENING.md
+PrimeHR/**
+contracts/openapi/primehr-v1.yaml
 ```
 
 ## Implementation ledger
 
-- Migrations/tables/entities/repositories: none.
-- APIs/contracts implemented: none.
-- UI repositories/routes/pages: none.
-- Security/config/deployment changes: none.
-- Jasper reports: none.
+- Maven: `PrimeHR` added to the root reactor; not to HRISApp.
+- Tables: category, competency, proficiency scale, proficiency level, and behavioral indicator.
+- Migrations: equivalent PostgreSQL and SQL Server V1 scripts.
+- APIs: four permission-protected GET operations under `/api/primehr/v1`, with agency resolved server-side; public minimal Actuator health.
+- Contract: `contracts/openapi/primehr-v1.yaml`.
+- UI routes/pages: none.
+- Existing module behavior, Jasper reports, messaging, storage, and deployment: unchanged.
 
 ## Verification
 
@@ -67,18 +77,38 @@ Performed:
 - confirmed no Flyway/Liquibase or Testcontainers dual-provider migration suite;
 - preserved unrelated user work.
 
-Not applicable because only documentation changed: Maven/Next builds, database migrations, Jasper compilation/PDF inspection.
+Phase 1A command and result:
+
+```text
+.\mvnw.cmd -pl PrimeHR -am verify
+Tests run: 16, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Phase 1A.1 final gates:
+
+```text
+.\mvnw.cmd clean test
+.\mvnw.cmd clean package
+Surefire XML: 119 tests, 0 failures, 0 errors, 0 skipped
+PrimeHR: 24 tests, 0 failures, 0 errors, 0 skipped
+Both reactor commands: BUILD SUCCESS
+```
+
+`Common`, `EmployeePortal`, and `HRISApp` execute zero tests in the current reactor. This pre-existing coverage gap is not hidden by the successful build.
+
+Phase 1A.1 real-provider validation passed against Neon PostgreSQL 17.10 and local SQL Server 2017 Express (14.0), each in an isolated `primehr_phase1a1_20260803_v3` schema. Flyway applied V1, Hibernate validated it, and six provider-test invocations passed on each engine. See `PHASE_1A_1_HARDENING.md` for exact command shapes, failures found and fixed, test coverage, and retained validation schemas.
 
 ## Risks
 
 1. Critical: direct HRISApp inclusion would bind PrimeHR to the legacy datasource.
 2. Critical: tracked configuration/source contains secret material requiring externalization and rotation.
-3. Critical: frontend permissions alone do not protect data/decisions.
-4. High: no migration framework or dual-provider integration harness.
+3. Critical: frontend permissions alone do not protect data/decisions; Phase 1A.1 protects current reads server-side, and future writes still require live Administrative authorization.
+4. Medium: Flyway 9.22.3 reports PostgreSQL 17.10 newer than its tested maximum PostgreSQL 15, although the real migration/integration suite passed.
 5. High: supervisor and complete Qualification Standards ownership remain unresolved.
 6. High: applicant/employee identity separation must be enforced.
 7. Medium: duplicated frontend helpers may drift.
-8. Medium: Phase 1 read-only scope conflicts with draft CRUD acceptance wording.
+8. Medium: Administrative PrimeHR permission UI/module key and dynamic identity-to-agency contract are not yet implemented; the temporary required single-agency scope is intentionally safe but not multi-agency capable.
 
 ## Decisions needed before affected phases
 
@@ -86,21 +116,52 @@ Not applicable because only documentation changed: Maven/Next builds, database m
 - Qualification Standards ownership;
 - acceptance of standalone-first deployment;
 - applicant authentication, document storage, and retention policy;
-- SQL Server CI test mechanism/license;
+- repeatable CI credentials/containers for PostgreSQL and SQL Server;
 - whether Phase 1 is read-only or includes audited draft CRUD.
 
 ## Next phase
 
-Phase 1 is not authorized by the present request. If later authorized:
+Phase 1B is not authorized. Recommended scope is limited to permission/SSO integration and audited, optimistic-locked draft administration for the same five competency concepts. Active versions must remain immutable. Position profiles, assessments, gap analysis, all other PRIME-HRM domains, frontend work unless explicitly approved, and HRISApp assembly remain excluded.
 
-1. recheck repository state/instructions;
-2. resolve read-only versus draft CRUD;
-3. prove standalone datasource isolation;
-4. establish PostgreSQL and SQL Server migration tests;
-5. define minimum Administrative permission/SSO contract;
-6. implement only the Competency foundation boundary in the architecture document;
-7. update this ledger after verification.
+## Proactive execution and approval workflow
+
+This ledger is the canonical handoff between phases. A separate web-chat review is optional, not required for deciding the next step. At the end of every phase, Codex must update this section and present the recommended next action to the user.
+
+The recurring phase gate is:
+
+- [ ] Confirm the requested phase and explicit exclusions against the Master Plan.
+- [ ] Inspect the current repositories and active instructions before implementation.
+- [ ] Preserve unrelated work and record the starting Git status.
+- [ ] Implement only the approved phase.
+- [ ] Run focused tests plus the appropriate full build/package gate.
+- [ ] Validate PostgreSQL and SQL Server for provider-sensitive work, or record the exact blocker.
+- [ ] Check authentication, authorization, agency scope, and denied behavior as applicable.
+- [ ] Run `git status --short`, `git diff --stat`, and `git diff --check`.
+- [ ] Audit new files for credentials, generated artifacts, IDE files, and accidental later-phase work.
+- [ ] Update the phase detail document and this progress ledger.
+- [ ] State the next recommended scope, exclusions, risks, and decisions needed.
+- [ ] Ask for explicit approval before starting the next major phase.
+
+### Current checkpoint
+
+| Gate | Status | Evidence/action |
+|---|---|---|
+| Phase 1A implementation | Complete | standalone competency foundation and read-only contract |
+| Phase 1A.1 hardening | Complete | trusted agency scope, read authority, real dual-provider validation |
+| Full reactor test | Passed | 119 tests; zero failures, errors, or skips |
+| Full reactor package | Passed | all nine reactor projects built successfully |
+| Secret/configuration audit | Passed for this change set | runtime credentials are environment placeholders; test values are synthetic |
+| Generated/IDE artifact audit | Passed | `target/` is ignored; `.idea` changes reverted |
+| Phase-boundary audit | Passed | no PrimeHR write mappings, frontend work, HRISApp integration, or later-domain implementation |
+| Git whitespace check | Passed | `git diff --check` and new-file trailing-whitespace scan clean |
+| Commit | Awaiting user action | exact staging and commit commands supplied in the Phase 1A/1A.1 handoff |
+| Push | Awaiting user action | push only after reviewing the staged diff |
+| Phase 1B | Not authorized | begin only after explicit user approval |
+
+### Next recommended action
+
+Commit and push the reviewed Phase 1A/1A.1 checkpoint. After that, the next approval gate is Phase 1B Competency Draft Administration. Before Phase 1B implementation, Codex must restate its exact API, persistence, authorization, audit, migration, test, and UI exclusions and receive explicit approval.
 
 ## Rollback
 
-Remove the two Phase 0 Markdown files. There is no database, API, runtime, frontend, report, or deployment state to reverse.
+Before deployment, rollback is removal of the `PrimeHR` reactor entry, module, OpenAPI file, and Phase 1A documentation. After a migration reaches an environment, use an explicit reviewed forward migration; do not delete tables automatically.

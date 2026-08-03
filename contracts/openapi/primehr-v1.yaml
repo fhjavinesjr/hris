@@ -1,0 +1,247 @@
+openapi: 3.0.3
+info:
+  title: ISOFT PRIME-HRM Read-Only Competency API
+  version: 1.0.0-phase-1a
+  description: Phase 1A.1 contract. All operations are read-only, require an ISOFT employee JWT and Competency read permission, and use server-resolved agency scope.
+servers:
+  - url: /api/primehr/v1
+security:
+  - bearerAuth: []
+paths:
+  /competency-categories:
+    get:
+      operationId: listCompetencyCategories
+      summary: List agency-scoped competency categories
+      parameters:
+        - $ref: '#/components/parameters/Active'
+        - $ref: '#/components/parameters/AsOf'
+      responses:
+        '200':
+          description: Ordered categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CompetencyCategory'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /competencies:
+    get:
+      operationId: listCompetencies
+      summary: Search and filter agency-scoped competencies
+      parameters:
+        - name: categoryId
+          in: query
+          schema: {type: string, maxLength: 36}
+        - $ref: '#/components/parameters/Active'
+        - name: search
+          in: query
+          schema: {type: string}
+        - $ref: '#/components/parameters/AsOf'
+        - name: page
+          in: query
+          schema: {type: integer, minimum: 0, default: 0}
+        - name: size
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        '200':
+          description: Page ordered by display order then code
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CompetencyPage'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /competencies/{competencyId}:
+    get:
+      operationId: getCompetency
+      summary: Get a competency, its scale, and ordered behavioral indicators
+      parameters:
+        - name: competencyId
+          in: path
+          required: true
+          schema: {type: string, maxLength: 36}
+        - name: includeInactive
+          in: query
+          schema: {type: boolean, default: false}
+        - $ref: '#/components/parameters/AsOf'
+      responses:
+        '200':
+          description: Competency detail
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CompetencyDetail'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404':
+          description: Not found in the requested agency/effectivity scope
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ApiError'}
+  /proficiency-scales:
+    get:
+      operationId: listProficiencyScales
+      summary: List agency-defined proficiency scales and ordered levels
+      parameters:
+        - $ref: '#/components/parameters/Active'
+        - $ref: '#/components/parameters/AsOf'
+      responses:
+        '200':
+          description: Ordered scales and levels
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ProficiencyScale'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Active:
+      name: active
+      in: query
+      description: True selects active/effective records; false selects disabled, future, or expired records; omission returns all.
+      schema: {type: boolean}
+    AsOf:
+      name: asOf
+      in: query
+      description: Effectivity evaluation date; defaults to the service's current date.
+      schema: {type: string, format: date}
+  responses:
+    BadRequest:
+      description: Request validation failed
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    Unauthorized:
+      description: Missing or invalid employee JWT
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    Forbidden:
+      description: Authenticated identity lacks Competency read permission or a trusted agency context
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+  schemas:
+    Effectivity:
+      type: object
+      required: [active, effective, displayOrder, version]
+      properties:
+        active: {type: boolean}
+        effective: {type: boolean}
+        displayOrder: {type: integer, minimum: 0}
+        effectiveFrom: {type: string, format: date, nullable: true}
+        effectiveTo: {type: string, format: date, nullable: true}
+        version: {type: integer, format: int64, minimum: 0}
+    CompetencyCategory:
+      allOf:
+        - $ref: '#/components/schemas/Effectivity'
+        - type: object
+          required: [id, agencyId, code, name]
+          properties:
+            id: {type: string, maxLength: 36}
+            agencyId: {type: string, maxLength: 64}
+            code: {type: string, maxLength: 50}
+            name: {type: string, maxLength: 150}
+            description: {type: string, maxLength: 1000, nullable: true}
+    ProficiencyLevel:
+      allOf:
+        - $ref: '#/components/schemas/Effectivity'
+        - type: object
+          required: [id, code, label, levelOrder]
+          properties:
+            id: {type: string, maxLength: 36}
+            code: {type: string, maxLength: 50}
+            label: {type: string, maxLength: 150}
+            levelOrder: {type: integer, minimum: 1}
+            description: {type: string, maxLength: 1000, nullable: true}
+    ProficiencyScale:
+      allOf:
+        - $ref: '#/components/schemas/Effectivity'
+        - type: object
+          required: [id, agencyId, code, name, levels]
+          properties:
+            id: {type: string, maxLength: 36}
+            agencyId: {type: string, maxLength: 64}
+            code: {type: string, maxLength: 50}
+            name: {type: string, maxLength: 150}
+            description: {type: string, maxLength: 1000, nullable: true}
+            levels:
+              type: array
+              items: {$ref: '#/components/schemas/ProficiencyLevel'}
+    CompetencySummary:
+      allOf:
+        - $ref: '#/components/schemas/Effectivity'
+        - type: object
+          required: [id, agencyId, code, name, definition, status, categoryId, categoryCode,
+                     categoryName, proficiencyScaleId, proficiencyScaleCode, proficiencyScaleName]
+          properties:
+            id: {type: string, maxLength: 36}
+            agencyId: {type: string, maxLength: 64}
+            code: {type: string, maxLength: 50}
+            name: {type: string, maxLength: 200}
+            definition: {type: string, maxLength: 4000}
+            status: {type: string, maxLength: 30}
+            categoryId: {type: string, maxLength: 36}
+            categoryCode: {type: string, maxLength: 50}
+            categoryName: {type: string, maxLength: 150}
+            proficiencyScaleId: {type: string, maxLength: 36}
+            proficiencyScaleCode: {type: string, maxLength: 50}
+            proficiencyScaleName: {type: string, maxLength: 150}
+    BehavioralIndicator:
+      allOf:
+        - $ref: '#/components/schemas/Effectivity'
+        - type: object
+          required: [id, proficiencyLevelId, proficiencyLevelCode, proficiencyLevelLabel,
+                     proficiencyLevelOrder, behaviorDescription]
+          properties:
+            id: {type: string, maxLength: 36}
+            proficiencyLevelId: {type: string, maxLength: 36}
+            proficiencyLevelCode: {type: string, maxLength: 50}
+            proficiencyLevelLabel: {type: string, maxLength: 150}
+            proficiencyLevelOrder: {type: integer, minimum: 1}
+            behaviorDescription: {type: string, maxLength: 2000}
+            evidenceGuidance: {type: string, maxLength: 2000, nullable: true}
+    CompetencyDetail:
+      type: object
+      required: [competency, proficiencyScale, behavioralIndicators]
+      properties:
+        competency: {$ref: '#/components/schemas/CompetencySummary'}
+        proficiencyScale: {$ref: '#/components/schemas/ProficiencyScale'}
+        behavioralIndicators:
+          type: array
+          items: {$ref: '#/components/schemas/BehavioralIndicator'}
+    CompetencyPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content:
+          type: array
+          items: {$ref: '#/components/schemas/CompetencySummary'}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1}
+        totalElements: {type: integer, format: int64, minimum: 0}
+        totalPages: {type: integer, minimum: 0}
+        first: {type: boolean}
+        last: {type: boolean}
+    ApiError:
+      type: object
+      required: [timestamp, status, message, path, details]
+      properties:
+        timestamp: {type: string, format: date-time}
+        status: {type: integer}
+        message: {type: string}
+        path: {type: string}
+        details:
+          type: array
+          items: {type: string}

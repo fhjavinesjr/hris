@@ -17,6 +17,7 @@
     <module>HumanResource</module>
     <module>EmployeePortal</module>
     <module>Payroll</module>
+    <module>PrimeHR</module>
   </modules>
 
   <properties>
