@@ -1,8 +1,8 @@
 # ISOFT PRIME-HRM Progress Ledger
 
-Last updated: 2026-08-03
-Current phase: Phase 1B - Competency Draft Administration
-Status: Implemented; final commit-readiness review pending
+Last updated: 2026-08-12
+Current phase: Phase 2 - Position Competency Profiles (scope review only)
+Status: Master Plan Phase 1 is complete through Phase 1C; Phase 2 is proposed and not implemented
 
 Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DISCOVERY.md)
 
@@ -14,14 +14,16 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 | 1A — Standalone Competency Foundation | Complete | standalone module, isolated datasource profiles, dual migrations, read-only APIs, OpenAPI and tests |
 | 1A.1 - Foundation Hardening | Complete | trusted configured agency scope, competency-read authority, Flyway-created-schema tests, real PostgreSQL and SQL Server validation |
 | 1B — Competency Draft Administration | Implemented | dual-provider lifecycle/audit backend, Administrative authorization, SSO, permission configuration, and standalone management UI |
-| 2+ | Not started | none |
+| 1C - Controlled Competency Publishing | Complete | dedicated `canPublish`, transactional/audited publication, dual-provider V3 migrations, OpenAPI, Administrative permission control, PrimeHR publishing UI, and successful manual acceptance |
+| 2 - Position Competency Profiles | Proposed | exact scope prepared for approval; no tables, APIs, permissions, or UI implemented |
+| 3+ | Not started | none |
 
 ## Decisions recorded
 
 - One modular PrimeHR backend, not six microservices.
-- Future `PrimeHR` module in the `hris` reactor; standalone-first with its own database.
+- `PrimeHR` is implemented in the `hris` reactor as a standalone-first module with its own database; it is not yet assembled into HRISApp.
 - No HRISApp runtime dependency until isolated second-datasource tests pass.
-- Future `prime-hr-software` management/applicant frontend; existing Employee Portal for employee self-service.
+- `prime-hr-software` now exists as the standalone management frontend; the existing Employee Portal remains the employee self-service integration point, and public applicant routes remain deferred to the RSP phase.
 - Separate applicant and employee identities.
 - Administrative owns SSO/permissions/config/reference masters; HRM owns employee/PDS/appointment; Timekeeping and Payroll expose only needed finalized facts.
 - No direct cross-domain database access.
@@ -43,9 +45,9 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 - Area → Business Unit is the actual organization structure; supervisor authority is incomplete.
 - Job Position/Plantilla are not complete Qualification Standards/vacancy models.
 - Frontends declare Next.js 16.2.6, not the plan's Next.js 15 assumption.
-- PrimeHR does not currently exist.
+- At Phase 0 discovery, PrimeHR did not exist. It now exists through the completed Phase 1 foundation and administration work.
 
-## Files created
+## Foundation files created
 
 ```text
 docs/prime-hrm/PHASE_0_ARCHITECTURE_DISCOVERY.md
@@ -55,6 +57,8 @@ docs/prime-hrm/PHASE_1A_1_HARDENING.md
 PrimeHR/**
 contracts/openapi/primehr-v1.yaml
 ```
+
+Subsequent Phase 1B and Phase 1C implementation/review documents are maintained in `docs/prime-hrm/`. Exact current change sets and verification evidence are recorded in the applicable review manifest rather than duplicated in this foundation list.
 
 ## Implementation ledger
 
@@ -121,7 +125,13 @@ Phase 1A.1 real-provider validation passed against Neon PostgreSQL 17.10 and loc
 
 ## Next phase
 
-Phase 1B was explicitly authorized and is implemented. See `PHASE_1B_COMPETENCY_DRAFT_ADMINISTRATION.md` for the lifecycle, authorization, dual-provider, API, UI, and verification record, and `PHASE_1B_REVIEW_MANIFEST.md` for the exact independent-review inventory. Publishing remains excluded; active versions stay immutable and may only be cloned into successor drafts.
+Phase 1C is complete. Backend, full-reactor, authorization, audit, migration, real-provider, frontend build, and manual browser gates passed. The browser matrix verified allowed/denied publication, validation, stale conflict, audit refresh, immutable published records, and administrator bypass. The subsequent one-file datasource consolidation passed all 46 PrimeHR tests and real local SQL Server startup/Flyway/API use; its PostgreSQL block remains to be rerun after consolidation. Review `PHASE_2_POSITION_COMPETENCY_PROFILES_SCOPE_APPROVAL.md`. Do not implement Phase 2 until the user explicitly approves that exact scope.
+
+## Master Plan V2 alignment
+
+Phase 1A, Phase 1A.1, Phase 1B, and Phase 1C are controlled delivery slices of Master Plan V2 Phase 1 - Competency Foundation. Together they cover competency categories, dictionary records, dynamic proficiency scales/levels, behavioral indicators, effective dating/versioning, read APIs/UI, draft administration, RBAC, audit, controlled immutable publication, and PostgreSQL/SQL Server portability. They intentionally exclude position profiles, person assessments, gap analysis, and RSP/SPMS/L&D/R&R functionality as required by the Master Plan.
+
+The next major phase in the Master Plan is **Phase 2 - Position Competency Profiles**, not a continuation of competency-dictionary publishing. Its future approval scope must cover links to authoritative job/plantilla positions, required proficiency, mandatory/desirable and criticality metadata, effective dating, an approval lifecycle, comparison view, and immutable historical snapshot/version rules. It must not duplicate the existing position master. Phase 2 is not approved or implemented yet.
 
 ## Proactive execution and approval workflow
 
@@ -154,13 +164,18 @@ The recurring phase gate is:
 | Generated/IDE artifact audit | Passed | `target/` is ignored; `.idea` changes reverted |
 | Phase-boundary audit | Passed | no publishing, activation, hard delete, HRISApp integration, or later-domain implementation |
 | Git whitespace check | Passed | `git diff --check` and new-file trailing-whitespace scan clean |
-| Commit | Awaiting independent review | Exact file inventory and exclusions are in `PHASE_1B_REVIEW_MANIFEST.md`; stage each repository separately |
-| Push | Awaiting user action | push only after reviewing the staged diff |
-| Phase 1B | Implemented | final commit-readiness and independent review remain |
+| Backend commit/push | Complete | Phase 1B backend and documentation checkpoint `12eb6ee` |
+| Frontend deployment | Intentionally deferred | Administrative, Employee Portal, and standalone PrimeHR changes remain local to avoid affecting QA/Vercel |
+| Phase 1B | Complete for current checkpoint | automated gates passed and Administrative/Employee Portal behavior manually validated by user |
+| Phase 1C.1 backend | Passed | focused and full Maven gates, authorization/lifecycle/audit tests, OpenAPI, and real PostgreSQL/SQL Server fresh and V2-to-V3 validation passed |
+| Phase 1C.2 UI implementation | Passed automated build gate | user confirmed `npm run build` succeeds in both Administrative and PrimeHR frontends |
+| Phase 1C manual acceptance | Passed | ordinary publishing, incomplete validation, competency dependencies, two-tab conflict, denied visibility, audit refresh, immutability, and administrator publishing verified by user |
+| Phase 1C repository/secret audit | Passed with repository caveats | no credential-like additions or generated artifacts found in the Phase 1C change set; unrelated backend and `.env` changes remain present and must be excluded from a selective commit |
+| PrimeHR consolidated configuration | Passed SQL Server; PostgreSQL rerun pending | one application file requested by user; 46 tests and real local SQL Server startup/Flyway/API passed, while consolidated PostgreSQL switching has not been rerun |
 
 ### Next recommended action
 
-Perform independent diff review and manual end-to-end smoke testing across the backend, Administrative UI, Employee Portal, and standalone PrimeHR UI, then commit each repository separately. Do not begin publishing or Phase 1C/2 without a separately approved exact scope.
+Review `PHASE_2_POSITION_COMPETENCY_PROFILES_SCOPE_APPROVAL.md`. If approved, execute Phase 2.1 only and proceed to later Phase 2 checkpoints only after their gates pass. Frontend pushing/deployment remains separately controlled by the user.
 
 ## Rollback
 

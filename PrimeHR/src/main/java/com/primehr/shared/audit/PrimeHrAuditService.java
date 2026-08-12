@@ -21,11 +21,11 @@ public class PrimeHrAuditService {
     public void record(String agencyId, String action, String aggregateType, String aggregateId,
                        Integer businessVersion, Long recordVersion, Object before, Object after,
                        String reason, String correlationId) {
-        repository.save(new PrimeHrAuditEvent(agencyId, actor(), action, aggregateType, aggregateId,
+        repository.save(new PrimeHrAuditEvent(agencyId, currentActor(), action, aggregateType, aggregateId,
                 businessVersion, recordVersion, json(before), json(after), reason, correlationId));
     }
 
-    private String actor() {
+    public String currentActor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication == null || !authentication.isAuthenticated()
                 ? "system" : authentication.getName();

@@ -4,5 +4,6 @@ public enum PrimeHrAction {
     ACCESS,
     ADD,
     EDIT,
-    ARCHIVE
+    ARCHIVE,
+    PUBLISH
 }

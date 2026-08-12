@@ -7,6 +7,7 @@ import com.primehr.config.PrimeHrProperties;
 import com.primehr.security.*;
 import com.primehr.shared.api.PageResponse;
 import com.primehr.shared.exception.PrimeHrExceptionHandler;
+import com.primehr.shared.exception.PublicationConflictException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -99,6 +100,62 @@ class CompetencyAdminControllerTest {
         mockMvc.perform(patch("/api/primehr/v1/admin/competencies/id")
                         .header("Authorization", authorization)).andExpect(status().isForbidden());
         verifyNoInteractions(service);
+    }
+
+    @Test
+    void publishUsesDedicatedPermissionAndServerResolvedAgency() throws Exception {
+        String authorization = "Bearer " + token("2");
+        when(agencyScope.resolveAgencyId(any())).thenReturn("TRUSTED-AGENCY");
+
+        mockMvc.perform(post("/api/primehr/v1/admin/competency-categories/category-1/publish")
+                        .header("Authorization", authorization)
+                        .header("X-Correlation-Id", "publish-correlation")
+                        .contentType("application/json")
+                        .content("""
+                                {"recordVersion":0,"reason":"Approved for direct publication"}
+                                """))
+                .andExpect(status().isOk());
+
+        verify(permission).require(PrimeHrAction.PUBLISH, authorization);
+        verify(service).publishCategory(eq("TRUSTED-AGENCY"), eq("category-1"),
+                any(PublishDefinitionRequest.class), eq("publish-correlation"));
+        verify(permission, never()).require(PrimeHrAction.EDIT, authorization);
+    }
+
+    @Test
+    void publishWithoutDedicatedPermissionReturnsForbiddenWithoutCallingTheService() throws Exception {
+        String authorization = "Bearer " + token("2");
+        doThrow(new AccessDeniedException("publish denied")).when(permission)
+                .require(PrimeHrAction.PUBLISH, authorization);
+
+        mockMvc.perform(post("/api/primehr/v1/admin/competency-categories/category-1/publish")
+                        .header("Authorization", authorization)
+                        .contentType("application/json")
+                        .content("""
+                                {"recordVersion":0,"reason":"Attempted publication"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied"));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void publicationConflictReturnsStableConflictResponse() throws Exception {
+        String authorization = "Bearer " + token("2");
+        when(agencyScope.resolveAgencyId(any())).thenReturn("TRUSTED-AGENCY");
+        when(service.publishCategory(eq("TRUSTED-AGENCY"), eq("category-1"),
+                any(PublishDefinitionRequest.class), isNull()))
+                .thenThrow(new PublicationConflictException("The definition changed before publication"));
+
+        mockMvc.perform(post("/api/primehr/v1/admin/competency-categories/category-1/publish")
+                        .header("Authorization", authorization)
+                        .contentType("application/json")
+                        .content("""
+                                {"recordVersion":0,"reason":"Attempted publication"}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("PUBLICATION_CONFLICT"));
     }
 
     private static String token(String role) {

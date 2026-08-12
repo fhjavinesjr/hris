@@ -1,6 +1,7 @@
 package com.timekeeping.controllers;
 
 import com.timekeeping.dtos.DTRDailyDTO;
+import com.timekeeping.dtos.DTRSegmentEditRequest;
 import com.timekeeping.services.DTRDailyService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dtr-daily")
@@ -29,13 +29,29 @@ public class DTRDailyController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
+    /**
+     * Edits one DTR segment. The server recalculates the minute totals and
+     * converts the result into a protected MANUAL adjustment so a later ADMS
+     * Search cannot overwrite the administrator's correction.
+     */
+    @PutMapping("/segment/{dtrSegmentId}")
+    public ResponseEntity<DTRDailyDTO> editDTRSegment(
+            @PathVariable Long dtrSegmentId,
+            @RequestBody DTRSegmentEditRequest request) {
+        return ResponseEntity.ok(dtrDailyService.editDTRSegment(dtrSegmentId, request));
+    }
+
+    /**
+     * Read-only DTR retrieval. This endpoint never rebuilds attendance from ADMS.
+     * It is used after Edit/Delete so the UI can reload the current transaction
+     * state without immediately recreating a deliberately deleted DTR.
+     */
     @GetMapping
     public ResponseEntity<List<DTRDailyDTO>> getEmployeeDTRDaily(
             @RequestParam String employeeId,
             @RequestParam @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime fromDate,
             @RequestParam @DateTimeFormat(pattern = "MM-dd-yyyy HH:mm:ss") LocalDateTime toDate) {
-        List<DTRDailyDTO> list = dtrDailyService.getEmployeeDTRDaily(employeeId, fromDate, toDate);
-        return ResponseEntity.ok(list);
+        return ResponseEntity.ok(dtrDailyService.getEmployeeDTRDaily(employeeId, fromDate, toDate));
     }
 
     @GetMapping("/report")

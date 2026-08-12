@@ -1,13 +1,16 @@
 package com.timekeeping.impl;
 
 import com.timekeeping.dtos.DTRDailyDTO;
+import com.timekeeping.dtos.DTRSegmentEditRequest;
 import com.timekeeping.dtos.DtrReportRow;
 import com.timekeeping.dtos.DTRSegmentDTO;
 import com.timekeeping.entitymodels.DTRDaily;
 import com.timekeeping.entitymodels.DTRSegment;
+import com.timekeeping.entitymodels.WorkSchedule;
 import com.timekeeping.reports.DtrReportDataLoader;
 import com.timekeeping.repositories.DTRDailyRepository;
 import com.timekeeping.repositories.DTRSegmentRepository;
+import com.timekeeping.repositories.WorkScheduleRepository;
 import com.timekeeping.services.DTRDailyService;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
@@ -16,6 +19,7 @@ import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,23 +32,30 @@ import java.io.OutputStream;
 import javax.imageio.ImageIO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class DTRDailyServiceImpl implements DTRDailyService {
+    private static final String SOURCE_MANUAL = "MANUAL";
+
     private final DTRDailyRepository dtrDailyRepository;
     private final DTRSegmentRepository dtrSegmentRepository;
+    private final WorkScheduleRepository workScheduleRepository;
     private final JdbcTemplate jdbc;
     private final DataSource dataSource;
 
     public DTRDailyServiceImpl(
             DTRDailyRepository dtrDailyRepository,
             DTRSegmentRepository dtrSegmentRepository,
+            WorkScheduleRepository workScheduleRepository,
             JdbcTemplate jdbc,
             DataSource dataSource) {
         this.dtrDailyRepository = dtrDailyRepository;
         this.dtrSegmentRepository = dtrSegmentRepository;
+        this.workScheduleRepository = workScheduleRepository;
         this.jdbc = jdbc;
         this.dataSource = dataSource;
     }
@@ -52,6 +63,12 @@ public class DTRDailyServiceImpl implements DTRDailyService {
     @Override
     @Transactional
     public DTRDailyDTO createOrUpdateDTRDaily(DTRDailyDTO dto) {
+        // This endpoint is used by Add Manual DTR. New records are always a
+        // protected MANUAL adjustment, even when the client omits sourceType.
+        if (dto.getDtrDailyId() == null) {
+            forceManualSource(dto.getSegments());
+        }
+
         if (dto.getEmployeeId() == null || dto.getWorkDate() == null) {
             DTRDaily entity = toEntity(dto);
             DTRDaily saved = dtrDailyRepository.save(entity);
@@ -85,6 +102,546 @@ public class DTRDailyServiceImpl implements DTRDailyService {
         return toDTO(saved);
     }
 
+    @Override
+    @Transactional
+    public DTRDailyDTO editDTRSegment(Long dtrSegmentId, DTRSegmentEditRequest request) {
+        if (dtrSegmentId == null) {
+            throw new IllegalArgumentException("DTR segment ID is required.");
+        }
+        if (request == null || request.getTimeIn() == null) {
+            throw new IllegalArgumentException("Time In is required.");
+        }
+
+        DTRSegment segment = dtrSegmentRepository.findById(dtrSegmentId)
+                .orElseThrow(() -> new IllegalArgumentException("DTR segment was not found."));
+        DTRDaily daily = segment.getDtrDaily();
+        if (daily == null) {
+            throw new IllegalStateException("DTR segment has no parent daily transaction.");
+        }
+
+        validateEditedTimes(request);
+
+        LocalDate workDate = daily.getWorkDate();
+        LocalDateTime actualIn = workDate.atTime(request.getTimeIn());
+        LocalDateTime actualBreakOut = resolveActualTime(workDate, request.getBreakOut(), actualIn);
+        LocalDateTime actualBreakIn = resolveActualTime(workDate, request.getBreakIn(), actualIn);
+        LocalDateTime actualOut = resolveActualTime(workDate, request.getTimeOut(), actualIn);
+
+        ShiftTemplate shift = resolveBestShiftTemplate(
+                daily.getEmployeeId(),
+                workDate,
+                segment.getSegmentNo(),
+                actualIn,
+                actualBreakOut,
+                actualBreakIn,
+                actualOut
+        );
+
+        boolean nonWorkingDuty = isDayOff(daily.getEmployeeId(), workDate)
+                || isNonWorkingHoliday(workDate);
+        ComputedMinutes minutes = computeEditedMinutes(
+                workDate,
+                actualIn,
+                actualBreakOut,
+                actualBreakIn,
+                actualOut,
+                shift,
+                nonWorkingDuty
+        );
+
+        segment.setTimeIn(request.getTimeIn());
+        segment.setBreakOut(request.getBreakOut());
+        segment.setBreakIn(request.getBreakIn());
+        segment.setTimeOut(request.getTimeOut());
+        segment.setWorkMinutes(minutes.workMinutes);
+        segment.setLateMinutes(minutes.lateMinutes);
+        segment.setUndertimeMinutes(minutes.undertimeMinutes);
+        segment.setOvertimeMinutes(minutes.overtimeMinutes);
+
+        // Any administrator edit is authoritative. Changing ADMS to MANUAL is
+        // what protects the corrected transaction from a future Search rebuild.
+        segment.setSourceType(SOURCE_MANUAL);
+        dtrSegmentRepository.save(segment);
+
+        daily.setAttendanceStatus(resolveAttendanceStatus(request));
+        recomputeDailyTotals(daily);
+        return toDTO(dtrDailyRepository.save(daily));
+    }
+
+    private void forceManualSource(List<DTRSegmentDTO> segments) {
+        if (segments == null) {
+            return;
+        }
+        for (DTRSegmentDTO segment : segments) {
+            if (segment != null) {
+                segment.setSourceType(SOURCE_MANUAL);
+            }
+        }
+    }
+
+    private void validateEditedTimes(DTRSegmentEditRequest request) {
+        LocalTime timeIn = request.getTimeIn();
+        LocalTime breakOut = request.getBreakOut();
+        LocalTime breakIn = request.getBreakIn();
+        LocalTime timeOut = request.getTimeOut();
+
+        if (breakIn != null && breakOut == null) {
+            throw new IllegalArgumentException("Break In requires Break Out.");
+        }
+        if (timeOut != null && ((breakOut == null) != (breakIn == null))) {
+            throw new IllegalArgumentException(
+                    "A completed segment must contain both Break Out and Break In, or neither."
+            );
+        }
+        if (timeOut != null && timeOut.equals(timeIn)) {
+            throw new IllegalArgumentException("Time Out cannot be the same as Time In.");
+        }
+
+        LocalDate validationDate = LocalDate.of(2000, 1, 1);
+        LocalDateTime in = validationDate.atTime(timeIn);
+        LocalDateTime bo = resolveActualTime(validationDate, breakOut, in);
+        LocalDateTime bi = resolveActualTime(validationDate, breakIn, in);
+        LocalDateTime out = resolveActualTime(validationDate, timeOut, in);
+
+        if (bo != null && bo.isBefore(in)) {
+            throw new IllegalArgumentException("Break Out must occur after Time In.");
+        }
+        if (bi != null && (bo == null || bi.isBefore(bo))) {
+            throw new IllegalArgumentException("Break In must occur after Break Out.");
+        }
+        if (out != null) {
+            LocalDateTime lastKnown = bi != null ? bi : (bo != null ? bo : in);
+            if (!out.isAfter(lastKnown)) {
+                throw new IllegalArgumentException(
+                        "Time order must be Time In → Break Out → Break In → Time Out."
+                );
+            }
+        }
+    }
+
+    private String resolveAttendanceStatus(DTRSegmentEditRequest request) {
+        if (request.getTimeOut() != null) {
+            return "Present";
+        }
+        if (request.getBreakOut() != null && request.getBreakIn() == null) {
+            return "ON BREAK";
+        }
+        return "IN PROGRESS";
+    }
+
+    private ComputedMinutes computeEditedMinutes(
+            LocalDate workDate,
+            LocalDateTime actualIn,
+            LocalDateTime actualBreakOut,
+            LocalDateTime actualBreakIn,
+            LocalDateTime actualOut,
+            ShiftTemplate shift,
+            boolean nonWorkingDuty) {
+
+        long workMinutes = 0;
+        if (actualOut != null) {
+            if (actualBreakOut != null && actualBreakIn != null) {
+                workMinutes = nonNegativeMinutes(actualIn, actualBreakOut)
+                        + nonNegativeMinutes(actualBreakIn, actualOut);
+            } else {
+                workMinutes = nonNegativeMinutes(actualIn, actualOut);
+            }
+        } else if (actualBreakOut != null) {
+            // For an incomplete transaction, only count work that is already known.
+            workMinutes = nonNegativeMinutes(actualIn, actualBreakOut);
+        }
+
+        if (nonWorkingDuty) {
+            int work = safeInt(workMinutes);
+            return new ComputedMinutes(work, 0, 0, work);
+        }
+
+        LocalDateTime baseScheduledStart = workDate.atTime(shift.timeIn);
+        LocalDateTime plannedStart = workDate.atTime(shift.effectiveTimeIn(workDate));
+        LocalDateTime plannedOut = resolveAfterStart(workDate, shift.timeOut, baseScheduledStart);
+        LocalDateTime plannedBreakOut = shift.breakOut == null
+                ? null
+                : resolveAfterStart(workDate, shift.breakOut, baseScheduledStart);
+        LocalDateTime plannedBreakIn = shift.breakIn == null
+                ? null
+                : resolveAfterStart(workDate, shift.breakIn, baseScheduledStart);
+
+        int late = nonNegativeMinutes(plannedStart, actualIn);
+        if (actualBreakIn != null && plannedBreakIn != null) {
+            late += nonNegativeMinutes(plannedBreakIn, actualBreakIn);
+        }
+
+        int undertime = 0;
+        if (actualBreakOut != null && plannedBreakOut != null) {
+            undertime += nonNegativeMinutes(actualBreakOut, plannedBreakOut);
+        }
+        if (actualOut != null) {
+            undertime += nonNegativeMinutes(actualOut, plannedOut);
+        }
+
+        int overtime = actualOut == null ? 0 : nonNegativeMinutes(plannedOut, actualOut);
+        return new ComputedMinutes(safeInt(workMinutes), late, undertime, overtime);
+    }
+
+    private ShiftTemplate resolveBestShiftTemplate(
+            String employeeId,
+            LocalDate workDate,
+            Integer segmentNo,
+            LocalDateTime actualIn,
+            LocalDateTime actualBreakOut,
+            LocalDateTime actualBreakIn,
+            LocalDateTime actualOut) {
+
+        List<ShiftTemplate> plotted = loadPlottedShiftTemplates(employeeId, workDate);
+        ShiftTemplate selected = chooseBestShift(
+                plotted, workDate, segmentNo, actualIn, actualBreakOut, actualBreakIn, actualOut
+        );
+        if (selected != null) {
+            return selected;
+        }
+
+        selected = chooseBestShift(
+                loadAllShiftTemplates(), workDate, segmentNo,
+                actualIn, actualBreakOut, actualBreakIn, actualOut
+        );
+        if (selected != null) {
+            return selected;
+        }
+
+        return ShiftTemplate.defaultShift();
+    }
+
+    private List<ShiftTemplate> loadPlottedShiftTemplates(String employeeId, LocalDate workDate) {
+        LocalDateTime from = workDate.atStartOfDay();
+        LocalDateTime to = workDate.plusDays(1).atStartOfDay().minusNanos(1);
+        Optional<List<WorkSchedule>> schedules = workScheduleRepository
+                .findByEmployeeIdAndWsDateTimeBetweenOrderByWsDateTimeAscWsIdAsc(employeeId, from, to);
+
+        if (schedules.isEmpty()) {
+            return List.of();
+        }
+
+        return schedules.get().stream()
+                .filter(row -> !Boolean.TRUE.equals(row.getIsDayOff()))
+                .filter(row -> row.getTsCode() != null && !row.getTsCode().isBlank())
+                .map(row -> loadShiftTemplate(row.getTsCode()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private ShiftTemplate chooseBestShift(
+            List<ShiftTemplate> shifts,
+            LocalDate workDate,
+            Integer segmentNo,
+            LocalDateTime actualIn,
+            LocalDateTime actualBreakOut,
+            LocalDateTime actualBreakIn,
+            LocalDateTime actualOut) {
+
+        if (shifts == null || shifts.isEmpty()) {
+            return null;
+        }
+
+        LocalDateTime actualEnd = actualOut != null
+                ? actualOut
+                : actualBreakIn != null
+                ? actualBreakIn
+                : actualBreakOut != null
+                ? actualBreakOut
+                : actualIn.plusMinutes(1);
+
+        ShiftTemplate exact = shifts.stream()
+                .filter(shift -> {
+                    LocalDateTime plannedStart = workDate.atTime(shift.timeIn);
+                    LocalDateTime plannedEnd = resolveAfterStart(workDate, shift.timeOut, plannedStart);
+                    boolean startMatches = plannedStart.toLocalTime().equals(actualIn.toLocalTime());
+                    boolean endMatches = actualOut == null
+                            || plannedEnd.toLocalTime().equals(actualOut.toLocalTime());
+                    return startMatches && endMatches;
+                })
+                .findFirst()
+                .orElse(null);
+        if (exact != null) {
+            return exact;
+        }
+
+        ShiftTemplate best = null;
+        long bestOverlap = 0;
+        long bestDistance = Long.MAX_VALUE;
+
+        for (ShiftTemplate shift : shifts) {
+            LocalDateTime plannedStart = workDate.atTime(shift.timeIn);
+            LocalDateTime plannedEnd = resolveAfterStart(workDate, shift.timeOut, plannedStart);
+            LocalDateTime overlapStart = actualIn.isAfter(plannedStart) ? actualIn : plannedStart;
+            LocalDateTime overlapEnd = actualEnd.isBefore(plannedEnd) ? actualEnd : plannedEnd;
+            long overlap = Math.max(0, ChronoUnit.MINUTES.between(overlapStart, overlapEnd));
+            long distance = Math.abs(ChronoUnit.MINUTES.between(plannedStart, actualIn));
+
+            if (overlap > bestOverlap || (overlap == bestOverlap && distance < bestDistance)) {
+                best = shift;
+                bestOverlap = overlap;
+                bestDistance = distance;
+            }
+        }
+
+        if (best != null && (bestOverlap > 0 || shifts.size() == 1)) {
+            return best;
+        }
+
+        if (segmentNo != null && segmentNo > 0 && segmentNo <= shifts.size()) {
+            return shifts.get(segmentNo - 1);
+        }
+
+        return shifts.stream()
+                .min(Comparator.comparingLong(shift -> {
+                    LocalDateTime plannedStart = workDate.atTime(shift.timeIn);
+                    return Math.abs(ChronoUnit.MINUTES.between(plannedStart, actualIn));
+                }))
+                .orElse(null);
+    }
+
+    private ShiftTemplate loadShiftTemplate(String tsCode) {
+        if (tsCode == null || tsCode.isBlank()) {
+            return null;
+        }
+
+        try {
+            String sql = "SELECT tsCode, timeIn, breakOut, breakIn, timeOut, tsFlexible, "
+                    + "monInTimeLimit, tueInTimeLimit, wedInTimeLimit, thuInTimeLimit, "
+                    + "friInTimeLimit, satInTimeLimit, sunInTimeLimit "
+                    + "FROM time_shift "
+                    + "WHERE LOWER(LTRIM(RTRIM(tsCode))) = LOWER(LTRIM(RTRIM(?)))";
+            List<Map<String, Object>> rows = jdbc.queryForList(sql, tsCode);
+            return rows.isEmpty() ? null : toShiftTemplate(rows.get(0));
+        } catch (DataAccessException exception) {
+            try {
+                String fallbackSql = "SELECT tsCode, timeIn, breakOut, breakIn, timeOut "
+                        + "FROM time_shift "
+                        + "WHERE LOWER(LTRIM(RTRIM(tsCode))) = LOWER(LTRIM(RTRIM(?)))";
+                List<Map<String, Object>> rows = jdbc.queryForList(fallbackSql, tsCode);
+                return rows.isEmpty() ? null : toShiftTemplate(rows.get(0));
+            } catch (DataAccessException ignored) {
+                return null;
+            }
+        }
+    }
+
+    private List<ShiftTemplate> loadAllShiftTemplates() {
+        try {
+            String sql = "SELECT tsCode, timeIn, breakOut, breakIn, timeOut, tsFlexible, "
+                    + "monInTimeLimit, tueInTimeLimit, wedInTimeLimit, thuInTimeLimit, "
+                    + "friInTimeLimit, satInTimeLimit, sunInTimeLimit FROM time_shift";
+            return jdbc.queryForList(sql).stream()
+                    .map(this::toShiftTemplate)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } catch (DataAccessException exception) {
+            try {
+                return jdbc.queryForList(
+                                "SELECT tsCode, timeIn, breakOut, breakIn, timeOut FROM time_shift"
+                        ).stream()
+                        .map(this::toShiftTemplate)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+            } catch (DataAccessException ignored) {
+                return List.of();
+            }
+        }
+    }
+
+    private ShiftTemplate toShiftTemplate(Map<String, Object> row) {
+        LocalTime timeIn = toLocalTime(row.get("timeIn"));
+        LocalTime timeOut = toLocalTime(row.get("timeOut"));
+        if (timeIn == null || timeOut == null) {
+            return null;
+        }
+
+        return new ShiftTemplate(
+                Objects.toString(row.get("tsCode"), ""),
+                timeIn,
+                toLocalTime(row.get("breakOut")),
+                toLocalTime(row.get("breakIn")),
+                timeOut,
+                isDbTrue(row.get("tsFlexible")),
+                toLocalTime(row.get("monInTimeLimit")),
+                toLocalTime(row.get("tueInTimeLimit")),
+                toLocalTime(row.get("wedInTimeLimit")),
+                toLocalTime(row.get("thuInTimeLimit")),
+                toLocalTime(row.get("friInTimeLimit")),
+                toLocalTime(row.get("satInTimeLimit")),
+                toLocalTime(row.get("sunInTimeLimit"))
+        );
+    }
+
+    private LocalTime toLocalTime(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof LocalTime localTime) {
+            return localTime;
+        }
+        if (value instanceof java.sql.Time sqlTime) {
+            return sqlTime.toLocalTime();
+        }
+        if (value instanceof java.sql.Timestamp timestamp) {
+            return timestamp.toLocalDateTime().toLocalTime();
+        }
+        String text = value.toString().trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(text.length() >= 8 ? text.substring(0, 8) : text);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private boolean isDayOff(String employeeId, LocalDate workDate) {
+        LocalDateTime from = workDate.atStartOfDay();
+        LocalDateTime to = workDate.plusDays(1).atStartOfDay().minusNanos(1);
+        Optional<List<WorkSchedule>> rows = workScheduleRepository
+                .findByEmployeeIdAndWsDateTimeBetweenOrderByWsDateTimeAscWsIdAsc(employeeId, from, to);
+        return rows.orElseGet(List::of).stream()
+                .anyMatch(row -> Boolean.TRUE.equals(row.getIsDayOff()));
+    }
+
+    private boolean isNonWorkingHoliday(LocalDate workDate) {
+        try {
+            String sql = "SELECT COUNT(*) FROM holiday "
+                    + "WHERE isActive = 1 "
+                    + "AND (isWorkingHoliday = 0 OR isWorkingHoliday IS NULL) "
+                    + "AND (holidayType IS NULL OR holidayType <> 'SPECIAL_WORKING') "
+                    + "AND CAST(CASE WHEN observedDate IS NOT NULL THEN observedDate ELSE holidayDate END AS DATE) = ?";
+            Integer count = jdbc.queryForObject(sql, Integer.class, java.sql.Date.valueOf(workDate));
+            return count != null && count > 0;
+        } catch (DataAccessException exception) {
+            return false;
+        }
+    }
+
+    private LocalDateTime resolveActualTime(LocalDate workDate, LocalTime time, LocalDateTime actualStart) {
+        if (time == null) {
+            return null;
+        }
+        LocalDateTime resolved = workDate.atTime(time);
+        if (resolved.isBefore(actualStart)) {
+            resolved = resolved.plusDays(1);
+        }
+        return resolved;
+    }
+
+    private LocalDateTime resolveAfterStart(LocalDate workDate, LocalTime time, LocalDateTime plannedStart) {
+        LocalDateTime resolved = workDate.atTime(time);
+        if (resolved.isBefore(plannedStart)) {
+            resolved = resolved.plusDays(1);
+        }
+        return resolved;
+    }
+
+    private int nonNegativeMinutes(LocalDateTime from, LocalDateTime to) {
+        if (from == null || to == null) {
+            return 0;
+        }
+        return (int) Math.max(0, ChronoUnit.MINUTES.between(from, to));
+    }
+
+    private int safeInt(long value) {
+        if (value <= 0) {
+            return 0;
+        }
+        return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
+    }
+
+    private static final class ComputedMinutes {
+        private final int workMinutes;
+        private final int lateMinutes;
+        private final int undertimeMinutes;
+        private final int overtimeMinutes;
+
+        private ComputedMinutes(int workMinutes, int lateMinutes, int undertimeMinutes, int overtimeMinutes) {
+            this.workMinutes = workMinutes;
+            this.lateMinutes = lateMinutes;
+            this.undertimeMinutes = undertimeMinutes;
+            this.overtimeMinutes = overtimeMinutes;
+        }
+    }
+
+    private static final class ShiftTemplate {
+        private final String tsCode;
+        private final LocalTime timeIn;
+        private final LocalTime breakOut;
+        private final LocalTime breakIn;
+        private final LocalTime timeOut;
+        private final boolean flexible;
+        private final LocalTime monLimit;
+        private final LocalTime tueLimit;
+        private final LocalTime wedLimit;
+        private final LocalTime thuLimit;
+        private final LocalTime friLimit;
+        private final LocalTime satLimit;
+        private final LocalTime sunLimit;
+
+        private ShiftTemplate(
+                String tsCode,
+                LocalTime timeIn,
+                LocalTime breakOut,
+                LocalTime breakIn,
+                LocalTime timeOut,
+                boolean flexible,
+                LocalTime monLimit,
+                LocalTime tueLimit,
+                LocalTime wedLimit,
+                LocalTime thuLimit,
+                LocalTime friLimit,
+                LocalTime satLimit,
+                LocalTime sunLimit) {
+            this.tsCode = tsCode;
+            this.timeIn = timeIn;
+            this.breakOut = breakOut;
+            this.breakIn = breakIn;
+            this.timeOut = timeOut;
+            this.flexible = flexible;
+            this.monLimit = monLimit;
+            this.tueLimit = tueLimit;
+            this.wedLimit = wedLimit;
+            this.thuLimit = thuLimit;
+            this.friLimit = friLimit;
+            this.satLimit = satLimit;
+            this.sunLimit = sunLimit;
+        }
+
+        private static ShiftTemplate defaultShift() {
+            return new ShiftTemplate(
+                    "DEFAULT_8_TO_5",
+                    LocalTime.of(8, 0),
+                    LocalTime.of(12, 0),
+                    LocalTime.of(13, 0),
+                    LocalTime.of(17, 0),
+                    false,
+                    null, null, null, null, null, null, null
+            );
+        }
+
+        private LocalTime effectiveTimeIn(LocalDate workDate) {
+            if (!flexible) {
+                return timeIn;
+            }
+            LocalTime limit;
+            switch (workDate.getDayOfWeek()) {
+                case MONDAY -> limit = monLimit;
+                case TUESDAY -> limit = tueLimit;
+                case WEDNESDAY -> limit = wedLimit;
+                case THURSDAY -> limit = thuLimit;
+                case FRIDAY -> limit = friLimit;
+                case SATURDAY -> limit = satLimit;
+                case SUNDAY -> limit = sunLimit;
+                default -> limit = null;
+            }
+            return limit == null ? timeIn : limit;
+        }
+    }
+
     private void appendSegmentsAndRecomputeTotals(DTRDaily daily, List<DTRSegmentDTO> incomingSegments) {
         if (incomingSegments == null || incomingSegments.isEmpty()) {
             return;
@@ -103,6 +660,7 @@ public class DTRDailyServiceImpl implements DTRDailyService {
         for (DTRSegmentDTO segmentDTO : incomingSegments) {
             DTRSegment segment = toSegmentEntity(segmentDTO, daily);
             segment.setDtrSegmentId(null);
+            segment.setSourceType(SOURCE_MANUAL);
             segment.setSegmentNo(nextSegmentNo++);
 
             DTRSegment savedSegment = dtrSegmentRepository.save(segment);
@@ -404,6 +962,7 @@ public class DTRDailyServiceImpl implements DTRDailyService {
         dto.setLateMinutes(segment.getLateMinutes());
         dto.setUndertimeMinutes(segment.getUndertimeMinutes());
         dto.setOvertimeMinutes(segment.getOvertimeMinutes());
+        dto.setSourceType(segment.getSourceType());
         return dto;
     }
 
@@ -436,6 +995,11 @@ public class DTRDailyServiceImpl implements DTRDailyService {
         entity.setLateMinutes(dto.getLateMinutes());
         entity.setUndertimeMinutes(dto.getUndertimeMinutes());
         entity.setOvertimeMinutes(dto.getOvertimeMinutes());
+        entity.setSourceType(
+                dto.getSourceType() == null || dto.getSourceType().isBlank()
+                        ? SOURCE_MANUAL
+                        : dto.getSourceType()
+        );
         return entity;
     }
 }

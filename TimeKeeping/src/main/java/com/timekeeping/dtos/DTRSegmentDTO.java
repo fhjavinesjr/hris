@@ -19,6 +19,7 @@ public class DTRSegmentDTO implements Serializable {
     private Integer lateMinutes;
     private Integer undertimeMinutes;
     private Integer overtimeMinutes;
+    private String sourceType;
 
     public DTRSegmentDTO() {
 
@@ -115,6 +116,15 @@ public class DTRSegmentDTO implements Serializable {
 
     public void setOvertimeMinutes(Integer overtimeMinutes) {
         this.overtimeMinutes = overtimeMinutes;
+    }
+
+
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType;
     }
 
     /**

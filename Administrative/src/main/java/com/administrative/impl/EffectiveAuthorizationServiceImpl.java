@@ -42,11 +42,13 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
         }
         try {
             JsonNode permission = objectMapper.readTree(ruleset.getPermissionData()).path(featureKey);
+            boolean canAccess = permission.path("canAccess").asBoolean(false);
             return new EffectiveFeaturePermissionResponse(featureKey, false,
-                    permission.path("canAccess").asBoolean(false),
+                    canAccess,
                     permission.path("canAdd").asBoolean(false),
                     permission.path("canEdit").asBoolean(false),
-                    permission.path("canDelete").asBoolean(false));
+                    permission.path("canDelete").asBoolean(false),
+                    canAccess && permission.path("canPublish").asBoolean(false));
         } catch (Exception exception) {
             return EffectiveFeaturePermissionResponse.denied(featureKey);
         }

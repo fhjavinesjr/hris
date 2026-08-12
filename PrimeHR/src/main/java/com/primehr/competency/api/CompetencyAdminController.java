@@ -79,6 +79,15 @@ public class CompetencyAdminController {
         return service.archiveCategory(agency(authentication), id, request, correlationId);
     }
 
+    @PostMapping("/competency-categories/{id}/publish")
+    public AdminCategoryResponse publishCategory(Authentication authentication,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
+            @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
+            @PathVariable("id") String id, @Valid @RequestBody PublishDefinitionRequest request) {
+        permission.require(PrimeHrAction.PUBLISH, token);
+        return service.publishCategory(agency(authentication), id, request, correlationId);
+    }
+
     @GetMapping("/proficiency-scales")
     public PageResponse<AdminScaleResponse> scales(Authentication authentication,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
@@ -127,6 +136,15 @@ public class CompetencyAdminController {
             @PathVariable("id") String id, @Valid @RequestBody DraftTransitionRequest request) {
         permission.require(PrimeHrAction.ARCHIVE, token);
         return service.archiveScale(agency(authentication), id, request, correlationId);
+    }
+
+    @PostMapping("/proficiency-scales/{id}/publish")
+    public AdminScaleResponse publishScale(Authentication authentication,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
+            @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
+            @PathVariable("id") String id, @Valid @RequestBody PublishDefinitionRequest request) {
+        permission.require(PrimeHrAction.PUBLISH, token);
+        return service.publishScale(agency(authentication), id, request, correlationId);
     }
 
     @PostMapping("/proficiency-scales/{scaleId}/levels")
@@ -208,6 +226,15 @@ public class CompetencyAdminController {
             @PathVariable("id") String id, @Valid @RequestBody DraftTransitionRequest request) {
         permission.require(PrimeHrAction.ARCHIVE, token);
         return service.archiveCompetency(agency(authentication), id, request, correlationId);
+    }
+
+    @PostMapping("/competencies/{id}/publish")
+    public AdminCompetencyResponse publishCompetency(Authentication authentication,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
+            @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
+            @PathVariable("id") String id, @Valid @RequestBody PublishDefinitionRequest request) {
+        permission.require(PrimeHrAction.PUBLISH, token);
+        return service.publishCompetency(agency(authentication), id, request, correlationId);
     }
 
     @PostMapping("/competencies/{competencyId}/indicators")

@@ -42,6 +42,7 @@ class PortableJdbcQueryTest {
         DTRDailyServiceImpl service = new DTRDailyServiceImpl(
                 dtrDailyRepository,
                 dtrSegmentRepository,
+                workScheduleRepository,
                 jdbc,
                 dataSource
         );

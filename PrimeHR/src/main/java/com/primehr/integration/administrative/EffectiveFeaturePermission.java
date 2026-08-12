@@ -6,6 +6,7 @@ public record EffectiveFeaturePermission(
         boolean canAccess,
         boolean canAdd,
         boolean canEdit,
-        boolean canDelete
+        boolean canDelete,
+        boolean canPublish
 ) {
 }

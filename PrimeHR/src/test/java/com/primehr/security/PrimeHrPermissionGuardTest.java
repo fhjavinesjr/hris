@@ -19,7 +19,7 @@ class PrimeHrPermissionGuardTest {
     void exactPersistedActionFlagIsRequired() {
         String token = "Bearer signed-token";
         when(client.resolve(token)).thenReturn(new EffectiveFeaturePermission(
-                "primehr.competency", false, true, false, true, false));
+                "primehr.competency", false, true, false, true, false, false));
 
         assertThatCode(() -> guard.require(PrimeHrAction.ACCESS, token)).doesNotThrowAnyException();
         assertThatCode(() -> guard.require(PrimeHrAction.EDIT, token)).doesNotThrowAnyException();
@@ -27,19 +27,33 @@ class PrimeHrPermissionGuardTest {
                 .isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> guard.require(PrimeHrAction.ARCHIVE, token))
                 .isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> guard.require(PrimeHrAction.PUBLISH, token))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
     void administratorBypassAndDependencyFailureAreHandledSafely() {
         String token = "Bearer signed-token";
         when(client.resolve(token)).thenReturn(new EffectiveFeaturePermission(
-                "primehr.competency", true, false, false, false, false));
+                "primehr.competency", true, false, false, false, false, false));
         assertThatCode(() -> guard.require(PrimeHrAction.ARCHIVE, token)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.require(PrimeHrAction.PUBLISH, token)).doesNotThrowAnyException();
 
         when(client.resolve(token)).thenThrow(new AuthorizationDependencyException("offline", null));
         assertThatThrownBy(() -> guard.require(PrimeHrAction.ACCESS, token))
                 .isInstanceOf(AuthorizationDependencyException.class);
         assertThatThrownBy(() -> guard.require(PrimeHrAction.ACCESS, "not-bearer"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void publishIsIndependentFromCrudPermissions() {
+        String token = "Bearer publisher-token";
+        when(client.resolve(token)).thenReturn(new EffectiveFeaturePermission(
+                "primehr.competency", false, true, false, false, false, true));
+
+        assertThatCode(() -> guard.require(PrimeHrAction.PUBLISH, token)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> guard.require(PrimeHrAction.EDIT, token))
                 .isInstanceOf(AccessDeniedException.class);
     }
 }

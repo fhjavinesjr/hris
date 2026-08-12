@@ -32,7 +32,7 @@ public class DTRSegment implements Serializable {
     @Column(name = "break_in")
     private LocalTime breakIn;
 
-    @Column(name = "time_out", nullable = false)
+    @Column(name = "time_out")
     private LocalTime timeOut;
 
     @Column(name = "work_minutes", nullable = false)
@@ -46,6 +46,9 @@ public class DTRSegment implements Serializable {
 
     @Column(name = "overtime_minutes", nullable = false)
     private Integer overtimeMinutes = 0;
+
+    @Column(name = "source_type", nullable = false, length = 30)
+    private String sourceType = "MANUAL";
 
     // Getters and setters
     public Long getDtrSegmentId() { return dtrSegmentId; }
@@ -70,6 +73,8 @@ public class DTRSegment implements Serializable {
     public void setUndertimeMinutes(Integer undertimeMinutes) { this.undertimeMinutes = undertimeMinutes; }
     public Integer getOvertimeMinutes() { return overtimeMinutes; }
     public void setOvertimeMinutes(Integer overtimeMinutes) { this.overtimeMinutes = overtimeMinutes; }
+    public String getSourceType() { return sourceType; }
+    public void setSourceType(String sourceType) { this.sourceType = sourceType; }
 
     /**
      * Computed: no DB column needed.

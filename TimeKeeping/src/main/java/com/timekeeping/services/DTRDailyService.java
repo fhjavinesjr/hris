@@ -1,6 +1,7 @@
 package com.timekeeping.services;
 
 import com.timekeeping.dtos.DTRDailyDTO;
+import com.timekeeping.dtos.DTRSegmentEditRequest;
 import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 public interface DTRDailyService {
     DTRDailyDTO createOrUpdateDTRDaily(DTRDailyDTO dtrDailyDTO);
+    DTRDailyDTO editDTRSegment(Long dtrSegmentId, DTRSegmentEditRequest request);
     List<DTRDailyDTO> getEmployeeDTRDaily(String employeeId, LocalDateTime fromDate, LocalDateTime toDate);
     
     /**

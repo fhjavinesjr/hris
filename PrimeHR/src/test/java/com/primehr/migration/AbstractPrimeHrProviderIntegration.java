@@ -1,5 +1,16 @@
 package com.primehr.migration;
 
+import com.primehr.competency.api.AdminCategoryResponse;
+import com.primehr.competency.api.AdminCompetencyResponse;
+import com.primehr.competency.api.AdminLevelResponse;
+import com.primehr.competency.api.AdminScaleResponse;
+import com.primehr.competency.api.DraftCategoryRequest;
+import com.primehr.competency.api.DraftCompetencyRequest;
+import com.primehr.competency.api.DraftIndicatorRequest;
+import com.primehr.competency.api.DraftLevelRequest;
+import com.primehr.competency.api.DraftScaleRequest;
+import com.primehr.competency.api.PublishDefinitionRequest;
+import com.primehr.competency.application.CompetencyAdminService;
 import com.primehr.competency.domain.BehavioralIndicator;
 import com.primehr.competency.domain.Competency;
 import com.primehr.competency.domain.CompetencyCategory;
@@ -20,6 +31,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
@@ -49,6 +62,9 @@ abstract class AbstractPrimeHrProviderIntegration {
             "ix_prime_level_agency_scale", "ix_prime_competency_filter", "ix_prime_indicator_lookup");
     private static final Set<String> PHASE_1B_INDEXES = Set.of(
             "ix_prime_audit_aggregate", "ix_prime_audit_actor_time");
+    private static final Set<String> PHASE_1C_INDEXES = Set.of(
+            "ix_prime_category_publication_chain", "ix_prime_scale_publication_chain",
+            "ix_prime_competency_publication_chain");
 
     @Autowired private Flyway flyway;
     @Autowired private DataSource dataSource;
@@ -57,19 +73,20 @@ abstract class AbstractPrimeHrProviderIntegration {
     @Autowired private ProficiencyScaleRepository scaleRepository;
     @Autowired private CompetencyRepository competencyRepository;
     @Autowired private BehavioralIndicatorRepository indicatorRepository;
+    @Autowired private CompetencyAdminService adminService;
     @Value("${spring.flyway.default-schema}") private String databaseSchema;
 
     @Test
-    void flywayV1AndV2CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
+    void flywayV1ThroughV3CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
         assertThat(flyway.info().current()).isNotNull();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("2");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
 
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
             assertThat(readNames(metadata.getTables(connection.getCatalog(), databaseSchema, "%", new String[]{"TABLE"}),
                     "TABLE_NAME")).containsAll(EXPECTED_TABLES);
             assertThat(indexNames(metadata, connection)).containsAll(EXPECTED_INDEXES)
-                    .containsAll(PHASE_1B_INDEXES);
+                    .containsAll(PHASE_1B_INDEXES).containsAll(PHASE_1C_INDEXES);
 
             assertThat(importedKeyCount(metadata, connection, "prime_proficiency_level")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "prime_competency")).isGreaterThanOrEqualTo(2);
@@ -116,6 +133,77 @@ abstract class AbstractPrimeHrProviderIntegration {
 
         assertThatThrownBy(() -> fixture("AGENCY-A", "CORE-C", "COMM", "Duplicate", true, null, null))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    @Transactional
+    void controlledPublicationPersistsCompleteAggregateAndServerActorAudit() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("provider-publisher", null, List.of()));
+        try {
+            String code = "PUB" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+            AdminCategoryResponse draft = adminService.createCategory("PROVIDER-AGENCY",
+                    new DraftCategoryRequest(code, "Provider publication", null, 1,
+                            LocalDate.of(2028, 1, 1), null, null), "provider-create");
+            AdminCategoryResponse published = adminService.publishCategory("PROVIDER-AGENCY", draft.id(),
+                    new PublishDefinitionRequest(draft.recordVersion(), "Provider publication gate"),
+                    "provider-publish");
+
+            AdminScaleResponse scale = adminService.createScale("PROVIDER-AGENCY",
+                    new DraftScaleRequest("S" + code, "Provider scale", null, 1,
+                            LocalDate.of(2028, 1, 1), null, null), "provider-scale-create");
+            AdminLevelResponse level = adminService.createLevel("PROVIDER-AGENCY", scale.id(),
+                    new DraftLevelRequest("L1", "Level 1", 1, null,
+                            LocalDate.of(2028, 1, 1), null, null), "provider-level-create");
+            scale = adminService.listScales("PROVIDER-AGENCY", com.primehr.competency.domain.DefinitionStatus.DRAFT,
+                    scale.code(), null, 0, 20).content().get(0);
+            scale = adminService.publishScale("PROVIDER-AGENCY", scale.id(),
+                    new PublishDefinitionRequest(scale.recordVersion(), "Provider scale publication gate"),
+                    "provider-scale-publish");
+
+            AdminCompetencyResponse competency = adminService.createCompetency("PROVIDER-AGENCY",
+                    new DraftCompetencyRequest("K" + code, "Provider competency", "Provider definition",
+                            published.id(), scale.id(), 1, LocalDate.of(2028, 1, 1), null, null),
+                    "provider-competency-create");
+            adminService.createIndicator("PROVIDER-AGENCY", competency.id(),
+                    new DraftIndicatorRequest(level.id(), "Provider behavior", null, 1,
+                            LocalDate.of(2028, 1, 1), null, null), "provider-indicator-create");
+            competency = adminService.listCompetencies("PROVIDER-AGENCY",
+                    com.primehr.competency.domain.DefinitionStatus.DRAFT, null, competency.code(),
+                    null, 0, 20).content().get(0);
+            competency = adminService.publishCompetency("PROVIDER-AGENCY", competency.id(),
+                    new PublishDefinitionRequest(competency.recordVersion(),
+                            "Provider competency publication gate"), "provider-competency-publish");
+
+            assertThat(published.status()).isEqualTo("ACTIVE");
+            assertThat(scale.status()).isEqualTo("ACTIVE");
+            assertThat(competency.status()).isEqualTo("ACTIVE");
+            assertThat(published.publishedAt()).isNotNull();
+            assertThat(published.publishedBy()).isEqualTo("provider-publisher");
+            assertThat(categoryRepository.findByIdAndAgencyId(published.id(), "PROVIDER-AGENCY").orElseThrow())
+                    .satisfies(stored -> {
+                        assertThat(stored.getPublishedAt()).isNotNull();
+                        assertThat(stored.getPublishedBy()).isEqualTo("provider-publisher");
+                    });
+            assertThat(adminService.listAuditEvents("PROVIDER-AGENCY", "COMPETENCY_CATEGORY",
+                            published.id(), 0, 20).content())
+                    .filteredOn(event -> event.action().equals("PUBLISH_DRAFT"))
+                    .singleElement()
+                    .satisfies(event -> {
+                        assertThat(event.actor()).isEqualTo("provider-publisher");
+                        assertThat(event.reason()).isEqualTo("Provider publication gate");
+                    });
+            assertThat(adminService.listAuditEvents("PROVIDER-AGENCY", "COMPETENCY",
+                            competency.id(), 0, 20).content())
+                    .filteredOn(event -> event.action().equals("PUBLISH_DRAFT"))
+                    .singleElement()
+                    .satisfies(event -> {
+                        assertThat(event.actor()).isEqualTo("provider-publisher");
+                        assertThat(event.reason()).isEqualTo("Provider competency publication gate");
+                    });
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     @ParameterizedTest

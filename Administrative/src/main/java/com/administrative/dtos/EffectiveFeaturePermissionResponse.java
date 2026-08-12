@@ -6,13 +6,14 @@ public record EffectiveFeaturePermissionResponse(
         boolean canAccess,
         boolean canAdd,
         boolean canEdit,
-        boolean canDelete
+        boolean canDelete,
+        boolean canPublish
 ) {
     public static EffectiveFeaturePermissionResponse denied(String featureKey) {
-        return new EffectiveFeaturePermissionResponse(featureKey, false, false, false, false, false);
+        return new EffectiveFeaturePermissionResponse(featureKey, false, false, false, false, false, false);
     }
 
     public static EffectiveFeaturePermissionResponse administrator(String featureKey) {
-        return new EffectiveFeaturePermissionResponse(featureKey, true, true, true, true, true);
+        return new EffectiveFeaturePermissionResponse(featureKey, true, true, true, true, true, true);
     }
 }

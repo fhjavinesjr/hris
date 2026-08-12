@@ -6,6 +6,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import com.primehr.integration.administrative.AuthorizationDependencyException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -40,6 +41,13 @@ public class PrimeHrExceptionHandler {
     public ResponseEntity<ApiErrorResponse> conflict(Exception exception, HttpServletRequest request) {
         return error(HttpStatus.CONFLICT, "OPTIMISTIC_LOCK_CONFLICT", request,
                 List.of(exception.getMessage() == null ? "The record was changed by another request" : exception.getMessage()));
+    }
+
+    @ExceptionHandler({PublicationConflictException.class, PessimisticLockingFailureException.class})
+    public ResponseEntity<ApiErrorResponse> publicationConflict(Exception exception, HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, "PUBLICATION_CONFLICT", request,
+                List.of(exception.getMessage() == null ? "The definition could not be published concurrently"
+                        : exception.getMessage()));
     }
 
     @ExceptionHandler(IllegalLifecycleTransitionException.class)

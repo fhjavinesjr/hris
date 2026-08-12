@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: ISOFT PRIME-HRM Competency API
-  version: 1.1.0-phase-1b
-  description: Phase 1A reads and Phase 1B draft administration. All operations require an ISOFT employee JWT and server-resolved agency scope; admin actions are authorized by Administrative feature permissions.
+  version: 1.2.0-phase-1c
+  description: Phase 1A reads, Phase 1B draft administration, and Phase 1C controlled direct publishing. All operations require an ISOFT employee JWT and server-resolved agency scope; admin actions are authorized by independent Administrative feature permissions, including canPublish for publication.
 servers:
   - url: /api/primehr/v1
 security:
@@ -126,6 +126,12 @@ paths:
       parameters: [{$ref: '#/components/parameters/Id'}]
       requestBody: {$ref: '#/components/requestBodies/Transition'}
       responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/competency-categories/{id}/publish:
+    post:
+      operationId: publishCompetencyCategoryDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Publish'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/AuthorizationUnavailable'}}
   /admin/proficiency-scales:
     get:
       operationId: adminListProficiencyScales
@@ -153,6 +159,12 @@ paths:
       parameters: [{$ref: '#/components/parameters/Id'}]
       requestBody: {$ref: '#/components/requestBodies/Transition'}
       responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/proficiency-scales/{id}/publish:
+    post:
+      operationId: publishProficiencyScaleDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Publish'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/AuthorizationUnavailable'}}
   /admin/proficiency-scales/{scaleId}/levels:
     post:
       operationId: createProficiencyLevelDraft
@@ -198,6 +210,12 @@ paths:
       parameters: [{$ref: '#/components/parameters/Id'}]
       requestBody: {$ref: '#/components/requestBodies/Transition'}
       responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /admin/competencies/{id}/publish:
+    post:
+      operationId: publishCompetencyDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Publish'}
+      responses: {'200': {$ref: '#/components/responses/AdminRecord'}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/AuthorizationUnavailable'}}
   /admin/competencies/{competencyId}/indicators:
     post:
       operationId: createBehavioralIndicatorDraft
@@ -257,6 +275,7 @@ components:
     CompetencyDraft: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CompetencyDraftRequest'}}}}
     IndicatorDraft: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/IndicatorDraftRequest'}}}}
     Transition: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TransitionRequest'}}}}
+    Publish: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PublishDefinitionRequest'}}}}
   responses:
     BadRequest:
       description: Request validation failed
@@ -270,6 +289,11 @@ components:
           schema: {$ref: '#/components/schemas/ApiError'}
     Forbidden:
       description: Authenticated identity lacks Competency read permission or a trusted agency context
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    NotFound:
+      description: Agency-scoped definition was not found
       content:
         application/json:
           schema: {$ref: '#/components/schemas/ApiError'}
@@ -304,11 +328,15 @@ components:
       type: object
       required: [recordVersion, reason]
       properties: {recordVersion: {type: integer, format: int64, minimum: 0}, reason: {type: string, minLength: 1, maxLength: 1000}}
+    PublishDefinitionRequest:
+      type: object
+      required: [recordVersion, reason]
+      properties: {recordVersion: {type: integer, format: int64, minimum: 0}, reason: {type: string, minLength: 1, maxLength: 1000}}
     AdminRecord:
       type: object
       required: [id, status, definitionVersion, recordVersion]
       additionalProperties: true
-      properties: {id: {type: string}, status: {type: string, enum: [DRAFT, ACTIVE, ARCHIVED]}, definitionVersion: {type: integer, minimum: 1}, supersedesId: {type: string, nullable: true}, recordVersion: {type: integer, format: int64, minimum: 0}}
+      properties: {id: {type: string}, status: {type: string, enum: [DRAFT, ACTIVE, ARCHIVED]}, definitionVersion: {type: integer, minimum: 1}, supersedesId: {type: string, nullable: true}, recordVersion: {type: integer, format: int64, minimum: 0}, publishedAt: {type: string, format: date-time, nullable: true}, publishedBy: {type: string, maxLength: 100, nullable: true}}
     AdminPage:
       type: object
       required: [content, page, size, totalElements, totalPages, first, last]

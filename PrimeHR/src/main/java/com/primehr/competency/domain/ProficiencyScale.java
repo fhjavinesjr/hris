@@ -10,6 +10,7 @@ import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +33,12 @@ public class ProficiencyScale extends AgencyAuditableEntity {
 
     @Column(name = "supersedes_id", length = 36)
     private String supersedesId;
+
+    @Column(name = "published_at")
+    private Instant publishedAt;
+
+    @Column(name = "published_by", length = 100)
+    private String publishedBy;
 
     @Column(name = "code", length = 50, nullable = false)
     private String code;
@@ -96,6 +103,25 @@ public class ProficiencyScale extends AgencyAuditableEntity {
         setDefinitionActive(false);
     }
 
+    public void publish(String actor, Instant publishedAt) {
+        requireStatus(DefinitionStatus.DRAFT);
+        if (getEffectiveFrom() == null) {
+            throw new IllegalArgumentException("effectiveFrom is required before publication");
+        }
+        this.publishedBy = requireText(actor, "publisher");
+        this.publishedAt = java.util.Objects.requireNonNull(publishedAt, "publishedAt");
+        this.status = DefinitionStatus.ACTIVE.name();
+        setDefinitionActive(true);
+    }
+
+    public void closeEffectivePeriodBefore(LocalDate successorFrom) {
+        requireStatus(DefinitionStatus.ACTIVE);
+        LocalDate newEnd = java.util.Objects.requireNonNull(successorFrom, "successorFrom").minusDays(1);
+        if (getEffectiveTo() == null || !getEffectiveTo().isBefore(successorFrom)) {
+            updateDefinitionFields(getDisplayOrder(), getEffectiveFrom(), newEnd);
+        }
+    }
+
     public boolean isDraft() { return DefinitionStatus.DRAFT.name().equals(status); }
 
     private void requireStatus(DefinitionStatus expected) {
@@ -120,4 +146,6 @@ public class ProficiencyScale extends AgencyAuditableEntity {
     public DefinitionStatus getStatus() { return DefinitionStatus.valueOf(status); }
     public int getDefinitionVersion() { return definitionVersion; }
     public String getSupersedesId() { return supersedesId; }
+    public Instant getPublishedAt() { return publishedAt; }
+    public String getPublishedBy() { return publishedBy; }
 }
