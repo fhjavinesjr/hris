@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: ISOFT PRIME-HRM Competency API
-  version: 1.2.0-phase-1c
-  description: Phase 1A reads, Phase 1B draft administration, and Phase 1C controlled direct publishing. All operations require an ISOFT employee JWT and server-resolved agency scope; admin actions are authorized by independent Administrative feature permissions, including canPublish for publication.
+  title: ISOFT PRIME-HRM API
+  version: 2.2.0-phase-2.2
+  description: Phase 1 competency foundation and Phase 2.1 position-profile draft administration. All operations require an ISOFT employee JWT and server-resolved agency scope. Position-profile commands use the independent primehr.position-profile permission and validate authoritative targets through Administrative.
 servers:
   - url: /api/primehr/v1
 security:
@@ -239,6 +239,164 @@ paths:
       operationId: listCompetencyAuditEvents
       parameters: [{$ref: '#/components/parameters/AggregateType'}, {$ref: '#/components/parameters/AggregateId'}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
       responses: {'200': {$ref: '#/components/responses/AdminPage'}, '503': {$ref: '#/components/responses/AuthorizationUnavailable'}}
+  /admin/position-profiles:
+    get:
+      operationId: listPositionProfiles
+      parameters:
+        - name: status
+          in: query
+          schema: {type: string, enum: [DRAFT, SUBMITTED, ACTIVE, ARCHIVED]}
+        - name: targetType
+          in: query
+          schema: {$ref: '#/components/schemas/PositionTargetType'}
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfilePage'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/AuthorizationUnavailable'}
+    post:
+      operationId: createPositionProfileDraft
+      requestBody: {$ref: '#/components/requestBodies/CreatePositionProfile'}
+      responses:
+        '201': {$ref: '#/components/responses/PositionProfileRecord'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/PositionTargetUnavailable'}
+  /admin/position-profiles/{id}:
+    get:
+      operationId: getPositionProfile
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfileRecord'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      operationId: updatePositionProfileDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/UpdatePositionProfile'}
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfileRecord'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/PositionTargetUnavailable'}
+  /admin/position-profiles/{id}/versions:
+    post:
+      operationId: createPositionProfileSuccessorDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses:
+        '201': {$ref: '#/components/responses/PositionProfileRecord'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/PositionTargetUnavailable'}
+  /admin/position-profiles/{id}/archive:
+    post:
+      operationId: archivePositionProfileDraft
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfileRecord'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /admin/position-profiles/{id}/requirements:
+    post:
+      operationId: addPositionProfileRequirement
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/CreatePositionRequirement'}
+      responses:
+        '201': {$ref: '#/components/responses/PositionProfileRecord'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /admin/position-profiles/{id}/requirements/{requirementId}:
+    put:
+      operationId: updatePositionProfileRequirement
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/RequirementId'
+      requestBody: {$ref: '#/components/requestBodies/UpdatePositionRequirement'}
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfileRecord'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /admin/position-profiles/{id}/requirements/{requirementId}/archive:
+    post:
+      operationId: archivePositionProfileRequirement
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/RequirementId'
+      requestBody: {$ref: '#/components/requestBodies/RequirementTransition'}
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfileRecord'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /admin/position-profiles/{id}/submit:
+    post:
+      operationId: submitPositionProfile
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/SubmitPositionProfile'}
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfileRecord'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/PositionTargetUnavailable'}
+  /admin/position-profiles/{id}/return:
+    post:
+      operationId: returnPositionProfileSubmission
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/Transition'}
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfileRecord'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /admin/position-profiles/{id}/approve:
+    post:
+      operationId: approvePositionProfile
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {$ref: '#/components/requestBodies/ApprovePositionProfile'}
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfileRecord'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/PositionTargetUnavailable'}
+  /admin/position-profiles/{id}/audit-events:
+    get:
+      operationId: listPositionProfileAuditEvents
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200': {$ref: '#/components/responses/AuditEventPage'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /admin/position-profiles/resolve:
+    get:
+      operationId: resolveEffectivePositionProfile
+      parameters:
+        - {name: jobPositionId, in: query, required: true, schema: {type: integer, format: int64, minimum: 1}}
+        - {name: plantillaId, in: query, required: false, schema: {type: integer, format: int64, minimum: 1}}
+        - {name: asOf, in: query, required: true, schema: {type: string, format: date}}
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfileResolution'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /admin/position-profiles/compare:
+    get:
+      operationId: comparePositionProfileVersions
+      parameters:
+        - {name: leftProfileId, in: query, required: true, schema: {type: string, maxLength: 36}}
+        - {name: rightProfileId, in: query, required: true, schema: {type: string, maxLength: 36}}
+      responses:
+        '200': {$ref: '#/components/responses/PositionProfileComparison'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
 components:
   securitySchemes:
     bearerAuth:
@@ -266,6 +424,7 @@ components:
     LevelId: {name: levelId, in: path, required: true, schema: {type: string, maxLength: 36}}
     CompetencyId: {name: competencyId, in: path, required: true, schema: {type: string, maxLength: 36}}
     IndicatorId: {name: indicatorId, in: path, required: true, schema: {type: string, maxLength: 36}}
+    RequirementId: {name: requirementId, in: path, required: true, schema: {type: string, maxLength: 36}}
     AggregateType: {name: aggregateType, in: query, required: true, schema: {type: string}}
     AggregateId: {name: aggregateId, in: query, required: true, schema: {type: string, maxLength: 36}}
   requestBodies:
@@ -276,6 +435,13 @@ components:
     IndicatorDraft: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/IndicatorDraftRequest'}}}}
     Transition: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TransitionRequest'}}}}
     Publish: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PublishDefinitionRequest'}}}}
+    CreatePositionProfile: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreatePositionProfileRequest'}}}}
+    UpdatePositionProfile: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/UpdatePositionProfileRequest'}}}}
+    CreatePositionRequirement: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreatePositionRequirementRequest'}}}}
+    UpdatePositionRequirement: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/UpdatePositionRequirementRequest'}}}}
+    RequirementTransition: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PositionRequirementTransitionRequest'}}}}
+    SubmitPositionProfile: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/SubmitPositionProfileRequest'}}}}
+    ApprovePositionProfile: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ApprovePositionProfileRequest'}}}}
   responses:
     BadRequest:
       description: Request validation failed
@@ -299,8 +465,14 @@ components:
           schema: {$ref: '#/components/schemas/ApiError'}
     Conflict: {description: Optimistic conflict or illegal lifecycle transition, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     AuthorizationUnavailable: {description: Administrative authorization could not be verified, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    PositionTargetUnavailable: {description: The authoritative Administrative position target could not be verified, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     AdminRecord: {description: Agency-scoped administration record, content: {application/json: {schema: {$ref: '#/components/schemas/AdminRecord'}}}}
     AdminPage: {description: Page of agency-scoped administration records, content: {application/json: {schema: {$ref: '#/components/schemas/AdminPage'}}}}
+    PositionProfileRecord: {description: Versioned position competency profile, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfile'}}}}
+    PositionProfilePage: {description: Page of position competency profile versions, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfilePage'}}}}
+    PositionProfileResolution: {description: Effective profile selected by Plantilla-then-Job Position precedence, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfileResolution'}}}}
+    PositionProfileComparison: {description: Exact-version requirement comparison, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfileComparison'}}}}
+    AuditEventPage: {description: Page of append-only position-profile audit events, content: {application/json: {schema: {$ref: '#/components/schemas/AuditEventPage'}}}}
   schemas:
     DraftBase:
       type: object
@@ -341,6 +513,210 @@ components:
       type: object
       required: [content, page, size, totalElements, totalPages, first, last]
       properties: {content: {type: array, items: {$ref: '#/components/schemas/AdminRecord'}}, page: {type: integer}, size: {type: integer}, totalElements: {type: integer, format: int64}, totalPages: {type: integer}, first: {type: boolean}, last: {type: boolean}}
+    PositionTargetType: {type: string, enum: [JOB_POSITION, PLANTILLA]}
+    RequirementClassification: {type: string, enum: [MANDATORY, DESIRABLE]}
+    CreatePositionProfileRequest:
+      type: object
+      required: [targetType, targetId, name]
+      properties:
+        targetType: {$ref: '#/components/schemas/PositionTargetType'}
+        targetId: {type: integer, format: int64, minimum: 1}
+        name: {type: string, minLength: 1, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        effectiveFrom: {type: string, format: date, nullable: true}
+        effectiveTo: {type: string, format: date, nullable: true}
+        recordVersion: {type: integer, format: int64, nullable: true, description: Must be omitted on create.}
+    UpdatePositionProfileRequest:
+      type: object
+      required: [name, recordVersion]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        effectiveFrom: {type: string, format: date, nullable: true}
+        effectiveTo: {type: string, format: date, nullable: true}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    CreatePositionRequirementRequest:
+      type: object
+      required: [competencyVersionId, requiredProficiencyLevelId, classification, displayOrder, profileRecordVersion]
+      properties:
+        competencyVersionId: {type: string, maxLength: 36}
+        requiredProficiencyLevelId: {type: string, maxLength: 36}
+        classification: {$ref: '#/components/schemas/RequirementClassification'}
+        criticalityCode: {type: string, maxLength: 50, nullable: true}
+        remarks: {type: string, maxLength: 2000, nullable: true}
+        displayOrder: {type: integer, minimum: 0}
+        profileRecordVersion: {type: integer, format: int64, minimum: 0}
+    UpdatePositionRequirementRequest:
+      type: object
+      required: [requiredProficiencyLevelId, classification, displayOrder, recordVersion, profileRecordVersion]
+      properties:
+        requiredProficiencyLevelId: {type: string, maxLength: 36}
+        classification: {$ref: '#/components/schemas/RequirementClassification'}
+        criticalityCode: {type: string, maxLength: 50, nullable: true}
+        remarks: {type: string, maxLength: 2000, nullable: true}
+        displayOrder: {type: integer, minimum: 0}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        profileRecordVersion: {type: integer, format: int64, minimum: 0}
+    PositionRequirementTransitionRequest:
+      type: object
+      required: [recordVersion, profileRecordVersion, reason]
+      properties:
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        profileRecordVersion: {type: integer, format: int64, minimum: 0}
+        reason: {type: string, minLength: 1, maxLength: 1000}
+    SubmitPositionProfileRequest:
+      type: object
+      required: [recordVersion]
+      properties:
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    ApprovePositionProfileRequest:
+      type: object
+      required: [recordVersion]
+      properties:
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        reason: {type: string, maxLength: 1000, nullable: true, description: Required for administrator self-approval.}
+    PositionTargetSnapshot:
+      type: object
+      required: [type, targetId, jobPositionId, jobPositionName, sourceFingerprint, capturedAt]
+      properties:
+        type: {$ref: '#/components/schemas/PositionTargetType'}
+        targetId: {type: integer, format: int64}
+        jobPositionId: {type: integer, format: int64}
+        jobPositionName: {type: string, maxLength: 200}
+        salaryGrade: {type: integer, format: int64, nullable: true}
+        salaryStep: {type: integer, format: int64, nullable: true}
+        plantillaId: {type: integer, format: int64, nullable: true}
+        plantillaName: {type: string, maxLength: 200, nullable: true}
+        sourceFingerprint: {type: string, minLength: 64, maxLength: 64}
+        capturedAt: {type: string, format: date-time}
+    PositionRequirement:
+      type: object
+      required: [id, competencyVersionId, competencyCode, competencyName, competencyDefinitionVersion, requiredProficiencyLevelId, requiredProficiencyLevelCode, requiredProficiencyLevelLabel, classification, active, displayOrder, recordVersion]
+      properties:
+        id: {type: string, maxLength: 36}
+        competencyVersionId: {type: string, maxLength: 36}
+        competencyCode: {type: string, maxLength: 50}
+        competencyName: {type: string, maxLength: 200}
+        competencyDefinitionVersion: {type: integer, minimum: 1}
+        requiredProficiencyLevelId: {type: string, maxLength: 36}
+        requiredProficiencyLevelCode: {type: string, maxLength: 50}
+        requiredProficiencyLevelLabel: {type: string, maxLength: 150}
+        classification: {$ref: '#/components/schemas/RequirementClassification'}
+        criticalityCode: {type: string, maxLength: 50, nullable: true}
+        remarks: {type: string, maxLength: 2000, nullable: true}
+        active: {type: boolean}
+        displayOrder: {type: integer, minimum: 0}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    PositionProfile:
+      type: object
+      required: [id, name, status, definitionVersion, recordVersion, contentRevision, targetSnapshot, requirements]
+      properties:
+        id: {type: string, maxLength: 36}
+        name: {type: string, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        status: {type: string, enum: [DRAFT, SUBMITTED, ACTIVE, ARCHIVED]}
+        definitionVersion: {type: integer, minimum: 1}
+        supersedesId: {type: string, maxLength: 36, nullable: true}
+        effectiveFrom: {type: string, format: date, nullable: true}
+        effectiveTo: {type: string, format: date, nullable: true}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        contentRevision: {type: integer, format: int64, minimum: 0}
+        submittedBy: {type: string, maxLength: 100, nullable: true}
+        submittedAt: {type: string, format: date-time, nullable: true}
+        approvedBy: {type: string, maxLength: 100, nullable: true}
+        approvedAt: {type: string, format: date-time, nullable: true}
+        targetSnapshot: {$ref: '#/components/schemas/PositionTargetSnapshot'}
+        requirements: {type: array, items: {$ref: '#/components/schemas/PositionRequirement'} }
+    PositionProfileSummary:
+      type: object
+      required: [id, name, targetType, jobPositionId, targetDisplayName, status, definitionVersion, recordVersion]
+      properties:
+        id: {type: string, maxLength: 36}
+        name: {type: string, maxLength: 200}
+        targetType: {$ref: '#/components/schemas/PositionTargetType'}
+        jobPositionId: {type: integer, format: int64}
+        plantillaId: {type: integer, format: int64, nullable: true}
+        targetDisplayName: {type: string}
+        status: {type: string, enum: [DRAFT, SUBMITTED, ACTIVE, ARCHIVED]}
+        definitionVersion: {type: integer, minimum: 1}
+        supersedesId: {type: string, maxLength: 36, nullable: true}
+        effectiveFrom: {type: string, format: date, nullable: true}
+        effectiveTo: {type: string, format: date, nullable: true}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    PositionProfilePage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content: {type: array, items: {$ref: '#/components/schemas/PositionProfileSummary'} }
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1}
+        totalElements: {type: integer, format: int64, minimum: 0}
+        totalPages: {type: integer, minimum: 0}
+        first: {type: boolean}
+        last: {type: boolean}
+    PositionProfileResolution:
+      type: object
+      required: [asOf, resolvedBy, profile]
+      properties:
+        asOf: {type: string, format: date}
+        resolvedBy: {$ref: '#/components/schemas/PositionTargetType'}
+        profile: {$ref: '#/components/schemas/PositionProfile'}
+    PositionProfileComparisonItem:
+      type: object
+      required: [change, competencyVersionId, competencyCode, competencyName]
+      properties:
+        change: {type: string, enum: [ADDED, REMOVED, CHANGED, UNCHANGED]}
+        competencyVersionId: {type: string, maxLength: 36}
+        competencyCode: {type: string, maxLength: 50}
+        competencyName: {type: string, maxLength: 200}
+        leftLevelId: {type: string, maxLength: 36, nullable: true}
+        leftLevelLabel: {type: string, maxLength: 150, nullable: true}
+        leftClassification: {allOf: [{$ref: '#/components/schemas/RequirementClassification'}], nullable: true}
+        leftCriticalityCode: {type: string, maxLength: 50, nullable: true}
+        rightLevelId: {type: string, maxLength: 36, nullable: true}
+        rightLevelLabel: {type: string, maxLength: 150, nullable: true}
+        rightClassification: {allOf: [{$ref: '#/components/schemas/RequirementClassification'}], nullable: true}
+        rightCriticalityCode: {type: string, maxLength: 50, nullable: true}
+    PositionProfileComparison:
+      type: object
+      required: [leftProfileId, leftDefinitionVersion, rightProfileId, rightDefinitionVersion, added, removed, changed, unchanged, items]
+      properties:
+        leftProfileId: {type: string, maxLength: 36}
+        leftDefinitionVersion: {type: integer, minimum: 1}
+        rightProfileId: {type: string, maxLength: 36}
+        rightDefinitionVersion: {type: integer, minimum: 1}
+        added: {type: integer, minimum: 0}
+        removed: {type: integer, minimum: 0}
+        changed: {type: integer, minimum: 0}
+        unchanged: {type: integer, minimum: 0}
+        items: {type: array, items: {$ref: '#/components/schemas/PositionProfileComparisonItem'}}
+    AuditEvent:
+      type: object
+      required: [id, actor, action, aggregateType, aggregateId, occurredAt]
+      properties:
+        id: {type: string, maxLength: 36}
+        actor: {type: string, maxLength: 100}
+        action: {type: string, maxLength: 50}
+        aggregateType: {type: string, maxLength: 100}
+        aggregateId: {type: string, maxLength: 36}
+        businessVersion: {type: integer, nullable: true}
+        recordVersion: {type: integer, format: int64, nullable: true}
+        occurredAt: {type: string, format: date-time}
+        previousState: {type: string, nullable: true}
+        newState: {type: string, nullable: true}
+        reason: {type: string, maxLength: 1000, nullable: true}
+        correlationId: {type: string, maxLength: 100, nullable: true}
+    AuditEventPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content: {type: array, items: {$ref: '#/components/schemas/AuditEvent'}}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1}
+        totalElements: {type: integer, format: int64, minimum: 0}
+        totalPages: {type: integer, minimum: 0}
+        first: {type: boolean}
+        last: {type: boolean}
     Effectivity:
       type: object
       required: [active, effective, displayOrder, version]

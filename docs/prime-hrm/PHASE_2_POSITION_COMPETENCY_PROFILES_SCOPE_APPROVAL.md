@@ -1,6 +1,6 @@
 # ISOFT PRIME-HRM Phase 2 - Position Competency Profiles Approval Scope
 
-Status: Proposed; awaiting explicit user approval
+Status: Approved by user on 2026-08-13; Phase 2.1 and Phase 2.2 complete; Phase 2.3 implemented with automated gates passed and browser acceptance pending
 
 Prepared: 2026-08-12
 

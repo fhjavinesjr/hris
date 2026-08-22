@@ -1,0 +1,89 @@
+openapi: 3.0.3
+info:
+  title: ISOFT HRIS Administrative to PrimeHR Integration API
+  version: 1.0.0-phase-2.1
+  description: Authenticated read-only projection of authoritative Job Position and Plantilla masters for position competency profiles. Existing master CRUD contracts are unchanged.
+security:
+  - bearerAuth: []
+paths:
+  /api/integration/v1/primehr/position-targets:
+    get:
+      operationId: listPrimeHrPositionTargets
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema: {$ref: '#/components/schemas/PositionTargetType'}
+        - name: search
+          in: query
+          schema: {type: string}
+        - name: page
+          in: query
+          schema: {type: integer, minimum: 0, default: 0}
+        - name: size
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        '200':
+          description: Page of current authoritative targets
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PositionTargetPage'}
+        '400': {description: Invalid target type or pagination}
+        '401': {description: Missing or invalid employee JWT}
+        '403': {description: primehr.position-profile access is not permitted}
+  /api/integration/v1/primehr/position-targets/{type}/{id}:
+    get:
+      operationId: getPrimeHrPositionTarget
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: {$ref: '#/components/schemas/PositionTargetType'}
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200':
+          description: Current authoritative target and deterministic source fingerprint
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PositionTarget'}
+        '400': {description: Invalid target type or identifier}
+        '401': {description: Missing or invalid employee JWT}
+        '403': {description: primehr.position-profile access is not permitted}
+        '404': {description: Target or its authoritative parent Job Position was not found}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    PositionTargetType: {type: string, enum: [JOB_POSITION, PLANTILLA]}
+    PositionTarget:
+      type: object
+      required: [type, targetId, jobPositionId, jobPositionName, sourceFingerprint, fetchedAt]
+      properties:
+        type: {$ref: '#/components/schemas/PositionTargetType'}
+        targetId: {type: integer, format: int64}
+        jobPositionId: {type: integer, format: int64}
+        jobPositionName: {type: string, maxLength: 100}
+        salaryGrade: {type: integer, format: int64, nullable: true}
+        salaryStep: {type: integer, format: int64, nullable: true}
+        plantillaId: {type: integer, format: int64, nullable: true}
+        plantillaName: {type: string, maxLength: 100, nullable: true}
+        sourceFingerprint: {type: string, minLength: 64, maxLength: 64}
+        fetchedAt: {type: string, format: date-time}
+    PositionTargetPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content: {type: array, items: {$ref: '#/components/schemas/PositionTarget'} }
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1}
+        totalElements: {type: integer, format: int64, minimum: 0}
+        totalPages: {type: integer, minimum: 0}
+        first: {type: boolean}
+        last: {type: boolean}

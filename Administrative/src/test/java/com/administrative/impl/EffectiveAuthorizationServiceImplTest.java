@@ -47,6 +47,19 @@ class EffectiveAuthorizationServiceImplTest {
     }
 
     @Test
+    void roleOneUsesMatchingRulesetBeforeLegacyAdministratorFallback() {
+        PermissionRuleset userRuleset = new PermissionRuleset("USER", false,
+                "{\"primehr.competency\":{\"canAccess\":false}}");
+        userRuleset.setPermissionId(1L);
+        when(repository.findById(1L)).thenReturn(Optional.of(userRuleset));
+
+        var permission = service.resolve("001", "ROLE_1", "primehr.competency");
+
+        assertThat(permission.administrator()).isFalse();
+        assertThat(permission.canAccess()).isFalse();
+    }
+
+    @Test
     void malformedOrMissingRulesFailClosed() {
         PermissionRuleset malformed = new PermissionRuleset("Broken", false, "not-json");
         when(repository.findByPermissionNameIgnoreCase("Broken")).thenReturn(Optional.of(malformed));
@@ -67,5 +80,34 @@ class EffectiveAuthorizationServiceImplTest {
         assertThat(service.resolve("001", "Publisher", "primehr.competency").canPublish()).isFalse();
         assertThat(service.resolve("001", "Legacy", "primehr.competency").canPublish()).isFalse();
         assertThat(service.resolve("admin", "99", "primehr.competency").canPublish()).isTrue();
+    }
+
+    @Test
+    void resolvesPositionProfileAccessIndependentlyFromCompetencyAccess() {
+        PermissionRuleset ruleset = new PermissionRuleset("Profile Reader", false,
+                "{\"primehr.competency\":{\"canAccess\":false}," +
+                        "\"primehr.position-profile\":{\"canAccess\":true," +
+                        "\"canSubmit\":true,\"canApprove\":false}}" );
+        when(repository.findByPermissionNameIgnoreCase("Profile Reader")).thenReturn(Optional.of(ruleset));
+
+        assertThat(service.resolve("001", "Profile Reader", "primehr.position-profile").canAccess()).isTrue();
+        assertThat(service.resolve("001", "Profile Reader", "primehr.position-profile").canSubmit()).isTrue();
+        assertThat(service.resolve("001", "Profile Reader", "primehr.position-profile").canApprove()).isFalse();
+        assertThat(service.resolve("001", "Profile Reader", "primehr.competency").canAccess()).isFalse();
+    }
+
+    @Test
+    void legacyProfileRulesFailClosedForSubmitAndApprove() {
+        PermissionRuleset legacy = new PermissionRuleset("Legacy Profile Editor", false,
+                "{\"primehr.position-profile\":{\"canAccess\":true,\"canEdit\":true}}" );
+        when(repository.findByPermissionNameIgnoreCase("Legacy Profile Editor")).thenReturn(Optional.of(legacy));
+
+        var permission = service.resolve("001", "Legacy Profile Editor", "primehr.position-profile");
+
+        assertThat(permission.canAccess()).isTrue();
+        assertThat(permission.canSubmit()).isFalse();
+        assertThat(permission.canApprove()).isFalse();
+        assertThat(service.resolve("admin", "99", "primehr.position-profile").canSubmit()).isTrue();
+        assertThat(service.resolve("admin", "99", "primehr.position-profile").canApprove()).isTrue();
     }
 }

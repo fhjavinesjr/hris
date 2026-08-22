@@ -119,14 +119,18 @@ public class SsoServiceImpl implements SsoService {
     }
 
     private PermissionRuleset requireTargetAccess(String employeeNo, String employeeRole, SsoTarget target) {
-        if (INSTALL_ADMIN_EMPLOYEE_NO.equalsIgnoreCase(employeeNo)
-                || "1".equals(employeeRole == null ? "" : employeeRole.trim().replaceFirst("(?i)^ROLE_", ""))) {
+        if (INSTALL_ADMIN_EMPLOYEE_NO.equalsIgnoreCase(employeeNo)) {
             return null;
         }
 
-        PermissionRuleset ruleset = resolveRuleset(employeeRole)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.FORBIDDEN, "No permission ruleset is assigned to this account"));
+        Optional<PermissionRuleset> resolvedRuleset = resolveRuleset(employeeRole);
+        if (resolvedRuleset.isEmpty()
+                && "1".equals(employeeRole == null ? "" : employeeRole.trim().replaceFirst("(?i)^ROLE_", ""))) {
+            return null;
+        }
+
+        PermissionRuleset ruleset = resolvedRuleset.orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.FORBIDDEN, "No permission ruleset is assigned to this account"));
         if (Boolean.TRUE.equals(ruleset.getIsAdministrator())) {
             return ruleset;
         }

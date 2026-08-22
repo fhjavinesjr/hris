@@ -9,8 +9,10 @@ package com.humanresource.dtos;
  */
 public class EmployeePayrollInfoResponse {
 
+    private Long employeeId;
     private String employeeNo;
     private String fullName;
+    private String role;
     private String department;
     private Integer salaryGrade;
     private Integer salaryStep;
@@ -29,6 +31,12 @@ public class EmployeePayrollInfoResponse {
     private Double  pagibigPreferred = 0.0;
 
     public EmployeePayrollInfoResponse() {}
+
+    public Long getEmployeeId()              { return employeeId; }
+    public void setEmployeeId(Long v)         { this.employeeId = v; }
+
+    public String getRole()                  { return role; }
+    public void setRole(String v)             { this.role = v; }
 
     public String getEmployeeNo()             { return employeeNo; }
     public void   setEmployeeNo(String v)     { this.employeeNo = v; }

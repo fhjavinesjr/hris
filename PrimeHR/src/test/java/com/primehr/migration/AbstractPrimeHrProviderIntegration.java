@@ -21,6 +21,11 @@ import com.primehr.competency.infrastructure.CompetencyCategoryRepository;
 import com.primehr.competency.infrastructure.CompetencyRepository;
 import com.primehr.competency.infrastructure.CompetencySpecifications;
 import com.primehr.competency.infrastructure.ProficiencyScaleRepository;
+import com.primehr.positionprofile.domain.PositionProfile;
+import com.primehr.positionprofile.domain.PositionTargetSnapshot;
+import com.primehr.positionprofile.domain.PositionTargetType;
+import com.primehr.positionprofile.infrastructure.PositionProfileRepository;
+import com.primehr.positionprofile.infrastructure.PositionProfileSpecifications;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,7 +61,8 @@ abstract class AbstractPrimeHrProviderIntegration {
 
     private static final Set<String> EXPECTED_TABLES = Set.of(
             "prime_competency_category", "prime_proficiency_scale", "prime_proficiency_level",
-            "prime_competency", "prime_behavioral_indicator", "prime_audit_event", "flyway_schema_history");
+            "prime_competency", "prime_behavioral_indicator", "prime_audit_event",
+            "prime_position_profile", "prime_position_profile_requirement", "flyway_schema_history");
     private static final Set<String> EXPECTED_INDEXES = Set.of(
             "ix_prime_category_agency_active", "ix_prime_scale_agency_active",
             "ix_prime_level_agency_scale", "ix_prime_competency_filter", "ix_prime_indicator_lookup");
@@ -65,6 +71,9 @@ abstract class AbstractPrimeHrProviderIntegration {
     private static final Set<String> PHASE_1C_INDEXES = Set.of(
             "ix_prime_category_publication_chain", "ix_prime_scale_publication_chain",
             "ix_prime_competency_publication_chain");
+    private static final Set<String> PHASE_2_INDEXES = Set.of(
+            "ix_prime_profile_filter", "ix_prime_profile_target_chain",
+            "ix_prime_profile_requirement_order", "ix_prime_profile_effective_resolution");
 
     @Autowired private Flyway flyway;
     @Autowired private DataSource dataSource;
@@ -74,24 +83,70 @@ abstract class AbstractPrimeHrProviderIntegration {
     @Autowired private CompetencyRepository competencyRepository;
     @Autowired private BehavioralIndicatorRepository indicatorRepository;
     @Autowired private CompetencyAdminService adminService;
+    @Autowired private PositionProfileRepository positionProfileRepository;
     @Value("${spring.flyway.default-schema}") private String databaseSchema;
 
     @Test
-    void flywayV1ThroughV3CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
+    void flywayV1ThroughV5CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
         assertThat(flyway.info().current()).isNotNull();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("5");
 
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
             assertThat(readNames(metadata.getTables(connection.getCatalog(), databaseSchema, "%", new String[]{"TABLE"}),
                     "TABLE_NAME")).containsAll(EXPECTED_TABLES);
             assertThat(indexNames(metadata, connection)).containsAll(EXPECTED_INDEXES)
-                    .containsAll(PHASE_1B_INDEXES).containsAll(PHASE_1C_INDEXES);
+                    .containsAll(PHASE_1B_INDEXES).containsAll(PHASE_1C_INDEXES).containsAll(PHASE_2_INDEXES);
 
             assertThat(importedKeyCount(metadata, connection, "prime_proficiency_level")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "prime_competency")).isGreaterThanOrEqualTo(2);
             assertThat(importedKeyCount(metadata, connection, "prime_behavioral_indicator")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "prime_position_profile_requirement"))
+                    .isGreaterThanOrEqualTo(3);
         }
+    }
+
+    @Test
+    @Transactional
+    void positionProfileDraftPersistsAgainstTheRealProviderWithoutCrossDomainTables() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+        PositionProfile profile = positionProfileRepository.saveAndFlush(PositionProfile.draft(
+                "PROVIDER-AGENCY", new PositionTargetSnapshot(PositionTargetType.JOB_POSITION, 1400L,
+                        1400L, "Provider Position " + suffix, 15L, 1L, null, null,
+                        "provider-fingerprint-" + suffix, Instant.now()),
+                "Provider Profile " + suffix, null, LocalDate.of(2028, 1, 1), null));
+
+        assertThat(positionProfileRepository.findByIdAndAgencyId(profile.getId(), "PROVIDER-AGENCY"))
+                .get().satisfies(saved -> {
+                    assertThat(saved.getTargetKey()).isEqualTo("JOB_POSITION:1400");
+                    assertThat(saved.getDefinitionVersion()).isEqualTo(1);
+                    assertThat(saved.isDraft()).isTrue();
+                });
+    }
+
+    @Test
+    @Transactional
+    void positionProfileApprovalMetadataAndEffectiveSpecificationWorkAgainstTheRealProvider() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+        PositionTargetSnapshot target = new PositionTargetSnapshot(PositionTargetType.JOB_POSITION, 2400L,
+                2400L, "Approved Provider Position " + suffix, 16L, 2L, null, null,
+                "provider-approved-fingerprint-" + suffix, Instant.now());
+        PositionProfile profile = positionProfileRepository.saveAndFlush(PositionProfile.draft(
+                "PROVIDER-AGENCY", target, "Approved Provider Profile " + suffix, null,
+                LocalDate.of(2028, 2, 1), null));
+        profile.submit("provider-submitter", Instant.now(), target);
+        profile = positionProfileRepository.saveAndFlush(profile);
+        profile.approve("provider-approver", Instant.now(), target);
+        profile = positionProfileRepository.saveAndFlush(profile);
+
+        assertThat(profile.getSubmittedBy()).isEqualTo("provider-submitter");
+        assertThat(profile.getSubmittedAt()).isNotNull();
+        assertThat(profile.getApprovedBy()).isEqualTo("provider-approver");
+        assertThat(profile.getApprovedAt()).isNotNull();
+        assertThat(positionProfileRepository.findAll(PositionProfileSpecifications.effective(
+                                "PROVIDER-AGENCY", PositionTargetType.JOB_POSITION,
+                                2400L, null, LocalDate.of(2028, 2, 1))))
+                .extracting(PositionProfile::getId).containsExactly(profile.getId());
     }
 
     @Test

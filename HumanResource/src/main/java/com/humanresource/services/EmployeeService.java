@@ -5,6 +5,7 @@ import com.humanresource.dtos.EmployeePayrollInfoResponse;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface EmployeeService {
 
@@ -32,4 +33,7 @@ public interface EmployeeService {
      * @param employeeNo     optional filter (null = all employees)
      */
     List<EmployeePayrollInfoResponse> getPayrollInfoBulk(String departmentCode, String employeeNo);
+
+    /** Employee IDs satisfying the same active, non-contractual rule as regular payroll. */
+    Set<Long> getRegularPayrollEmployeeIds();
 }

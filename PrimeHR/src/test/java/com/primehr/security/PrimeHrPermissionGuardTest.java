@@ -19,7 +19,7 @@ class PrimeHrPermissionGuardTest {
     void exactPersistedActionFlagIsRequired() {
         String token = "Bearer signed-token";
         when(client.resolve(token)).thenReturn(new EffectiveFeaturePermission(
-                "primehr.competency", false, true, false, true, false, false));
+                "primehr.competency", false, true, false, true, false, false, false, false));
 
         assertThatCode(() -> guard.require(PrimeHrAction.ACCESS, token)).doesNotThrowAnyException();
         assertThatCode(() -> guard.require(PrimeHrAction.EDIT, token)).doesNotThrowAnyException();
@@ -35,7 +35,7 @@ class PrimeHrPermissionGuardTest {
     void administratorBypassAndDependencyFailureAreHandledSafely() {
         String token = "Bearer signed-token";
         when(client.resolve(token)).thenReturn(new EffectiveFeaturePermission(
-                "primehr.competency", true, false, false, false, false, false));
+                "primehr.competency", true, false, false, false, false, false, false, false));
         assertThatCode(() -> guard.require(PrimeHrAction.ARCHIVE, token)).doesNotThrowAnyException();
         assertThatCode(() -> guard.require(PrimeHrAction.PUBLISH, token)).doesNotThrowAnyException();
 
@@ -50,7 +50,7 @@ class PrimeHrPermissionGuardTest {
     void publishIsIndependentFromCrudPermissions() {
         String token = "Bearer publisher-token";
         when(client.resolve(token)).thenReturn(new EffectiveFeaturePermission(
-                "primehr.competency", false, true, false, false, false, true));
+                "primehr.competency", false, true, false, false, false, true, false, false));
 
         assertThatCode(() -> guard.require(PrimeHrAction.PUBLISH, token)).doesNotThrowAnyException();
         assertThatThrownBy(() -> guard.require(PrimeHrAction.EDIT, token))

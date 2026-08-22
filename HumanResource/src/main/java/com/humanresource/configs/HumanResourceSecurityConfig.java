@@ -4,6 +4,7 @@ import com.hris.common.utilities.JwtFilter;
 import jakarta.servlet.DispatcherType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,6 +29,12 @@ public class HumanResourceSecurityConfig {
 
     private final JwtFilter jwtFilter;
 
+    @Value("${app.cors.allowed-origins}")
+    private List<String> allowedOrigins;
+
+    @Value("${app.cors.allowed-origin-patterns}")
+    private List<String> allowedOriginPatterns;
+
     public HumanResourceSecurityConfig(JwtFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
     }
@@ -38,8 +45,8 @@ public class HumanResourceSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration corsConfiguration = new CorsConfiguration();
-                    corsConfiguration.setAllowedOrigins(List.of("http://localhost:3087","http://localhost:3080","http://localhost:3081","http://localhost:3082","http://localhost:3083","http://localhost:3084","http://localhost:3085","http://192.168.68.128:3082","http://192.168.68.121:3085","https://hris-znce.onrender.com")); // Frontend URL (React/Next.js)
-                    corsConfiguration.setAllowedOriginPatterns(List.of("https://*.vercel.app")); // Vercel deployments
+                    corsConfiguration.setAllowedOrigins(allowedOrigins); // Frontend URL (React/Next.js)
+                    corsConfiguration.setAllowedOriginPatterns(allowedOriginPatterns); // Vercel deployments
                     corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
                     corsConfiguration.setAllowCredentials(true); // If you need cookies/session

@@ -5,5 +5,7 @@ public enum PrimeHrAction {
     ADD,
     EDIT,
     ARCHIVE,
-    PUBLISH
+    PUBLISH,
+    SUBMIT,
+    APPROVE
 }

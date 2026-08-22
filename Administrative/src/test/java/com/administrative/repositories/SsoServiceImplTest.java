@@ -147,6 +147,28 @@ class SsoServiceImplTest {
     }
 
     @Test
+    void roleOneUsesMatchingRulesetBeforeLegacyAdministratorFallback() throws Exception {
+        PermissionRuleset userRuleset = new PermissionRuleset(
+                "USER", false, "{}", "{\"hrManagement\":true}");
+        userRuleset.setPermissionId(1L);
+        when(permissionRepository.findById(1L)).thenReturn(Optional.of(userRuleset));
+        when(jwtUtil.generateToken("001", "1")).thenReturn("user-jwt");
+        when(systemConfigService.getAllConfigs()).thenReturn(List.of());
+
+        SsoLaunchResponse launch = service.launch("001", "1", "hrm");
+        ArgumentCaptor<SsoLoginTicket> captor = ArgumentCaptor.forClass(SsoLoginTicket.class);
+        verify(ticketRepository).save(captor.capture());
+        when(ticketRepository.findForUpdateByCodeHash(anyString()))
+                .thenReturn(Optional.of(captor.getValue()));
+
+        var exchange = service.exchange(launch.code(), "hrm");
+
+        assertNotNull(exchange.permission());
+        assertEquals("USER", exchange.permission().getPermissionName());
+        assertFalse(exchange.permission().getIsAdministrator());
+    }
+
+    @Test
     void primeHrExchangeRejectsExpiredTicket() {
         SsoLoginTicket expired = new SsoLoginTicket("hash", "001", "2", "primehr",
                 Instant.now().minusSeconds(120), Instant.now().minusSeconds(60));

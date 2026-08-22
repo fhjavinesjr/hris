@@ -14,7 +14,7 @@ import java.time.Duration;
 
 @Component
 public class AdministrativeAuthorizationClient {
-    private static final String FEATURE = "primehr.competency";
+    private static final String COMPETENCY_FEATURE = "primehr.competency";
     private final RestClient restClient;
 
     public AdministrativeAuthorizationClient(PrimeHrProperties properties) {
@@ -32,10 +32,17 @@ public class AdministrativeAuthorizationClient {
     }
 
     public EffectiveFeaturePermission resolve(String authorizationHeader) {
+        return resolve(COMPETENCY_FEATURE, authorizationHeader);
+    }
+
+    public EffectiveFeaturePermission resolve(String featureKey, String authorizationHeader) {
+        if (featureKey == null || featureKey.isBlank()) {
+            throw new IllegalArgumentException("featureKey is required");
+        }
         try {
             EffectiveFeaturePermission permission = restClient.get()
                     .uri(builder -> builder.path("/api/authorization/effective")
-                            .queryParam("featureKey", FEATURE).build())
+                            .queryParam("featureKey", featureKey).build())
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
                     .retrieve()
                     .onStatus(status -> status.value() == 401 || status.value() == 403,
@@ -44,7 +51,7 @@ public class AdministrativeAuthorizationClient {
                             (request, response) -> { throw new AuthorizationDependencyException(
                                     "Administrative authorization is unavailable", null); })
                     .body(EffectiveFeaturePermission.class);
-            if (permission == null || !FEATURE.equals(permission.featureKey())) {
+            if (permission == null || !featureKey.equals(permission.featureKey())) {
                 throw new AuthorizationDependencyException("Administrative returned an invalid permission response", null);
             }
             return permission;

@@ -25,6 +25,7 @@ import com.humanresource.repositories.OfficialEngagementApplicationRepository;
 import com.humanresource.repositories.PassSlipRepository;
 import com.humanresource.repositories.TimeCorrectionRepository;
 import com.humanresource.repositories.SeparationRepository;
+import com.humanresource.services.EmployeeService;
 import com.humanresource.services.LeaveProcessService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -79,17 +80,12 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
     // CSC standard earning rate per semi-monthly period
     private static final double DEFAULT_EARN_RATE = 1.25;
 
-    // Nature-of-appointment codes considered non-permanent / non-earning
-    private static final Set<String> NON_EARNING_NATURES = Set.of(
-            "CONTRACTUAL", "CONTRACT OF SERVICE", "COS", "JO", "JOB ORDER"
-    );
-
-    private static final Set<String> EXCLUDED_SYSTEM_ROLE_MARKERS = Set.of("admin", "super");
     private static final Set<String> EXCLUDED_SYSTEM_IDENTITY_MARKERS = Set.of(
             "admin", "super", "superadmin", "adminsuper"
     );
 
     private final EmployeeRepository employeeRepository;
+    private final EmployeeService employeeService;
     private final EmployeeAppointmentRepository appointmentRepository;
     private final SeparationRepository separationRepository;
     private final LeaveBeginningBalanceRepository begBalanceRepository;
@@ -104,6 +100,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
 
     public LeaveProcessServiceImpl(
             EmployeeRepository employeeRepository,
+            EmployeeService employeeService,
             EmployeeAppointmentRepository appointmentRepository,
             SeparationRepository separationRepository,
             LeaveBeginningBalanceRepository begBalanceRepository,
@@ -116,6 +113,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
             TimeCorrectionRepository tcRepository,
             JdbcTemplate jdbc) {
         this.employeeRepository = employeeRepository;
+        this.employeeService = employeeService;
         this.appointmentRepository = appointmentRepository;
         this.separationRepository = separationRepository;
         this.begBalanceRepository = begBalanceRepository;
@@ -142,7 +140,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         List<Employee> employees = resolveEmployeesForRequest(req);
 
         if ("EMPLOYEE".equalsIgnoreCase(req.getScope()) && req.getEmployeeId() != null && employees.isEmpty()) {
-            skippedReasons.add("Selected employee is excluded (admin/super) or not found");
+            skippedReasons.add("Selected employee is not eligible for regular payroll, is a system account, or was not found");
         }
 
         // Pre-load holiday dates for the period (JdbcTemplate cross-module query)
@@ -172,16 +170,20 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
     }
 
     List<Employee> resolveEmployeesForRequest(LeaveProcessRequestDTO req) {
+        Set<Long> regularEmployeeIds = employeeService.getRegularPayrollEmployeeIds();
         List<Employee> employees;
 
         if ("EMPLOYEE".equalsIgnoreCase(req.getScope()) && req.getEmployeeId() != null) {
-            employees = employeeRepository.findById(req.getEmployeeId())
-                    .map(List::of)
-                    .orElse(Collections.emptyList());
+            employees = regularEmployeeIds.contains(req.getEmployeeId())
+                    ? employeeRepository.findById(req.getEmployeeId()).map(List::of).orElse(Collections.emptyList())
+                    : Collections.emptyList();
         } else if (req.getSelectedEmployeeIds() != null && !req.getSelectedEmployeeIds().isEmpty()) {
-            employees = employeeRepository.findAllById(req.getSelectedEmployeeIds());
+            List<Long> selectedRegularIds = req.getSelectedEmployeeIds().stream()
+                    .filter(regularEmployeeIds::contains)
+                    .collect(Collectors.toList());
+            employees = employeeRepository.findAllById(selectedRegularIds);
         } else {
-            employees = employeeRepository.findAll();
+            employees = employeeRepository.findAllById(regularEmployeeIds);
         }
 
         return employees.stream()
@@ -194,23 +196,11 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
             return false;
         }
 
-        if (containsExcludedRoleMarker(emp.getRole())) {
-            return true;
-        }
-
         return matchesExcludedIdentity(emp.getEmployeeNo())
                 || matchesExcludedIdentity(emp.getFirstname())
                 || matchesExcludedIdentity(emp.getLastname())
                 || matchesExcludedIdentity(emp.getFirstname(), emp.getLastname())
                 || matchesExcludedIdentity(emp.getLastname(), emp.getFirstname());
-    }
-
-    private boolean containsExcludedRoleMarker(String role) {
-        if (role == null) {
-            return false;
-        }
-        String normalized = role.trim().toLowerCase();
-        return EXCLUDED_SYSTEM_ROLE_MARKERS.stream().anyMatch(normalized::contains);
     }
 
     private boolean matchesExcludedIdentity(String... parts) {
@@ -250,17 +240,16 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
 
         Long employeeId = emp.getEmployeeId();
 
-        // Guard 1: Must have an active appointment
+        // Guard 1: Must have an active appointment, matching regular-payroll eligibility.
         EmployeeAppointment appt = appointmentRepository
-                .findTop1ByEmployeeIdOrderByAssumptionToDutyDateDesc(employeeId);
+                .findTop1ByEmployeeIdAndActiveAppointmentTrueOrderByAssumptionToDutyDateDesc(employeeId);
         if (appt == null) {
             skippedReasons.add(empLabel + ": No active appointment found");
             return null;
         }
 
-        // Guard 2: Skip contractual/COS employees — look up nature via JdbcTemplate
-        String nature = loadNatureOfAppointment(appt.getNatureOfAppointmentId());
-        if (nature != null && NON_EARNING_NATURES.contains(nature.toUpperCase())) {
+        // Guard 2: Use the authoritative contractual flag used by regular payroll.
+        if (isContractualNature(appt.getNatureOfAppointmentId())) {
             // Contractual employees do not earn VL/SL
             skippedReasons.add(empLabel + ": Contractual/COS — not eligible for leave earnings");
             return null;
@@ -769,16 +758,15 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         return rows.isEmpty() ? null : rows.get(0);
     }
 
-    /**
-     * Looks up the nature of appointment description by ID.
-     */
-    private String loadNatureOfAppointment(Integer natureOfAppointmentId) {
-        if (natureOfAppointmentId == null) return null;
-        String sql = "SELECT nature FROM natureofappointment WHERE natureofappointmentId = ?";
-        List<Map<String, Object>> rows = jdbc.queryForList(sql, natureOfAppointmentId);
-        if (rows.isEmpty()) return null;
-        Object nature = rows.get(0).get("nature");
-        return nature != null ? nature.toString() : null;
+    /** Looks up the authoritative regular/contractual classification by appointment nature ID. */
+    private boolean isContractualNature(Integer natureOfAppointmentId) {
+        if (natureOfAppointmentId == null) return false;
+        Boolean contractual = jdbc.queryForObject(
+                "SELECT isContractual FROM natureofappointment WHERE natureofappointmentId = ?",
+                Boolean.class,
+                natureOfAppointmentId
+        );
+        return Boolean.TRUE.equals(contractual);
     }
 
     /**

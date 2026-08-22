@@ -204,7 +204,9 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public List<EmployeePayrollInfoResponse> getPayrollInfoBulk(String departmentCode, String employeeNo) {
         StringBuilder sql = new StringBuilder(
-                "SELECT e.employeeNo," +
+                "SELECT e.employeeId," +
+                        "       e.employeeNo," +
+                        "       e.userRole AS role," +
                         "       CONCAT(COALESCE(e.firstname,''), ' ', COALESCE(e.lastname,'')," +
                         "              CASE WHEN e.suffix IS NOT NULL AND e.suffix <> '' THEN CONCAT(' ', e.suffix) ELSE '' END) AS fullName," +
                         "       COALESCE(jp.jobPositionName, '') AS department," +
@@ -235,8 +237,10 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         return jdbc.query(sql.toString(), params.toArray(), (rs, rowNum) -> {
             EmployeePayrollInfoResponse dto = new EmployeePayrollInfoResponse();
+            dto.setEmployeeId(rs.getLong("employeeId"));
             dto.setEmployeeNo(rs.getString("employeeNo"));
             dto.setFullName(rs.getString("fullName").trim());
+            dto.setRole(rs.getString("role"));
             dto.setDepartment(rs.getString("department"));
             dto.setSalaryGrade(rs.getObject("salaryGrade") != null ? rs.getInt("salaryGrade") : null);
             dto.setSalaryStep(rs.getObject("salaryStep") != null ? rs.getInt("salaryStep") : null);
@@ -248,6 +252,15 @@ public class EmployeeServiceImpl implements EmployeeService {
 
             return dto;
         });
+    }
+
+    @Override
+    public Set<Long> getRegularPayrollEmployeeIds() {
+        return getPayrollInfoBulk(null, null).stream()
+                .filter(employee -> !Boolean.TRUE.equals(employee.getIsExcludedFromPayroll()))
+                .map(EmployeePayrollInfoResponse::getEmployeeId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     private EmployeeDTO buildEmployeeDTO(Employee employee) {

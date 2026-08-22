@@ -13,6 +13,7 @@ import java.util.Optional;
 @Service
 public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorizationService {
     public static final String PRIMEHR_COMPETENCY = "primehr.competency";
+    public static final String PRIMEHR_POSITION_PROFILE = "primehr.position-profile";
     private static final String INSTALL_ADMIN_EMPLOYEE_NO = "admin";
 
     private final PermissionRulesetRepository repository;
@@ -25,16 +26,18 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
 
     @Override
     public EffectiveFeaturePermissionResponse resolve(String employeeNo, String role, String featureKey) {
-        if (!PRIMEHR_COMPETENCY.equals(featureKey)) {
+        if (!PRIMEHR_COMPETENCY.equals(featureKey) && !PRIMEHR_POSITION_PROFILE.equals(featureKey)) {
             throw new IllegalArgumentException("Unsupported feature key");
         }
         if (employeeNo != null && INSTALL_ADMIN_EMPLOYEE_NO.equalsIgnoreCase(employeeNo.trim())) {
             return EffectiveFeaturePermissionResponse.administrator(featureKey);
         }
-        if (role != null && "1".equals(role.trim().replaceFirst("(?i)^ROLE_", ""))) {
+        Optional<PermissionRuleset> resolved = resolveRuleset(role);
+        if (resolved.isEmpty()
+                && role != null
+                && "1".equals(role.trim().replaceFirst("(?i)^ROLE_", ""))) {
             return EffectiveFeaturePermissionResponse.administrator(featureKey);
         }
-        Optional<PermissionRuleset> resolved = resolveRuleset(role);
         if (resolved.isEmpty()) return EffectiveFeaturePermissionResponse.denied(featureKey);
         PermissionRuleset ruleset = resolved.get();
         if (Boolean.TRUE.equals(ruleset.getIsAdministrator())) {
@@ -48,7 +51,9 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
                     permission.path("canAdd").asBoolean(false),
                     permission.path("canEdit").asBoolean(false),
                     permission.path("canDelete").asBoolean(false),
-                    canAccess && permission.path("canPublish").asBoolean(false));
+                    canAccess && permission.path("canPublish").asBoolean(false),
+                    canAccess && permission.path("canSubmit").asBoolean(false),
+                    canAccess && permission.path("canApprove").asBoolean(false));
         } catch (Exception exception) {
             return EffectiveFeaturePermissionResponse.denied(featureKey);
         }
