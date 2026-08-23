@@ -59,6 +59,7 @@ public class SecurityConfig {
                         // Do not turn controller/service exceptions into a misleading 401.
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/public/runtime-config").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/employee/login", "/api/employee/register", "/api/hris/installAuth").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/sso/exchange").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()

@@ -53,6 +53,7 @@ public class AdministrativeSecurityConfig {
                     return corsConfiguration;
                 }))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/api/public/runtime-config").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/employee/login", "/api/employee/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/sso/exchange").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()

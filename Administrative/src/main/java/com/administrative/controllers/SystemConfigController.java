@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -23,6 +24,11 @@ public class SystemConfigController {
     public ResponseEntity<List<SystemConfigDTO>> getAllConfigs() throws Exception {
         List<SystemConfigDTO> configs = systemConfigService.getAllConfigs();
         return ResponseEntity.ok(configs);
+    }
+
+    @GetMapping("/public/runtime-config")
+    public ResponseEntity<Map<String, String>> getPublicRuntimeConfig() {
+        return ResponseEntity.ok(systemConfigService.getPublicRuntimeConfig());
     }
 
     @GetMapping("/system-config/get/{configKey}")

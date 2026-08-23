@@ -31,6 +31,7 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         if(request.getRequestURI().startsWith("/h2-console") ||
+            request.getRequestURI().equals("/api/public/runtime-config") ||
             request.getRequestURI().startsWith("/api/employee/login") ||
             request.getRequestURI().startsWith("/api/employee/register") ||
             request.getRequestURI().startsWith("/api/sso/exchange") ||
