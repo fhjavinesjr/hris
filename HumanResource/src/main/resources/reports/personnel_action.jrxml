@@ -1,0 +1,75 @@
+<!-- Provider-neutral bean-data-source report for current and previous employee appointments. -->
+<jasperReport name="personnel_action" language="java" pageWidth="595" pageHeight="842" columnWidth="515" leftMargin="40" rightMargin="40" topMargin="25" bottomMargin="25" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a101">
+	<parameter name="logoleft" class="java.lang.Object"/>
+	<parameter name="logoright" class="java.lang.Object"/>
+	<field name="companyName" class="java.lang.String"/>
+	<field name="companyAddress" class="java.lang.String"/>
+	<field name="employeeName" class="java.lang.String"/>
+	<field name="natureOfAction" class="java.lang.String"/>
+	<field name="effectiveDate" class="java.lang.String"/>
+	<field name="fromPosition" class="java.lang.String"/>
+	<field name="toPosition" class="java.lang.String"/>
+	<field name="fromSalary" class="java.lang.String"/>
+	<field name="toSalary" class="java.lang.String"/>
+	<field name="fromSection" class="java.lang.String"/>
+	<field name="toSection" class="java.lang.String"/>
+	<field name="fromDivision" class="java.lang.String"/>
+	<field name="toDivision" class="java.lang.String"/>
+	<field name="remarks" class="java.lang.String"/>
+	<detail>
+		<band height="650" splitType="Prevent">
+			<element kind="image" onErrorType="Blank" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a102" x="15" y="0" width="52" height="52" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Middle">
+				<expression><![CDATA[$P{logoleft}]]></expression>
+			</element>
+			<element kind="image" onErrorType="Blank" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a103" x="448" y="0" width="52" height="52" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Middle">
+				<expression><![CDATA[$P{logoright}]]></expression>
+			</element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a104" x="75" y="0" width="365" height="18" fontName="DejaVu Sans" fontSize="10.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{companyName}]]></expression>
+			</element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a105" x="75" y="18" width="365" height="16" fontName="DejaVu Sans" fontSize="8.0" hTextAlign="Center" vTextAlign="Middle">
+				<expression><![CDATA[$F{companyAddress}]]></expression>
+			</element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a106" x="75" y="43" width="365" height="20" fontName="DejaVu Sans" fontSize="11.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[REPORT OF PERSONNEL ACTION]]></text>
+			</element>
+
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a107" x="20" y="105" width="115" height="18" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[1. Name]]></text></element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a108" x="20" y="125" width="115" height="18" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[2. Nature of Action]]></text></element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a109" x="20" y="145" width="115" height="18" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[3. Effective Date]]></text></element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a110" x="135" y="105" width="10" height="18" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[:]]></text></element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a111" x="135" y="125" width="10" height="18" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[:]]></text></element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a112" x="135" y="145" width="10" height="18" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[:]]></text></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a113" x="150" y="105" width="345" height="18" fontName="DejaVu Sans" fontSize="9.0" bold="true"><expression><![CDATA[$F{employeeName}]]></expression></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a114" x="150" y="125" width="345" height="18" fontName="DejaVu Sans" fontSize="9.0"><expression><![CDATA[$F{natureOfAction}]]></expression></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a115" x="150" y="145" width="345" height="18" fontName="DejaVu Sans" fontSize="9.0"><expression><![CDATA[$F{effectiveDate}]]></expression></element>
+
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a116" x="170" y="185" width="165" height="22" fontName="DejaVu Sans" fontSize="9.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[FROM]]></text><box><topPen lineWidth="0.7"/><leftPen lineWidth="0.7"/><bottomPen lineWidth="0.7"/><rightPen lineWidth="0.7"/></box>
+			</element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a117" x="335" y="185" width="165" height="22" fontName="DejaVu Sans" fontSize="9.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+				<text><![CDATA[TO]]></text><box><topPen lineWidth="0.7"/><leftPen lineWidth="0.7"/><bottomPen lineWidth="0.7"/><rightPen lineWidth="0.7"/></box>
+			</element>
+
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a118" x="20" y="216" width="145" height="20" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[4. Position Title]]></text></element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a119" x="20" y="240" width="145" height="20" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[5. Salary]]></text></element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a120" x="20" y="264" width="145" height="20" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[6. Section]]></text></element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a121" x="20" y="288" width="145" height="20" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[7. Div/Sec/Dept]]></text></element>
+
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a122" x="170" y="207" width="165" height="29" fontName="DejaVu Sans" fontSize="8.0" vTextAlign="Middle"><expression><![CDATA[$F{fromPosition}]]></expression><box leftPadding="5" rightPadding="5"><leftPen lineWidth="0.7"/><rightPen lineWidth="0.7"/></box></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a123" x="335" y="207" width="165" height="29" fontName="DejaVu Sans" fontSize="8.0" vTextAlign="Middle"><expression><![CDATA[$F{toPosition}]]></expression><box leftPadding="5" rightPadding="5"><leftPen lineWidth="0.7"/><rightPen lineWidth="0.7"/></box></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a124" x="170" y="236" width="165" height="24" fontName="DejaVu Sans" fontSize="8.0" hTextAlign="Right" vTextAlign="Middle"><expression><![CDATA[$F{fromSalary}]]></expression><box leftPadding="5" rightPadding="5"><leftPen lineWidth="0.7"/><rightPen lineWidth="0.7"/></box></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a125" x="335" y="236" width="165" height="24" fontName="DejaVu Sans" fontSize="8.0" hTextAlign="Right" vTextAlign="Middle"><expression><![CDATA[$F{toSalary}]]></expression><box leftPadding="5" rightPadding="5"><leftPen lineWidth="0.7"/><rightPen lineWidth="0.7"/></box></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a126" x="170" y="260" width="165" height="24" fontName="DejaVu Sans" fontSize="8.0" vTextAlign="Middle"><expression><![CDATA[$F{fromSection}]]></expression><box leftPadding="5" rightPadding="5"><leftPen lineWidth="0.7"/><rightPen lineWidth="0.7"/></box></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a127" x="335" y="260" width="165" height="24" fontName="DejaVu Sans" fontSize="8.0" vTextAlign="Middle"><expression><![CDATA[$F{toSection}]]></expression><box leftPadding="5" rightPadding="5"><leftPen lineWidth="0.7"/><rightPen lineWidth="0.7"/></box></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a128" x="170" y="284" width="165" height="32" fontName="DejaVu Sans" fontSize="8.0" vTextAlign="Middle"><expression><![CDATA[$F{fromDivision}]]></expression><box leftPadding="5" rightPadding="5"><leftPen lineWidth="0.7"/><bottomPen lineWidth="0.7"/><rightPen lineWidth="0.7"/></box></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a129" x="335" y="284" width="165" height="32" fontName="DejaVu Sans" fontSize="8.0" vTextAlign="Middle"><expression><![CDATA[$F{toDivision}]]></expression><box leftPadding="5" rightPadding="5"><leftPen lineWidth="0.7"/><bottomPen lineWidth="0.7"/><rightPen lineWidth="0.7"/></box></element>
+
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a130" x="20" y="345" width="115" height="20" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[8. Remarks]]></text></element>
+			<element kind="staticText" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a131" x="135" y="345" width="10" height="20" fontName="DejaVu Sans" fontSize="9.0"><text><![CDATA[:]]></text></element>
+			<element kind="textField" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a132" x="150" y="345" width="345" height="45" fontName="DejaVu Sans" fontSize="8.0" textAdjust="StretchHeight"><expression><![CDATA[$F{remarks}]]></expression></element>
+
+			<element kind="line" uuid="af8102ec-f9b0-49d5-bceb-5559eed9a133" x="335" y="570" width="165" height="1"/>
+		</band>
+	</detail>
+</jasperReport>

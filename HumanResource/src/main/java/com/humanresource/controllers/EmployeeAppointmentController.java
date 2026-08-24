@@ -3,20 +3,29 @@ package com.humanresource.controllers;
 import com.hris.common.dtos.MetadataResponse;
 import com.humanresource.dtos.EmployeeAppointmentDTO;
 import com.humanresource.services.EmployeeAppointmentService;
+import com.humanresource.services.EmployeeAppointmentReportService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api")
 public class EmployeeAppointmentController {
 
     private final EmployeeAppointmentService employeeAppointmentService;
+    private final EmployeeAppointmentReportService employeeAppointmentReportService;
 
-    public EmployeeAppointmentController(EmployeeAppointmentService employeeAppointmentService) {
+    public EmployeeAppointmentController(
+            EmployeeAppointmentService employeeAppointmentService,
+            EmployeeAppointmentReportService employeeAppointmentReportService) {
         this.employeeAppointmentService = employeeAppointmentService;
+        this.employeeAppointmentReportService = employeeAppointmentReportService;
     }
 
     @PostMapping("/employeeAppointment/create")
@@ -95,6 +104,25 @@ public class EmployeeAppointmentController {
                     .body(new MetadataResponse("Failed to deactivate appointment"));
         }
         return ResponseEntity.ok(new MetadataResponse(employeeAppointmentId, "Appointment deactivated successfully"));
+    }
+
+    @GetMapping(value = "/employeeAppointment/report/{employeeAppointmentId}", produces = MediaType.APPLICATION_PDF_VALUE)
+    public void generatePersonnelActionReport(
+            @PathVariable Long employeeAppointmentId,
+            HttpServletResponse response) throws Exception {
+        String fileName = "PersonnelAction_" + employeeAppointmentId + ".pdf";
+        String encodedFileName = URLEncoder
+                .encode(fileName, StandardCharsets.UTF_8)
+                .replace("+", "%20");
+
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader(
+                "Content-Disposition",
+                "inline; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName);
+        employeeAppointmentReportService.generatePersonnelActionReport(
+                employeeAppointmentId,
+                response.getOutputStream());
+        response.flushBuffer();
     }
 
 }
