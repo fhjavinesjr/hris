@@ -1,8 +1,8 @@
 # ISOFT PRIME-HRM Phase 2.3 - Position Profile UI
 
-Status: Implemented; automated gates passed; browser acceptance pending
+Status: Complete; manual and repeatable Playwright browser acceptance passed
 
-Updated: 2026-08-13
+Updated: 2026-08-26
 
 ## Scope and boundary
 
@@ -54,6 +54,10 @@ The new route is `/prime-hr/position-profiles`. It provides:
 - Created `src/app/prime-hr/position-profiles/page.tsx` - route entry.
 - Created `src/app/prime-hr/position-profiles/PositionProfileManager.tsx` - management, lifecycle, resolution, comparison, source-freshness, and audit UI.
 - Created `src/app/prime-hr/position-profiles/PositionProfileManager.module.scss` - responsive SCSS-module presentation.
+- Modified `.gitignore`, `package.json`, and `package-lock.json` - Playwright commands/dependency and ignored reports/results.
+- Created `.env.e2e.example` and `playwright.config.ts` - secret-free local configuration and managed local services.
+- Created `e2e/support/primeHrTestSupport.ts` and five Phase 2.3 specification files - authenticated SSO contexts, controlled fixtures, RBAC, lifecycle, conflict, comparison, resolution, and precedence coverage.
+- Created `docs/PRIME_HRM_E2E_TESTING.md` - repeatable setup, execution, safety, and troubleshooting runbook.
 
 No backend Java, migration, OpenAPI, Employee Portal, HRM, Timekeeping, Payroll, Jasper, or deployed frontend file was changed by Phase 2.3.
 
@@ -71,6 +75,9 @@ PASS - eslint ., zero findings
 npm run build
 PASS - Next.js 16.2.12 production build
 Compiled, type-checked, and statically generated /prime-hr/position-profiles
+
+npm run e2e
+PASS - 8 Playwright tests in 32.1 seconds against local SQL Server services
 ```
 
 ### Administrative frontend
@@ -90,7 +97,9 @@ Compiled, type-checked, and statically generated /administrative/permission
 Invalid project directory provided, no such directory: ...\administrative-software\lint
 ```
 
-This was not hidden or changed as an incidental Phase 2.3 behavior/configuration edit. The changed Administrative file passed direct ESLint, and the full production build passed TypeScript. Neither frontend defines an automated UI test script; no UI unit/E2E tests were executed or skipped.
+This was not hidden or changed as an incidental Phase 2.3 behavior/configuration edit. The changed Administrative file passed direct ESLint, and the full production build passed TypeScript.
+
+The Playwright suite was run once while developing the stable fixtures and then rerun in full after the database already contained those fixtures. The final repeatability run passed all eight tests. Live PostgreSQL was not used for this browser run by user direction; Phase 2 backend portability evidence remains recorded separately.
 
 The Administrative build retains a pre-existing `images.domains` deprecation warning. It does not fail the build and is outside this phase.
 
@@ -103,7 +112,9 @@ The Administrative build retains a pre-existing `images.domains` deprecation war
 - Strict typing scan: no explicit `any` in the Phase 2.3 PrimeHR source.
 - Phase boundary scan: no person profile, assessment, gap, RSP, SPMS, L&D, report, notification, employee assignment, or Phase 3+ implementation.
 
-## Manual browser acceptance matrix
+## Browser acceptance matrix
+
+The user manually confirmed the applicable submit, return, resubmit, independent approval, administrator override, denied-access, immutability, conflict, successor, comparison, audit, and resolution behaviors. Playwright now automates the repeatable subset below. Immutable approval-success fixtures are reused instead of creating an unlimited ACTIVE version chain on every run.
 
 Run Administrative API/UI and PrimeHR API/UI. Use two ordinary employee accounts with separate rulesets (submitter and approver) plus the established administrator account. Restart/re-authenticate after changing a ruleset so the SSO exchange refreshes `permissionData`.
 
@@ -165,6 +176,10 @@ Run Administrative API/UI and PrimeHR API/UI. Use two ordinary employee accounts
     - Use a ruleset whose stored Position Profile entry lacks `canSubmit`/`canApprove`.
     - Expected: both actions remain denied; CRUD does not substitute for either lifecycle action.
 
-## Remaining gate
+## Defect found and corrected
 
-The browser matrix has not yet been performed in this session. Phase 2.3 is implemented and automated-build ready, but Phase 2 is not marked fully accepted until the user confirms the applicable manual results. Frontend commit/push/deployment remains under the user's control.
+The two-tab test confirmed that the backend rejected a stale update, but the UI retained the stale edit form after reloading the current server revision. A user could click Save again and unintentionally apply old form content as a new update. The 409 handler now closes and clears the editor before reloading current list/detail data. The Playwright conflict test verifies both rejection and preservation of the first accepted value.
+
+## Acceptance disposition
+
+Phase 2.3 acceptance is complete on the approved local SQL Server environment. The exact commands, fixtures, and limitations are in `prime-hr-software/docs/PRIME_HRM_E2E_TESTING.md`. No Phase 3 behavior was implemented. Commit, push, and deployment remain under the user's control.

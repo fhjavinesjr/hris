@@ -1,8 +1,8 @@
 # ISOFT PRIME-HRM Progress Ledger
 
-Last updated: 2026-08-13
-Current phase: Phase 2.3 - Position Profile UI (manual browser acceptance pending)
-Status: Phase 2.1/2.2 backend complete under the user-approved SQL Server-primary policy; Phase 2.3 implemented and automated frontend gates passed
+Last updated: 2026-08-26
+Current phase: Phase 2 complete; stopped before Phase 3
+Status: Phase 2.1/2.2 backend and Phase 2.3 UI/manual/Playwright gates complete under the user-approved SQL Server-primary policy
 
 Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DISCOVERY.md)
 
@@ -17,7 +17,7 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 | 1C - Controlled Competency Publishing | Complete | dedicated `canPublish`, transactional/audited publication, dual-provider V3 migrations, OpenAPI, Administrative permission control, PrimeHR publishing UI, and successful manual acceptance |
 | 2.1 - Position Profile Draft Foundation | Complete | Administrative typed target reads; PrimeHR V4 draft profiles/requirements, dual migrations, OpenAPI, authorization, audit, tests, and real SQL Server fresh/upgrade validation; live PostgreSQL waived as a gate while portability remains mandatory |
 | 2.2 - Submission, Approval, Resolution, Comparison | Complete | independent permissions, two-stage lifecycle, separation of duties, effective Plantilla precedence, exact-version comparison, conflicts, complete audit, V5 migrations, and SQL Server validation |
-| 2.3 - Position Profile UI | Implemented; manual acceptance pending | Administrative Access/Add/Edit/Delete/Submit/Approve controls; typed standalone profile management, lifecycle, freshness, audit, resolution, and comparison UI; lint/type/build gates passed |
+| 2.3 - Position Profile UI | Complete | Administrative permission controls; typed profile UI; user-confirmed browser acceptance; repeatable eight-test Playwright matrix; lint/type/build gates; user and test documentation |
 | 3+ | Not started | none |
 
 ## Decisions recorded
@@ -127,13 +127,13 @@ Phase 1A.1 real-provider validation passed against Neon PostgreSQL 17.10 and loc
 
 ## Next phase
 
-Complete the Phase 2.3 browser matrix in `PHASE_2_3_POSITION_PROFILE_UI.md`. After the user confirms the applicable results, perform final commit-readiness, mark Phase 2 accepted, and prepare an exact Master Plan Phase 3 scope for separate approval. Do not implement Phase 3 without that approval.
+Perform Phase 2 final commit-readiness review, then prepare the exact Master Plan Phase 3 scope for separate approval. Do not implement Phase 3 without that approval.
 
 ## Master Plan V2 alignment
 
 Phase 1A, Phase 1A.1, Phase 1B, and Phase 1C are controlled delivery slices of Master Plan V2 Phase 1 - Competency Foundation. Together they cover competency categories, dictionary records, dynamic proficiency scales/levels, behavioral indicators, effective dating/versioning, read APIs/UI, draft administration, RBAC, audit, controlled immutable publication, and PostgreSQL/SQL Server portability. They intentionally exclude position profiles, person assessments, gap analysis, and RSP/SPMS/L&D/R&R functionality as required by the Master Plan.
 
-Master Plan Phase 2 is approved and split into controlled checkpoints. Phase 2.1 implements authoritative Job Position/Plantilla references, exact competency/level requirements, and effective-dated draft/version foundations without duplicating the Administrative position master. Phase 2.2 implements submission/approval, ACTIVE snapshots, precedence resolution, and exact-version comparison. Phase 2.3 implements the Administrative permission controls and standalone PrimeHR UI; only its manual browser acceptance remains before Phase 2 can be marked accepted.
+Master Plan Phase 2 is complete. Phase 2.1 implements authoritative Job Position/Plantilla references, exact competency/level requirements, and effective-dated draft/version foundations without duplicating the Administrative position master. Phase 2.2 implements submission/approval, ACTIVE snapshots, precedence resolution, and exact-version comparison. Phase 2.3 implements the Administrative permission controls, standalone PrimeHR UI, accepted browser behavior, and repeatable Playwright coverage. No Master Plan Phase 3 person-profile, assessment, or gap functionality has been implemented.
 
 ## Proactive execution and approval workflow
 
@@ -189,11 +189,15 @@ The recurring phase gate is:
 | Phase 2.3 automated frontend gates | Passed | PrimeHR strict type-check, ESLint, and production build; Administrative focused ESLint and production build |
 | Phase 2.3 Administrative lint script | Existing limitation | `npm run lint` uses removed `next lint` behavior under Next.js 16; direct ESLint of the changed file passes |
 | Phase 2.3 repository/secret/boundary audit | Passed for implemented source | no credential-like additions, explicit `any`, generated/IDE files, or Phase 3+ behavior; unrelated Administrative `.env` edit remains preserved |
-| Phase 2.3 browser acceptance | Pending | run the exact allowed/denied/validation/submit/return/approve/conflict/freshness/history/comparison/resolution matrix in `PHASE_2_3_POSITION_PROFILE_UI.md` |
+| Phase 2.3 manual browser acceptance | Passed | user confirmed allowed/denied, validation, submit/return/resubmit/approve, admin override, immutability, conflict, history, successor, comparison, and resolution behavior |
+| Phase 2.3 Playwright matrix | Passed | 8/8 against local SQL Server in 32.1 seconds on the final commit-readiness run; reused fixtures and zero skips |
+| Phase 2.3 conflict correction | Passed | stale 409 closes/reset the edit form before current-data reload; first accepted value remains authoritative |
+| Phase 2.3 documentation | Complete | repeatable E2E runbook and PRIME-HRM user guide created |
+| Phase 2 boundary | Passed | no person profiles, assessments, gaps, or other Phase 3 behavior implemented |
 
 ### Next recommended action
 
-Run and confirm the applicable Phase 2.3 manual browser matrix. Then request the final Phase 2 commit-readiness review and preparation of the exact Phase 3 scope; frontend deployment/pushing remains under the user's control.
+Review and commit the Phase 2.3 automation, conflict correction, and documentation. The next planning action is to prepare the exact Phase 3 scope for explicit approval; implementation remains stopped. Frontend deployment/pushing remains under the user's control.
 
 ## Rollback
 

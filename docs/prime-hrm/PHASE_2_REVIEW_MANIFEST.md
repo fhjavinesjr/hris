@@ -1,8 +1,8 @@
 # ISOFT PRIME-HRM Phase 2 Review Manifest
 
-Status: Backend and UI implementation complete; Phase 2.3 browser acceptance pending
+Status: Phase 2 complete and commit-ready; backend, manual browser, and repeatable Playwright gates passed
 
-Prepared: 2026-08-13
+Prepared: 2026-08-13; finalized: 2026-08-26
 
 ## 1. Approved scope mapping
 
@@ -118,6 +118,17 @@ Migrations, tests, contract, and phase records:
 - Created `prime-hr-software/src/app/prime-hr/position-profiles/page.tsx`.
 - Created `prime-hr-software/src/app/prime-hr/position-profiles/PositionProfileManager.tsx`.
 - Created `prime-hr-software/src/app/prime-hr/position-profiles/PositionProfileManager.module.scss`.
+- Modified `prime-hr-software/.gitignore`, `package.json`, and `package-lock.json` for Playwright commands/dependency and ignored diagnostics.
+- Modified `prime-hr-software/src/app/prime-hr/position-profiles/PositionProfileManager.tsx` so a stale 409 closes the editor before current data reloads, and added label/control associations.
+- Created `prime-hr-software/.env.e2e.example` and `playwright.config.ts`.
+- Created `prime-hr-software/e2e/support/primeHrTestSupport.ts`.
+- Created `prime-hr-software/e2e/conflict.spec.ts`, `lifecycle.spec.ts`, `plantilla-precedence.spec.ts`, `rbac.spec.ts`, and `version-resolution.spec.ts`.
+- Created `prime-hr-software/docs/PRIME_HRM_E2E_TESTING.md`.
+
+### Final documentation
+
+- Created `docs/prime-hrm/PRIME_HRM_USER_GUIDE.md`.
+- Updated this manifest, `PHASE_2_3_POSITION_PROFILE_UI.md`, `PHASE_2_POSITION_COMPETENCY_PROFILES_SCOPE_APPROVAL.md`, and `PRIME_HRM_PROGRESS.md` with final acceptance evidence.
 
 ## 3. Persistence, relationships, and portability
 
@@ -170,9 +181,20 @@ prime-hr-software: npm run lint - PASS
 prime-hr-software: npm run build - PASS
 administrative-software: npx eslint src/app/administrative/permission/Permission.tsx - PASS
 administrative-software: npm run build - PASS
+
+prime-hr-software: npm run e2e
+8 passed (32.1s) against local SQL Server services
+
+prime-hr-software: npm audit
+0 vulnerabilities
+
+prime-hr-software: npm audit --omit=dev
+0 vulnerabilities
 ```
 
-Administrative `npm run lint` is a pre-existing invalid Next.js 16 `next lint` script and did not run. Neither frontend has a UI test script. No frontend tests were skipped because none are configured; automated UI behavior remains unverified beyond lint/type/build.
+Administrative `npm run lint` is a pre-existing invalid Next.js 16 `next lint` script and did not run. PrimeHR now has a repeatable Playwright suite. No tests were skipped in the final eight-test run.
+
+The user manually confirmed independent submit/return/resubmit/approve, administrator override, denied access, immutable ACTIVE state, stale conflict, successor closure, exact comparison, resolution, and audit behavior. Automation covers the stable repeatable matrix and reuses immutable ACTIVE fixtures to avoid producing an unlimited version chain.
 
 ## 6. Audits and unresolved items
 
@@ -181,10 +203,13 @@ Administrative `npm run lint` is a pre-existing invalid Next.js 16 `next lint` s
 - Generated/IDE artifact scan: pass; only intended source/docs are untracked.
 - Phase-boundary scan: pass; no Phase 3+ functionality found.
 - Backend Phase 2.1/2.2 secret/generated/boundary audits are recorded in their detail documents.
-- The exact Phase 2.3 browser matrix in `PHASE_2_3_POSITION_PROFILE_UI.md` is pending user execution.
+- Phase 2.3 manual browser evidence and the repeatable Playwright matrix passed locally against SQL Server.
+- The conflict test found one in-scope UI defect: after a valid stale-write rejection, the stale form remained open. The 409 handler now resets the editor before reload, preventing an accidental second overwrite attempt.
+- Live PostgreSQL was not exercised for this Phase 2.3 browser run. Phase 2's equivalent migrations, provider-neutral JPA/REST design, parity tests, and recorded PostgreSQL-mode harness remain the available portability evidence.
+- Initial npm install output reported a Node engine warning for local Node 22.11.0 and four high-severity findings. No automatic remediation was performed. Final explicit `npm audit` and `npm audit --omit=dev` each reported zero vulnerabilities; use a currently supported Node patch in CI and retain the initial-output discrepancy as an environment note.
 - No frontend was committed, pushed, or deployed by Codex.
 - No database-provider behavior was added by Phase 2.3; it is a typed REST UI over the provider-neutral backend.
 
 ## 7. Review disposition
 
-The Phase 2 implementation is ready for independent review and manual browser acceptance. Do not declare Phase 2 fully accepted or start Phase 3 implementation until the applicable Phase 2.3 manual matrix is confirmed and the user explicitly approves a separately prepared Phase 3 scope.
+Phase 2 is complete and accepted on the approved SQL Server-primary policy. The implementation and its operator/test documentation are ready for commit review. Stop before Phase 3; prepare an exact Phase 3 scope and obtain explicit approval before implementing it.
