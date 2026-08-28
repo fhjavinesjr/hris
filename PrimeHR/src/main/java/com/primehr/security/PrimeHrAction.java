@@ -7,5 +7,8 @@ public enum PrimeHrAction {
     ARCHIVE,
     PUBLISH,
     SUBMIT,
-    APPROVE
+    APPROVE,
+    ASSESS,
+    VALIDATE,
+    FINALIZE
 }

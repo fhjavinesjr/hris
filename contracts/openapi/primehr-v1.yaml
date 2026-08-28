@@ -1,13 +1,140 @@
 openapi: 3.0.3
 info:
   title: ISOFT PRIME-HRM API
-  version: 2.2.0-phase-2.2
-  description: Phase 1 competency foundation and Phase 2.1 position-profile draft administration. All operations require an ISOFT employee JWT and server-resolved agency scope. Position-profile commands use the independent primehr.position-profile permission and validate authoritative targets through Administrative.
+  version: 3.3.0-phase-3.3
+  description: Phase 1 competency foundation, Phase 2 position profiles, and Phase 3.3 assessment execution, human validation, and immutable person competency profiles. All operations require an ISOFT employee JWT and server-resolved agency scope.
 servers:
   - url: /api/primehr/v1
 security:
   - bearerAuth: []
 paths:
+  /admin/assessment-cycles:
+    get: {operationId: listAssessmentCycles, responses: {'200': {description: DRAFT assessment-cycle page}}}
+    post: {operationId: createAssessmentCycle, responses: {'201': {description: DRAFT cycle created}}}
+  /admin/assessment-cycles/{cycleId}:
+    get: {operationId: getAssessmentCycle, responses: {'200': {description: Assessment cycle}}}
+    put: {operationId: updateAssessmentCycle, responses: {'200': {description: DRAFT cycle updated}}}
+  /admin/assessment-cycles/{cycleId}/archive:
+    post: {operationId: archiveAssessmentCycle, responses: {'200': {description: DRAFT cycle archived}}}
+  /admin/assessment-cycles/{cycleId}/open:
+    post: {operationId: openAssessmentCycle, responses: {'200': {description: Fully configured cycle opened}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/assessment-cycles/{cycleId}/close:
+    post: {operationId: closeAssessmentCycle, responses: {'200': {description: OPEN cycle closed}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/assessment-cycles/{cycleId}/tools:
+    get: {operationId: listAssessmentTools, responses: {'200': {description: Cycle tools}}}
+    post: {operationId: createAssessmentTool, responses: {'201': {description: DRAFT tool created}}}
+  /admin/assessment-tools/{toolId}:
+    get: {operationId: getAssessmentTool, responses: {'200': {description: Assessment tool}}}
+    put: {operationId: updateAssessmentTool, responses: {'200': {description: DRAFT tool updated}}}
+  /admin/assessment-tools/{toolId}/archive:
+    post: {operationId: archiveAssessmentTool, responses: {'200': {description: DRAFT tool archived}}}
+  /admin/assessment-tools/{toolId}/publish:
+    post: {operationId: publishAssessmentTool, responses: {'200': {description: Complete DRAFT tool published}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/assessment-tools/{toolId}/subjects:
+    get: {operationId: listAssessmentSubjects, responses: {'200': {description: Assigned subject page}}}
+    post: {operationId: addAssessmentSubject, responses: {'201': {description: DRAFT subject snapshot created}}}
+  /admin/assessment-cases/{caseId}:
+    get: {operationId: getAssessmentCase, responses: {'200': {description: DRAFT assessment case}}}
+  /admin/assessment-cases/{caseId}/archive:
+    post: {operationId: archiveAssessmentCase, responses: {'200': {description: DRAFT case archived}}}
+  /admin/assessment-cases/{caseId}/assessors:
+    post: {operationId: addAssessorAssignment, responses: {'201': {description: DRAFT assessor assigned}}}
+  /admin/assessment-cases/{caseId}/assessors/{assignmentId}:
+    put: {operationId: updateAssessorAssignment, responses: {'200': {description: DRAFT assessor assignment updated}}}
+  /admin/assessment-cases/{caseId}/assessors/{assignmentId}/archive:
+    post: {operationId: archiveAssessorAssignment, responses: {'200': {description: DRAFT assessor assignment archived}}}
+  /assessments/mine:
+    get: {operationId: listMyAssessmentAssignments, responses: {'200': {description: Assigned assessor inbox, content: {application/json: {schema: {$ref: '#/components/schemas/AssessmentInboxPage'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /assessments/{caseId}:
+    get: {operationId: getMyAssessmentWork, responses: {'200': {description: Current assessor contribution only, content: {application/json: {schema: {$ref: '#/components/schemas/AssessmentWork'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /assessments/{caseId}/assignments/{assignmentId}/ratings/{competencyVersionId}:
+    put:
+      operationId: saveAssessmentRating
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/SaveAssessmentRatingRequest'}}}
+      responses: {'200': {description: Rating saved and root versions advanced}, '409': {$ref: '#/components/responses/Conflict'}}
+  /assessments/{caseId}/assignments/{assignmentId}/evidence:
+    post:
+      operationId: createAssessmentEvidence
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/CreateAssessmentEvidenceRequest'}}}
+      responses: {'201': {description: Structured evidence created}, '409': {$ref: '#/components/responses/Conflict'}}
+  /assessments/{caseId}/assignments/{assignmentId}/evidence/{evidenceId}:
+    put:
+      operationId: updateAssessmentEvidence
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/UpdateAssessmentEvidenceRequest'}}}
+      responses: {'200': {description: Structured evidence updated}, '409': {$ref: '#/components/responses/Conflict'}}
+  /assessments/{caseId}/assignments/{assignmentId}/evidence/{evidenceId}/archive:
+    post:
+      operationId: archiveAssessmentEvidence
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/AssessmentWorkTransitionRequest'}}}
+      responses: {'200': {description: Structured evidence archived}, '409': {$ref: '#/components/responses/Conflict'}}
+  /assessments/{caseId}/assignments/{assignmentId}/submit:
+    post:
+      operationId: submitAssessmentContribution
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/AssessmentWorkTransitionRequest'}}}
+      responses: {'200': {description: Complete contribution submitted}, '409': {$ref: '#/components/responses/Conflict'}}
+  /validation/assessment-cases/{caseId}/return:
+    post:
+      operationId: returnAssessmentForCorrection
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/ReturnAssessmentCaseRequest'}}}
+      responses:
+        '200':
+          description: Submitted contributions returned atomically for correction
+          content: {application/json: {schema: {$ref: '#/components/schemas/ReturnAssessmentCaseResponse'}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /validation/assessment-cases:
+    get:
+      operationId: listAssessmentCasesPendingValidation
+      responses: {'200': {description: Agency-scoped FOR_VALIDATION cases}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /validation/assessment-cases/{caseId}:
+    get:
+      operationId: getAssessmentCaseForValidation
+      responses: {'200': {description: Requirements and separate assessor contributions, content: {application/json: {schema: {$ref: '#/components/schemas/AssessmentValidation'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /validation/assessment-cases/{caseId}/validate:
+    post:
+      operationId: validateAssessmentCase
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/ValidateAssessmentCaseRequest'}}}
+      responses: {'200': {description: Atomic validation and immutable person-profile generation}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /person-profiles/me:
+    get:
+      operationId: getMyEffectivePersonCompetencyProfile
+      parameters: [{name: asOf, in: query, required: false, schema: {type: string, format: date}}]
+      responses: {'200': {description: Authenticated employee effective profile, content: {application/json: {schema: {$ref: '#/components/schemas/PersonCompetencyProfile'}}}}, '404': {$ref: '#/components/responses/NotFound'}}
+  /person-profiles/me/history:
+    get:
+      operationId: listMyPersonCompetencyProfileHistory
+      responses: {'200': {description: Authenticated employee immutable profile history}}
+  /person-profiles/employees/{employeeNo}:
+    get:
+      operationId: getEmployeeEffectivePersonCompetencyProfile
+      parameters:
+        - {name: employeeNo, in: path, required: true, schema: {type: string}}
+        - {name: asOf, in: query, required: false, schema: {type: string, format: date}}
+      responses: {'200': {description: Scope-authorized employee effective profile, content: {application/json: {schema: {$ref: '#/components/schemas/PersonCompetencyProfile'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /person-profiles/employees/{employeeNo}/history:
+    get:
+      operationId: listEmployeePersonCompetencyProfileHistory
+      parameters: [{name: employeeNo, in: path, required: true, schema: {type: string}}]
+      responses: {'200': {description: Scope-authorized immutable employee profile history}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /person-profiles/versions/{profileVersionId}:
+    get:
+      operationId: getPersonCompetencyProfileVersion
+      parameters: [{name: profileVersionId, in: path, required: true, schema: {type: string, maxLength: 36}}]
+      responses: {'200': {description: Exact immutable profile version, content: {application/json: {schema: {$ref: '#/components/schemas/PersonCompetencyProfile'}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /competency-categories:
     get:
       operationId: listCompetencyCategories
@@ -474,6 +601,162 @@ components:
     PositionProfileComparison: {description: Exact-version requirement comparison, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfileComparison'}}}}
     AuditEventPage: {description: Page of append-only position-profile audit events, content: {application/json: {schema: {$ref: '#/components/schemas/AuditEventPage'}}}}
   schemas:
+    AssessmentInboxPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content: {type: array, items: {$ref: '#/components/schemas/AssessmentInboxItem'}}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1}
+        totalElements: {type: integer, format: int64, minimum: 0}
+        totalPages: {type: integer, minimum: 0}
+        first: {type: boolean}
+        last: {type: boolean}
+    AssessmentInboxItem:
+      type: object
+      required: [caseId, assignmentId, cycleCode, cycleName, toolName, subjectEmployeeNo,
+        subjectDisplayName, method, caseStatus, assignmentStatus, caseRecordVersion,
+        assignmentRecordVersion]
+      additionalProperties: true
+    AssessmentWork:
+      type: object
+      required: [caseId, cycleId, cycleCode, cycleName, toolId, toolName, subjectEmployeeNo,
+        subjectDisplayName, caseStatus, caseRecordVersion, requirements, contributions]
+      properties:
+        caseId: {type: string, maxLength: 36}
+        caseStatus: {type: string, enum: [ASSIGNED, IN_PROGRESS, FOR_VALIDATION, RETURNED]}
+        caseRecordVersion: {type: integer, format: int64, minimum: 0}
+        requirements: {type: array, items: {type: object, additionalProperties: true}}
+        contributions: {type: array, description: Contains only the authenticated assessor's contribution, items: {type: object, additionalProperties: true}}
+      additionalProperties: true
+    SaveAssessmentRatingRequest:
+      type: object
+      required: [attainedLevelId, assignmentRecordVersion, caseRecordVersion]
+      properties:
+        attainedLevelId: {type: string, maxLength: 36}
+        remarks: {type: string, maxLength: 2000, nullable: true}
+        behavioralNotes: {type: string, maxLength: 4000, nullable: true}
+        recordVersion: {type: integer, format: int64, minimum: 0, nullable: true}
+        assignmentRecordVersion: {type: integer, format: int64, minimum: 0}
+        caseRecordVersion: {type: integer, format: int64, minimum: 0}
+    CreateAssessmentEvidenceRequest:
+      type: object
+      required: [competencyVersionId, evidenceType, titleReference, evidenceDate,
+        assignmentRecordVersion, caseRecordVersion]
+      properties:
+        competencyVersionId: {type: string, maxLength: 36}
+        evidenceType: {type: string, maxLength: 100}
+        titleReference: {type: string, maxLength: 500}
+        evidenceDate: {type: string, format: date}
+        description: {type: string, maxLength: 4000, nullable: true}
+        sourceSystem: {type: string, maxLength: 100, nullable: true}
+        sourceReference: {type: string, maxLength: 500, nullable: true}
+        assignmentRecordVersion: {type: integer, format: int64, minimum: 0}
+        caseRecordVersion: {type: integer, format: int64, minimum: 0}
+    UpdateAssessmentEvidenceRequest:
+      type: object
+      required: [evidenceType, titleReference, evidenceDate, recordVersion,
+        assignmentRecordVersion, caseRecordVersion]
+      properties:
+        evidenceType: {type: string, maxLength: 100}
+        titleReference: {type: string, maxLength: 500}
+        evidenceDate: {type: string, format: date}
+        description: {type: string, maxLength: 4000, nullable: true}
+        sourceSystem: {type: string, maxLength: 100, nullable: true}
+        sourceReference: {type: string, maxLength: 500, nullable: true}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        assignmentRecordVersion: {type: integer, format: int64, minimum: 0}
+        caseRecordVersion: {type: integer, format: int64, minimum: 0}
+    AssessmentWorkTransitionRequest:
+      type: object
+      required: [assignmentRecordVersion, caseRecordVersion]
+      properties:
+        assignmentRecordVersion: {type: integer, format: int64, minimum: 0}
+        caseRecordVersion: {type: integer, format: int64, minimum: 0}
+        recordVersion: {type: integer, format: int64, minimum: 0, nullable: true}
+        reason: {type: string, maxLength: 1000, nullable: true}
+    ReturnAssessmentCaseRequest:
+      type: object
+      required: [caseRecordVersion, reason]
+      properties:
+        caseRecordVersion: {type: integer, format: int64, minimum: 0}
+        reason: {type: string, minLength: 1, maxLength: 1000}
+    ReturnAssessmentCaseResponse:
+      type: object
+      required: [caseId, status, caseRecordVersion, returnedContributions]
+      properties:
+        caseId: {type: string, maxLength: 36}
+        status: {type: string, enum: [RETURNED]}
+        caseRecordVersion: {type: integer, format: int64, minimum: 0}
+        returnedContributions: {type: integer, minimum: 1}
+    AssessmentValidation:
+      type: object
+      required: [caseId, status, subjectEmployeeNo, subjectDisplayName, caseRecordVersion, requirements, contributions]
+      properties:
+        caseId: {type: string, maxLength: 36}
+        status: {type: string, enum: [FOR_VALIDATION]}
+        subjectEmployeeNo: {type: string}
+        subjectDisplayName: {type: string}
+        caseRecordVersion: {type: integer, format: int64, minimum: 0}
+        requirements: {type: array, items: {type: object, additionalProperties: true}}
+        contributions: {type: array, description: Separate submitted assessor contributions, items: {type: object, additionalProperties: true}}
+    ExpectedAssessmentContribution:
+      type: object
+      required: [assignmentId, recordVersion]
+      properties:
+        assignmentId: {type: string, maxLength: 36}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    FinalAssessmentDecision:
+      type: object
+      required: [competencyVersionId, finalLevelId, contributingAssignmentIds]
+      properties:
+        competencyVersionId: {type: string, maxLength: 36}
+        finalLevelId: {type: string, maxLength: 36}
+        remarks: {type: string, maxLength: 2000, nullable: true}
+        contributingAssignmentIds: {type: array, minItems: 1, uniqueItems: true, items: {type: string, maxLength: 36}}
+    ValidateAssessmentCaseRequest:
+      type: object
+      required: [caseRecordVersion, validFrom, expectedContributions, decisions]
+      properties:
+        caseRecordVersion: {type: integer, format: int64, minimum: 0}
+        validFrom: {type: string, format: date}
+        reassessmentDate: {type: string, format: date, nullable: true}
+        validationRemarks: {type: string, maxLength: 4000, nullable: true}
+        administratorOverride: {type: boolean, default: false}
+        overrideReason: {type: string, maxLength: 1000, nullable: true, description: Required for an administrator override}
+        expectedContributions: {type: array, minItems: 1, items: {$ref: '#/components/schemas/ExpectedAssessmentContribution'}}
+        decisions: {type: array, minItems: 1, items: {$ref: '#/components/schemas/FinalAssessmentDecision'}}
+    PersonCompetencyResult:
+      type: object
+      required: [competencyId, competencyCode, competencyName, attainedLevelId, attainedLevelCode, attainedLevelLabel]
+      properties:
+        competencyId: {type: string, maxLength: 36}
+        competencyCode: {type: string}
+        competencyName: {type: string}
+        attainedLevelId: {type: string, maxLength: 36}
+        attainedLevelCode: {type: string}
+        attainedLevelLabel: {type: string}
+        validationRemarks: {type: string, nullable: true}
+    PersonCompetencyProfile:
+      type: object
+      required: [id, subjectEmployeeNo, subjectDisplayName, profileVersion, validFrom, status, validatedAt, cycleId, toolId, positionProfileId, positionProfileDefinitionVersion, positionProfileContentRevision, results]
+      properties:
+        id: {type: string, maxLength: 36}
+        subjectEmployeeNo: {type: string}
+        subjectDisplayName: {type: string}
+        profileVersion: {type: integer, minimum: 1}
+        validFrom: {type: string, format: date}
+        validTo: {type: string, format: date, nullable: true}
+        reassessmentDate: {type: string, format: date, nullable: true}
+        status: {type: string, enum: [VALIDATED]}
+        validatedAt: {type: string, format: date-time}
+        predecessorId: {type: string, maxLength: 36, nullable: true}
+        cycleId: {type: string, maxLength: 36}
+        toolId: {type: string, maxLength: 36}
+        positionProfileId: {type: string, maxLength: 36}
+        positionProfileDefinitionVersion: {type: integer, minimum: 1}
+        positionProfileContentRevision: {type: integer, format: int64, minimum: 0}
+        results: {type: array, items: {$ref: '#/components/schemas/PersonCompetencyResult'}}
     DraftBase:
       type: object
       required: [code, name, displayOrder]

@@ -31,6 +31,7 @@ public class PositionProfilePermissionGuard {
             case PUBLISH -> false;
             case SUBMIT -> permission.canAccess() && permission.canSubmit();
             case APPROVE -> permission.canAccess() && permission.canApprove();
+            case ASSESS, VALIDATE, FINALIZE -> false;
         };
         if (!allowed) throw new AccessDeniedException("The required position profile action is not permitted");
         return permission;

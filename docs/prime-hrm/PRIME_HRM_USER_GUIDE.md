@@ -1,6 +1,6 @@
 # ISOFT PRIME-HRM User Guide
 
-This guide covers the Phase 1 competency foundation and Phase 2 Position Competency Profiles available in the standalone PRIME-HRM application. It does not cover Phase 3 person profiles, assessments, or gap analysis because those features have not been implemented.
+This guide covers the Phase 1 competency foundation, Phase 2 Position Competency Profiles, and Phase 3 competency assessments and immutable Person Competency Profiles available in the standalone PRIME-HRM application. Competency gap analysis and later Master Plan phases are not yet implemented.
 
 ## 1. Access and sign-in
 
@@ -22,6 +22,10 @@ Administrative permission rules independently control:
 - **Publish**: publish competency foundation drafts;
 - **Submit**: submit a Position Profile for approval;
 - **Approve**: return or approve a submitted Position Profile;
+- **Assess**: enter ratings/evidence for an explicitly assigned assessment contribution;
+- **Validate**: return a completed assessment case or make the human-validated final decisions;
+- **Finalize**: close an assessment cycle after its controlled work is complete;
+- **Data Scope**: restrict records to `OWN_RECORDS`, `ASSIGNED_RECORDS`, or `AGENCY_WIDE`;
 - **Portal**: display the PRIME-HRM link in Employee Portal.
 
 Access is required for every other action. An ordinary submitter cannot approve their own submission. An administrator can override that separation only with an explicit reason, which is audited. Hiding a button is not the only control; the backend also enforces authorization.
@@ -156,7 +160,57 @@ Audit History records create, update, submit, return, approve, publish, archive,
 
 If two users edit the same draft, the first valid save wins. A stale second save is rejected with an expected/current record-version message, the stale editor closes, and current server data reloads. Reopen the record and consciously reapply changes; do not bypass the conflict.
 
-## 10. Common messages
+## 10. Assessment administration
+
+Open **Assessment Administration** to prepare cycles and tools. This page requires agency-wide assessment-administration access.
+
+1. Create a DRAFT cycle with a unique code, name, effectivity, and instructions.
+2. Create a tool under that cycle and select one exact ACTIVE Position Profile.
+3. Select one or more supported methods. `SELF_ASSESSMENT` assigns the subject to themselves; every other method requires an explicit employee assessor.
+4. Add eligible subjects from HRM. Eligibility requires a current active appointment and an effective Position Profile resolved with Plantilla precedence and Job Position fallback.
+5. Add explicit assessors where required. The subject cannot be their own non-self assessor.
+6. Publish the complete tool, then open the cycle.
+7. Close the cycle only after the intended assessment work is complete.
+
+The HRM/Administrative source panels show the authoritative IDs and snapshots used. A dependency or freshness problem must be resolved before proceeding. PRIME-HRM never infers a supervisor from unrelated approval-workflow or personnel fields.
+
+## 11. My Assessments
+
+Open **My Assessments** to see only self contributions or work explicitly assigned to the signed-in employee.
+
+1. Open an assigned item and read its exact tool instructions and position requirements.
+2. Select an attained level from the competency's exact published scale.
+3. Add remarks and observable-behavior notes, then select **Save Rating**.
+4. When required, add structured evidence with type, official reference/title, evidence date, and description. Phase 3 stores references and text only; it does not upload binary files.
+5. Rate every active requirement and satisfy evidence requirements.
+6. Select **Submit Contribution** and confirm.
+
+Submitted contributions are read-only. If a validator returns the case, the contribution becomes available for correction and resubmission. Other assessors' confidential contributions are not shown in this inbox.
+
+## 12. Assessment validation
+
+Open **Assessment Validation** to review cases for which every active contribution has been submitted.
+
+1. Open a case and compare each contributor separately. The system does not average ratings or automatically decide the official result.
+2. Select a human-validated final level for every competency and enter decision remarks where needed.
+3. Set the official profile valid-from date and optional reassessment date.
+4. Select **Return for Correction** with a mandatory reason when work is incomplete or unclear.
+5. Otherwise select **Validate and Generate Profile** and confirm.
+
+An ordinary validator cannot validate a case in which they contributed. An administrator may use the displayed override only for an authorized exception and must enter a mandatory audited reason. Successful validation atomically creates one immutable official Person Competency Profile version.
+
+## 13. Person Competency Profiles
+
+Open **Person Profiles** to view validated official results.
+
+- `OWN_RECORDS` shows only the signed-in employee's profile.
+- `AGENCY_WIDE` allows an authorized HR user to enter another Employee No.
+- **Latest valid as of** resolves the profile effective on that date.
+- **Immutable Version History** lists every retained official version and its predecessor lineage.
+
+The badge **VALIDATED OFFICIAL PROFILE** distinguishes official human-validated results from self or assessor contributions. Official versions cannot be edited or deleted. A later validated assessment creates a successor and closes the earlier open period when applicable.
+
+## 14. Common messages
 
 - **Access denied**: ask an administrator to review the exact feature/action permissions, then sign in again through the portal.
 - **Incomplete**: supply effective-from and at least one active, valid requirement.
@@ -165,8 +219,13 @@ If two users edit the same draft, the first valid save wins. A stale second save
 - **No effective profile**: verify IDs, ACTIVE status, and the As-of date.
 - **Administrative source changed**: review the current authoritative target before submitting/approving.
 - **Dependency unavailable**: verify the configured service URL, service health, authentication, and CORS.
+- **The required assessment action is not permitted**: review Access plus the exact Assess, Submit, Validate, or Finalize permission and data scope, then sign in again.
+- **This assessment is not assigned to the current user**: use the account explicitly assigned to that contribution.
+- **Every active competency requirement must have a rating**: finish all ratings before submission.
+- **A successor validFrom must be after the latest profile validFrom**: choose a later non-overlapping official-profile effectivity date.
+- **A validator cannot validate their own contribution**: use an independent validator or an authorized administrator override with an audited reason.
 
-## 11. Operational controls
+## 15. Operational controls
 
 - Configure permissions in Administrative and reauthenticate after changing a ruleset.
 - Maintain Job Position and Plantilla only in Administrative.

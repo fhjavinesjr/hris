@@ -14,4 +14,6 @@ public interface PositionProfileRequirementRepository extends JpaRepository<Posi
             String id, String profileId, String agencyId);
 
     boolean existsByProfileIdAndCompetencyId(String profileId, String competencyId);
+    List<PositionProfileRequirement> findByProfileIdAndAgencyIdAndActiveTrueOrderByDisplayOrderAscIdAsc(
+            String profileId, String agencyId);
 }

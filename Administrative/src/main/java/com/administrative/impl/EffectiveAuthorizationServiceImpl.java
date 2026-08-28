@@ -1,6 +1,7 @@
 package com.administrative.impl;
 
 import com.administrative.dtos.EffectiveFeaturePermissionResponse;
+import com.administrative.dtos.PermissionDataScope;
 import com.administrative.entitymodels.PermissionRuleset;
 import com.administrative.repositories.PermissionRulesetRepository;
 import com.administrative.services.EffectiveAuthorizationService;
@@ -9,11 +10,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorizationService {
     public static final String PRIMEHR_COMPETENCY = "primehr.competency";
     public static final String PRIMEHR_POSITION_PROFILE = "primehr.position-profile";
+    public static final String PRIMEHR_ASSESSMENT_ADMINISTRATION = "primehr.assessment-administration";
+    public static final String PRIMEHR_COMPETENCY_ASSESSMENT = "primehr.competency-assessment";
+    public static final String PRIMEHR_ASSESSMENT_VALIDATION = "primehr.assessment-validation";
+    public static final String PRIMEHR_PERSON_PROFILE = "primehr.person-profile";
+    private static final Set<String> SUPPORTED_FEATURES = Set.of(PRIMEHR_COMPETENCY,
+            PRIMEHR_POSITION_PROFILE, PRIMEHR_ASSESSMENT_ADMINISTRATION, PRIMEHR_COMPETENCY_ASSESSMENT,
+            PRIMEHR_ASSESSMENT_VALIDATION, PRIMEHR_PERSON_PROFILE);
     private static final String INSTALL_ADMIN_EMPLOYEE_NO = "admin";
 
     private final PermissionRulesetRepository repository;
@@ -26,7 +35,7 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
 
     @Override
     public EffectiveFeaturePermissionResponse resolve(String employeeNo, String role, String featureKey) {
-        if (!PRIMEHR_COMPETENCY.equals(featureKey) && !PRIMEHR_POSITION_PROFILE.equals(featureKey)) {
+        if (!SUPPORTED_FEATURES.contains(featureKey)) {
             throw new IllegalArgumentException("Unsupported feature key");
         }
         if (employeeNo != null && INSTALL_ADMIN_EMPLOYEE_NO.equalsIgnoreCase(employeeNo.trim())) {
@@ -46,14 +55,21 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
         try {
             JsonNode permission = objectMapper.readTree(ruleset.getPermissionData()).path(featureKey);
             boolean canAccess = permission.path("canAccess").asBoolean(false);
+            PermissionDataScope dataScope = canAccess
+                    ? PermissionDataScope.fromPersisted(permission.path("dataScope").asText(null))
+                    : PermissionDataScope.NONE;
             return new EffectiveFeaturePermissionResponse(featureKey, false,
                     canAccess,
-                    permission.path("canAdd").asBoolean(false),
-                    permission.path("canEdit").asBoolean(false),
-                    permission.path("canDelete").asBoolean(false),
+                    canAccess && permission.path("canAdd").asBoolean(false),
+                    canAccess && permission.path("canEdit").asBoolean(false),
+                    canAccess && permission.path("canDelete").asBoolean(false),
                     canAccess && permission.path("canPublish").asBoolean(false),
                     canAccess && permission.path("canSubmit").asBoolean(false),
-                    canAccess && permission.path("canApprove").asBoolean(false));
+                    canAccess && permission.path("canApprove").asBoolean(false),
+                    canAccess && permission.path("canAssess").asBoolean(false),
+                    canAccess && permission.path("canValidate").asBoolean(false),
+                    canAccess && permission.path("canFinalize").asBoolean(false),
+                    dataScope);
         } catch (Exception exception) {
             return EffectiveFeaturePermissionResponse.denied(featureKey);
         }

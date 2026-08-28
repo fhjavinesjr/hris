@@ -42,6 +42,9 @@ public class PrimeHrSecurityConfiguration {
                         .requestMatchers("/api/primehr/v1/admin/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/primehr/v1/**")
                         .hasAuthority(PrimeHrAuthorities.COMPETENCY_READ)
+                        .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/assessments/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/primehr/v1/assessments/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/primehr/v1/validation/**").authenticated()
                         .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, exception) -> writeSecurityError(

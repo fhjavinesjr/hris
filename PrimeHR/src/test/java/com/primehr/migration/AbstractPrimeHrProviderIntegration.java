@@ -62,7 +62,12 @@ abstract class AbstractPrimeHrProviderIntegration {
     private static final Set<String> EXPECTED_TABLES = Set.of(
             "prime_competency_category", "prime_proficiency_scale", "prime_proficiency_level",
             "prime_competency", "prime_behavioral_indicator", "prime_audit_event",
-            "prime_position_profile", "prime_position_profile_requirement", "flyway_schema_history");
+            "prime_position_profile", "prime_position_profile_requirement",
+            "prime_assessment_cycle", "prime_assessment_tool", "prime_assessment_tool_method",
+            "prime_assessment_case", "prime_assessor_assignment", "prime_assessment_rating",
+            "prime_assessment_evidence", "prime_assessment_validation",
+            "prime_assessment_validated_rating", "prime_person_competency_profile",
+            "prime_person_competency_result", "flyway_schema_history");
     private static final Set<String> EXPECTED_INDEXES = Set.of(
             "ix_prime_category_agency_active", "ix_prime_scale_agency_active",
             "ix_prime_level_agency_scale", "ix_prime_competency_filter", "ix_prime_indicator_lookup");
@@ -74,6 +79,16 @@ abstract class AbstractPrimeHrProviderIntegration {
     private static final Set<String> PHASE_2_INDEXES = Set.of(
             "ix_prime_profile_filter", "ix_prime_profile_target_chain",
             "ix_prime_profile_requirement_order", "ix_prime_profile_effective_resolution");
+    private static final Set<String> PHASE_3_1_INDEXES = Set.of(
+            "ix_prime_assessment_cycle_filter", "ix_prime_assessment_tool_cycle",
+            "ix_prime_assessment_case_subject", "ix_prime_assessment_case_tool",
+            "ix_prime_assessor_employee");
+    private static final Set<String> PHASE_3_2_INDEXES = Set.of(
+            "ix_prime_assessment_assignment_inbox", "ix_prime_assessment_rating_assignment",
+            "ix_prime_assessment_evidence_rating");
+    private static final Set<String> PHASE_3_3_INDEXES = Set.of(
+            "ix_prime_validation_status", "ix_prime_person_profile_latest",
+            "ix_prime_person_result_profile");
 
     @Autowired private Flyway flyway;
     @Autowired private DataSource dataSource;
@@ -87,22 +102,33 @@ abstract class AbstractPrimeHrProviderIntegration {
     @Value("${spring.flyway.default-schema}") private String databaseSchema;
 
     @Test
-    void flywayV1ThroughV5CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
+    void flywayV1ThroughV8CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
         assertThat(flyway.info().current()).isNotNull();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("5");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("8");
 
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
             assertThat(readNames(metadata.getTables(connection.getCatalog(), databaseSchema, "%", new String[]{"TABLE"}),
                     "TABLE_NAME")).containsAll(EXPECTED_TABLES);
             assertThat(indexNames(metadata, connection)).containsAll(EXPECTED_INDEXES)
-                    .containsAll(PHASE_1B_INDEXES).containsAll(PHASE_1C_INDEXES).containsAll(PHASE_2_INDEXES);
+                    .containsAll(PHASE_1B_INDEXES).containsAll(PHASE_1C_INDEXES).containsAll(PHASE_2_INDEXES)
+                    .containsAll(PHASE_3_1_INDEXES).containsAll(PHASE_3_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_3_3_INDEXES);
 
             assertThat(importedKeyCount(metadata, connection, "prime_proficiency_level")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "prime_competency")).isGreaterThanOrEqualTo(2);
             assertThat(importedKeyCount(metadata, connection, "prime_behavioral_indicator")).isGreaterThanOrEqualTo(2);
             assertThat(importedKeyCount(metadata, connection, "prime_position_profile_requirement"))
                     .isGreaterThanOrEqualTo(3);
+            assertThat(importedKeyCount(metadata, connection, "prime_assessment_tool")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "prime_assessment_case")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "prime_assessor_assignment")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "prime_assessment_rating")).isGreaterThanOrEqualTo(3);
+            assertThat(importedKeyCount(metadata, connection, "prime_assessment_evidence")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "prime_assessment_validation")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "prime_assessment_validated_rating")).isGreaterThanOrEqualTo(3);
+            assertThat(importedKeyCount(metadata, connection, "prime_person_competency_profile")).isGreaterThanOrEqualTo(3);
+            assertThat(importedKeyCount(metadata, connection, "prime_person_competency_result")).isGreaterThanOrEqualTo(4);
         }
     }
 

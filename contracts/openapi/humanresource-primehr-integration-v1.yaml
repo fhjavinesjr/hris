@@ -1,0 +1,64 @@
+openapi: 3.0.3
+info:
+  title: ISOFT HRIS HumanResource to PrimeHR Integration API
+  version: 1.0.0-phase-3.1
+  description: Minimal authenticated employee and current-appointment projection for PRIME-HRM assessment administration. Credentials, biometric identifiers, salary, contact data, and PDS data are excluded.
+security:
+  - bearerAuth: []
+paths:
+  /api/integration/v1/primehr/assessment-subjects:
+    get:
+      operationId: listPrimeHrAssessmentSubjects
+      parameters:
+        - {name: search, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer, minimum: 0, default: 0}}
+        - {name: size, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+        - {name: activeOnly, in: query, schema: {type: boolean, default: true}}
+      responses:
+        '200': {description: Eligible active employees with current appointment snapshots}
+        '401': {description: Missing or invalid employee JWT}
+        '403': {description: Agency-wide assessment administration access is not permitted}
+        '503': {description: Administrative authorization is unavailable}
+  /api/integration/v1/primehr/assessment-subjects/{employeeId}:
+    get:
+      operationId: getPrimeHrAssessmentSubject
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200': {description: Eligible active employee and current appointment snapshot}
+        '401': {description: Missing or invalid employee JWT}
+        '403': {description: Agency-wide assessment administration access is not permitted}
+        '404': {description: Eligible subject/current appointment was not found}
+        '503': {description: Administrative authorization is unavailable}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  schemas:
+    AssessmentSubject:
+      type: object
+      additionalProperties: false
+      properties:
+        employeeId: {type: integer, format: int64}
+        employeeNo: {type: string, maxLength: 100}
+        displayName: {type: string, maxLength: 300}
+        eligible: {type: boolean}
+        appointmentId: {type: integer, format: int64}
+        assumptionToDutyDate: {type: string, format: date-time}
+        jobPositionId: {type: integer, format: int64}
+        plantillaId: {type: integer, format: int64, nullable: true}
+        sourceFingerprint: {type: string, minLength: 64, maxLength: 64}
+        sourceUpdatedAt: {type: string, format: date-time, nullable: true}
+        fetchedAt: {type: string, format: date-time}
+    AssessmentSubjectPage:
+      type: object
+      properties:
+        content: {type: array, items: {$ref: '#/components/schemas/AssessmentSubject'}}
+        page: {type: integer}
+        size: {type: integer}
+        totalElements: {type: integer, format: int64}
+        totalPages: {type: integer}
+        first: {type: boolean}
+        last: {type: boolean}

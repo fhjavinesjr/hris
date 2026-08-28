@@ -1,8 +1,8 @@
 # ISOFT PRIME-HRM Progress Ledger
 
-Last updated: 2026-08-26
-Current phase: Phase 2 complete; stopped before Phase 3
-Status: Phase 2.1/2.2 backend and Phase 2.3 UI/manual/Playwright gates complete under the user-approved SQL Server-primary policy
+Last updated: 2026-08-28
+Current phase: Phase 3 complete; Phase 4 requires a separate exact scope and explicit approval
+Status: Phase 3 backend, dual-provider migrations/parity, permissions, UI, SQL Server Playwright acceptance, documentation, and final commit-readiness gates pass
 
 Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DISCOVERY.md)
 
@@ -18,7 +18,10 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 | 2.1 - Position Profile Draft Foundation | Complete | Administrative typed target reads; PrimeHR V4 draft profiles/requirements, dual migrations, OpenAPI, authorization, audit, tests, and real SQL Server fresh/upgrade validation; live PostgreSQL waived as a gate while portability remains mandatory |
 | 2.2 - Submission, Approval, Resolution, Comparison | Complete | independent permissions, two-stage lifecycle, separation of duties, effective Plantilla precedence, exact-version comparison, conflicts, complete audit, V5 migrations, and SQL Server validation |
 | 2.3 - Position Profile UI | Complete | Administrative permission controls; typed profile UI; user-confirmed browser acceptance; repeatable eight-test Playwright matrix; lint/type/build gates; user and test documentation |
-| 3+ | Not started | none |
+| 3.1 - Assessment Draft Foundation | Complete | HRM subject contract; assessment permissions/data scope; V6 draft cycle/tool/subject/assessor model and API; SQL Server and portability gates |
+| 3.2 - Assessment Execution | Complete | V7 lifecycle, assessor inbox/work, exact ratings/evidence, completeness, submit/return/resubmit, audit, OpenAPI, SQL Server and portability gates |
+| 3.3 - Human Validation and Person Profiles | Complete | independent human decisions; separation of duties; audited administrator override; immutable versioned person profiles; deterministic latest/history reads; V8 SQL Server and portability gates |
+| 3.4 - Assessment and Person Profile UI | Not started | Administrative permission controls, PrimeHR routes/pages, Playwright acceptance, user/test documentation, and final Phase 3 review remain excluded pending approval |
 
 ## Decisions recorded
 
@@ -66,8 +69,8 @@ Subsequent Phase 1B and Phase 1C implementation/review documents are maintained 
 
 - Maven: `PrimeHR` added to the root reactor; not to HRISApp.
 - Tables: category, competency, proficiency scale, proficiency level, behavioral indicator, position profile, and position profile requirement.
-- Migrations: equivalent PostgreSQL and SQL Server V1 through V5 scripts.
-- APIs: Phase 1 competency APIs plus Phase 2.1 audited permission-protected position-profile draft administration under `/api/primehr/v1/admin/position-profiles`; Administrative owns authenticated read-only Job Position/Plantilla integration endpoints.
+- Migrations: equivalent PostgreSQL and SQL Server V1 through V8 scripts.
+- APIs: Phase 1 competency APIs, Phase 2 Position Profile APIs, Phase 3.1 assessment draft administration, Phase 3.2 assigned-assessor execution/return, and Phase 3.3 validation/person-profile reads; Administrative and HRM retain their authoritative integration endpoints.
 - Contract: `contracts/openapi/primehr-v1.yaml`.
 - UI routes/pages: standalone `prime-hr-software` SSO, competency administration, and Position Competency Profiles; Employee Portal launch integration.
 - Existing module behavior, Jasper reports, messaging, storage, and deployment: unchanged.
@@ -127,13 +130,13 @@ Phase 1A.1 real-provider validation passed against Neon PostgreSQL 17.10 and loc
 
 ## Next phase
 
-Perform Phase 2 final commit-readiness review, then prepare the exact Master Plan Phase 3 scope for separate approval. Do not implement Phase 3 without that approval.
+Phase 3.4 was explicitly approved and completed. Administrative permissions, all four PrimeHR routes, repeatable Playwright acceptance, user/testing documentation, and in-scope browser defect corrections pass. The final repository, secret, diff, clean-package, and review-manifest gates also pass. Phase 4 has not started.
 
 ## Master Plan V2 alignment
 
 Phase 1A, Phase 1A.1, Phase 1B, and Phase 1C are controlled delivery slices of Master Plan V2 Phase 1 - Competency Foundation. Together they cover competency categories, dictionary records, dynamic proficiency scales/levels, behavioral indicators, effective dating/versioning, read APIs/UI, draft administration, RBAC, audit, controlled immutable publication, and PostgreSQL/SQL Server portability. They intentionally exclude position profiles, person assessments, gap analysis, and RSP/SPMS/L&D/R&R functionality as required by the Master Plan.
 
-Master Plan Phase 2 is complete. Phase 2.1 implements authoritative Job Position/Plantilla references, exact competency/level requirements, and effective-dated draft/version foundations without duplicating the Administrative position master. Phase 2.2 implements submission/approval, ACTIVE snapshots, precedence resolution, and exact-version comparison. Phase 2.3 implements the Administrative permission controls, standalone PrimeHR UI, accepted browser behavior, and repeatable Playwright coverage. No Master Plan Phase 3 person-profile, assessment, or gap functionality has been implemented.
+Master Plan Phase 2 is complete. Phase 2.1 implements authoritative Job Position/Plantilla references, exact competency/level requirements, and effective-dated draft/version foundations without duplicating the Administrative position master. Phase 2.2 implements submission/approval, ACTIVE snapshots, precedence resolution, and exact-version comparison. Phase 2.3 implements the Administrative permission controls, standalone PrimeHR UI, accepted browser behavior, and repeatable Playwright coverage. Master Plan Phase 3 is complete, including assessment administration/execution, human validation, immutable person profiles, Administrative and PrimeHR UI, and Playwright acceptance. All Phase 4 gap functionality remains unimplemented.
 
 ## Proactive execution and approval workflow
 
@@ -194,10 +197,44 @@ The recurring phase gate is:
 | Phase 2.3 conflict correction | Passed | stale 409 closes/reset the edit form before current-data reload; first accepted value remains authoritative |
 | Phase 2.3 documentation | Complete | repeatable E2E runbook and PRIME-HRM user guide created |
 | Phase 2 boundary | Passed | no person profiles, assessments, gaps, or other Phase 3 behavior implemented |
+| Phase 2 commit | Complete | backend `51922ea`; PrimeHR frontend `a8f34eb`; both repositories clean after user commit |
+| Phase 3 repository/master-plan comparison | Complete | HRM owns employee/appointment; supervisor authority remains incomplete; PrimeHR owns assessments/person profiles |
+| Phase 3 scope | Approved | user approved the exact 3.1-3.4 scope and authorized 3.1, then 3.2 only after all 3.1 gates pass |
+| Phase 3.1 HRM subject contract | Passed | authenticated minimal employee/current-appointment list/detail contract; no PDS, password, salary, contact, or unrelated history |
+| Phase 3.1 authorization | Passed | additive Assess/Validate/Finalize/Data Scope contract; legacy values fail closed; direct HRM denial and PrimeHR exact-action/scope guards tested |
+| Phase 3.1 V6 draft foundation | Passed | dual migrations, DRAFT cycle/tool/subject/assessor domain/API, audit, atomic optimistic child writes, and no later-phase execution behavior |
+| Phase 3.1 SQL Server | Passed | fresh V1-V6: 9 tests; populated V5-V6: 1 test; zero skipped; isolated schemas retained |
+| Phase 3.1 affected build | Passed | Administrative 33, HumanResource 45, PrimeHR 82; zero failures/errors/skips; clean package successful |
+| Phase 3.1 PostgreSQL | Portability passed; live run unverified | dual V6 migration, PostgreSQL-mode Flyway, structural parity, provider-neutral Java/JPA; live run non-blocking by approved policy |
+| Phase 3.2 lifecycle/execution | Passed | tool publication, cycle open/close, exact assigned work, ratings/evidence, completeness, submit, atomic return, correction, and resubmit |
+| Phase 3.2 authorization/concurrency | Passed | cross-subject, invalid identity/scope/level, missing evidence, duplicate submit, stale writes, blank return reason, and closed-cycle mutations are blocked without partial data |
+| Phase 3.2 affected tests/package | Passed | Common 3, Administrative 33, HumanResource 45, PrimeHR 86; 167 total, zero failures/errors/skips; clean package successful |
+| Phase 3.2 SQL Server | Passed | fresh V1-V7: 9 tests; populated V6-V7: 1 test; isolated schemas retained; an earlier additive default-schema V5-V7 run is disclosed in the phase detail |
+| Phase 3.2 PostgreSQL | Portability passed; live run unverified | equivalent V7 migration, PostgreSQL-mode Flyway V1-V7, structural parity, provider-neutral Java/JPA; live run non-blocking by approved policy |
+| Phase 3.2 repository/boundary audit | Passed | diff check clean; no new secret/generated artifact or provider-specific shared query; no validation decision/person profile/UI/Phase 4 behavior |
+| Phase 3.2 documentation | Complete | `PHASE_3_2_ASSESSMENT_EXECUTION.md` records scope, API, persistence, tests, provider evidence, limitations, and boundary |
+| Phase 3.3 validation/profile lifecycle | Passed | independent human decisions, exact contributor/version checks, self-validation separation, audited administrator override, atomic immutable profile generation, and predecessor closure |
+| Phase 3.3 authorization/history | Passed | own versus agency-wide reads, immutable version history, exact-version access, and deterministic latest-as-of selection |
+| Phase 3.3 affected tests/package | Passed | Common 3, Administrative 33, HumanResource 45, PrimeHR 90; 171 total, zero failures/errors/skips; clean package successful |
+| Phase 3.3 SQL Server | Passed | fresh V1-V8: 9 tests; populated V7-V8: 1 test; isolated schemas `primehr_phase33_fresh_20260827` and `primehr_phase33_upgrade_20260827` retained |
+| Phase 3.3 PostgreSQL | Portability passed; live run unverified | equivalent V8 migration, PostgreSQL-mode Flyway V1-V8, structural parity, and provider-neutral Java/JPA; live run non-blocking by approved policy |
+| Phase 3.3 repository/boundary audit | Passed | diff check clean; no new credential/generated artifact or provider-specific shared query; no Phase 3.4 UI/Playwright or Phase 4 behavior |
+| Phase 3.3 documentation | Complete | `PHASE_3_3_HUMAN_VALIDATION_PERSON_PROFILES.md` records scope, APIs, persistence, tests, provider evidence, limitations, and boundary |
+| Phase 3.4 permission/UI implementation | Passed | Administrative Phase 3 feature/action/data-scope controls and four typed PrimeHR routes implemented with backend enforcement and accessible form labels |
+| Phase 3.4 focused browser acceptance | Passed | 3/3 against local SQL Server: allowed/denied surfaces, assigned work, stale conflict, submission, validation override, immutable latest/history |
+| Phase 3 full Playwright regression | Passed | 11/11 in 2.0 minutes against isolated local APIs and SQL Server; zero skipped |
+| Phase 3.4 frontend gates | Passed | both UIs type-check/build; PrimeHR lint clean; Administrative lint has one pre-existing Sidebar hook warning and zero errors |
+| Phase 3.4 backend clean tests | Passed | Common 3, Administrative 33, HumanResource 45, PrimeHR 90; 171 total, zero failures/errors/skips |
+| Phase 3.4 backend clean package | Passed | affected five-project reactor packaged successfully; all 171 tests executed again with zero failures/errors/skips |
+| Phase 3.4 PostgreSQL live run | Not run by user direction | SQL Server browser acceptance is blocking; provider-neutral application code, dual V6-V8 migrations, parity, and PostgreSQL-mode gates retained |
+| Phase 3.4 documentation | Complete | UI/acceptance detail, Playwright runbook, and user guide cover the delivered Phase 3 workflows |
+| Phase 3 final repository audit | Passed with disclosed local caveat | all three `git diff --check` and untracked whitespace scans clean; no sensitive signature/test password found; generated E2E/build outputs ignored; unrelated Administrative `.env` remains excluded |
+| Phase 3 boundary | Passed | no competency gap, L&D referral, applicant assessment, Phase 4 UI/API/table, or later-domain behavior implemented |
+| Phase 3 | Complete | final review manifest records files, contracts, provider evidence, tests, risks, and commit guidance |
 
 ### Next recommended action
 
-Review and commit the Phase 2.3 automation, conflict correction, and documentation. The next planning action is to prepare the exact Phase 3 scope for explicit approval; implementation remains stopped. Frontend deployment/pushing remains under the user's control.
+Review, commit, and push the completed Phase 3 change sets. After Phase 3 is committed, prepare an exact Phase 4 scope for review without implementing it. Phase 4 must not start without explicit user approval.
 
 ## Rollback
 

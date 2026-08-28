@@ -24,7 +24,7 @@ public class PrimeHrPermissionGuard {
             case EDIT -> permission.canEdit();
             case ARCHIVE -> permission.canDelete();
             case PUBLISH -> permission.canPublish();
-            case SUBMIT, APPROVE -> false;
+            case SUBMIT, APPROVE, ASSESS, VALIDATE, FINALIZE -> false;
         };
         if (!allowed) throw new AccessDeniedException("The required PrimeHR action is not permitted");
     }

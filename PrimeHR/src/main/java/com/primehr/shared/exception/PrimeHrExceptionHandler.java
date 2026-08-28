@@ -10,6 +10,7 @@ import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import com.primehr.integration.administrative.AuthorizationDependencyException;
 import com.primehr.integration.administrative.PositionTargetDependencyException;
+import com.primehr.integration.humanresource.HumanResourceDependencyException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -75,6 +76,13 @@ public class PrimeHrExceptionHandler {
                                                                        HttpServletRequest request) {
         log.warn("Administrative position-target dependency unavailable for {}", request.getRequestURI());
         return error(HttpStatus.SERVICE_UNAVAILABLE, "POSITION_TARGET_SERVICE_UNAVAILABLE", request, List.of());
+    }
+
+    @ExceptionHandler(HumanResourceDependencyException.class)
+    public ResponseEntity<ApiErrorResponse> humanResourceUnavailable(HumanResourceDependencyException exception,
+                                                                      HttpServletRequest request) {
+        log.warn("HumanResource assessment-subject dependency unavailable for {}", request.getRequestURI());
+        return error(HttpStatus.SERVICE_UNAVAILABLE, "HUMAN_RESOURCE_SERVICE_UNAVAILABLE", request, List.of());
     }
 
     @ExceptionHandler(Exception.class)

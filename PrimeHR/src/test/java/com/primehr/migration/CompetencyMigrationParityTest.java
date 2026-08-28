@@ -23,6 +23,12 @@ class CompetencyMigrationParityTest {
     private static final String SQL_SERVER_V4 = "db/migration/sqlserver/V4__position_competency_profiles.sql";
     private static final String POSTGRES_V5 = "db/migration/postgresql/V5__position_profile_approval_lifecycle.sql";
     private static final String SQL_SERVER_V5 = "db/migration/sqlserver/V5__position_profile_approval_lifecycle.sql";
+    private static final String POSTGRES_V6 = "db/migration/postgresql/V6__assessment_draft_foundation.sql";
+    private static final String SQL_SERVER_V6 = "db/migration/sqlserver/V6__assessment_draft_foundation.sql";
+    private static final String POSTGRES_V7 = "db/migration/postgresql/V7__assessment_execution.sql";
+    private static final String SQL_SERVER_V7 = "db/migration/sqlserver/V7__assessment_execution.sql";
+    private static final String POSTGRES_V8 = "db/migration/postgresql/V8__assessment_validation_person_profiles.sql";
+    private static final String SQL_SERVER_V8 = "db/migration/sqlserver/V8__assessment_validation_person_profiles.sql";
     private static final Set<String> TABLES = Set.of(
             "prime_competency_category", "prime_proficiency_scale", "prime_proficiency_level",
             "prime_competency", "prime_behavioral_indicator");
@@ -116,6 +122,70 @@ class CompetencyMigrationParityTest {
         }
         assertThat(postgres.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table");
         assertThat(sqlServer.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table");
+    }
+
+    @Test
+    void phase3DraftMigrationsHaveEquivalentTablesConstraintsAndIndexes() throws IOException {
+        String postgres = read(POSTGRES_V6);
+        String sqlServer = read(SQL_SERVER_V6);
+        assertThat(tableNames(postgres)).containsExactlyInAnyOrder(
+                "prime_assessment_cycle", "prime_assessment_tool", "prime_assessment_tool_method",
+                "prime_assessment_case", "prime_assessor_assignment");
+        assertThat(tableNames(sqlServer)).isEqualTo(tableNames(postgres));
+        for (String required : Set.of("uk_prime_assessment_cycle_code", "uk_prime_assessment_tool_name",
+                "uk_prime_assessment_tool_method", "uk_prime_assessment_case_subject",
+                "uk_prime_assessor_assignment", "ix_prime_assessment_cycle_filter",
+                "ix_prime_assessment_tool_cycle", "ix_prime_assessment_case_subject",
+                "ix_prime_assessment_case_tool", "ix_prime_assessor_employee")) {
+            assertThat(postgres).contains(required);
+            assertThat(sqlServer).contains(required);
+        }
+        assertThat(postgres.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table")
+                .doesNotContain("employeeappointment");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table")
+                .doesNotContain("employeeappointment");
+    }
+
+    @Test
+    void phase3ExecutionMigrationsHaveEquivalentTablesMetadataAndIndexes() throws IOException {
+        String postgres = read(POSTGRES_V7);
+        String sqlServer = read(SQL_SERVER_V7);
+        assertThat(tableNames(postgres)).containsExactlyInAnyOrder(
+                "prime_assessment_rating", "prime_assessment_evidence");
+        assertThat(tableNames(sqlServer)).isEqualTo(tableNames(postgres));
+        for (String required : Set.of("opened_by", "opened_at", "closed_by", "closed_at",
+                "published_by", "published_at", "for_validation_at", "submitted_by", "submitted_at",
+                "uk_prime_assessment_rating", "ix_prime_assessment_assignment_inbox",
+                "ix_prime_assessment_rating_assignment", "ix_prime_assessment_evidence_rating")) {
+            assertThat(postgres).contains(required);
+            assertThat(sqlServer).contains(required);
+        }
+        assertThat(postgres.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table");
+    }
+
+    @Test
+    void phase3ValidationMigrationsHaveEquivalentImmutableResultTablesConstraintsAndIndexes() throws IOException {
+        String postgres = read(POSTGRES_V8);
+        String sqlServer = read(SQL_SERVER_V8);
+        assertThat(tableNames(postgres)).containsExactlyInAnyOrder(
+                "prime_assessment_validation", "prime_assessment_validated_rating",
+                "prime_person_competency_profile", "prime_person_competency_result");
+        assertThat(tableNames(sqlServer)).isEqualTo(tableNames(postgres));
+        for (String required : Set.of("uk_prime_assessment_validation_case", "uk_prime_validated_rating",
+                "uk_prime_person_profile_case", "uk_prime_person_profile_validation",
+                "uk_prime_person_profile_version", "uk_prime_person_result",
+                "uk_prime_person_result_validated", "ck_prime_validation_override_reason",
+                "ck_prime_person_profile_status", "ck_prime_person_profile_dates",
+                "ix_prime_validation_status", "ix_prime_person_profile_latest",
+                "ix_prime_person_result_profile")) {
+            assertThat(postgres).contains(required);
+            assertThat(sqlServer).contains(required);
+        }
+        assertThat(postgres.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table")
+                .doesNotContain("employeeappointment");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table")
+                .doesNotContain("employeeappointment");
     }
 
     private static Set<String> tableNames(String sql) {

@@ -10,6 +10,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.administrative.dtos.PermissionDataScope;
 
 class EffectiveAuthorizationServiceImplTest {
 
@@ -109,5 +110,44 @@ class EffectiveAuthorizationServiceImplTest {
         assertThat(permission.canApprove()).isFalse();
         assertThat(service.resolve("admin", "99", "primehr.position-profile").canSubmit()).isTrue();
         assertThat(service.resolve("admin", "99", "primehr.position-profile").canApprove()).isTrue();
+    }
+
+    @Test
+    void phaseThreeActionsAndScopeAreIndependentAndRequireAccess() {
+        PermissionRuleset ruleset = new PermissionRuleset("Assessor", false,
+                "{\"primehr.competency-assessment\":{\"canAccess\":true," +
+                        "\"canAssess\":true,\"canSubmit\":true,\"canValidate\":false," +
+                        "\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.assessment-validation\":{\"canAccess\":false," +
+                        "\"canValidate\":true,\"dataScope\":\"AGENCY_WIDE\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("Assessor")).thenReturn(Optional.of(ruleset));
+
+        var assessment = service.resolve("001", "Assessor", "primehr.competency-assessment");
+        assertThat(assessment.canAssess()).isTrue();
+        assertThat(assessment.canSubmit()).isTrue();
+        assertThat(assessment.canValidate()).isFalse();
+        assertThat(assessment.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+
+        var validation = service.resolve("001", "Assessor", "primehr.assessment-validation");
+        assertThat(validation.canValidate()).isFalse();
+        assertThat(validation.dataScope()).isEqualTo(PermissionDataScope.NONE);
+    }
+
+    @Test
+    void missingOrInvalidPhaseThreeScopeFailsClosedAndAdministratorIsAgencyWide() {
+        PermissionRuleset legacy = new PermissionRuleset("Legacy Assessment", false,
+                "{\"primehr.assessment-administration\":{\"canAccess\":true," +
+                        "\"canAdd\":true,\"dataScope\":\"DIRECT_SUBORDINATES\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("Legacy Assessment")).thenReturn(Optional.of(legacy));
+
+        var permission = service.resolve("001", "Legacy Assessment", "primehr.assessment-administration");
+        assertThat(permission.canAdd()).isTrue();
+        assertThat(permission.canAssess()).isFalse();
+        assertThat(permission.canValidate()).isFalse();
+        assertThat(permission.canFinalize()).isFalse();
+        assertThat(permission.dataScope()).isEqualTo(PermissionDataScope.NONE);
+
+        assertThat(service.resolve("admin", "99", "primehr.person-profile").dataScope())
+                .isEqualTo(PermissionDataScope.AGENCY_WIDE);
     }
 }
