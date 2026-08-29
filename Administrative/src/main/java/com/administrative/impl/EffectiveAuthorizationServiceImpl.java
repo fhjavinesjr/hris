@@ -20,9 +20,13 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String PRIMEHR_COMPETENCY_ASSESSMENT = "primehr.competency-assessment";
     public static final String PRIMEHR_ASSESSMENT_VALIDATION = "primehr.assessment-validation";
     public static final String PRIMEHR_PERSON_PROFILE = "primehr.person-profile";
+    public static final String PRIMEHR_GAP_CONFIGURATION = "primehr.gap-configuration";
+    public static final String PRIMEHR_COMPETENCY_GAP = "primehr.competency-gap";
+    public static final String PRIMEHR_LD_REFERRAL = "primehr.ld-referral";
     private static final Set<String> SUPPORTED_FEATURES = Set.of(PRIMEHR_COMPETENCY,
             PRIMEHR_POSITION_PROFILE, PRIMEHR_ASSESSMENT_ADMINISTRATION, PRIMEHR_COMPETENCY_ASSESSMENT,
-            PRIMEHR_ASSESSMENT_VALIDATION, PRIMEHR_PERSON_PROFILE);
+            PRIMEHR_ASSESSMENT_VALIDATION, PRIMEHR_PERSON_PROFILE, PRIMEHR_GAP_CONFIGURATION,
+            PRIMEHR_COMPETENCY_GAP, PRIMEHR_LD_REFERRAL);
     private static final String INSTALL_ADMIN_EMPLOYEE_NO = "admin";
 
     private final PermissionRulesetRepository repository;

@@ -1,8 +1,8 @@
 # ISOFT PRIME-HRM Progress Ledger
 
-Last updated: 2026-08-28
-Current phase: Phase 3 complete; Phase 4 requires a separate exact scope and explicit approval
-Status: Phase 3 backend, dual-provider migrations/parity, permissions, UI, SQL Server Playwright acceptance, documentation, and final commit-readiness gates pass
+Last updated: 2026-08-29
+Current phase: Phase 4 - Competency Gap and L&D Referral
+Status: Phase 4.1, 4.2, and 4.3 complete; stopped before Phase 5
 
 Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DISCOVERY.md)
 
@@ -21,7 +21,10 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 | 3.1 - Assessment Draft Foundation | Complete | HRM subject contract; assessment permissions/data scope; V6 draft cycle/tool/subject/assessor model and API; SQL Server and portability gates |
 | 3.2 - Assessment Execution | Complete | V7 lifecycle, assessor inbox/work, exact ratings/evidence, completeness, submit/return/resubmit, audit, OpenAPI, SQL Server and portability gates |
 | 3.3 - Human Validation and Person Profiles | Complete | independent human decisions; separation of duties; audited administrator override; immutable versioned person profiles; deterministic latest/history reads; V8 SQL Server and portability gates |
-| 3.4 - Assessment and Person Profile UI | Not started | Administrative permission controls, PrimeHR routes/pages, Playwright acceptance, user/test documentation, and final Phase 3 review remain excluded pending approval |
+| 3.4 - Assessment and Person Profile UI | Complete | Administrative permission controls, four PrimeHR routes, Playwright acceptance, user/test documentation, and final Phase 3 review |
+| 4.1 - Priority Configuration and Transparent Gap Engine | Complete | additive permissions, V9 dual-provider schema, versioned priority policy, immutable gap analysis, REST/OpenAPI, focused tests, and real SQL Server fresh/upgrade validation |
+| 4.2 - Manual L&D Referral | Complete | V10 dual-provider schema, manual draft/item lifecycle, atomic submit/archive, duplicate/stale guards, authorization, audit, REST/OpenAPI, and focused/provider tests |
+| 4.3 - UI, Gap PDF, and Browser Acceptance | Complete | Administrative permission controls; typed PrimeHR gap/priority/referral UI; bean-driven Jasper PDF; SQL Server Playwright acceptance; user/test documentation; final Phase 4 review |
 
 ## Decisions recorded
 
@@ -69,10 +72,10 @@ Subsequent Phase 1B and Phase 1C implementation/review documents are maintained 
 
 - Maven: `PrimeHR` added to the root reactor; not to HRISApp.
 - Tables: category, competency, proficiency scale, proficiency level, behavioral indicator, position profile, and position profile requirement.
-- Migrations: equivalent PostgreSQL and SQL Server V1 through V8 scripts.
-- APIs: Phase 1 competency APIs, Phase 2 Position Profile APIs, Phase 3.1 assessment draft administration, Phase 3.2 assigned-assessor execution/return, and Phase 3.3 validation/person-profile reads; Administrative and HRM retain their authoritative integration endpoints.
+- Migrations: equivalent PostgreSQL and SQL Server V1 through V10 scripts.
+- APIs: Phase 1 competency APIs, Phase 2 Position Profile APIs, Phase 3 assessment/person-profile APIs, and Phase 4 priority, competency-gap, report, and manual-referral APIs; Administrative and HRM retain their authoritative integration endpoints.
 - Contract: `contracts/openapi/primehr-v1.yaml`.
-- UI routes/pages: standalone `prime-hr-software` SSO, competency administration, and Position Competency Profiles; Employee Portal launch integration.
+- UI routes/pages: standalone `prime-hr-software` SSO, competency administration, Position Competency Profiles, assessments/person profiles, and Competency Gaps/L&D Referrals; Employee Portal launch integration.
 - Existing module behavior, Jasper reports, messaging, storage, and deployment: unchanged.
 
 ## Verification
@@ -130,13 +133,13 @@ Phase 1A.1 real-provider validation passed against Neon PostgreSQL 17.10 and loc
 
 ## Next phase
 
-Phase 3.4 was explicitly approved and completed. Administrative permissions, all four PrimeHR routes, repeatable Playwright acceptance, user/testing documentation, and in-scope browser defect corrections pass. The final repository, secret, diff, clean-package, and review-manifest gates also pass. Phase 4 has not started.
+Phase 4 is complete and matches Master Plan V2: transparent person-versus-position comparison, explicit gap classifications, configurable development priorities, manual L&D referral, and a gap report. Work is stopped before Phase 5. The next action is to prepare the exact Phase 5A Vacancy and Recruitment Planning scope for review; no Phase 5 implementation is authorized.
 
 ## Master Plan V2 alignment
 
 Phase 1A, Phase 1A.1, Phase 1B, and Phase 1C are controlled delivery slices of Master Plan V2 Phase 1 - Competency Foundation. Together they cover competency categories, dictionary records, dynamic proficiency scales/levels, behavioral indicators, effective dating/versioning, read APIs/UI, draft administration, RBAC, audit, controlled immutable publication, and PostgreSQL/SQL Server portability. They intentionally exclude position profiles, person assessments, gap analysis, and RSP/SPMS/L&D/R&R functionality as required by the Master Plan.
 
-Master Plan Phase 2 is complete. Phase 2.1 implements authoritative Job Position/Plantilla references, exact competency/level requirements, and effective-dated draft/version foundations without duplicating the Administrative position master. Phase 2.2 implements submission/approval, ACTIVE snapshots, precedence resolution, and exact-version comparison. Phase 2.3 implements the Administrative permission controls, standalone PrimeHR UI, accepted browser behavior, and repeatable Playwright coverage. Master Plan Phase 3 is complete, including assessment administration/execution, human validation, immutable person profiles, Administrative and PrimeHR UI, and Playwright acceptance. All Phase 4 gap functionality remains unimplemented.
+Master Plan Phase 2 is complete. Phase 2.1 implements authoritative Job Position/Plantilla references, exact competency/level requirements, and effective-dated draft/version foundations without duplicating the Administrative position master. Phase 2.2 implements submission/approval, ACTIVE snapshots, precedence resolution, and exact-version comparison. Phase 2.3 implements the Administrative permission controls, standalone PrimeHR UI, accepted browser behavior, and repeatable Playwright coverage. Master Plan Phase 3 is complete, including assessment administration/execution, human validation, immutable person profiles, Administrative and PrimeHR UI, and Playwright acceptance. Master Plan Phase 4 is complete: 4.1 delivers the configurable priority policy and immutable transparent gap engine, 4.2 delivers manual L&D referral intake without creating an approved IDP, and 4.3 delivers Administrative controls, the PrimeHR UI, portable Jasper PDF, and repeatable SQL Server browser acceptance.
 
 ## Proactive execution and approval workflow
 
@@ -231,10 +234,31 @@ The recurring phase gate is:
 | Phase 3 final repository audit | Passed with disclosed local caveat | all three `git diff --check` and untracked whitespace scans clean; no sensitive signature/test password found; generated E2E/build outputs ignored; unrelated Administrative `.env` remains excluded |
 | Phase 3 boundary | Passed | no competency gap, L&D referral, applicant assessment, Phase 4 UI/API/table, or later-domain behavior implemented |
 | Phase 3 | Complete | final review manifest records files, contracts, provider evidence, tests, risks, and commit guidance |
+| Phase 4.1 implementation | Passed | V9 priority scheme and immutable transparent gap engine, exact current-source resolution, idempotency, authorization, audit, and OpenAPI |
+| Phase 4.1 affected test/package | Passed | Common 3, Administrative 34, PrimeHR 103; 140 total, zero failures/errors/skips; package reactor successful |
+| Phase 4.1 SQL Server | Passed | fresh V1-V9 9/9 and populated V8-V9 1/1 in retained isolated schemas |
+| Phase 4.1 PostgreSQL | Portability passed; live run unverified | equivalent V9, PostgreSQL-mode Flyway/Hibernate, migration parity, and provider-neutral JPA; live provider non-blocking by user policy |
+| Phase 4.2 implementation | Implemented | manual DRAFT-to-REFERRED/ARCHIVED referrals, actionable item selection, snapshot history, optimistic conflicts, duplicate claim protection, audit, API and security |
+| Phase 4.2 focused tests | Passed | 35 tests, zero failures/errors/skips, including lifecycle, stale/duplicate/non-actionable denial, OpenAPI, parity, and PostgreSQL-mode V1-V10 |
+| Phase 4.2 SQL Server | Passed | fresh V1-V10 9/9 in `primehr_phase42_fresh_20260828`; populated V9-V10 1/1 in `primehr_phase42_upgrade_20260828`; schemas retained |
+| Phase 4.2 PostgreSQL | Portability passed; live run unverified | equivalent V10 DDL, PostgreSQL-mode migration/Hibernate validation, no provider-specific shared Java/JPA; live provider non-blocking by user direction |
+| Phase 4.2 affected test/package | Passed | clean test: Common 3, Administrative 34, PrimeHR 113 (150 total); final-source package after controller authorization coverage: Common 3, Administrative 34, PrimeHR 116 (153 total); zero failures/errors/skips |
+| Phase 4.2 repository/boundary audit | Passed | diff/whitespace, secret/generated-file, provider-neutral query, and phase-boundary checks clean; no IDP, training request, enrollment, HRM L&D, notification, payroll, UI, report, Playwright, or Phase 5 behavior |
+| Phase 4.3 Administrative controls | Passed | three additive Phase 4 permission rows expose only the applicable actions and data-scope controls; unrelated `.env` work remains preserved |
+| Phase 4.3 PrimeHR UI | Passed | typed `/prime-hr/competency-gaps` route covers readiness, history, exact formula/source versions, priority administration, and referral lifecycle with denied/empty/conflict states |
+| Phase 4.3 Jasper report | Passed | SQL-free JRXML uses typed JavaBeans/JRBeanCollectionDataSource; focused tests generated representative and 70-row multi-page PDFs with repeated headers |
+| Phase 4.3 RBAC correction | Passed | feature-specific gap/referral GET routes reach their controller guards without inheriting unrelated competency-catalog read authority; agency-wide, own-record, and denied behavior passed in Playwright |
+| Phase 4.3 frontend gates | Passed | Administrative lint/build and PrimeHR strict TypeScript/lint/build; one pre-existing Administrative Sidebar hook warning remains |
+| Phase 4.3 backend package | Passed | Common 3, Administrative 34, PrimeHR 118; 155 total, zero failures/errors/skips; affected package reactor successful |
+| Phase 4.3 focused Playwright | Passed | 4/4 against local SQL Server, including PDF bytes and repeatable active-referral reuse; zero skipped |
+| Phase 4 full Playwright regression | Passed | 15/15 against local SQL Server in 2.3 minutes; zero skipped |
+| Phase 4.3 PostgreSQL live run | Not run by user direction | equivalent V9/V10 migrations, PostgreSQL-mode migration/Hibernate checks, migration parity, and provider-neutral Java/JPA/Jasper retained; live provider is non-blocking under the approved policy |
+| Phase 4 boundary | Passed | no approved IDP, training workflow, RSP/vacancy/applicant route or table, Phase 5 event, or cross-domain write was introduced |
+| Phase 4 | Complete | review manifest and operator/user documentation record scope, files, contracts, tests, provider evidence, risks, and commit guidance |
 
 ### Next recommended action
 
-Review, commit, and push the completed Phase 3 change sets. After Phase 3 is committed, prepare an exact Phase 4 scope for review without implementing it. Phase 4 must not start without explicit user approval.
+Review the Phase 4 manifest and commit the three repositories selectively, excluding local/generated files identified in the manifest. After that commit, prepare and approve a separate exact Phase 5A Vacancy and Recruitment Planning scope. Do not begin applicant portal, screening, appointment handoff, or any other Phase 5 sub-phase together with 5A.
 
 ## Rollback
 

@@ -150,4 +150,33 @@ class EffectiveAuthorizationServiceImplTest {
         assertThat(service.resolve("admin", "99", "primehr.person-profile").dataScope())
                 .isEqualTo(PermissionDataScope.AGENCY_WIDE);
     }
+
+    @Test
+    void phaseFourFeaturesAreIndependentAndLegacyRulesFailClosed() {
+        PermissionRuleset ruleset = new PermissionRuleset("Gap Analyst", false,
+                "{\"primehr.gap-configuration\":{\"canAccess\":true,\"canAdd\":true," +
+                        "\"canPublish\":false,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.competency-gap\":{\"canAccess\":true,\"canAdd\":false," +
+                        "\"dataScope\":\"OWN_RECORDS\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("Gap Analyst")).thenReturn(Optional.of(ruleset));
+
+        var configuration = service.resolve("001", "Gap Analyst", "primehr.gap-configuration");
+        assertThat(configuration.canAccess()).isTrue();
+        assertThat(configuration.canAdd()).isTrue();
+        assertThat(configuration.canPublish()).isFalse();
+        assertThat(configuration.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+
+        var gaps = service.resolve("001", "Gap Analyst", "primehr.competency-gap");
+        assertThat(gaps.canAccess()).isTrue();
+        assertThat(gaps.canAdd()).isFalse();
+        assertThat(gaps.dataScope()).isEqualTo(PermissionDataScope.OWN_RECORDS);
+
+        var referral = service.resolve("001", "Gap Analyst", "primehr.ld-referral");
+        assertThat(referral.canAccess()).isFalse();
+        assertThat(referral.canSubmit()).isFalse();
+        assertThat(referral.dataScope()).isEqualTo(PermissionDataScope.NONE);
+
+        assertThat(service.resolve("admin", "99", "primehr.competency-gap").canAdd()).isTrue();
+        assertThat(service.resolve("admin", "99", "primehr.ld-referral").canSubmit()).isTrue();
+    }
 }

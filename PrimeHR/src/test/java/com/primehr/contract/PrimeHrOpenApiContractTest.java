@@ -90,6 +90,62 @@ class PrimeHrOpenApiContractTest {
                 ".*(password|biometric|salary|address|contact|email).*"));
     }
 
+    @Test
+    void phaseFourPointOneContractsExposePriorityAdministrationAndTransparentGapAnalysis() throws IOException {
+        Map<String, Object> primeHr = yaml("primehr-v1.yaml");
+        Map<?, ?> paths = (Map<?, ?>) primeHr.get("paths");
+        List<String> pathKeys = paths.keySet().stream().map(Object::toString).toList();
+        assertThat(pathKeys).contains(
+                "/admin/gap-priority-schemes", "/admin/gap-priority-schemes/{schemeId}",
+                "/admin/gap-priority-schemes/{schemeId}/archive",
+                "/admin/gap-priority-schemes/{schemeId}/publish",
+                "/admin/gap-priority-schemes/{schemeId}/versions",
+                "/admin/gap-priority-schemes/{schemeId}/levels",
+                "/admin/gap-priority-schemes/{schemeId}/levels/{levelId}",
+                "/admin/gap-priority-schemes/{schemeId}/levels/{levelId}/archive",
+                "/admin/gap-priority-schemes/{schemeId}/rules",
+                "/admin/gap-priority-schemes/{schemeId}/rules/{ruleId}",
+                "/admin/gap-priority-schemes/{schemeId}/rules/{ruleId}/archive",
+                "/competency-gaps", "/competency-gaps/{analysisId}",
+                "/competency-gaps/{analysisId}/report.pdf",
+                "/competency-gaps/employees/{employeeNo}/latest",
+                "/competency-gaps/employees/{employeeNo}/history");
+        assertThat(((Map<?, ?>) paths.get("/competency-gaps")).keySet().stream().map(Object::toString).toList())
+                .contains("get", "post");
+        assertThat(((Map<?, ?>) paths.get("/admin/gap-priority-schemes/{schemeId}")).keySet().stream()
+                .map(Object::toString).toList()).contains("get", "put");
+
+        Map<?, ?> schemas = (Map<?, ?>) ((Map<?, ?>) primeHr.get("components")).get("schemas");
+        assertThat(schemas.keySet().stream().map(Object::toString).toList()).contains(
+                "GapClassification", "NotAssessedReason", "GapPrioritySchemeStatus",
+                "CreateGapPrioritySchemeRequest", "GapPriorityLevel", "GapPriorityRule",
+                "GenerateCompetencyGapRequest", "CompetencyGapItem", "CompetencyGapAnalysis");
+        Map<?, ?> generation = (Map<?, ?>) schemas.get("GenerateCompetencyGapRequest");
+        assertThat(((Map<?, ?>) generation.get("properties")).keySet().stream().map(Object::toString).toList())
+                .containsExactlyInAnyOrder("employeeId", "expectedHrmSourceFingerprint", "requestKey");
+    }
+
+    @Test
+    void phaseFourPointTwoContractsExposeManualLdReferralLifecycleOnly() throws IOException {
+        Map<String, Object> primeHr = yaml("primehr-v1.yaml");
+        Map<?, ?> paths = (Map<?, ?>) primeHr.get("paths");
+        List<String> pathKeys = paths.keySet().stream().map(Object::toString).toList();
+        assertThat(pathKeys).contains("/ld-referrals", "/ld-referrals/{referralId}",
+                "/ld-referrals/{referralId}/items", "/ld-referrals/{referralId}/items/{itemId}/archive",
+                "/ld-referrals/{referralId}/submit", "/ld-referrals/{referralId}/archive");
+        assertThat(((Map<?, ?>) paths.get("/ld-referrals")).keySet().stream().map(Object::toString).toList())
+                .containsExactlyInAnyOrder("get", "post");
+        assertThat(((Map<?, ?>) paths.get("/ld-referrals/{referralId}")).keySet().stream()
+                .map(Object::toString).toList()).containsExactlyInAnyOrder("get", "put");
+        Map<?, ?> schemas = (Map<?, ?>) ((Map<?, ?>) primeHr.get("components")).get("schemas");
+        assertThat(schemas.keySet().stream().map(Object::toString).toList()).contains(
+                "LdReferralStatus", "CreateLdReferralRequest", "UpdateLdReferralRequest",
+                "AddLdReferralItemsRequest", "LdReferralTransitionRequest",
+                "LdReferralItemTransitionRequest", "LdReferralItem", "LdReferral");
+        assertThat(pathKeys).noneMatch(path -> path.contains("idp") || path.contains("training")
+                || path.contains("enrollment"));
+    }
+
     @SuppressWarnings("unchecked")
     private static Map<String, Object> yaml(String filename) throws IOException {
         Path path = List.of(Path.of("contracts", "openapi", filename),

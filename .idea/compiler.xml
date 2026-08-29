@@ -12,6 +12,7 @@
         <module name="HRISApp" />
         <module name="HumanResource" />
         <module name="EmployeePortal" />
+        <module name="PrimeHR" />
         <module name="Common" />
       </profile>
     </annotationProcessing>

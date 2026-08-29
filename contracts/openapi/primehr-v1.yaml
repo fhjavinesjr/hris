@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: ISOFT PRIME-HRM API
-  version: 3.3.0-phase-3.3
-  description: Phase 1 competency foundation, Phase 2 position profiles, and Phase 3.3 assessment execution, human validation, and immutable person competency profiles. All operations require an ISOFT employee JWT and server-resolved agency scope.
+  version: 4.2.0-phase-4.2
+  description: Phase 1 competency foundation, Phase 2 position profiles, Phase 3 assessment and immutable person profiles, and Phase 4.1 competency gap analysis. All operations require an ISOFT employee JWT and server-resolved agency scope.
 servers:
   - url: /api/primehr/v1
 security:
@@ -524,6 +524,55 @@ paths:
         '400': {$ref: '#/components/responses/BadRequest'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /admin/gap-priority-schemes:
+    get: {operationId: listGapPrioritySchemes, responses: {'200': {description: Priority scheme page}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createGapPriorityScheme, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreateGapPrioritySchemeRequest'}}}}, responses: {'201': {description: Priority scheme draft created}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /admin/gap-priority-schemes/{schemeId}:
+    get: {operationId: getGapPriorityScheme, responses: {'200': {description: Priority scheme}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    put: {operationId: updateGapPriorityScheme, responses: {'200': {description: Priority scheme draft updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/gap-priority-schemes/{schemeId}/archive:
+    post: {operationId: archiveGapPriorityScheme, responses: {'200': {description: Priority scheme draft archived}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/gap-priority-schemes/{schemeId}/publish:
+    post: {operationId: publishGapPriorityScheme, responses: {'200': {description: Complete priority scheme published}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/gap-priority-schemes/{schemeId}/versions:
+    post: {operationId: createGapPrioritySchemeSuccessor, responses: {'201': {description: Successor draft created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/gap-priority-schemes/{schemeId}/levels:
+    post: {operationId: addGapPriorityLevel, responses: {'201': {description: Priority level created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/gap-priority-schemes/{schemeId}/levels/{levelId}:
+    put: {operationId: updateGapPriorityLevel, responses: {'200': {description: Priority level updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/gap-priority-schemes/{schemeId}/levels/{levelId}/archive:
+    post: {operationId: archiveGapPriorityLevel, responses: {'200': {description: Priority level archived}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/gap-priority-schemes/{schemeId}/rules:
+    post: {operationId: addGapPriorityRule, responses: {'201': {description: Priority rule created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/gap-priority-schemes/{schemeId}/rules/{ruleId}:
+    put: {operationId: updateGapPriorityRule, responses: {'200': {description: Priority rule updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /admin/gap-priority-schemes/{schemeId}/rules/{ruleId}/archive:
+    post: {operationId: archiveGapPriorityRule, responses: {'200': {description: Priority rule archived}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /competency-gaps:
+    get: {operationId: listCompetencyGapAnalyses, responses: {'200': {description: Authorized gap-analysis page}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: generateCompetencyGapAnalysis, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/GenerateCompetencyGapRequest'}}}}, responses: {'201': {description: Immutable analysis created or existing idempotent result returned, content: {application/json: {schema: {$ref: '#/components/schemas/CompetencyGapAnalysis'}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /competency-gaps/{analysisId}:
+    get: {operationId: getCompetencyGapAnalysis, responses: {'200': {description: Exact immutable analysis, content: {application/json: {schema: {$ref: '#/components/schemas/CompetencyGapAnalysis'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /competency-gaps/{analysisId}/report.pdf:
+    get: {operationId: printCompetencyGapAnalysis, responses: {'200': {description: Bean-driven competency gap PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /competency-gaps/employees/{employeeNo}/latest:
+    get: {operationId: getLatestEmployeeCompetencyGap, responses: {'200': {description: Latest authorized employee gap analysis}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /competency-gaps/employees/{employeeNo}/history:
+    get: {operationId: listEmployeeCompetencyGapHistory, responses: {'200': {description: Authorized immutable history}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /ld-referrals:
+    get: {operationId: listLdReferrals, responses: {'200': {description: Authorized page of manual L&D referrals}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createLdReferralDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreateLdReferralRequest'}}}}, responses: {'201': {description: Referral draft created, content: {application/json: {schema: {$ref: '#/components/schemas/LdReferral'}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /ld-referrals/{referralId}:
+    get: {operationId: getLdReferral, responses: {'200': {description: Exact manual L&D referral, content: {application/json: {schema: {$ref: '#/components/schemas/LdReferral'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    put: {operationId: updateLdReferralDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/UpdateLdReferralRequest'}}}}, responses: {'200': {description: Referral draft updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /ld-referrals/{referralId}/items:
+    post: {operationId: addLdReferralItems, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AddLdReferralItemsRequest'}}}}, responses: {'200': {description: Actionable gap items selected}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /ld-referrals/{referralId}/items/{itemId}/archive:
+    post: {operationId: archiveLdReferralItem, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdReferralItemTransitionRequest'}}}}, responses: {'200': {description: Draft referral item archived}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /ld-referrals/{referralId}/submit:
+    post: {operationId: submitLdReferral, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdReferralTransitionRequest'}}}}, responses: {'200': {description: Referral atomically marked REFERRED}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /ld-referrals/{referralId}/archive:
+    post: {operationId: archiveLdReferralDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdReferralTransitionRequest'}}}}, responses: {'200': {description: Referral draft archived}, '409': {$ref: '#/components/responses/Conflict'}}}
 components:
   securitySchemes:
     bearerAuth:
@@ -601,6 +650,172 @@ components:
     PositionProfileComparison: {description: Exact-version requirement comparison, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfileComparison'}}}}
     AuditEventPage: {description: Page of append-only position-profile audit events, content: {application/json: {schema: {$ref: '#/components/schemas/AuditEventPage'}}}}
   schemas:
+    LdReferralStatus: {type: string, enum: [DRAFT, REFERRED, ARCHIVED]}
+    CreateLdReferralRequest:
+      type: object
+      required: [analysisId, developmentNeed, recommendedIntervention]
+      properties:
+        analysisId: {type: string, maxLength: 36}
+        developmentNeed: {type: string, maxLength: 4000}
+        recommendedIntervention: {type: string, maxLength: 4000}
+        targetCompletionDate: {type: string, format: date, nullable: true}
+        referralReason: {type: string, maxLength: 1000, nullable: true}
+        remarks: {type: string, maxLength: 2000, nullable: true}
+    UpdateLdReferralRequest:
+      type: object
+      required: [developmentNeed, recommendedIntervention, recordVersion]
+      properties:
+        developmentNeed: {type: string, maxLength: 4000}
+        recommendedIntervention: {type: string, maxLength: 4000}
+        targetCompletionDate: {type: string, format: date, nullable: true}
+        referralReason: {type: string, maxLength: 1000, nullable: true}
+        remarks: {type: string, maxLength: 2000, nullable: true}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    AddLdReferralItemsRequest:
+      type: object
+      required: [gapItemIds, recordVersion]
+      properties:
+        gapItemIds: {type: array, minItems: 1, uniqueItems: true, items: {type: string, maxLength: 36}}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    LdReferralTransitionRequest:
+      type: object
+      required: [recordVersion]
+      properties:
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        reason: {type: string, maxLength: 1000, nullable: true}
+    LdReferralItemTransitionRequest:
+      type: object
+      required: [recordVersion]
+      properties: {recordVersion: {type: integer, format: int64, minimum: 0}}
+    LdReferralItem:
+      type: object
+      required: [id, gapItemId, competencyCode, competencyName, classification, displayOrder, active, recordVersion]
+      properties:
+        id: {type: string, maxLength: 36}
+        gapItemId: {type: string, maxLength: 36}
+        competencyCode: {type: string, maxLength: 50}
+        competencyName: {type: string, maxLength: 200}
+        classification: {$ref: '#/components/schemas/GapClassification'}
+        notAssessedReason: {allOf: [{$ref: '#/components/schemas/NotAssessedReason'}], nullable: true}
+        gap: {type: integer, nullable: true}
+        priorityCode: {type: string, maxLength: 50, nullable: true}
+        priorityLabel: {type: string, maxLength: 150, nullable: true}
+        priorityRank: {type: integer, minimum: 1, nullable: true}
+        displayOrder: {type: integer, minimum: 0}
+        active: {type: boolean}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    LdReferral:
+      type: object
+      required: [id, analysisId, employeeId, employeeNo, employeeName, analysisDate, positionName, status, developmentNeed, recommendedIntervention, recordVersion, createdBy, createdAt, items]
+      properties:
+        id: {type: string, maxLength: 36}
+        analysisId: {type: string, maxLength: 36}
+        employeeId: {type: integer, format: int64}
+        employeeNo: {type: string, maxLength: 100}
+        employeeName: {type: string, maxLength: 300}
+        analysisDate: {type: string, format: date}
+        positionName: {type: string, maxLength: 200}
+        status: {$ref: '#/components/schemas/LdReferralStatus'}
+        developmentNeed: {type: string, maxLength: 4000}
+        recommendedIntervention: {type: string, maxLength: 4000}
+        targetCompletionDate: {type: string, format: date, nullable: true}
+        referralReason: {type: string, maxLength: 1000, nullable: true}
+        remarks: {type: string, maxLength: 2000, nullable: true}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        createdBy: {type: string, maxLength: 100}
+        createdAt: {type: string, format: date-time}
+        referredBy: {type: string, maxLength: 100, nullable: true}
+        referredAt: {type: string, format: date-time, nullable: true}
+        items: {type: array, items: {$ref: '#/components/schemas/LdReferralItem'} }
+    GapClassification: {type: string, enum: [BELOW, MEETS, EXCEEDS, NOT_ASSESSED]}
+    NotAssessedReason: {type: string, enum: [NO_RESULT, VERSION_NOT_COMPARABLE]}
+    GapPrioritySchemeStatus: {type: string, enum: [DRAFT, ACTIVE, ARCHIVED]}
+    CreateGapPrioritySchemeRequest:
+      type: object
+      required: [code, name, displayOrder]
+      properties:
+        code: {type: string, maxLength: 50}
+        name: {type: string, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        displayOrder: {type: integer, minimum: 0}
+        effectiveFrom: {type: string, format: date, nullable: true}
+        effectiveTo: {type: string, format: date, nullable: true}
+    GenerateCompetencyGapRequest:
+      type: object
+      required: [employeeId, expectedHrmSourceFingerprint, requestKey]
+      properties:
+        employeeId: {type: integer, format: int64, minimum: 1}
+        expectedHrmSourceFingerprint: {type: string, maxLength: 128}
+        requestKey: {type: string, maxLength: 100}
+    GapPriorityLevel:
+      type: object
+      required: [id, code, label, priorityRank, active, displayOrder, recordVersion]
+      properties:
+        id: {type: string, maxLength: 36}
+        code: {type: string, maxLength: 50}
+        label: {type: string, maxLength: 150}
+        priorityRank: {type: integer, minimum: 1}
+        active: {type: boolean}
+        displayOrder: {type: integer, minimum: 0}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    GapPriorityRule:
+      type: object
+      required: [id, gapClassification, priorityLevelId, priorityCode, priorityLabel, priorityRank, active, displayOrder, recordVersion]
+      properties:
+        id: {type: string, maxLength: 36}
+        gapClassification: {$ref: '#/components/schemas/GapClassification'}
+        minimumGap: {type: integer, minimum: 1, nullable: true}
+        maximumGap: {type: integer, minimum: 1, nullable: true}
+        priorityLevelId: {type: string, maxLength: 36}
+        priorityCode: {type: string, maxLength: 50}
+        priorityLabel: {type: string, maxLength: 150}
+        priorityRank: {type: integer, minimum: 1}
+        active: {type: boolean}
+        displayOrder: {type: integer, minimum: 0}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    CompetencyGapItem:
+      type: object
+      required: [id, competencyVersionId, competencyCode, competencyName, requiredLevelCode, requiredLevelLabel, requiredLevelOrder, classification, requirementClassification, displayOrder]
+      properties:
+        id: {type: string, maxLength: 36}
+        competencyVersionId: {type: string, maxLength: 36}
+        competencyCode: {type: string, maxLength: 50}
+        competencyName: {type: string, maxLength: 200}
+        requiredLevelCode: {type: string, maxLength: 50}
+        requiredLevelLabel: {type: string, maxLength: 150}
+        requiredLevelOrder: {type: integer, minimum: 1}
+        attainedLevelCode: {type: string, maxLength: 50, nullable: true}
+        attainedLevelLabel: {type: string, maxLength: 150, nullable: true}
+        attainedLevelOrder: {type: integer, minimum: 1, nullable: true}
+        gap: {type: integer, nullable: true, description: requiredLevelOrder minus attainedLevelOrder}
+        classification: {$ref: '#/components/schemas/GapClassification'}
+        notAssessedReason: {allOf: [{$ref: '#/components/schemas/NotAssessedReason'}], nullable: true}
+        requirementClassification: {type: string, enum: [MANDATORY, DESIRABLE]}
+        priorityCode: {type: string, maxLength: 50, nullable: true}
+        priorityLabel: {type: string, maxLength: 150, nullable: true}
+        priorityRank: {type: integer, minimum: 1, nullable: true}
+        priorityExplanation: {type: string, maxLength: 1000, nullable: true}
+        displayOrder: {type: integer, minimum: 0}
+    CompetencyGapAnalysis:
+      type: object
+      required: [id, employeeId, employeeNo, employeeName, positionProfileId, positionProfileVersion, personProfileId, personProfileVersion, prioritySchemeId, prioritySchemeCode, prioritySchemeVersion, analysisDate, requestKey, generatedBy, generatedAt, items]
+      properties:
+        id: {type: string, maxLength: 36}
+        employeeId: {type: integer, format: int64}
+        employeeNo: {type: string, maxLength: 100}
+        employeeName: {type: string, maxLength: 300}
+        positionProfileId: {type: string, maxLength: 36}
+        positionProfileVersion: {type: integer, minimum: 1}
+        personProfileId: {type: string, maxLength: 36}
+        personProfileVersion: {type: integer, minimum: 1}
+        prioritySchemeId: {type: string, maxLength: 36}
+        prioritySchemeCode: {type: string, maxLength: 50}
+        prioritySchemeVersion: {type: integer, minimum: 1}
+        analysisDate: {type: string, format: date}
+        requestKey: {type: string, maxLength: 100}
+        generatedBy: {type: string, maxLength: 100}
+        generatedAt: {type: string, format: date-time}
+        items: {type: array, items: {$ref: '#/components/schemas/CompetencyGapItem'}}
     AssessmentInboxPage:
       type: object
       required: [content, page, size, totalElements, totalPages, first, last]

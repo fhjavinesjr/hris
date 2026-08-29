@@ -67,7 +67,10 @@ abstract class AbstractPrimeHrProviderIntegration {
             "prime_assessment_case", "prime_assessor_assignment", "prime_assessment_rating",
             "prime_assessment_evidence", "prime_assessment_validation",
             "prime_assessment_validated_rating", "prime_person_competency_profile",
-            "prime_person_competency_result", "flyway_schema_history");
+            "prime_person_competency_result", "prime_gap_priority_scheme", "prime_gap_priority_level",
+            "prime_gap_priority_rule", "prime_competency_gap_analysis", "prime_competency_gap_item",
+            "prime_ld_referral", "prime_ld_referral_item",
+            "flyway_schema_history");
     private static final Set<String> EXPECTED_INDEXES = Set.of(
             "ix_prime_category_agency_active", "ix_prime_scale_agency_active",
             "ix_prime_level_agency_scale", "ix_prime_competency_filter", "ix_prime_indicator_lookup");
@@ -89,6 +92,11 @@ abstract class AbstractPrimeHrProviderIntegration {
     private static final Set<String> PHASE_3_3_INDEXES = Set.of(
             "ix_prime_validation_status", "ix_prime_person_profile_latest",
             "ix_prime_person_result_profile");
+    private static final Set<String> PHASE_4_1_INDEXES = Set.of(
+            "ix_prime_gap_scheme_effective", "ix_prime_gap_level_scheme", "ix_prime_gap_rule_scheme",
+            "ix_prime_gap_analysis_employee", "ix_prime_gap_analysis_profiles", "ix_prime_gap_item_filter");
+    private static final Set<String> PHASE_4_2_INDEXES = Set.of(
+            "ix_prime_ld_referral_employee", "ix_prime_ld_referral_analysis", "ix_prime_ld_referral_item_gap");
 
     @Autowired private Flyway flyway;
     @Autowired private DataSource dataSource;
@@ -102,9 +110,9 @@ abstract class AbstractPrimeHrProviderIntegration {
     @Value("${spring.flyway.default-schema}") private String databaseSchema;
 
     @Test
-    void flywayV1ThroughV8CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
+    void flywayV1ThroughV10CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
         assertThat(flyway.info().current()).isNotNull();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("8");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("10");
 
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
@@ -113,7 +121,8 @@ abstract class AbstractPrimeHrProviderIntegration {
             assertThat(indexNames(metadata, connection)).containsAll(EXPECTED_INDEXES)
                     .containsAll(PHASE_1B_INDEXES).containsAll(PHASE_1C_INDEXES).containsAll(PHASE_2_INDEXES)
                     .containsAll(PHASE_3_1_INDEXES).containsAll(PHASE_3_2_INDEXES);
-            assertThat(indexNames(metadata, connection)).containsAll(PHASE_3_3_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_3_3_INDEXES)
+                    .containsAll(PHASE_4_1_INDEXES).containsAll(PHASE_4_2_INDEXES);
 
             assertThat(importedKeyCount(metadata, connection, "prime_proficiency_level")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "prime_competency")).isGreaterThanOrEqualTo(2);
@@ -129,6 +138,12 @@ abstract class AbstractPrimeHrProviderIntegration {
             assertThat(importedKeyCount(metadata, connection, "prime_assessment_validated_rating")).isGreaterThanOrEqualTo(3);
             assertThat(importedKeyCount(metadata, connection, "prime_person_competency_profile")).isGreaterThanOrEqualTo(3);
             assertThat(importedKeyCount(metadata, connection, "prime_person_competency_result")).isGreaterThanOrEqualTo(4);
+            assertThat(importedKeyCount(metadata, connection, "prime_gap_priority_level")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "prime_gap_priority_rule")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "prime_competency_gap_analysis")).isGreaterThanOrEqualTo(3);
+            assertThat(importedKeyCount(metadata, connection, "prime_competency_gap_item")).isGreaterThanOrEqualTo(8);
+            assertThat(importedKeyCount(metadata, connection, "prime_ld_referral")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "prime_ld_referral_item")).isGreaterThanOrEqualTo(3);
         }
     }
 
