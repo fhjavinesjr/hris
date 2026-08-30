@@ -54,6 +54,14 @@ paths:
         '401': {description: Missing or invalid employee JWT}
         '403': {description: primehr.position-profile access is not permitted}
         '404': {description: Target or its authoritative parent Job Position was not found}
+  /api/integration/v1/primehr/rsp/position-sources/{plantillaId}:
+    get:
+      operationId: getRspPositionSource
+      responses:
+        '200': {description: Exact Plantilla, Job Position, Business Unit, salary, and effective Qualification Standard snapshot}
+        '401': {description: Missing or invalid employee JWT}
+        '403': {description: Agency-wide RSP planning access is not permitted}
+        '404': {description: Authoritative source or effective Qualification Standard was not found}
 components:
   securitySchemes:
     bearerAuth:
@@ -61,6 +69,18 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    RspPositionSource:
+      type: object
+      additionalProperties: false
+      required: [plantillaId, jobPositionId, businessUnitId, qualificationStandardId, qualificationStandardVersion, sourceFingerprint, fetchedAt]
+      properties:
+        plantillaId: {type: integer, format: int64}
+        jobPositionId: {type: integer, format: int64}
+        businessUnitId: {type: integer, format: int64}
+        qualificationStandardId: {type: integer, format: int64}
+        qualificationStandardVersion: {type: integer, minimum: 1}
+        sourceFingerprint: {type: string, minLength: 64, maxLength: 64}
+        fetchedAt: {type: string, format: date-time}
     PositionTargetType: {type: string, enum: [JOB_POSITION, PLANTILLA]}
     PositionTarget:
       type: object

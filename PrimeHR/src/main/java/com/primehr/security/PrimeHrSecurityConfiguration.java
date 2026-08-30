@@ -14,6 +14,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -26,22 +30,28 @@ import java.util.List;
 public class PrimeHrSecurityConfiguration {
 
     @Bean
+    public PasswordEncoder applicantPasswordEncoder() { return new BCryptPasswordEncoder(12); }
+
+    @Bean
     public SecurityFilterChain primeHrSecurityFilterChain(HttpSecurity http,
                                                            PrimeHrJwtAuthenticationFilter jwtFilter,
+                                                           ObjectProvider<ApplicantJwtAuthenticationFilter> applicantJwtFilter,
                                                            @Qualifier("primeHrCorsConfigurationSource")
                                                            CorsConfigurationSource corsConfigurationSource,
                                                            ObjectMapper objectMapper) throws Exception {
-        return http
+        HttpSecurity configured = http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/api/primehr/public/v1/**").permitAll()
+                        .requestMatchers("/api/primehr/applicant/v1/**").hasAuthority(ApplicantJwtAuthenticationFilter.APPLICANT)
                         .requestMatchers(HttpMethod.DELETE, "/api/primehr/v1/admin/**").denyAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/primehr/v1/admin/**").denyAll()
                         .requestMatchers("/api/primehr/v1/admin/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/primehr/v1/competency-gaps/**",
-                                "/api/primehr/v1/ld-referrals/**").authenticated()
+                                "/api/primehr/v1/ld-referrals/**", "/api/primehr/v1/rsp/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/primehr/v1/**")
                         .hasAuthority(PrimeHrAuthorities.COMPETENCY_READ)
                         .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/assessments/**").authenticated()
@@ -50,6 +60,8 @@ public class PrimeHrSecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/api/primehr/v1/competency-gaps/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/primehr/v1/ld-referrals/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/ld-referrals/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/primehr/v1/rsp/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/rsp/**").authenticated()
                         .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, exception) -> writeSecurityError(
@@ -58,8 +70,10 @@ public class PrimeHrSecurityConfiguration {
                         .accessDeniedHandler((request, response, exception) -> writeSecurityError(
                                 response, objectMapper, HttpServletResponse.SC_FORBIDDEN,
                                 "Access denied", request.getRequestURI())))
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        ApplicantJwtAuthenticationFilter filter = applicantJwtFilter.getIfAvailable();
+        if (filter != null) configured.addFilterBefore(filter, PrimeHrJwtAuthenticationFilter.class);
+        return configured.build();
     }
 
     @Bean(name = "primeHrCorsConfigurationSource")
@@ -67,7 +81,7 @@ public class PrimeHrSecurityConfiguration {
         CorsConfiguration cors = new CorsConfiguration();
         cors.setAllowedOrigins(properties.cors().allowedOrigins());
         cors.setAllowedOriginPatterns(properties.cors().allowedOriginPatterns());
-        cors.setAllowedMethods(List.of("GET", "POST", "PUT", "OPTIONS"));
+        cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Correlation-Id"));
         cors.setExposedHeaders(List.of("X-Correlation-Id"));
         cors.setAllowCredentials(true);
@@ -80,6 +94,15 @@ public class PrimeHrSecurityConfiguration {
     public FilterRegistrationBean<PrimeHrJwtAuthenticationFilter> disableContainerJwtFilterRegistration(
             PrimeHrJwtAuthenticationFilter filter) {
         FilterRegistrationBean<PrimeHrJwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    @ConditionalOnBean(ApplicantJwtAuthenticationFilter.class)
+    public FilterRegistrationBean<ApplicantJwtAuthenticationFilter> disableContainerApplicantJwtFilterRegistration(
+            ApplicantJwtAuthenticationFilter filter) {
+        FilterRegistrationBean<ApplicantJwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;
     }

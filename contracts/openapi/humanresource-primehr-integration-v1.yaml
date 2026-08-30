@@ -33,10 +33,28 @@ paths:
         '403': {description: Agency-wide assessment administration access is not permitted}
         '404': {description: Eligible subject/current appointment was not found}
         '503': {description: Administrative authorization is unavailable}
+  /api/integration/v1/primehr/plantilla-occupancy/{plantillaId}:
+    get:
+      operationId: getPrimeHrPlantillaOccupancy
+      responses:
+        '200': {description: Exact current active-appointment occupancy snapshot}
+        '401': {description: Missing or invalid employee JWT}
+        '403': {description: Agency-wide RSP planning access is not permitted}
 components:
   securitySchemes:
     bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
   schemas:
+    PlantillaOccupancy:
+      type: object
+      additionalProperties: false
+      required: [plantillaId, occupied, sourceFingerprint, fetchedAt]
+      properties:
+        plantillaId: {type: integer, format: int64}
+        occupied: {type: boolean}
+        activeAppointmentId: {type: integer, format: int64, nullable: true}
+        assumptionToDutyDate: {type: string, format: date-time, nullable: true}
+        sourceFingerprint: {type: string, minLength: 64, maxLength: 64}
+        fetchedAt: {type: string, format: date-time}
     AssessmentSubject:
       type: object
       additionalProperties: false

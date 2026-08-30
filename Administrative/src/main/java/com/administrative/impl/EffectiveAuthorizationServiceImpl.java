@@ -23,10 +23,16 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String PRIMEHR_GAP_CONFIGURATION = "primehr.gap-configuration";
     public static final String PRIMEHR_COMPETENCY_GAP = "primehr.competency-gap";
     public static final String PRIMEHR_LD_REFERRAL = "primehr.ld-referral";
+    public static final String ADMIN_QUALIFICATION_STANDARD = "administrative.qualification-standard";
+    public static final String PRIMEHR_RSP_RECRUITMENT_PLANNING = "primehr.rsp-recruitment-planning";
+    public static final String PRIMEHR_RSP_VACANCY_PUBLICATION = "primehr.rsp-vacancy-publication";
+    public static final String PRIMEHR_RSP_APPLICANT_INTAKE = "primehr.rsp-applicant-intake";
     private static final Set<String> SUPPORTED_FEATURES = Set.of(PRIMEHR_COMPETENCY,
             PRIMEHR_POSITION_PROFILE, PRIMEHR_ASSESSMENT_ADMINISTRATION, PRIMEHR_COMPETENCY_ASSESSMENT,
             PRIMEHR_ASSESSMENT_VALIDATION, PRIMEHR_PERSON_PROFILE, PRIMEHR_GAP_CONFIGURATION,
-            PRIMEHR_COMPETENCY_GAP, PRIMEHR_LD_REFERRAL);
+            PRIMEHR_COMPETENCY_GAP, PRIMEHR_LD_REFERRAL, ADMIN_QUALIFICATION_STANDARD,
+            PRIMEHR_RSP_RECRUITMENT_PLANNING, PRIMEHR_RSP_VACANCY_PUBLICATION,
+            PRIMEHR_RSP_APPLICANT_INTAKE);
     private static final String INSTALL_ADMIN_EMPLOYEE_NO = "admin";
 
     private final PermissionRulesetRepository repository;

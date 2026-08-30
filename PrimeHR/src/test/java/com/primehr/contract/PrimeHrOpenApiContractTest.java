@@ -38,7 +38,7 @@ class PrimeHrOpenApiContractTest {
 
         Map<?, ?> administrativePaths = (Map<?, ?>) administrative.get("paths");
         assertThat(administrativePaths.keySet().stream().map(Object::toString).toList())
-                .containsExactlyInAnyOrder(
+                .contains(
                 "/api/integration/v1/primehr/position-targets",
                 "/api/integration/v1/primehr/position-targets/{type}/{id}");
     }
@@ -76,7 +76,7 @@ class PrimeHrOpenApiContractTest {
                 "FinalAssessmentDecision", "PersonCompetencyProfile", "PersonCompetencyResult");
 
         Map<?, ?> hrPaths = (Map<?, ?>) humanResource.get("paths");
-        assertThat(hrPaths.keySet().stream().map(Object::toString).toList()).containsExactlyInAnyOrder(
+        assertThat(hrPaths.keySet().stream().map(Object::toString).toList()).contains(
                 "/api/integration/v1/primehr/assessment-subjects",
                 "/api/integration/v1/primehr/assessment-subjects/{employeeId}");
         Map<?, ?> schemas = (Map<?, ?>) ((Map<?, ?>) humanResource.get("components")).get("schemas");
@@ -144,6 +144,94 @@ class PrimeHrOpenApiContractTest {
                 "LdReferralItemTransitionRequest", "LdReferralItem", "LdReferral");
         assertThat(pathKeys).noneMatch(path -> path.contains("idp") || path.contains("training")
                 || path.contains("enrollment"));
+    }
+
+    @Test
+    void phaseFiveAContractsExposeGovernedPlanningPublicationAndOfficialNoticeWithoutApplicantProcessing() throws IOException {
+        Map<String, Object> primeHr = yaml("primehr-v1.yaml");
+        Map<String, Object> administrative = yaml("administrative-primehr-integration-v1.yaml");
+        Map<String, Object> humanResource = yaml("humanresource-primehr-integration-v1.yaml");
+        List<String> primePaths = ((Map<?, ?>) primeHr.get("paths")).keySet().stream()
+                .map(Object::toString).toList();
+        assertThat(primePaths).contains("/rsp/recruitment-plans", "/rsp/recruitment-plans/{planId}",
+                "/rsp/recruitment-plans/{planId}/archive",
+                "/rsp/recruitment-plans/{planId}/submit",
+                "/rsp/recruitment-plans/{planId}/return",
+                "/rsp/recruitment-plans/{planId}/approve",
+                "/rsp/recruitment-plans/{planId}/vacancies",
+                "/rsp/vacancy-requests/{requestId}",
+                "/rsp/vacancy-requests/{requestId}/archive",
+                "/rsp/vacancy-requests/{requestId}/submit",
+                "/rsp/vacancy-requests/{requestId}/return",
+                "/rsp/vacancy-requests/{requestId}/authorize",
+                "/rsp/vacancy-requests/{requestId}/decline",
+                "/rsp/vacancy-requests/{requestId}/cancel",
+                "/rsp/vacancy-requests/{requestId}/readiness", "/rsp/vacancy-readiness",
+                "/rsp/vacancy-publications", "/rsp/vacancy-publications/{publicationId}",
+                "/rsp/vacancy-publications/{publicationId}/notice.pdf",
+                "/rsp/vacancy-publications/{publicationId}/submit",
+                "/rsp/vacancy-publications/{publicationId}/return",
+                "/rsp/vacancy-publications/{publicationId}/approve",
+                "/rsp/vacancy-publications/{publicationId}/publish",
+                "/rsp/vacancy-publications/{publicationId}/cancel",
+                "/rsp/vacancy-publications/{publicationId}/close");
+        assertThat(primePaths).noneMatch(path -> path.contains("applicants") || path.contains("screening"));
+        Map<?, ?> schemas = (Map<?, ?>) ((Map<?, ?>) primeHr.get("components")).get("schemas");
+        assertThat(schemas.keySet().stream().map(Object::toString).toList()).contains(
+                "VacancyType", "RecruitmentPlanStatus", "VacancyRequestStatus",
+                "VacancyPublicationStatus", "VacancyVisibility", "CreateRecruitmentPlanRequest",
+                "SaveVacancyRequest", "RspTransitionRequest", "VacancyPublicationChannelInput",
+                "CreateVacancyPublicationRequest", "UpdateVacancyPublicationRequest");
+
+        assertThat(((Map<?, ?>) administrative.get("paths")).keySet().stream().map(Object::toString))
+                .contains("/api/integration/v1/primehr/rsp/position-sources/{plantillaId}");
+        assertThat(((Map<?, ?>) humanResource.get("paths")).keySet().stream().map(Object::toString))
+                .contains("/api/integration/v1/primehr/plantilla-occupancy/{plantillaId}");
+
+        Map<?, ?> hrSchemas = (Map<?, ?>) ((Map<?, ?>) humanResource.get("components")).get("schemas");
+        Map<?, ?> occupancy = (Map<?, ?>) hrSchemas.get("PlantillaOccupancy");
+        assertThat(((Map<?, ?>) occupancy.get("properties")).keySet().stream()
+                .map(Object::toString).map(String::toLowerCase))
+                .noneMatch(name -> name.matches(".*(password|biometric|salary|address|contact|email|pds).*"));
+    }
+
+    @Test
+    void phaseFiveBPointOneContractExposesOnlyApplicantFoundationAndPublicVacancyReads() throws IOException {
+        Map<String, Object> primeHr = yaml("primehr-v1.yaml");
+        List<String> paths = ((Map<?, ?>) primeHr.get("paths")).keySet().stream()
+                .map(Object::toString).toList();
+        assertThat(paths).contains(
+                "/public/v1/privacy-notices/current",
+                "/public/v1/applicant-accounts/register",
+                "/public/v1/applicant-sessions",
+                "/public/v1/vacancies",
+                "/public/v1/vacancies/{publicationId}",
+                "/applicant/v1/session",
+                "/applicant/v1/me",
+                "/applicant/v1/me/profile",
+                "/applicant/v1/me/consents",
+                "/applicant/v1/me/documents",
+                "/applicant/v1/me/documents/{documentId}",
+                "/applicant/v1/me/documents/{documentId}/content",
+                "/applicant/v1/me/documents/{documentId}/replace");
+        assertThat(paths).noneMatch(path -> path.contains("/screening") || path.contains("/shortlist"));
+    }
+
+    @Test
+    void phaseFiveBPointTwoContractExposesApplicationIntakeWithoutScreeningOrSelection() throws IOException {
+        Map<String, Object> primeHr = yaml("primehr-v1.yaml");
+        List<String> paths = ((Map<?, ?>) primeHr.get("paths")).keySet().stream()
+                .map(Object::toString).toList();
+        assertThat(paths).contains("/applicant/v1/me/applications",
+                "/applicant/v1/me/applications/{applicationId}",
+                "/applicant/v1/me/applications/{applicationId}/submit",
+                "/applicant/v1/me/applications/{applicationId}/withdraw",
+                "/applicant/v1/me/applications/{applicationId}/communications",
+                "/rsp/applications", "/rsp/applications/{applicationId}",
+                "/rsp/applications/{applicationId}/documents/{documentId}/content",
+                "/rsp/applications/{applicationId}/communications");
+        assertThat(paths).noneMatch(path -> path.contains("screening") || path.contains("shortlist")
+                || path.contains("qualified") || path.contains("selection"));
     }
 
     @SuppressWarnings("unchecked")

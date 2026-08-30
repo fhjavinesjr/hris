@@ -21,6 +21,8 @@ public interface EmployeeAppointmentRepository extends JpaRepository<EmployeeApp
 
     boolean existsByPlantillaIdAndActiveAppointmentTrue(Long plantillaId);
 
+    Optional<EmployeeAppointment> findTop1ByPlantillaIdAndActiveAppointmentTrueOrderByAssumptionToDutyDateDescEmployeeAppointmentIdDesc(Long plantillaId);
+
     Optional<EmployeeAppointment> findTop1ByEmployeeIdAndAssumptionToDutyDateBeforeOrderByAssumptionToDutyDateDescEmployeeAppointmentIdDesc(
             Long employeeId,
             LocalDateTime assumptionToDutyDate

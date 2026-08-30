@@ -1,8 +1,8 @@
 # ISOFT PRIME-HRM Progress Ledger
 
-Last updated: 2026-08-29
-Current phase: Phase 4 - Competency Gap and L&D Referral
-Status: Phase 4.1, 4.2, and 4.3 complete; stopped before Phase 5
+Last updated: 2026-08-30
+Current phase: Phase 5B - Applicant Portal and Application
+Status: Complete through Phase 5B.3; stopped before Phase 5C
 
 Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DISCOVERY.md)
 
@@ -25,6 +25,10 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 | 4.1 - Priority Configuration and Transparent Gap Engine | Complete | additive permissions, V9 dual-provider schema, versioned priority policy, immutable gap analysis, REST/OpenAPI, focused tests, and real SQL Server fresh/upgrade validation |
 | 4.2 - Manual L&D Referral | Complete | V10 dual-provider schema, manual draft/item lifecycle, atomic submit/archive, duplicate/stale guards, authorization, audit, REST/OpenAPI, and focused/provider tests |
 | 4.3 - UI, Gap PDF, and Browser Acceptance | Complete | Administrative permission controls; typed PrimeHR gap/priority/referral UI; bean-driven Jasper PDF; SQL Server Playwright acceptance; user/test documentation; final Phase 4 review |
+| 5A.1 - Source Readiness and Draft Foundation | Complete | Administrative versioned Qualification Standards; HRM Plantilla occupancy; PrimeHR recruitment plan/vacancy draft and readiness; V11 dual migrations; RBAC, audit, OpenAPI, and provider gates |
+| 5A.2 - Authority and Publication Backend | Complete | plan and vacancy decisions; exact publication snapshots/channels; V12 dual migrations; separation of duties, source-conflict protection, audit, OpenAPI, and provider gates |
+| 5A.3 - UI, Vacancy Notice, and Browser Acceptance | Complete | Administrative Qualification Standard controls; PrimeHR planning/publication UI; portable vacancy-notice PDF; SQL Server Playwright acceptance and documentation |
+| 5B - Applicant Portal and Application | Complete | separate applicant identity/privacy/profile/storage; application intake and immutable evidence; Administrative controls; Careers and staff UI; SQL Server Playwright acceptance |
 
 ## Decisions recorded
 
@@ -40,7 +44,7 @@ Canonical detail: [PHASE_0_ARCHITECTURE_DISCOVERY.md](./PHASE_0_ARCHITECTURE_DIS
 - Flyway + `ddl-auto=validate` + PostgreSQL/SQL Server parity from the first schema.
 - Backend enforcement combines action, data scope, process role, state, and module access.
 - New reports favor service DTOs/bean data sources.
-- Storage, notifications, analytics, gateway, and separate reporting service are deferred.
+- Notifications, analytics, gateway, and a separate reporting service are deferred. Phase 5B now includes a provider-abstracted private document-storage boundary with local and S3-compatible adapters.
 - Common JWT classes are not reused directly in PrimeHR because their hardcoded secret/logging cannot be changed without affecting existing modules; PrimeHR preserves the token contract with mandatory environment configuration.
 - Phase 1A.1 exposes authorized reads only. The current safe scope is a required server-side single-agency configuration because the verified identity model has no agency claim or directory relationship. Full Administrative action/dynamic-agency authorization remains a Phase 1B prerequisite for writes.
 
@@ -72,11 +76,11 @@ Subsequent Phase 1B and Phase 1C implementation/review documents are maintained 
 
 - Maven: `PrimeHR` added to the root reactor; not to HRISApp.
 - Tables: category, competency, proficiency scale, proficiency level, behavioral indicator, position profile, and position profile requirement.
-- Migrations: equivalent PostgreSQL and SQL Server V1 through V10 scripts.
-- APIs: Phase 1 competency APIs, Phase 2 Position Profile APIs, Phase 3 assessment/person-profile APIs, and Phase 4 priority, competency-gap, report, and manual-referral APIs; Administrative and HRM retain their authoritative integration endpoints.
+- Migrations: equivalent PostgreSQL and SQL Server V1 through V14 scripts.
+- APIs: Phase 1 competency APIs, Phase 2 Position Profile APIs, Phase 3 assessment/person-profile APIs, Phase 4 priority/gap/referral APIs, and Phase 5A/5B recruitment, vacancy, public Careers, applicant self-service, and staff-intake APIs; Administrative and HRM retain their authoritative integration endpoints.
 - Contract: `contracts/openapi/primehr-v1.yaml`.
-- UI routes/pages: standalone `prime-hr-software` SSO, competency administration, Position Competency Profiles, assessments/person profiles, and Competency Gaps/L&D Referrals; Employee Portal launch integration.
-- Existing module behavior, Jasper reports, messaging, storage, and deployment: unchanged.
+- UI routes/pages: standalone `prime-hr-software` SSO and management modules plus a separate `/careers` applicant surface and `/prime-hr/applicant-intake` staff intake page; Employee Portal launch integration remains unchanged.
+- Existing non-PrimeHR module behavior and deployment topology remain unchanged. Phase 5A adds the vacancy-notice Jasper report; Phase 5B intentionally adds no report.
 
 ## Verification
 
@@ -125,21 +129,20 @@ Phase 1A.1 real-provider validation passed against Neon PostgreSQL 17.10 and loc
 ## Decisions needed before affected phases
 
 - supervisor relationship authority and contract;
-- Qualification Standards ownership;
 - acceptance of standalone-first deployment;
 - applicant authentication, document storage, and retention policy;
 - repeatable CI credentials/containers for PostgreSQL and SQL Server;
-- governance, approval roles, and the dedicated `canPublish` permission required before activation/publishing is designed.
+- governance and role assignment for later applicant screening/selection phases.
 
 ## Next phase
 
-Phase 4 is complete and matches Master Plan V2: transparent person-versus-position comparison, explicit gap classifications, configurable development priorities, manual L&D referral, and a gap report. Work is stopped before Phase 5. The next action is to prepare the exact Phase 5A Vacancy and Recruitment Planning scope for review; no Phase 5 implementation is authorized.
+Phase 5B is complete through the approved Phase 5B.3 Administrative controls, separate Careers/applicant UI, staff intake UI, and repeatable SQL Server Playwright acceptance. Review `PHASE_5B_REVIEW_MANIFEST.md` before approving any Phase 5C screening or qualification scope.
 
 ## Master Plan V2 alignment
 
 Phase 1A, Phase 1A.1, Phase 1B, and Phase 1C are controlled delivery slices of Master Plan V2 Phase 1 - Competency Foundation. Together they cover competency categories, dictionary records, dynamic proficiency scales/levels, behavioral indicators, effective dating/versioning, read APIs/UI, draft administration, RBAC, audit, controlled immutable publication, and PostgreSQL/SQL Server portability. They intentionally exclude position profiles, person assessments, gap analysis, and RSP/SPMS/L&D/R&R functionality as required by the Master Plan.
 
-Master Plan Phase 2 is complete. Phase 2.1 implements authoritative Job Position/Plantilla references, exact competency/level requirements, and effective-dated draft/version foundations without duplicating the Administrative position master. Phase 2.2 implements submission/approval, ACTIVE snapshots, precedence resolution, and exact-version comparison. Phase 2.3 implements the Administrative permission controls, standalone PrimeHR UI, accepted browser behavior, and repeatable Playwright coverage. Master Plan Phase 3 is complete, including assessment administration/execution, human validation, immutable person profiles, Administrative and PrimeHR UI, and Playwright acceptance. Master Plan Phase 4 is complete: 4.1 delivers the configurable priority policy and immutable transparent gap engine, 4.2 delivers manual L&D referral intake without creating an approved IDP, and 4.3 delivers Administrative controls, the PrimeHR UI, portable Jasper PDF, and repeatable SQL Server browser acceptance.
+Master Plan Phase 2 is complete. Phase 2.1 implements authoritative Job Position/Plantilla references, exact competency/level requirements, and effective-dated draft/version foundations without duplicating the Administrative position master. Phase 2.2 implements submission/approval, ACTIVE snapshots, precedence resolution, and exact-version comparison. Phase 2.3 implements the Administrative permission controls, standalone PrimeHR UI, accepted browser behavior, and repeatable Playwright coverage. Master Plan Phase 3 is complete, including assessment administration/execution, human validation, immutable person profiles, Administrative and PrimeHR UI, and Playwright acceptance. Master Plan Phase 4 is complete: 4.1 delivers the configurable priority policy and immutable transparent gap engine, 4.2 delivers manual L&D referral intake without creating an approved IDP, and 4.3 delivers Administrative controls, the PrimeHR UI, portable Jasper PDF, and repeatable SQL Server browser acceptance. Master Plan Phase 5A is complete: 5A.1 and 5A.2 deliver authoritative vacancy readiness, recruitment planning, authority to fill, controlled publication, snapshots, RBAC, audit, and dual-provider persistence; 5A.3 delivers Administrative and PrimeHR controls, the portable vacancy-notice PDF, repeatable SQL Server browser acceptance, and operator documentation. Master Plan Phase 5B is complete: it preserves separate applicant identity and consent, private provider-abstracted documents, applicant-owned intake with immutable submission evidence, staff read/message administration, separate Careers/staff UI, and repeatable SQL Server acceptance. Phase 5C screening and qualification remain unimplemented.
 
 ## Proactive execution and approval workflow
 
@@ -255,10 +258,48 @@ The recurring phase gate is:
 | Phase 4.3 PostgreSQL live run | Not run by user direction | equivalent V9/V10 migrations, PostgreSQL-mode migration/Hibernate checks, migration parity, and provider-neutral Java/JPA/Jasper retained; live provider is non-blocking under the approved policy |
 | Phase 4 boundary | Passed | no approved IDP, training workflow, RSP/vacancy/applicant route or table, Phase 5 event, or cross-domain write was introduced |
 | Phase 4 | Complete | review manifest and operator/user documentation record scope, files, contracts, tests, provider evidence, risks, and commit guidance |
+| Phase 5A scope | Approved | exact source ownership, vacancy/planning/publication lifecycle, permissions, migrations, UI/report boundary, gates, and Phase 5B exclusions documented |
+| Phase 5A.1 backend | Passed | source readiness, versioned Qualification Standards, occupancy integration, draft planning/vacancy model, V11 migrations, RBAC, audit, and OpenAPI implemented |
+| Phase 5A.2 backend | Passed | authority and publication lifecycle, immutable snapshots/channels, V12 migrations, SOD/admin override, conflict/rollback guards, RBAC, audit, and OpenAPI implemented |
+| Phase 5A affected test/package | Passed | Common 3, Administrative 39, HumanResource 48, PrimeHR 141; 231 total, zero failures/errors/skips; clean package reactor successful |
+| Phase 5A SQL Server | Passed | fresh V1-V12 9/9 and populated V11-V12 1/1 in isolated retained schemas `primehr_phase5a2_fresh_20260829` and `primehr_phase5a2_upgrade_20260829` |
+| Phase 5A PostgreSQL | Portability passed; live run unverified | equivalent V11/V12, PostgreSQL-mode Flyway/Hibernate validation 9/9, migration parity, and provider-neutral shared Java/JPA; live provider remains non-blocking under user-approved policy |
+| Phase 5A.2 repository/boundary audit | Passed | diff/whitespace, secret, provider-specific query, generated-file, and scope checks clean; no UI, Jasper, Playwright, applicant, screening, selection, appointment handoff, or Phase 5B behavior |
+| Phase 5A.3 approval gate | Passed | user explicitly approved Administrative controls, PrimeHR UI, Jasper report, and Playwright acceptance |
+| Phase 5A.3 Administrative controls | Passed | versioned Qualification Standard page, permission rows, and sidebar link use exact action permissions |
+| Phase 5A.3 PrimeHR UI | Passed | typed recruitment plan, vacancy readiness/authority, publication, immutable snapshot, conflict, denied, and PDF flows implemented |
+| Phase 5A.3 Jasper | Passed | SQL-free JRXML uses typed beans and `JRBeanCollectionDataSource`; representative and 70-row multi-page PDF tests passed |
+| Phase 5A.3 frontend gates | Passed | Administrative type-check/lint/build and PrimeHR strict type-check/lint/production build passed; one pre-existing Administrative Sidebar hook warning remains |
+| Phase 5A.3 backend final source | Passed | PrimeHR 144/144 tests, zero failures/errors/skips; earlier affected clean package passed 234 tests across Common, Administrative, HumanResource, and PrimeHR |
+| Phase 5A.3 focused Playwright | Passed | 5/5 against local SQL Server: denied, planning/submit, approval/authority, immutable publication draft, publish/PDF |
+| Phase 5A full Playwright regression | Passed | 20/20 against local SQL Server in 4.6 minutes; zero skipped |
+| Phase 5A boundary | Passed | no Applicant Portal, applicant identity/application/upload, screening, selection, appointment handoff, onboarding, or Phase 5B behavior introduced |
+| Phase 5A | Complete | final detail, review manifest, user guide, E2E documentation, provider disclosure, and commit guidance recorded |
+| Phase 5B scope | Approved | three gated slices define applicant identity/privacy/profile/storage, application/communication backend, and separately approved UI/Playwright; Phase 5C+ explicitly excluded |
+| Phase 5B.1 backend | Passed | separate applicant JWT/security boundary, privacy/consent, profile, provider-abstracted private documents, public vacancy reads, V13 migrations, OpenAPI, audit, and automated security/storage/lifecycle tests |
+| Phase 5B.1 SQL Server | Passed | real fresh V1-V13 and populated V12-V13 isolated-schema gates; PostgreSQL live run remains non-blocking and unverified |
+| Phase 5B.1 affected package | Passed | PrimeHR 158 tests, zero failures/errors/skips; executable JAR packaged |
+| Phase 5B.2 backend | Passed | DRAFT/SUBMITTED/WITHDRAWN intake, exact open-vacancy/readiness rules, immutable vacancy/QS/competency/profile/document evidence, acknowledgment, withdrawal, communication history, staff read/message APIs, RBAC, audit, and V14 |
+| Phase 5B.2 SQL Server | Passed | real fresh V1-V14 9/9 in `primehr_phase5b2_fresh2` and populated V13-V14 1/1 in `primehr_phase5b2_upgrade`; isolated schemas retained |
+| Phase 5B.2 PostgreSQL | Portability passed; live run unverified | equivalent V14, PostgreSQL-mode V1-V14 Flyway/Hibernate 9/9, structural parity, and provider-neutral JPA; live provider non-blocking by user direction |
+| Phase 5B.2 focused/final package | Passed | focused 28/28 and final clean package 164/164; zero failures/errors/skips; initial H2 partial-index failure corrected and rerun cleanly |
+| Phase 5B.2 repository/boundary audit | Passed with disclosed legacy config | diff check, provider-neutral shared-code, generated-file, and Phase 5C boundary audits clean; pre-existing visible local `secret`/`sa` values remain documented, with no new real applicant credential |
+| Phase 5B.1/5B.2 review | Complete | `PHASE_5B_1_5B_2_BACKEND_REVIEW_MANIFEST.md` records files, schema, APIs, authorization, tests, provider evidence, limitations, and next gate |
+| Phase 5B.3 approval gate | Passed | user explicitly approved Administrative applicant-intake control, separate Careers/applicant UI, staff intake UI, and Playwright acceptance |
+| Phase 5B.3 Administrative controls | Passed | exact `primehr.rsp-applicant-intake` Access/Add/agency-wide permission row is persisted and exposed; Access and Add remain independent |
+| Phase 5B.3 Careers/applicant UI | Passed | separate applicant layout/session implements public vacancies, registration/login, profile/consent, private documents, application draft/submit/status/communications/withdrawal, and safe errors |
+| Phase 5B.3 staff UI | Passed | authorized staff can list/view/download immutable evidence and send informational messages; denied users receive Access Denied and no Phase 5C decision control exists |
+| Phase 5B.3 frontend gates | Passed | Administrative and PrimeHR strict type-check/lint/production Next builds passed; one pre-existing Administrative Sidebar hook warning remains |
+| Phase 5B.3 backend gates | Passed | Administrative 40/40 and PrimeHR clean verify 164/164; zero failures/errors/skips; executable PrimeHR JAR packaged |
+| Phase 5B.3 focused Playwright | Passed | 5/5 against real local SQL Server; token isolation, consent/profile/upload, immutable evidence/replacement/ownership, staff denied/allowed/message, and withdrawal |
+| Phase 5B full Playwright regression | Passed | 25/25 against real local SQL Server in 2.6 minutes; zero skipped |
+| Phase 5B.3 PostgreSQL live run | Not run by user direction | equivalent V13/V14 migrations, PostgreSQL-mode Flyway/Hibernate, parity tests, provider-neutral JPA/REST/storage boundaries retained; live provider is non-blocking |
+| Phase 5B boundary | Passed | no screening, completeness/qualification decision, score/rank/shortlist, selection, appointment handoff, employee creation, onboarding, Phase 5C report, or later workflow was introduced |
+| Phase 5B | Complete | final acceptance, review manifest, user guide, E2E documentation, provider disclosure, and commit guidance recorded |
 
 ### Next recommended action
 
-Review the Phase 4 manifest and commit the three repositories selectively, excluding local/generated files identified in the manifest. After that commit, prepare and approve a separate exact Phase 5A Vacancy and Recruitment Planning scope. Do not begin applicant portal, screening, appointment handoff, or any other Phase 5 sub-phase together with 5A.
+Review `PHASE_5B_REVIEW_MANIFEST.md`, commit the Phase 5B changes without credentials/generated/IDE files, and prepare the exact Phase 5C scope for approval. Do not begin screening or qualification implementation until the user explicitly approves Phase 5C.
 
 ## Rollback
 

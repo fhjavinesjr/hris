@@ -1,0 +1,56 @@
+<!-- SQL-free, immutable bean-backed PRIME-HRM vacancy notice. -->
+<jasperReport name="vacancy_notice" language="java" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="18" bottomMargin="18" uuid="56f7387d-451d-4da4-a80a-70bcf28756dc">
+  <property name="net.sf.jasperreports.compiler.xml.parser.validation" value="false"/>
+  <parameter name="agency" class="java.lang.String"/><parameter name="noticeId" class="java.lang.String"/><parameter name="status" class="java.lang.String"/>
+  <parameter name="position" class="java.lang.String"/><parameter name="plantilla" class="java.lang.String"/><parameter name="salary" class="java.lang.String"/><parameter name="assignment" class="java.lang.String"/>
+  <parameter name="period" class="java.lang.String"/><parameter name="visibility" class="java.lang.String"/><parameter name="education" class="java.lang.String"/><parameter name="training" class="java.lang.String"/>
+  <parameter name="experience" class="java.lang.String"/><parameter name="eligibility" class="java.lang.String"/><parameter name="license" class="java.lang.String"/><parameter name="sourceBasis" class="java.lang.String"/>
+  <parameter name="instructions" class="java.lang.String"/><parameter name="contact" class="java.lang.String"/><parameter name="noticeText" class="java.lang.String"/><parameter name="channels" class="java.lang.String"/>
+  <parameter name="sourceEvidence" class="java.lang.String"/><parameter name="approval" class="java.lang.String"/><parameter name="publication" class="java.lang.String"/>
+  <field name="rowNumber" class="java.lang.Integer"/><field name="competency" class="java.lang.String"/><field name="requiredLevel" class="java.lang.String"/>
+  <field name="classification" class="java.lang.String"/><field name="criticality" class="java.lang.String"/><field name="remarks" class="java.lang.String"/>
+  <title height="448" splitType="Stretch">
+    <element kind="textField" x="0" y="0" width="555" height="20" fontName="Arial" fontSize="9" bold="true" hTextAlign="Center"><expression><![CDATA[$P{agency}]]></expression></element>
+    <element kind="staticText" x="0" y="22" width="555" height="24" fontName="Arial" fontSize="15" bold="true" hTextAlign="Center"><text><![CDATA[OFFICIAL VACANCY NOTICE]]></text></element>
+    <element kind="textField" x="0" y="48" width="555" height="15" fontName="Arial" fontSize="7" hTextAlign="Center"><expression><![CDATA["Notice " + $P{noticeId} + " · " + $P{status} + " · " + $P{visibility}]]></expression></element>
+    <element kind="textField" mode="Opaque" x="0" y="69" width="555" height="34" backcolor="#E7EEF8" fontName="Arial" fontSize="12" bold="true" textAdjust="StretchHeight" vTextAlign="Middle" hTextAlign="Center"><expression><![CDATA[$P{position}]]></expression></element>
+    <element kind="textField" x="0" y="108" width="277" height="18" fontName="Arial" fontSize="8"><expression><![CDATA["Plantilla: " + $P{plantilla}]]></expression></element>
+    <element kind="textField" x="278" y="108" width="277" height="18" fontName="Arial" fontSize="8"><expression><![CDATA[$P{salary}]]></expression></element>
+    <element kind="textField" x="0" y="128" width="555" height="18" fontName="Arial" fontSize="8"><expression><![CDATA["Place of assignment: " + $P{assignment}]]></expression></element>
+    <element kind="textField" x="0" y="148" width="555" height="18" fontName="Arial" fontSize="8"><expression><![CDATA["Application/publication period: " + $P{period}]]></expression></element>
+    <element kind="staticText" x="0" y="172" width="150" height="15" fontName="Arial" fontSize="8" bold="true"><text><![CDATA[Qualification Standards]]></text></element>
+    <element kind="textField" x="0" y="189" width="555" height="32" fontName="Arial" fontSize="7.5" textAdjust="StretchHeight"><expression><![CDATA["Education: " + $P{education}]]></expression></element>
+    <element kind="textField" x="0" y="223" width="555" height="32" fontName="Arial" fontSize="7.5" textAdjust="StretchHeight"><expression><![CDATA["Training: " + $P{training}]]></expression></element>
+    <element kind="textField" x="0" y="257" width="555" height="32" fontName="Arial" fontSize="7.5" textAdjust="StretchHeight"><expression><![CDATA["Experience: " + $P{experience}]]></expression></element>
+    <element kind="textField" x="0" y="291" width="555" height="32" fontName="Arial" fontSize="7.5" textAdjust="StretchHeight"><expression><![CDATA["Eligibility: " + $P{eligibility}]]></expression></element>
+    <element kind="textField" x="0" y="325" width="555" height="24" fontName="Arial" fontSize="7.5" textAdjust="StretchHeight"><expression><![CDATA["License/other: " + $P{license}]]></expression></element>
+    <element kind="textField" x="0" y="351" width="555" height="24" fontName="Arial" fontSize="7.5" textAdjust="StretchHeight"><expression><![CDATA["Source/legal basis: " + $P{sourceBasis}]]></expression></element>
+    <element kind="textField" x="0" y="379" width="555" height="30" fontName="Arial" fontSize="7.5" textAdjust="StretchHeight"><expression><![CDATA["Notice: " + $P{noticeText}]]></expression></element>
+    <element kind="textField" x="0" y="411" width="555" height="30" fontName="Arial" fontSize="7.5" textAdjust="StretchHeight"><expression><![CDATA["Channels: " + $P{channels}]]></expression></element>
+  </title>
+  <columnHeader height="28">
+    <element kind="staticText" mode="Opaque" x="0" y="0" width="25" height="28" backcolor="#DDE5F2" fontName="Arial" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[#]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="25" y="0" width="170" height="28" backcolor="#DDE5F2" fontName="Arial" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Competency]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="195" y="0" width="120" height="28" backcolor="#DDE5F2" fontName="Arial" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Required Level]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="315" y="0" width="85" height="28" backcolor="#DDE5F2" fontName="Arial" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Classification]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="400" y="0" width="65" height="28" backcolor="#DDE5F2" fontName="Arial" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Criticality]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="465" y="0" width="90" height="28" backcolor="#DDE5F2" fontName="Arial" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[Remarks]]></text><box><pen lineWidth="0.4"/></box></element>
+  </columnHeader>
+  <detail><band height="34" splitType="Stretch">
+    <element kind="textField" x="0" y="0" width="25" height="34" fontName="Arial" fontSize="7" hTextAlign="Center" stretchType="ContainerHeight"><expression><![CDATA[$F{rowNumber}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="25" y="0" width="170" height="34" fontName="Arial" fontSize="7" textAdjust="StretchHeight" stretchType="ContainerHeight"><expression><![CDATA[$F{competency}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="195" y="0" width="120" height="34" fontName="Arial" fontSize="7" textAdjust="StretchHeight" stretchType="ContainerHeight"><expression><![CDATA[$F{requiredLevel}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="315" y="0" width="85" height="34" fontName="Arial" fontSize="7" textAdjust="StretchHeight" stretchType="ContainerHeight"><expression><![CDATA[$F{classification}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="400" y="0" width="65" height="34" fontName="Arial" fontSize="7" textAdjust="StretchHeight" stretchType="ContainerHeight"><expression><![CDATA[$F{criticality}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="465" y="0" width="90" height="34" fontName="Arial" fontSize="7" textAdjust="StretchHeight" stretchType="ContainerHeight"><expression><![CDATA[$F{remarks}]]></expression><box><pen lineWidth="0.3"/></box></element>
+  </band></detail>
+  <summary height="148" splitType="Stretch">
+    <element kind="textField" x="0" y="4" width="555" height="32" fontName="Arial" fontSize="7.5" textAdjust="StretchHeight"><expression><![CDATA["Application instructions: " + $P{instructions}]]></expression></element>
+    <element kind="textField" x="0" y="38" width="555" height="28" fontName="Arial" fontSize="7.5" textAdjust="StretchHeight"><expression><![CDATA["Contact/submission guidance: " + $P{contact}]]></expression></element>
+    <element kind="textField" x="0" y="70" width="555" height="20" fontName="Arial" fontSize="7"><expression><![CDATA["Source evidence: " + $P{sourceEvidence}]]></expression></element>
+    <element kind="textField" x="0" y="92" width="277" height="20" fontName="Arial" fontSize="7"><expression><![CDATA["Approved by: " + $P{approval}]]></expression></element>
+    <element kind="textField" x="278" y="92" width="277" height="20" fontName="Arial" fontSize="7"><expression><![CDATA["Published by: " + $P{publication}]]></expression></element>
+    <element kind="staticText" mode="Opaque" x="0" y="118" width="555" height="26" backcolor="#FFF5D9" fontName="Arial" fontSize="7" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[This official notice is generated from the approved immutable PRIME-HRM publication snapshot. External posting remains an agency-controlled action.]]></text></element>
+  </summary>
+  <pageFooter height="14"><element kind="textField" x="0" y="1" width="555" height="12" fontName="Arial" fontSize="6.5" hTextAlign="Right"><expression><![CDATA["Page " + $V{PAGE_NUMBER}]]></expression></element></pageFooter>
+</jasperReport>

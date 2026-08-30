@@ -1,0 +1,6 @@
+package com.primehr.rsp.applicant;
+import com.primehr.config.PrimeHrProperties;import com.primehr.rsp.applicant.storage.LocalDocumentStorage;import org.junit.jupiter.api.Test;import java.nio.file.Files;import java.util.List;import static org.assertj.core.api.Assertions.*;
+class LocalDocumentStorageTest {
+ @Test void confinesObjectsToConfiguredRoot() throws Exception {var root=Files.createTempDirectory("primehr-storage-test");var p=new PrimeHrProperties(null,null,null,null,null,null,new PrimeHrProperties.Storage(true,"local",root.toString(),100L,List.of("application/pdf"),null,null,null));var storage=new LocalDocumentStorage(p);storage.put("agency/applicant/object",new byte[]{1,2,3},"application/pdf");assertThat(storage.get("agency/applicant/object")).hasBinaryContent(new byte[]{1,2,3});assertThatThrownBy(()->storage.put("../escape",new byte[]{1},"application/pdf")).isInstanceOf(IllegalArgumentException.class);}
+ @Test void enabledLocalStorageFailsClosedWithoutDurableRoot(){var p=new PrimeHrProperties(null,null,null,null,null,null,new PrimeHrProperties.Storage(true,"local","",100L,List.of("application/pdf"),null,null,null));assertThatThrownBy(()->new LocalDocumentStorage(p)).isInstanceOf(IllegalStateException.class).hasMessageContaining("PRIMEHR_DOCUMENT_ROOT");}
+}

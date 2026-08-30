@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.administrative.dtos.PermissionDataScope;
@@ -178,5 +179,47 @@ class EffectiveAuthorizationServiceImplTest {
 
         assertThat(service.resolve("admin", "99", "primehr.competency-gap").canAdd()).isTrue();
         assertThat(service.resolve("admin", "99", "primehr.ld-referral").canSubmit()).isTrue();
+    }
+
+    @Test
+    void phaseFiveQualificationAndRspFeaturesAreIndependentAndFailClosed() {
+        PermissionRuleset ruleset = new PermissionRuleset("RSP Planner", false,
+                "{\"administrative.qualification-standard\":{\"canAccess\":true,\"canPublish\":false," +
+                        "\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.rsp-recruitment-planning\":{\"canAccess\":true,\"canAdd\":true," +
+                        "\"canEdit\":false,\"dataScope\":\"AGENCY_WIDE\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("RSP Planner")).thenReturn(Optional.of(ruleset));
+
+        var qualification = service.resolve("001", "RSP Planner", "administrative.qualification-standard");
+        assertThat(qualification.canAccess()).isTrue();
+        assertThat(qualification.canPublish()).isFalse();
+
+        var planning = service.resolve("001", "RSP Planner", "primehr.rsp-recruitment-planning");
+        assertThat(planning.canAccess()).isTrue();
+        assertThat(planning.canAdd()).isTrue();
+        assertThat(planning.canEdit()).isFalse();
+        assertThat(planning.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+
+        var publication = service.resolve("001", "RSP Planner", "primehr.rsp-vacancy-publication");
+        assertThat(publication.canAccess()).isFalse();
+        assertThat(publication.canPublish()).isFalse();
+        assertThat(publication.dataScope()).isEqualTo(PermissionDataScope.NONE);
+    }
+
+    @Test
+    void applicantIntakeAccessAndMessagePermissionAreIndependentAndAgencyScoped() {
+        PermissionRuleset ruleset = new PermissionRuleset("Applicant Intake", false,
+                "{\"primehr.rsp-applicant-intake\":{\"canAccess\":true,\"canAdd\":false," +
+                        "\"canEdit\":true,\"dataScope\":\"AGENCY_WIDE\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("Applicant Intake")).thenReturn(Optional.of(ruleset));
+
+        var permission = service.resolve("001", "Applicant Intake", "primehr.rsp-applicant-intake");
+
+        assertThat(permission.canAccess()).isTrue();
+        assertThat(permission.canAdd()).isFalse();
+        assertThat(permission.canEdit()).isTrue();
+        assertThat(permission.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+        assertThatThrownBy(() -> service.resolve("001", "Applicant Intake", "primehr.rsp-screening"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

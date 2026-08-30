@@ -33,6 +33,14 @@ class CompetencyMigrationParityTest {
     private static final String SQL_SERVER_V9 = "db/migration/sqlserver/V9__competency_gap_analysis.sql";
     private static final String POSTGRES_V10 = "db/migration/postgresql/V10__manual_ld_referrals.sql";
     private static final String SQL_SERVER_V10 = "db/migration/sqlserver/V10__manual_ld_referrals.sql";
+    private static final String POSTGRES_V11 = "db/migration/postgresql/V11__rsp_recruitment_planning_foundation.sql";
+    private static final String SQL_SERVER_V11 = "db/migration/sqlserver/V11__rsp_recruitment_planning_foundation.sql";
+    private static final String POSTGRES_V12 = "db/migration/postgresql/V12__rsp_authority_and_publication.sql";
+    private static final String SQL_SERVER_V12 = "db/migration/sqlserver/V12__rsp_authority_and_publication.sql";
+    private static final String POSTGRES_V13 = "db/migration/postgresql/V13__rsp_applicant_foundation.sql";
+    private static final String SQL_SERVER_V13 = "db/migration/sqlserver/V13__rsp_applicant_foundation.sql";
+    private static final String POSTGRES_V14 = "db/migration/postgresql/V14__rsp_application_intake.sql";
+    private static final String SQL_SERVER_V14 = "db/migration/sqlserver/V14__rsp_application_intake.sql";
     private static final Set<String> TABLES = Set.of(
             "prime_competency_category", "prime_proficiency_scale", "prime_proficiency_level",
             "prime_competency", "prime_behavioral_indicator");
@@ -234,6 +242,99 @@ class CompetencyMigrationParityTest {
         assertThat(sqlServer.toLowerCase()).doesNotContain("insert into").doesNotContain("delete from")
                 .doesNotContain("drop table").doesNotContain("employeeappointment").doesNotContain("training")
                 .doesNotContain("enrollment").doesNotContain("payroll").doesNotContain(" top ").doesNotContain("isnull(");
+    }
+
+    @Test
+    void phase5aPlanningMigrationsHaveEquivalentTablesConstraintsIndexesAndRemainProviderNeutral() throws IOException {
+        String postgres = read(POSTGRES_V11);
+        String sqlServer = read(SQL_SERVER_V11);
+        assertThat(tableNames(postgres)).containsExactlyInAnyOrder(
+                "rsp_recruitment_plan", "rsp_vacancy_request");
+        assertThat(tableNames(sqlServer)).isEqualTo(tableNames(postgres));
+        for (String required : Set.of("uk_rsp_plan_code", "uk_rsp_vacancy_plan_plantilla",
+                "fk_rsp_vacancy_plan", "fk_rsp_vacancy_profile", "ck_rsp_plan_dates",
+                "ck_rsp_plan_status", "ck_rsp_vacancy_status", "ck_rsp_vacancy_type",
+                "ck_rsp_vacancy_anticipated", "ck_rsp_vacancy_occupant", "ck_rsp_vacancy_versions",
+                "ix_rsp_plan_period", "ix_rsp_vacancy_plantilla", "ix_rsp_vacancy_plan")) {
+            assertThat(postgres).contains(required);
+            assertThat(sqlServer).contains(required);
+        }
+        assertThat(postgres.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table")
+                .doesNotContain("employeeappointment").doesNotContain(" limit ").doesNotContain("::");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table")
+                .doesNotContain("employeeappointment").doesNotContain(" top ").doesNotContain("isnull(");
+    }
+
+    @Test
+    void phase5aAuthorityAndPublicationMigrationsAreEquivalentAndProviderNeutral() throws IOException {
+        String postgres = read(POSTGRES_V12);
+        String sqlServer = read(SQL_SERVER_V12);
+        assertThat(tableNames(postgres)).containsExactlyInAnyOrder(
+                "rsp_vacancy_publication", "rsp_vacancy_publication_channel",
+                "rsp_vacancy_publication_requirement");
+        assertThat(tableNames(sqlServer)).isEqualTo(tableNames(postgres));
+        for (String required : Set.of("fk_rsp_publication_vacancy", "uk_rsp_publication_vacancy",
+                "uk_rsp_publication_channel", "uk_rsp_publication_requirement",
+                "ck_rsp_publication_status", "ck_rsp_publication_visibility",
+                "ck_rsp_publication_dates", "ck_rsp_publication_versions",
+                "ix_rsp_publication_status", "ix_rsp_publication_plantilla",
+                "ix_rsp_publication_channel", "ix_rsp_publication_requirement")) {
+            assertThat(postgres).contains(required);
+            assertThat(sqlServer).contains(required);
+        }
+        assertThat(postgres.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table")
+                .doesNotContain("employeeappointment").doesNotContain(" limit ").doesNotContain("::");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("delete from").doesNotContain("drop table")
+                .doesNotContain("employeeappointment").doesNotContain(" top ").doesNotContain("isnull(");
+    }
+
+    @Test
+    void phase5bApplicantFoundationMigrationsAreEquivalentAndProviderNeutral() throws IOException {
+        String postgres = read(POSTGRES_V13);
+        String sqlServer = read(SQL_SERVER_V13);
+        assertThat(tableNames(postgres)).containsExactlyInAnyOrder("rsp_applicant_account", "rsp_privacy_notice",
+                "rsp_applicant_consent", "rsp_applicant_profile", "rsp_applicant_profile_entry",
+                "rsp_applicant_document");
+        assertThat(tableNames(sqlServer)).isEqualTo(tableNames(postgres));
+        for (String required : Set.of("uk_rsp_applicant_email", "uk_rsp_privacy_version",
+                "uk_rsp_consent_notice", "uk_rsp_applicant_profile", "uk_rsp_profile_entry_order",
+                "uk_rsp_document_object", "fk_rsp_consent_applicant", "fk_rsp_consent_notice",
+                "fk_rsp_profile_applicant", "fk_rsp_profile_entry", "fk_rsp_document_applicant",
+                "ix_rsp_privacy_effective", "ix_rsp_consent_applicant", "ix_rsp_profile_entry",
+                "ix_rsp_document_owner")) {
+            assertThat(postgres).contains(required);
+            assertThat(sqlServer).contains(required);
+        }
+        assertThat(postgres.toLowerCase()).doesNotContain("insert into").doesNotContain("delete from")
+                .doesNotContain("drop table").doesNotContain(" limit ").doesNotContain("::");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("insert into").doesNotContain("delete from")
+                .doesNotContain("drop table").doesNotContain(" top ").doesNotContain("isnull(");
+    }
+
+    @Test
+    void phase5bApplicationIntakeMigrationsAreEquivalentAndForwardOnly() throws IOException {
+        String postgres = read(POSTGRES_V14);
+        String sqlServer = read(SQL_SERVER_V14);
+        assertThat(tableNames(postgres)).containsExactlyInAnyOrder("rsp_position_application",
+                "rsp_application_document_snapshot", "rsp_applicant_communication");
+        assertThat(tableNames(sqlServer)).isEqualTo(tableNames(postgres));
+        for (String required : Set.of("uk_rsp_application_version", "uk_rsp_application_acknowledgment",
+                "uk_rsp_application_document", "fk_rsp_application_applicant",
+                "fk_rsp_application_publication", "fk_rsp_application_notice",
+                "fk_rsp_appdoc_application", "fk_rsp_appdoc_document",
+                "fk_rsp_communication_application", "fk_rsp_communication_applicant",
+                "ck_rsp_application_status", "ck_rsp_application_submission",
+                "ck_rsp_application_withdrawal", "ix_rsp_application_owner",
+                "ix_rsp_application_queue", "ix_rsp_application_vacancy",
+                "ix_rsp_appdoc_application", "ix_rsp_communication_application",
+                "ix_rsp_communication_applicant")) {
+            assertThat(postgres).contains(required);
+            assertThat(sqlServer).contains(required);
+        }
+        assertThat(postgres.toLowerCase()).doesNotContain("insert into").doesNotContain("delete from")
+                .doesNotContain("drop table").doesNotContain(" limit ").doesNotContain("::");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("insert into").doesNotContain("delete from")
+                .doesNotContain("drop table").doesNotContain(" top ").doesNotContain("isnull(");
     }
 
     private static Set<String> tableNames(String sql) {

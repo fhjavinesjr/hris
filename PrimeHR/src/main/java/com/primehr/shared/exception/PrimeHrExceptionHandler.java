@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.primehr.integration.administrative.AuthorizationDependencyException;
 import com.primehr.integration.administrative.PositionTargetDependencyException;
 import com.primehr.integration.humanresource.HumanResourceDependencyException;
@@ -52,6 +54,12 @@ public class PrimeHrExceptionHandler {
                         : exception.getMessage()));
     }
 
+    @ExceptionHandler(ApplicationConflictException.class)
+    public ResponseEntity<ApiErrorResponse> applicationConflict(ApplicationConflictException exception,
+                                                                  HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, "APPLICATION_CONFLICT", request, List.of(exception.getMessage()));
+    }
+
     @ExceptionHandler(IllegalLifecycleTransitionException.class)
     public ResponseEntity<ApiErrorResponse> illegalTransition(IllegalLifecycleTransitionException exception,
                                                                HttpServletRequest request) {
@@ -62,6 +70,18 @@ public class PrimeHrExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiErrorResponse> forbidden(AccessDeniedException exception, HttpServletRequest request) {
         return error(HttpStatus.FORBIDDEN, "Access denied", request, List.of());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiErrorResponse> applicantAuthentication(AuthenticationException exception,
+                                                                     HttpServletRequest request) {
+        return error(HttpStatus.UNAUTHORIZED, "Invalid applicant credentials", request, List.of());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> dataConflict(DataIntegrityViolationException exception,
+                                                          HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, "The requested applicant record already exists", request, List.of());
     }
 
     @ExceptionHandler(AuthorizationDependencyException.class)

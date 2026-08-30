@@ -1,6 +1,6 @@
 # ISOFT PRIME-HRM User Guide
 
-This guide covers the Phase 1 competency foundation, Phase 2 Position Competency Profiles, and Phase 3 competency assessments and immutable Person Competency Profiles available in the standalone PRIME-HRM application. Competency gap analysis and later Master Plan phases are not yet implemented.
+This guide covers the delivered standalone PRIME-HRM functions through Phase 5A: competency administration, Position and Person Competency Profiles, assessments, competency gaps and manual L&D referrals, and vacancy/recruitment planning through controlled vacancy-notice publication. Applicant intake and later RSP stages are not yet implemented.
 
 ## 1. Access and sign-in
 
@@ -210,7 +210,122 @@ Open **Person Profiles** to view validated official results.
 
 The badge **VALIDATED OFFICIAL PROFILE** distinguishes official human-validated results from self or assessor contributions. Official versions cannot be edited or deleted. A later validated assessment creates a successor and closes the earlier open period when applicable.
 
-## 14. Common messages
+## 14. Qualification Standards
+
+Qualification Standards are maintained in **Administrative > Qualification Standards** and belong to the authoritative Job Position master.
+
+1. Select a Job Position.
+2. Create a DRAFT containing education, training, experience, eligibility, optional license/statutory requirement, source/legal basis, and effectivity.
+3. Review the draft and publish it with the dedicated **Publish** permission.
+4. Use **New version** for a later change. Publishing a successor closes an overlapping predecessor; ACTIVE history is not edited in place.
+
+The PrimeHR vacancy workflow will not treat manually retyped requirements as authoritative. It resolves the effective published Qualification Standard and snapshots its exact ID, version, content, fingerprint, and fetch time.
+
+## 15. Recruitment planning and vacancy publication
+
+Open **Recruitment Planning** in PRIME-HRM. The initial workflow requires `AGENCY_WIDE` data scope because authoritative office-assignment responsibility is not yet available.
+
+### Prepare a recruitment plan
+
+1. Create a plan code, title, planning period, and description.
+2. Open the plan and find the exact Administrative Plantilla item.
+3. Enter the authoritative Business Unit ID and choose:
+   - **ACTUAL** only when HRM reports the exact Plantilla is unoccupied;
+   - **ANTICIPATED** when it is still occupied, with anticipated date, reason, explanation, and authority/reference.
+4. Enter priority, target fill date when known, and justification.
+5. Select **Check Readiness**. Resolve every blocker before saving or submitting.
+6. Submit each vacancy request, then submit the plan.
+7. An independent approver reviews and approves/returns the plan, then authorizes or declines each submitted vacancy.
+
+Readiness is checked from HRM Plantilla occupancy, the current Administrative Qualification Standard, and the effective Position Competency Profile. The browser cannot declare an occupied Plantilla to be an actual vacancy. Duplicate active vacancy requests for the same Plantilla and overlapping period are rejected.
+
+### Prepare and publish a vacancy notice
+
+1. From an **AUTHORIZED** vacancy, select **Create Publication**.
+2. Set visibility, opening/closing dates, application instructions, contact/submission guidance, approved notice text, and at least one publication channel/date/reference.
+3. Save and review the immutable Qualification Standard, position, organizational, salary, and competency snapshots.
+4. Submit the publication for independent approval.
+5. The approver may return or approve it. A separately authorized publisher then selects **Publish**.
+6. For an **APPROVED** or **PUBLISHED** record, select **Vacancy Notice PDF** to generate the official portable notice.
+
+Publication does not send data to CSC, social media, email, or external job boards. Channels are evidence records only. Phase 5A also does not accept applicants, documents, or applications.
+
+Lifecycle summary:
+
+```text
+Plan:        DRAFT/RETURNED -> SUBMITTED -> APPROVED -> ARCHIVED
+Vacancy:     DRAFT/RETURNED -> SUBMITTED -> AUTHORIZED | DECLINED
+Publication: DRAFT/RETURNED -> SUBMITTED -> APPROVED -> PUBLISHED -> CLOSED
+```
+
+Cancellation and return actions require the applicable permission and reason. Material transitions recheck authoritative source freshness. A `409` message means source data or the record version changed; reload and review current facts before retrying.
+
+## 16. Careers and applicant self-service
+
+Careers is a separate public/applicant surface at `/careers`. It does not use an employee account, Employee Portal token, or PrimeHR staff session.
+
+### Browse and register
+
+1. Open **ISOFT HRIS Careers** and review open published vacancies.
+2. Select a vacancy to review its position, salary, effectivity, application window, qualification summary, and publication details.
+3. Select **Register**, enter the applicant's own email/name/password, read the displayed effective privacy notice, and explicitly accept that exact notice version.
+4. Registration signs the applicant into the Careers surface. **Login** can be used for later sessions.
+
+The generic release activates an account without email verification because no delivery provider is configured. Use a unique applicant email and protect the password. An applicant session cannot open employee or PrimeHR management APIs, and employee SSO cannot open applicant-owned APIs.
+
+### Complete the profile
+
+1. Open **My Profile**.
+2. Complete contact and declaration fields.
+3. Add the supported education, work experience, training, eligibility, licence/credential, or reference entries. Each entry has its own title, organization, dates, description, and display order where applicable.
+4. Select **Save profile**.
+
+This profile belongs to the applicant and is separate from the HRM employee PDS. A submission captures an immutable profile snapshot; later edits affect future submissions only.
+
+### Manage private documents
+
+1. Open **Documents**.
+2. Select the document type/classification and a permitted file.
+3. Select **Upload document**. The server validates the configured size, media type, content signature, checksum, ownership, and private storage settings.
+4. Download, replace, or deactivate only the applicant's own active documents.
+
+Replacement creates a new document version. It does not alter the file evidence already captured by a submitted application. File bytes are never public and are streamed only after applicant ownership or staff permission checks.
+
+### Apply and track
+
+1. From an open published vacancy, select **Apply**.
+2. Create a draft, select the active supporting documents, and save the selection.
+3. Review the declaration/readiness messages, then select **Submit application**.
+4. Record the acknowledgment number and use **My Applications** to view the safe status and portal communication history.
+5. Where allowed, enter a withdrawal reason and select **Withdraw application**. Withdrawal preserves the submitted evidence and history.
+
+Only an open `PUBLISHED` vacancy accepts an application. A duplicate active application, stale record version, incomplete profile/declaration, missing required document, expired window, or changed vacancy returns a validation/conflict message and does not create a second accepted submission.
+
+## 17. Applicant intake for authorized staff
+
+Administrative permission rules use **PRIME-HRM > Applicant Intake**:
+
+- **Access** permits agency-wide list/detail and authorized evidence reads.
+- **Add** permits an informational portal message and is independent from Access.
+- no Edit, Delete, Submit, Approve, Publish, screening, qualified/disqualified, scoring, ranking, shortlist, or selection action exists in Phase 5B.
+
+After a permission change, sign in again through Employee Portal so the effective permission snapshot is refreshed. Open **Applicant Intake** in PrimeHR, filter/search the submission queue, select **Details**, review the immutable submitted evidence and communication history, and use **Send message** only for safe informational correspondence. Sensitive evidence downloads and staff messages are audited.
+
+The staff page does not determine documentary completeness or qualification. Those actions require a separately approved Phase 5C design.
+
+### Deployment controls
+
+Before enabling applicant uploads outside a local QA environment:
+
+- configure a durable `local` or private S3-compatible storage provider and root/bucket;
+- configure a dedicated applicant JWT secret different from employee JWT signing material;
+- publish approved privacy/retention text and file-type/size/required-document policy;
+- configure exact deployed CORS origins and never use a wildcard;
+- plan email verification/password reset, CAPTCHA/rate limiting, malware scanning, retention/legal hold, backup, and applicant support controls appropriate to the agency.
+
+The application fails closed when applicant/storage functionality is enabled without required secure storage or token configuration.
+
+## 18. Common messages
 
 - **Access denied**: ask an administrator to review the exact feature/action permissions, then sign in again through the portal.
 - **Incomplete**: supply effective-from and at least one active, valid requirement.
@@ -224,8 +339,18 @@ The badge **VALIDATED OFFICIAL PROFILE** distinguishes official human-validated 
 - **Every active competency requirement must have a rating**: finish all ratings before submission.
 - **A successor validFrom must be after the latest profile validFrom**: choose a later non-overlapping official-profile effectivity date.
 - **A validator cannot validate their own contribution**: use an independent validator or an authorized administrator override with an audited reason.
+- **No effective Qualification Standard**: publish a version for the vacancy date in Administrative.
+- **Plantilla is occupied**: use ANTICIPATED with complete evidence, or wait for HRM to show an actual vacancy.
+- **This Plantilla already has an active vacancy request**: open the existing overlapping plan instead of creating a duplicate.
+- **Source changed / reload before retrying**: an Administrative, HRM, profile, or optimistic record fingerprint changed; review current data.
+- **Publication is not APPROVED or PUBLISHED**: a final vacancy notice cannot be generated yet.
+- **No effective privacy notice**: an administrator must publish an active notice effective for the current date before applicant registration.
+- **File content does not match its media type**: choose a genuine configured PDF/image/office file; renaming an extension is not accepted.
+- **Application already exists**: open the existing application for that vacancy instead of creating a duplicate.
+- **Vacancy is not open for applications**: verify that the publication is PUBLISHED and the application window includes the current date.
+- **Applicant Intake access denied**: grant the exact Applicant Intake Access permission with agency-wide scope, then sign in again.
 
-## 15. Operational controls
+## 19. Operational controls
 
 - Configure permissions in Administrative and reauthenticate after changing a ruleset.
 - Maintain Job Position and Plantilla only in Administrative.

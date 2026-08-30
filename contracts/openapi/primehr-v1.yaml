@@ -1,13 +1,81 @@
 openapi: 3.0.3
 info:
   title: ISOFT PRIME-HRM API
-  version: 4.2.0-phase-4.2
-  description: Phase 1 competency foundation, Phase 2 position profiles, Phase 3 assessment and immutable person profiles, and Phase 4.1 competency gap analysis. All operations require an ISOFT employee JWT and server-resolved agency scope.
+  version: 5.5.0-phase-5b.2
+  description: Staff PRIME-HRM APIs plus separately authenticated applicant foundation and application intake. Staff operations use an ISOFT employee JWT; applicant self-service uses an isolated applicant JWT.
 servers:
   - url: /api/primehr/v1
 security:
   - bearerAuth: []
 paths:
+  /public/v1/privacy-notices/current:
+    servers: [{url: /api/primehr}]
+    get: {operationId: getCurrentApplicantPrivacyNotice, security: [], responses: {'200': {description: Current effective privacy notice}, '404': {$ref: '#/components/responses/NotFound'}}}
+  /public/v1/applicant-accounts/register:
+    servers: [{url: /api/primehr}]
+    post: {operationId: registerApplicant, security: [], responses: {'201': {description: Applicant account registered with consent evidence}, '400': {$ref: '#/components/responses/BadRequest'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /public/v1/applicant-sessions:
+    servers: [{url: /api/primehr}]
+    post: {operationId: createApplicantSession, security: [], responses: {'200': {description: Isolated applicant bearer session}, '401': {$ref: '#/components/responses/Unauthorized'}}}
+  /public/v1/vacancies:
+    servers: [{url: /api/primehr}]
+    get: {operationId: listPublicVacancies, security: [], responses: {'200': {description: Currently open published vacancies only}}}
+  /public/v1/vacancies/{publicationId}:
+    servers: [{url: /api/primehr}]
+    get: {operationId: getPublicVacancy, security: [], responses: {'200': {description: Published vacancy detail}, '404': {$ref: '#/components/responses/NotFound'}}}
+  /applicant/v1/me:
+    servers: [{url: /api/primehr}]
+    get: {operationId: getApplicantAccount, responses: {'200': {description: Authenticated applicant account}, '401': {$ref: '#/components/responses/Unauthorized'}}}
+    put: {operationId: updateApplicantAccount, responses: {'200': {description: Applicant account updated}, '400': {$ref: '#/components/responses/BadRequest'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /applicant/v1/session:
+    servers: [{url: /api/primehr}]
+    delete: {operationId: deleteApplicantSession, responses: {'204': {description: Stateless applicant logout acknowledged}}}
+  /applicant/v1/me/profile:
+    servers: [{url: /api/primehr}]
+    get: {operationId: getApplicantProfile, responses: {'200': {description: Applicant-owned profile}}}
+    put: {operationId: updateApplicantProfile, responses: {'200': {description: Applicant-owned profile updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /applicant/v1/me/consents:
+    servers: [{url: /api/primehr}]
+    post: {operationId: acceptCurrentPrivacyNotice, responses: {'204': {description: Current notice acceptance recorded}}}
+  /applicant/v1/me/documents:
+    servers: [{url: /api/primehr}]
+    get: {operationId: listApplicantDocuments, responses: {'200': {description: Applicant-owned active documents}}}
+    post: {operationId: uploadApplicantDocument, responses: {'201': {description: Private applicant document stored}}}
+  /applicant/v1/me/documents/{documentId}:
+    servers: [{url: /api/primehr}]
+    delete: {operationId: deactivateApplicantDocument, responses: {'204': {description: Applicant-owned document deactivated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /applicant/v1/me/documents/{documentId}/content:
+    servers: [{url: /api/primehr}]
+    get: {operationId: downloadApplicantDocument, responses: {'200': {description: Applicant-owned document content}, '404': {$ref: '#/components/responses/NotFound'}}}
+  /applicant/v1/me/documents/{documentId}/replace:
+    servers: [{url: /api/primehr}]
+    post: {operationId: replaceApplicantDocument, responses: {'201': {description: Applicant-owned document replaced atomically}}}
+  /applicant/v1/me/applications:
+    servers: [{url: /api/primehr}]
+    get: {operationId: listOwnApplications, responses: {'200': {description: Applicant-owned applications only}}}
+    post: {operationId: createApplicationDraft, responses: {'200': {description: Application draft created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /applicant/v1/me/applications/{applicationId}:
+    servers: [{url: /api/primehr}]
+    get: {operationId: getOwnApplication, responses: {'200': {description: Applicant-owned application}, '404': {$ref: '#/components/responses/NotFound'}}}
+    put: {operationId: updateOwnApplicationDraft, responses: {'200': {description: Draft document selection updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /applicant/v1/me/applications/{applicationId}/submit:
+    servers: [{url: /api/primehr}]
+    post: {operationId: submitOwnApplication, responses: {'200': {description: Immutable application evidence submitted atomically}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /applicant/v1/me/applications/{applicationId}/withdraw:
+    servers: [{url: /api/primehr}]
+    post: {operationId: withdrawOwnApplication, responses: {'200': {description: Submitted application withdrawn without deleting evidence}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /applicant/v1/me/applications/{applicationId}/communications:
+    servers: [{url: /api/primehr}]
+    get: {operationId: listOwnApplicationCommunications, responses: {'200': {description: Applicant-safe communication history}}}
+  /rsp/applications:
+    get: {operationId: listApplicantIntake, responses: {'200': {description: Authorized agency-wide applicant intake page}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/applications/{applicationId}:
+    get: {operationId: getApplicantIntake, responses: {'200': {description: Authorized applicant submission evidence}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/applications/{applicationId}/documents/{documentId}/content:
+    get: {operationId: downloadApplicantIntakeDocument, responses: {'200': {description: Audited authorized evidence stream}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/applications/{applicationId}/communications:
+    get: {operationId: listApplicantIntakeCommunications, responses: {'200': {description: Authorized communication history}}}
+    post: {operationId: sendApplicantIntakeMessage, responses: {'200': {description: Audited informational portal message}, '403': {$ref: '#/components/responses/Forbidden'}}}
   /admin/assessment-cycles:
     get: {operationId: listAssessmentCycles, responses: {'200': {description: DRAFT assessment-cycle page}}}
     post: {operationId: createAssessmentCycle, responses: {'201': {description: DRAFT cycle created}}}
@@ -93,7 +161,7 @@ paths:
           description: Submitted contributions returned atomically for correction
           content: {application/json: {schema: {$ref: '#/components/schemas/ReturnAssessmentCaseResponse'}}}
         '403': {$ref: '#/components/responses/Forbidden'}
-        '409': {$ref: '#/components/responses/Conflict'}
+        '400': {description: Publication is not APPROVED or PUBLISHED}
   /validation/assessment-cases:
     get:
       operationId: listAssessmentCasesPendingValidation
@@ -573,6 +641,67 @@ paths:
     post: {operationId: submitLdReferral, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdReferralTransitionRequest'}}}}, responses: {'200': {description: Referral atomically marked REFERRED}, '409': {$ref: '#/components/responses/Conflict'}}}
   /ld-referrals/{referralId}/archive:
     post: {operationId: archiveLdReferralDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdReferralTransitionRequest'}}}}, responses: {'200': {description: Referral draft archived}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/recruitment-plans:
+    get: {operationId: listRecruitmentPlans, responses: {'200': {description: Agency recruitment-plan page}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createRecruitmentPlanDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreateRecruitmentPlanRequest'}}}}, responses: {'201': {description: Recruitment-plan draft created}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/recruitment-plans/{planId}:
+    get: {operationId: getRecruitmentPlan, responses: {'200': {description: Exact agency recruitment plan}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    put: {operationId: updateRecruitmentPlanDraft, responses: {'200': {description: Recruitment-plan draft updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/recruitment-plans/{planId}/archive:
+    post: {operationId: archiveRecruitmentPlanDraft, responses: {'200': {description: Empty recruitment-plan draft archived}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/recruitment-plans/{planId}/submit:
+    post: {operationId: submitRecruitmentPlan, responses: {'200': {description: Complete plan submitted}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/recruitment-plans/{planId}/return:
+    post: {operationId: returnRecruitmentPlan, responses: {'200': {description: Submitted plan returned with reason}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/recruitment-plans/{planId}/approve:
+    post: {operationId: approveRecruitmentPlan, responses: {'200': {description: Submitted plan approved after source recheck}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/recruitment-plans/{planId}/vacancies:
+    post: {operationId: addVacancyRequestDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/SaveVacancyRequest'}}}}, responses: {'201': {description: Vacancy draft created from live authoritative sources}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-requests/{requestId}:
+    put: {operationId: updateVacancyRequestDraft, responses: {'200': {description: Vacancy draft refreshed and updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-requests/{requestId}/archive:
+    post: {operationId: archiveVacancyRequestDraft, responses: {'200': {description: Vacancy draft archived}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-requests/{requestId}/submit:
+    post: {operationId: submitVacancyRequest, responses: {'200': {description: Vacancy request submitted}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-requests/{requestId}/return:
+    post: {operationId: returnVacancyRequest, responses: {'200': {description: Vacancy request returned with reason}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-requests/{requestId}/authorize:
+    post: {operationId: authorizeVacancyRequest, responses: {'200': {description: Vacancy request authorized after source recheck}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-requests/{requestId}/decline:
+    post: {operationId: declineVacancyRequest, responses: {'200': {description: Vacancy request declined with reason}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-requests/{requestId}/cancel:
+    post: {operationId: cancelVacancyRequest, responses: {'200': {description: Authorized vacancy request cancelled with reason}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-requests/{requestId}/readiness:
+    get: {operationId: checkStoredVacancyReadiness, responses: {'200': {description: Stored vacancy compared with live authoritative sources}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-readiness:
+    get: {operationId: checkVacancyReadiness, responses: {'200': {description: Live Administrative, HRM, and Position Profile readiness}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/vacancy-publications:
+    get: {operationId: listVacancyPublications, responses: {'200': {description: Agency vacancy-publication page}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createVacancyPublicationDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreateVacancyPublicationRequest'}}}}, responses: {'201': {description: Publication draft created with immutable source snapshots}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-publications/{publicationId}:
+    get: {operationId: getVacancyPublication, responses: {'200': {description: Exact agency vacancy publication}}}
+    put: {operationId: updateVacancyPublicationDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/UpdateVacancyPublicationRequest'}}}}, responses: {'200': {description: Editable publication updated and snapshots refreshed}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-publications/{publicationId}/notice.pdf:
+    get:
+      operationId: generateOfficialVacancyNotice
+      responses:
+        '200':
+          description: SQL-free official vacancy notice generated from an APPROVED or PUBLISHED immutable snapshot
+          content: {application/pdf: {schema: {type: string, format: binary}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /rsp/vacancy-publications/{publicationId}/submit:
+    post: {operationId: submitVacancyPublication, responses: {'200': {description: Publication submitted}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-publications/{publicationId}/return:
+    post: {operationId: returnVacancyPublication, responses: {'200': {description: Publication returned with reason}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-publications/{publicationId}/approve:
+    post: {operationId: approveVacancyPublication, responses: {'200': {description: Publication approved after source recheck}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-publications/{publicationId}/publish:
+    post: {operationId: publishVacancyPublication, responses: {'200': {description: Approved publication published under independent canPublish permission}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-publications/{publicationId}/cancel:
+    post: {operationId: cancelVacancyPublication, responses: {'200': {description: Approved or published publication cancelled with reason}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-publications/{publicationId}/close:
+    post: {operationId: closeVacancyPublication, responses: {'200': {description: Published publication closed}, '409': {$ref: '#/components/responses/Conflict'}}}
 components:
   securitySchemes:
     bearerAuth:
@@ -650,6 +779,72 @@ components:
     PositionProfileComparison: {description: Exact-version requirement comparison, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfileComparison'}}}}
     AuditEventPage: {description: Page of append-only position-profile audit events, content: {application/json: {schema: {$ref: '#/components/schemas/AuditEventPage'}}}}
   schemas:
+    VacancyType: {type: string, enum: [ACTUAL, ANTICIPATED]}
+    RecruitmentPlanStatus: {type: string, enum: [DRAFT, SUBMITTED, RETURNED, APPROVED, ARCHIVED]}
+    VacancyRequestStatus: {type: string, enum: [DRAFT, SUBMITTED, RETURNED, AUTHORIZED, DECLINED, CANCELLED, ARCHIVED]}
+    VacancyPublicationStatus: {type: string, enum: [DRAFT, SUBMITTED, RETURNED, APPROVED, PUBLISHED, CLOSED, CANCELLED]}
+    VacancyVisibility: {type: string, enum: [INTERNAL, EXTERNAL, BOTH]}
+    CreateRecruitmentPlanRequest:
+      type: object
+      required: [code, title, periodStart, periodEnd]
+      properties:
+        code: {type: string, maxLength: 100}
+        title: {type: string, maxLength: 200}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        description: {type: string, maxLength: 4000, nullable: true}
+    SaveVacancyRequest:
+      type: object
+      required: [vacancyType, plantillaId, businessUnitId, recruitmentPriority, justification]
+      properties:
+        vacancyType: {$ref: '#/components/schemas/VacancyType'}
+        plantillaId: {type: integer, format: int64, minimum: 1}
+        businessUnitId: {type: integer, format: int64, minimum: 1}
+        anticipatedVacancyDate: {type: string, format: date, nullable: true}
+        anticipatedReasonCode: {type: string, maxLength: 80, nullable: true}
+        anticipatedExplanation: {type: string, maxLength: 2000, nullable: true}
+        authorityReference: {type: string, maxLength: 500, nullable: true}
+        recruitmentPriority: {type: string, maxLength: 80}
+        targetFillDate: {type: string, format: date, nullable: true}
+        justification: {type: string, maxLength: 4000}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    RspTransitionRequest:
+      type: object
+      required: [recordVersion]
+      properties:
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        reason: {type: string, maxLength: 1000, nullable: true}
+    VacancyPublicationChannelInput:
+      type: object
+      required: [channelName, publicationDate]
+      properties:
+        channelName: {type: string, maxLength: 200}
+        publicationDate: {type: string, format: date}
+        reference: {type: string, maxLength: 1000, nullable: true}
+    CreateVacancyPublicationRequest:
+      type: object
+      required: [vacancyRequestId, visibility, openingDate, closingDate, instructions, contactGuidance, noticeText]
+      properties:
+        vacancyRequestId: {type: string, maxLength: 36}
+        visibility: {$ref: '#/components/schemas/VacancyVisibility'}
+        openingDate: {type: string, format: date}
+        closingDate: {type: string, format: date}
+        instructions: {type: string, maxLength: 4000}
+        contactGuidance: {type: string, maxLength: 2000}
+        noticeText: {type: string, maxLength: 4000}
+        channels: {type: array, items: {$ref: '#/components/schemas/VacancyPublicationChannelInput'}}
+    UpdateVacancyPublicationRequest:
+      type: object
+      required: [visibility, openingDate, closingDate, instructions, contactGuidance, noticeText, recordVersion]
+      properties:
+        visibility: {$ref: '#/components/schemas/VacancyVisibility'}
+        openingDate: {type: string, format: date}
+        closingDate: {type: string, format: date}
+        instructions: {type: string, maxLength: 4000}
+        contactGuidance: {type: string, maxLength: 2000}
+        noticeText: {type: string, maxLength: 4000}
+        channels: {type: array, items: {$ref: '#/components/schemas/VacancyPublicationChannelInput'}}
+        recordVersion: {type: integer, format: int64, minimum: 0}
     LdReferralStatus: {type: string, enum: [DRAFT, REFERRED, ARCHIVED]}
     CreateLdReferralRequest:
       type: object
