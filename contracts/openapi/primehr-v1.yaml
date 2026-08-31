@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: ISOFT PRIME-HRM API
-  version: 5.5.0-phase-5b.2
-  description: Staff PRIME-HRM APIs plus separately authenticated applicant foundation and application intake. Staff operations use an ISOFT employee JWT; applicant self-service uses an isolated applicant JWT.
+  version: 5.6.0-phase-5c.2
+  description: Staff PRIME-HRM APIs plus separately authenticated applicant services, versioned screening policies, assigned screening, and independently validated applicant-safe outcomes. Staff operations use an ISOFT employee JWT; applicant self-service uses an isolated applicant JWT.
 servers:
   - url: /api/primehr/v1
 security:
@@ -76,6 +76,42 @@ paths:
   /rsp/applications/{applicationId}/communications:
     get: {operationId: listApplicantIntakeCommunications, responses: {'200': {description: Authorized communication history}}}
     post: {operationId: sendApplicantIntakeMessage, responses: {'200': {description: Audited informational portal message}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/screening-policies:
+    get: {operationId: listScreeningPolicies, responses: {'200': {description: Agency-wide versioned screening policy page}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createScreeningPolicyDraft, responses: {'201': {description: Screening policy draft created}, '400': {$ref: '#/components/responses/BadRequest'}}}
+  /rsp/screening-policies/{policyId}:
+    get: {operationId: getScreeningPolicy, responses: {'200': {description: Exact screening policy version}, '404': {$ref: '#/components/responses/NotFound'}}}
+    put: {operationId: updateScreeningPolicyDraft, responses: {'200': {description: Screening policy draft updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/screening-policies/{policyId}/publish:
+    post: {operationId: publishScreeningPolicy, responses: {'200': {description: Immutable screening policy version published}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/screening-policies/{policyId}/successors:
+    post: {operationId: createScreeningPolicySuccessor, responses: {'201': {description: Successor draft created from a published version}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/screening-policies/{policyId}/preview:
+    post: {operationId: previewStructuredScreeningChecks, responses: {'200': {description: Transparent advisory checks requiring human confirmation}}}
+  /rsp/vacancy-publications/{publicationId}/screening-policy:
+    put: {operationId: bindVacancyScreeningPolicy, responses: {'200': {description: Exact immutable vacancy-to-policy binding}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/screening-cases:
+    get: {operationId: listPermittedScreeningCases, responses: {'200': {description: Assigned or administrator-permitted screening cases}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/applications/{applicationId}/screening-cases:
+    post: {operationId: openScreeningCase, responses: {'201': {description: Assigned case opened from immutable application and policy evidence}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/screening-cases/{caseId}:
+    get: {operationId: getScreeningCase, responses: {'200': {description: Authorized case findings and evidence}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/screening-cases/{caseId}/successors:
+    post: {operationId: createScreeningCorrection, responses: {'201': {description: Controlled correction revision preserving final history}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/screening-cases/{caseId}/assignments:
+    put: {operationId: assignScreeningCase, responses: {'200': {description: Distinct screener and validator assigned}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/screening-cases/{caseId}/findings/{criterionId}:
+    put: {operationId: recordScreeningFinding, responses: {'200': {description: Human-confirmed finding with immutable evidence links}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/screening-cases/{caseId}/submit:
+    post: {operationId: submitScreeningRecommendation, responses: {'200': {description: Complete consistent recommendation submitted}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/screening-cases/{caseId}/return:
+    post: {operationId: returnScreeningCase, responses: {'200': {description: Independent validator returned the recommendation}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/screening-cases/{caseId}/finalize:
+    post: {operationId: finalizeScreeningCase, responses: {'200': {description: Independent immutable decision finalized}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/screening-cases/{caseId}/override:
+    post: {operationId: overrideScreeningCase, responses: {'200': {description: Administrator-only reasoned override}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/screening-cases/{caseId}/history:
+    get: {operationId: getScreeningCaseHistory, responses: {'200': {description: Immutable screening revision history}, '403': {$ref: '#/components/responses/Forbidden'}}}
   /admin/assessment-cycles:
     get: {operationId: listAssessmentCycles, responses: {'200': {description: DRAFT assessment-cycle page}}}
     post: {operationId: createAssessmentCycle, responses: {'201': {description: DRAFT cycle created}}}
@@ -779,6 +815,126 @@ components:
     PositionProfileComparison: {description: Exact-version requirement comparison, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfileComparison'}}}}
     AuditEventPage: {description: Page of append-only position-profile audit events, content: {application/json: {schema: {$ref: '#/components/schemas/AuditEventPage'}}}}
   schemas:
+    ScreeningCriterionCategory: {type: string, enum: [REQUIRED_DOCUMENT, EDUCATION, TRAINING, EXPERIENCE, ELIGIBILITY, LICENSE, COMPETENCY_PREREQUISITE, SCREENING_QUESTION]}
+    ScreeningEvaluationMode: {type: string, enum: [PRESENCE, NUMERIC_THRESHOLD, DATE_OR_DURATION, MANUAL_REVIEW, DECLARATION]}
+    ScreeningPolicyStatus: {type: string, enum: [DRAFT, PUBLISHED, SUPERSEDED]}
+    ScreeningCaseStatus: {type: string, enum: [DRAFT, RETURNED, SUBMITTED, QUALIFIED, DISQUALIFIED, CANCELLED]}
+    ScreeningOutcome: {type: string, enum: [QUALIFIED, DISQUALIFIED]}
+    ScreeningFindingResult: {type: string, enum: [MET, NOT_MET, NEEDS_REVIEW, NOT_APPLICABLE]}
+    ScreeningAssignmentRole: {type: string, enum: [SCREENER, VALIDATOR]}
+    ScreeningEvidenceType: {type: string, enum: [APPLICATION_DOCUMENT, PROFILE_SNAPSHOT, VACANCY_SNAPSHOT, QUALIFICATION_STANDARD_SNAPSHOT, COMPETENCY_SNAPSHOT, STAFF_DECLARATION]}
+    OpenScreeningCaseRequest:
+      type: object
+      required: [applicationRecordVersion, screenerEmployeeNo, validatorEmployeeNo]
+      properties:
+        applicationRecordVersion: {type: integer, format: int64, minimum: 0}
+        screenerEmployeeNo: {type: string, maxLength: 100}
+        validatorEmployeeNo: {type: string, maxLength: 100}
+    SaveScreeningFindingRequest:
+      type: object
+      required: [caseRecordVersion, findingRecordVersion, result, evidence]
+      properties:
+        caseRecordVersion: {type: integer, format: int64, minimum: 0}
+        findingRecordVersion: {type: integer, format: int64, minimum: 0}
+        result: {$ref: '#/components/schemas/ScreeningFindingResult'}
+        remarks: {type: string, maxLength: 2000, nullable: true}
+        evidence: {type: array, items: {$ref: '#/components/schemas/ScreeningEvidenceLink'}}
+    ScreeningEvidenceLink:
+      type: object
+      required: [type, referenceId, label]
+      properties:
+        type: {$ref: '#/components/schemas/ScreeningEvidenceType'}
+        referenceId: {type: string, maxLength: 200}
+        label: {type: string, maxLength: 500}
+        staffDeclaration: {type: string, maxLength: 2000, nullable: true}
+    SubmitScreeningRecommendationRequest:
+      type: object
+      required: [recordVersion, recommendation, applicantSafeReason]
+      properties:
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        recommendation: {$ref: '#/components/schemas/ScreeningOutcome'}
+        reasonCodeId: {type: string, maxLength: 36, nullable: true}
+        internalExplanation: {type: string, maxLength: 2000, nullable: true}
+        applicantSafeReason: {type: string, maxLength: 1000}
+    ScreeningCase:
+      type: object
+      required: [id, applicationId, publicationId, policyId, caseRevision, status, recordVersion, applicationSnapshot, policySnapshot, assignments, findings]
+      properties:
+        id: {type: string, maxLength: 36}
+        applicationId: {type: string, maxLength: 36}
+        publicationId: {type: string, maxLength: 36}
+        policyId: {type: string, maxLength: 36}
+        caseRevision: {type: integer, minimum: 1}
+        status: {$ref: '#/components/schemas/ScreeningCaseStatus'}
+        recommendation: {$ref: '#/components/schemas/ScreeningOutcome', nullable: true}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        applicationSnapshot: {type: string, description: Immutable application evidence snapshot visible only to authorized assigned screening staff}
+        policySnapshot: {type: string, description: Immutable bound screening policy snapshot visible only to authorized assigned screening staff}
+        assignments: {type: array, items: {type: object}}
+        findings: {type: array, items: {type: object}}
+    ScreeningCriterionInput:
+      type: object
+      required: [code, label, category, evaluationMode, mandatory, disqualifying, allowsNotApplicable, requiresRemarks, requiresEvidence, displayOrder]
+      properties:
+        code: {type: string, maxLength: 80}
+        label: {type: string, maxLength: 300}
+        internalInstructions: {type: string, maxLength: 2000, nullable: true}
+        publicGuidance: {type: string, maxLength: 1000, nullable: true}
+        category: {$ref: '#/components/schemas/ScreeningCriterionCategory'}
+        evaluationMode: {$ref: '#/components/schemas/ScreeningEvaluationMode'}
+        sourceKey: {type: string, maxLength: 100, nullable: true}
+        thresholdValue: {type: number, nullable: true}
+        thresholdUnit: {type: string, maxLength: 30, nullable: true}
+        mandatory: {type: boolean}
+        disqualifying: {type: boolean}
+        allowsNotApplicable: {type: boolean}
+        requiresRemarks: {type: boolean}
+        requiresEvidence: {type: boolean}
+        displayOrder: {type: integer, minimum: 0}
+    ScreeningReasonCodeInput:
+      type: object
+      required: [code, label, publicSafeText, outcomeCompatibility, remarksRequired, displayOrder]
+      properties:
+        code: {type: string, maxLength: 80}
+        label: {type: string, maxLength: 300}
+        publicSafeText: {type: string, maxLength: 1000}
+        outcomeCompatibility: {type: string, enum: [QUALIFIED, DISQUALIFIED]}
+        remarksRequired: {type: boolean}
+        displayOrder: {type: integer, minimum: 0}
+    SaveScreeningPolicyRequest:
+      type: object
+      required: [code, name, criteria, reasonCodes]
+      properties:
+        code: {type: string, maxLength: 80}
+        name: {type: string, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        effectiveFrom: {type: string, format: date, nullable: true}
+        effectiveTo: {type: string, format: date, nullable: true}
+        criteria: {type: array, minItems: 1, items: {$ref: '#/components/schemas/ScreeningCriterionInput'}}
+        reasonCodes: {type: array, minItems: 1, items: {$ref: '#/components/schemas/ScreeningReasonCodeInput'}}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    PublishScreeningPolicyRequest:
+      type: object
+      required: [recordVersion, effectiveFrom]
+      properties:
+        recordVersion: {type: integer, format: int64}
+        effectiveFrom: {type: string, format: date}
+        effectiveTo: {type: string, format: date, nullable: true}
+    BindScreeningPolicyRequest:
+      type: object
+      required: [policyId, policyRecordVersion, publicationRecordVersion]
+      properties:
+        policyId: {type: string, maxLength: 36}
+        policyRecordVersion: {type: integer, format: int64}
+        publicationRecordVersion: {type: integer, format: int64}
+    ScreeningEvaluation:
+      type: object
+      required: [criterionCode, result, explanation, humanConfirmationRequired]
+      properties:
+        criterionCode: {type: string}
+        result: {type: string, enum: [MET, NOT_MET, NEEDS_REVIEW]}
+        explanation: {type: string}
+        humanConfirmationRequired: {type: boolean, enum: [true]}
     VacancyType: {type: string, enum: [ACTUAL, ANTICIPATED]}
     RecruitmentPlanStatus: {type: string, enum: [DRAFT, SUBMITTED, RETURNED, APPROVED, ARCHIVED]}
     VacancyRequestStatus: {type: string, enum: [DRAFT, SUBMITTED, RETURNED, AUTHORIZED, DECLINED, CANCELLED, ARCHIVED]}

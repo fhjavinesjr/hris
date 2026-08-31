@@ -1,0 +1,3 @@
+package com.primehr.rsp.screening.infrastructure;
+import com.primehr.rsp.screening.domain.ScreeningAssignment; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
+public interface ScreeningAssignmentRepository extends JpaRepository<ScreeningAssignment,String>{List<ScreeningAssignment> findByAgencyIdAndCaseIdOrderByRoleAsc(String agencyId,String caseId);List<ScreeningAssignment> findByAgencyIdAndCaseIdAndActiveTrueOrderByRoleAsc(String agencyId,String caseId);boolean existsByAgencyIdAndCaseIdAndEmployeeNoAndRoleAndActiveTrue(String agencyId,String caseId,String employeeNo,ScreeningAssignment.Role role);}

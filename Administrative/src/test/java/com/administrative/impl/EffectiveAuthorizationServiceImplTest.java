@@ -222,4 +222,41 @@ class EffectiveAuthorizationServiceImplTest {
         assertThatThrownBy(() -> service.resolve("001", "Applicant Intake", "primehr.rsp-screening"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void screeningPolicyActionsAreIndependentAgencyWideAndFailClosed() {
+        PermissionRuleset ruleset = new PermissionRuleset("Screening Policy", false,
+                "{\"primehr.rsp-screening-policy\":{\"canAccess\":true,\"canAdd\":true," +
+                        "\"canEdit\":false,\"canPublish\":true,\"dataScope\":\"AGENCY_WIDE\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("Screening Policy")).thenReturn(Optional.of(ruleset));
+
+        var permission = service.resolve("001", "Screening Policy", "primehr.rsp-screening-policy");
+        assertThat(permission.canAccess()).isTrue();
+        assertThat(permission.canAdd()).isTrue();
+        assertThat(permission.canEdit()).isFalse();
+        assertThat(permission.canPublish()).isTrue();
+        assertThat(permission.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+        assertThat(service.resolve("001", "Screening Policy", "primehr.rsp-application-screening").canAccess())
+                .isFalse();
+    }
+
+    @Test
+    void applicationScreeningActionsAreIndependentAgencyWideAndFailClosed() {
+        PermissionRuleset ruleset = new PermissionRuleset("Application Screening", false,
+                "{\"primehr.rsp-application-screening\":{\"canAccess\":true,\"canAdd\":true," +
+                        "\"canEdit\":true,\"canSubmit\":true,\"canApprove\":false," +
+                        "\"dataScope\":\"AGENCY_WIDE\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("Application Screening")).thenReturn(Optional.of(ruleset));
+
+        var permission = service.resolve("001", "Application Screening", "primehr.rsp-application-screening");
+        assertThat(permission.canAccess()).isTrue();
+        assertThat(permission.canAdd()).isTrue();
+        assertThat(permission.canEdit()).isTrue();
+        assertThat(permission.canSubmit()).isTrue();
+        assertThat(permission.canApprove()).isFalse();
+        assertThat(permission.canPublish()).isFalse();
+        assertThat(permission.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+        assertThat(service.resolve("001", "Application Screening", "primehr.rsp-screening-policy").canAccess())
+                .isFalse();
+    }
 }

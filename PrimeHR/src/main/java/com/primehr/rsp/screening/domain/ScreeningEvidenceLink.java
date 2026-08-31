@@ -1,0 +1,9 @@
+package com.primehr.rsp.screening.domain;
+import com.primehr.rsp.domain.RspAuditedEntity; import jakarta.persistence.*; import org.hibernate.annotations.Nationalized;
+@Entity @Table(name="rsp_screening_evidence_link",uniqueConstraints=@UniqueConstraint(name="uk_rsp_screening_evidence",columnNames={"agency_id","finding_id","evidence_type","reference_id"}))
+public class ScreeningEvidenceLink extends RspAuditedEntity {
+ public enum Type { APPLICATION_DOCUMENT, PROFILE_SNAPSHOT, VACANCY_SNAPSHOT, QUALIFICATION_STANDARD_SNAPSHOT, COMPETENCY_SNAPSHOT, STAFF_DECLARATION }
+ @Column(name="case_id",nullable=false,length=36) private String caseId; @Column(name="finding_id",nullable=false,length=36) private String findingId; @Enumerated(EnumType.STRING) @Column(name="evidence_type",nullable=false,length=50) private Type type; @Column(name="reference_id",nullable=false,length=200) private String referenceId; @Nationalized @Column(nullable=false,length=500) private String label; @Nationalized @Column(name="staff_declaration",length=2000) private String staffDeclaration;
+ protected ScreeningEvidenceLink(){} public ScreeningEvidenceLink(String agency,String caseId,String findingId,Type type,String reference,String label,String declaration){super(agency);this.caseId=requiredText(caseId,"caseId");this.findingId=requiredText(findingId,"findingId");this.type=java.util.Objects.requireNonNull(type);referenceId=requiredText(reference,"referenceId");this.label=requiredText(label,"label");staffDeclaration=optionalText(declaration);if(type==Type.STAFF_DECLARATION&&staffDeclaration==null)throw new IllegalArgumentException("Staff declaration text is required");}
+ public String getCaseId(){return caseId;} public String getFindingId(){return findingId;} public Type getType(){return type;} public String getReferenceId(){return referenceId;} public String getLabel(){return label;} public String getStaffDeclaration(){return staffDeclaration;}
+}

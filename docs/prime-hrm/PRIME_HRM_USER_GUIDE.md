@@ -311,7 +311,7 @@ Administrative permission rules use **PRIME-HRM > Applicant Intake**:
 
 After a permission change, sign in again through Employee Portal so the effective permission snapshot is refreshed. Open **Applicant Intake** in PrimeHR, filter/search the submission queue, select **Details**, review the immutable submitted evidence and communication history, and use **Send message** only for safe informational correspondence. Sensitive evidence downloads and staff messages are audited.
 
-The staff page does not determine documentary completeness or qualification. Those actions require a separately approved Phase 5C design.
+The staff intake page does not determine documentary completeness or qualification. Those actions require the independent Phase 5C Application Screening permission and assignment described below.
 
 ### Deployment controls
 
@@ -325,7 +325,38 @@ Before enabling applicant uploads outside a local QA environment:
 
 The application fails closed when applicant/storage functionality is enabled without required secure storage or token configuration.
 
-## 18. Common messages
+## 18. Screening policies and application screening
+
+Administrative permission rules use two independent PRIME-HRM rows:
+
+- **Screening Policy**: Access lists/reads versions; Add creates drafts/successors; Edit changes drafts; Publish makes a validated version immutable. Agency-wide scope is required.
+- **Application Screening**: Access lists permitted cases; Add opens cases/manages assignments; Edit records assigned findings; Submit sends an assigned screener recommendation; Approve lets the independently assigned validator return/finalize. Agency-wide scope and case assignment are both enforced.
+
+After a permission change, sign out and return through Employee Portal so the effective permission snapshot is refreshed.
+
+### Configure a screening policy
+
+1. Open **Screening Policies** and create a draft code/name/effectivity.
+2. Add ordered criteria. Use objective modes only for structured evidence; use **MANUAL_REVIEW** for relevance, equivalence, authenticity, or legal judgment.
+3. Mark mandatory/disqualifying behavior and required remarks/evidence explicitly.
+4. Add outcome-compatible reason codes with agency-approved applicant-safe wording.
+5. Publish the complete version with a reason. Published versions are immutable; use **New version** for a successor.
+6. Bind the exact published policy to the vacancy publication before opening its first screening case. An existing case prevents rebinding.
+
+### Screen an application
+
+1. Open **Application Screening** and identify the submitted application/current record version from Applicant Intake.
+2. Assign two different, eligible employee numbers as screener and validator. The server verifies the employees and their exact effective permissions.
+3. The assigned screener opens the case and reviews the immutable application and policy snapshots.
+4. Record every criterion result, required remarks, and evidence declaration. Save each finding.
+5. Choose a recommendation. `QUALIFIED` requires every mandatory/disqualifying finding to be supported. `DISQUALIFIED` requires a policy reason code, internal explanation, and applicant-safe reason.
+6. Submit for independent validation. The validator either returns with a required reason or finalizes the supported outcome.
+
+An administrator override is an exceptional action requiring administrator authority, Approve permission, and an explicit audited reason. It does not delete findings or history. Final records are immutable; use a controlled correction successor where authorized. A stale `recordVersion` receives HTTP 409 and cannot overwrite the accepted revision.
+
+Careers displays only applicant-safe status and communication. It never exposes findings, internal explanations, policy instructions, staff identities, or audit data. `QUALIFIED`/`NOT QUALIFIED` is a screening result, not selection, appointment, or onboarding.
+
+## 19. Common messages
 
 - **Access denied**: ask an administrator to review the exact feature/action permissions, then sign in again through the portal.
 - **Incomplete**: supply effective-from and at least one active, valid requirement.
@@ -349,8 +380,13 @@ The application fails closed when applicant/storage functionality is enabled wit
 - **Application already exists**: open the existing application for that vacancy instead of creating a duplicate.
 - **Vacancy is not open for applications**: verify that the publication is PUBLISHED and the application window includes the current date.
 - **Applicant Intake access denied**: grant the exact Applicant Intake Access permission with agency-wide scope, then sign in again.
+- **Screening Policy/Application Screening access denied**: grant the exact independent feature/action and agency-wide scope, then sign in again.
+- **Screener and validator must be different**: assign independent eligible employees with the required actions.
+- **No screening policy is bound**: publish and bind an effective policy before opening the case.
+- **The screening record changed**: reload after another session saved; the stale write was rejected.
+- **Reason code required/incompatible**: choose a published reason compatible with `DISQUALIFIED` and complete required internal/safe text.
 
-## 19. Operational controls
+## 20. Operational controls
 
 - Configure permissions in Administrative and reauthenticate after changing a ruleset.
 - Maintain Job Position and Plantilla only in Administrative.

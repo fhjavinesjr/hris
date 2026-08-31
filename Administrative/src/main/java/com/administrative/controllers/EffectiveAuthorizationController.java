@@ -2,6 +2,7 @@ package com.administrative.controllers;
 
 import com.administrative.dtos.EffectiveFeaturePermissionResponse;
 import com.administrative.services.EffectiveAuthorizationService;
+import com.administrative.impl.EffectiveAuthorizationServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,5 +31,31 @@ public class EffectiveAuthorizationController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "The authenticated account has no assigned role"));
         return service.resolve(authentication.getName(), role, featureKey);
+    }
+
+    @GetMapping("/effective/employee")
+    public EffectiveFeaturePermissionResponse effectiveEmployee(Authentication authentication,
+                                                                 @RequestParam String employeeNo,
+                                                                 @RequestParam String employeeRole,
+                                                                 @RequestParam String featureKey) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required");
+        }
+        String callerRole = authentication.getAuthorities().stream().findFirst()
+                .map(authority -> authority.getAuthority())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "The authenticated account has no assigned role"));
+        if (!EffectiveAuthorizationServiceImpl.PRIMEHR_RSP_APPLICATION_SCREENING.equals(featureKey)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only application-screening assignment permission may be resolved");
+        }
+        EffectiveFeaturePermissionResponse caller = service.resolve(authentication.getName(), callerRole,
+                EffectiveAuthorizationServiceImpl.PRIMEHR_RSP_APPLICATION_SCREENING);
+        if (!caller.administrator() && (!caller.canAccess() || !caller.canAdd()
+                || caller.dataScope() != com.administrative.dtos.PermissionDataScope.AGENCY_WIDE)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Application-screening assignment permission is required");
+        }
+        return service.resolve(employeeNo, employeeRole, featureKey);
     }
 }

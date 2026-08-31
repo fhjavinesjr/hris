@@ -19,8 +19,8 @@ public class ApplicantApplicationController {
 
     @GetMapping
     public PageResponse<ApplicationDtos.Application> list(Authentication authentication,
-                                                           @RequestParam(defaultValue = "0") int page,
-                                                           @RequestParam(defaultValue = "20") int size) {
+                                                           @RequestParam(name = "page", defaultValue = "0") int page,
+                                                           @RequestParam(name = "size", defaultValue = "20") int size) {
         return service.applicantApplications(authentication.getName(), page, size);
     }
 
@@ -32,26 +32,26 @@ public class ApplicantApplicationController {
     }
 
     @GetMapping("/{id}")
-    public ApplicationDtos.Application get(Authentication authentication, @PathVariable String id) {
+    public ApplicationDtos.Application get(Authentication authentication, @PathVariable("id") String id) {
         return service.applicantApplication(authentication.getName(), id);
     }
 
     @PutMapping("/{id}")
-    public ApplicationDtos.Application save(Authentication authentication, @PathVariable String id,
+    public ApplicationDtos.Application save(Authentication authentication, @PathVariable("id") String id,
                                              @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
                                              @Valid @RequestBody ApplicationDtos.Save request) {
         return service.save(authentication.getName(), id, request, correlationId);
     }
 
     @PostMapping("/{id}/submit")
-    public ApplicationDtos.Application submit(Authentication authentication, @PathVariable String id,
+    public ApplicationDtos.Application submit(Authentication authentication, @PathVariable("id") String id,
                                                @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
                                                @Valid @RequestBody ApplicationDtos.Submit request) {
         return service.submit(authentication.getName(), id, request, correlationId);
     }
 
     @PostMapping("/{id}/withdraw")
-    public ApplicationDtos.Application withdraw(Authentication authentication, @PathVariable String id,
+    public ApplicationDtos.Application withdraw(Authentication authentication, @PathVariable("id") String id,
                                                  @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
                                                  @Valid @RequestBody ApplicationDtos.Withdraw request) {
         return service.withdraw(authentication.getName(), id, request, correlationId);
@@ -59,7 +59,7 @@ public class ApplicantApplicationController {
 
     @GetMapping("/{id}/communications")
     public List<ApplicationDtos.Communication> communications(Authentication authentication,
-                                                               @PathVariable String id) {
+                                                               @PathVariable("id") String id) {
         return service.applicantCommunications(authentication.getName(), id);
     }
 }

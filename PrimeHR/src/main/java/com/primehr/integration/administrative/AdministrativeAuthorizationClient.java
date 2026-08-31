@@ -63,4 +63,29 @@ public class AdministrativeAuthorizationClient {
             throw new AuthorizationDependencyException("Administrative authorization is unavailable", exception);
         }
     }
+
+    public EffectiveFeaturePermission resolveEmployee(String featureKey, String employeeNo, String employeeRole,
+                                                        String authorizationHeader) {
+        try {
+            EffectiveFeaturePermission permission = restClient.get()
+                    .uri(builder -> builder.path("/api/authorization/effective/employee")
+                            .queryParam("featureKey", featureKey).queryParam("employeeNo", employeeNo)
+                            .queryParam("employeeRole", employeeRole).build())
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader).retrieve()
+                    .onStatus(status -> status.value() == 401 || status.value() == 403,
+                            (request, response) -> { throw new AccessDeniedException("Access denied"); })
+                    .onStatus(HttpStatusCode::isError,
+                            (request, response) -> { throw new AuthorizationDependencyException(
+                                    "Administrative assignment authorization is unavailable", null); })
+                    .body(EffectiveFeaturePermission.class);
+            if (permission == null || !featureKey.equals(permission.featureKey())) {
+                throw new AuthorizationDependencyException("Administrative returned an invalid assignment permission", null);
+            }
+            return permission;
+        } catch (AccessDeniedException | AuthorizationDependencyException exception) {
+            throw exception;
+        } catch (RestClientException exception) {
+            throw new AuthorizationDependencyException("Administrative assignment authorization is unavailable", exception);
+        }
+    }
 }

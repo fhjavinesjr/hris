@@ -1,0 +1,3 @@
+package com.primehr.rsp.screening.infrastructure;
+import com.primehr.rsp.screening.domain.ScreeningPolicy; import org.springframework.data.domain.*; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
+public interface ScreeningPolicyRepository extends JpaRepository<ScreeningPolicy,String>{Optional<ScreeningPolicy> findByIdAndAgencyId(String id,String agency);Page<ScreeningPolicy> findByAgencyId(String agency,Pageable pageable);List<ScreeningPolicy> findByAgencyIdAndNormalizedCodeOrderByDefinitionVersion(String agency,String code);boolean existsByAgencyIdAndNormalizedCodeAndDefinitionVersion(String agency,String code,int version);}

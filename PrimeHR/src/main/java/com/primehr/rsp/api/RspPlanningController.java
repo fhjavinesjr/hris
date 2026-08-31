@@ -56,7 +56,7 @@ public class RspPlanningController {
     @GetMapping("/recruitment-plans/{id}")
     public PlanResponse get(Authentication authentication,
                             @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
-                            @PathVariable String id) {
+                            @PathVariable("id") String id) {
         permission.require(PrimeHrAction.ACCESS, token);
         return service.get(agency(authentication), id);
     }
@@ -75,7 +75,7 @@ public class RspPlanningController {
     public PlanResponse update(Authentication authentication,
                                @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                               @PathVariable String id,
+                               @PathVariable("id") String id,
                                @Valid @RequestBody UpdatePlan request) {
         permission.require(PrimeHrAction.EDIT, token);
         return service.update(agency(authentication), id, request, correlationId);
@@ -85,7 +85,7 @@ public class RspPlanningController {
     public PlanResponse archive(Authentication authentication,
                                 @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                 @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                @PathVariable String id,
+                                @PathVariable("id") String id,
                                 @Valid @RequestBody Transition request) {
         permission.require(PrimeHrAction.ARCHIVE, token);
         return service.archive(agency(authentication), id, request, correlationId);
@@ -95,7 +95,7 @@ public class RspPlanningController {
     public PlanResponse submitPlan(Authentication authentication,
                                    @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                    @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                   @PathVariable String id,
+                                   @PathVariable("id") String id,
                                    @Valid @RequestBody Transition request) {
         permission.require(PrimeHrAction.SUBMIT, token);
         return service.submitPlan(agency(authentication), id, request, token, correlationId);
@@ -105,7 +105,7 @@ public class RspPlanningController {
     public PlanResponse returnPlan(Authentication authentication,
                                    @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                    @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                   @PathVariable String id,
+                                   @PathVariable("id") String id,
                                    @Valid @RequestBody Transition request) {
         permission.require(PrimeHrAction.APPROVE, token);
         return service.returnPlan(agency(authentication), id, request, correlationId);
@@ -115,7 +115,7 @@ public class RspPlanningController {
     public PlanResponse approvePlan(Authentication authentication,
                                     @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                     @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                    @PathVariable String id,
+                                    @PathVariable("id") String id,
                                     @Valid @RequestBody Transition request) {
         EffectiveFeaturePermission effective = permission.require(PrimeHrAction.APPROVE, token);
         return service.approvePlan(agency(authentication), id, request, token,
@@ -127,7 +127,7 @@ public class RspPlanningController {
     public PlanResponse addVacancy(Authentication authentication,
                                    @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                    @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                   @PathVariable String id,
+                                   @PathVariable("id") String id,
                                    @Valid @RequestBody SaveVacancy request) {
         permission.require(PrimeHrAction.ADD, token);
         return service.addVacancy(agency(authentication), id, request, token, correlationId);
@@ -137,7 +137,7 @@ public class RspPlanningController {
     public PlanResponse updateVacancy(Authentication authentication,
                                       @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                       @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                      @PathVariable String id,
+                                      @PathVariable("id") String id,
                                       @Valid @RequestBody SaveVacancy request) {
         permission.require(PrimeHrAction.EDIT, token);
         return service.updateVacancy(agency(authentication), id, request, token, correlationId);
@@ -147,7 +147,7 @@ public class RspPlanningController {
     public PlanResponse archiveVacancy(Authentication authentication,
                                        @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                        @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                       @PathVariable String id,
+                                       @PathVariable("id") String id,
                                        @Valid @RequestBody Transition request) {
         permission.require(PrimeHrAction.ARCHIVE, token);
         return service.archiveVacancy(agency(authentication), id, request, correlationId);
@@ -157,7 +157,7 @@ public class RspPlanningController {
     public PlanResponse submitVacancy(Authentication authentication,
                                       @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                       @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                      @PathVariable String id,
+                                      @PathVariable("id") String id,
                                       @Valid @RequestBody Transition request) {
         permission.require(PrimeHrAction.SUBMIT, token);
         return service.submitVacancy(agency(authentication), id, request, token, correlationId);
@@ -167,7 +167,7 @@ public class RspPlanningController {
     public PlanResponse returnVacancy(Authentication authentication,
                                       @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                       @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                      @PathVariable String id,
+                                      @PathVariable("id") String id,
                                       @Valid @RequestBody Transition request) {
         permission.require(PrimeHrAction.APPROVE, token);
         return service.returnVacancy(agency(authentication), id, request, correlationId);
@@ -177,7 +177,7 @@ public class RspPlanningController {
     public PlanResponse authorizeVacancy(Authentication authentication,
                                          @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                          @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                         @PathVariable String id,
+                                         @PathVariable("id") String id,
                                          @Valid @RequestBody Transition request) {
         EffectiveFeaturePermission effective = permission.require(PrimeHrAction.APPROVE, token);
         return service.authorizeVacancy(agency(authentication), id, request, token,
@@ -188,7 +188,7 @@ public class RspPlanningController {
     public PlanResponse declineVacancy(Authentication authentication,
                                        @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                        @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                       @PathVariable String id,
+                                       @PathVariable("id") String id,
                                        @Valid @RequestBody Transition request) {
         EffectiveFeaturePermission effective = permission.require(PrimeHrAction.APPROVE, token);
         return service.declineVacancy(agency(authentication), id, request,
@@ -199,7 +199,7 @@ public class RspPlanningController {
     public PlanResponse cancelVacancy(Authentication authentication,
                                       @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                       @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                      @PathVariable String id,
+                                      @PathVariable("id") String id,
                                       @Valid @RequestBody Transition request) {
         permission.require(PrimeHrAction.ARCHIVE, token);
         return service.cancelVacancy(agency(authentication), id, request, correlationId);
@@ -208,7 +208,7 @@ public class RspPlanningController {
     @GetMapping("/vacancy-requests/{id}/readiness")
     public Readiness readiness(Authentication authentication,
                                @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
-                               @PathVariable String id) {
+                               @PathVariable("id") String id) {
         permission.require(PrimeHrAction.ACCESS, token);
         return service.vacancyReadiness(agency(authentication), id, token);
     }

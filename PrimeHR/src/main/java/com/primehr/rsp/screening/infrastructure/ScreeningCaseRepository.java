@@ -1,0 +1,5 @@
+package com.primehr.rsp.screening.infrastructure;
+import com.primehr.rsp.screening.domain.ScreeningCase; import org.springframework.data.domain.*; import org.springframework.data.jpa.repository.*; import org.springframework.data.repository.query.Param; import java.util.*;
+public interface ScreeningCaseRepository extends JpaRepository<ScreeningCase,String>{Optional<ScreeningCase> findByIdAndAgencyId(String id,String agencyId);Optional<ScreeningCase> findByAgencyIdAndApplicationIdAndCurrentApplicationKeyIsNotNull(String agencyId,String applicationId);List<ScreeningCase> findByAgencyIdAndApplicationIdOrderByCaseRevisionAsc(String agencyId,String applicationId);Page<ScreeningCase> findByAgencyIdOrderByOpenedAtDesc(String agencyId,Pageable pageable);
+ @Query("select c from ScreeningCase c where c.agencyId=:agency and (:administrator=true or exists (select a.id from ScreeningAssignment a where a.agencyId=:agency and a.caseId=c.id and a.employeeNo=:actor and a.active=true)) order by c.openedAt desc") Page<ScreeningCase> findPermitted(@Param("agency")String agency,@Param("actor")String actor,@Param("administrator")boolean administrator,Pageable pageable);
+}

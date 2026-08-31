@@ -9,7 +9,7 @@ public class PublicApplicantController {
     private final ApplicantFoundationService service; public PublicApplicantController(ApplicantFoundationService service){this.service=service;}
     @GetMapping("/privacy-notices/current") public ApplicantDtos.Notice notice(){return service.currentNotice();}
     @GetMapping("/vacancies") public List<ApplicantDtos.PublicVacancy> vacancies(){return service.publicVacancies();}
-    @GetMapping("/vacancies/{id}") public ApplicantDtos.PublicVacancy vacancy(@PathVariable String id){return service.publicVacancy(id);}
+    @GetMapping("/vacancies/{id}") public ApplicantDtos.PublicVacancy vacancy(@PathVariable("id") String id){return service.publicVacancy(id);}
     @PostMapping("/applicant-accounts/register") @ResponseStatus(HttpStatus.CREATED) public ApplicantDtos.Session register(@Valid @RequestBody ApplicantDtos.Register request,HttpServletRequest http){return service.register(request,http.getRemoteAddr(),http.getHeader("User-Agent"));}
     @PostMapping("/applicant-sessions") public ApplicantDtos.Session login(@Valid @RequestBody ApplicantDtos.Login request){return service.login(request);}
 }

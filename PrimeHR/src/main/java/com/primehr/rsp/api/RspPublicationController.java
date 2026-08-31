@@ -59,7 +59,7 @@ public class RspPublicationController {
     @GetMapping("/{id}")
     public PublicationResponse get(Authentication authentication,
                                    @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
-                                   @PathVariable String id) {
+                                   @PathVariable("id") String id) {
         permission.require(PrimeHrAction.ACCESS, token);
         return service.get(agency(authentication), id);
     }
@@ -67,7 +67,7 @@ public class RspPublicationController {
     @GetMapping(value = "/{id}/notice.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     public ResponseEntity<byte[]> notice(Authentication authentication,
                                          @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
-                                         @PathVariable String id) {
+                                         @PathVariable("id") String id) {
         permission.require(PrimeHrAction.ACCESS, token);
         String agencyId = agency(authentication);
         PublicationResponse publication = service.get(agencyId, id);
@@ -92,7 +92,7 @@ public class RspPublicationController {
     public PublicationResponse update(Authentication authentication,
                                       @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                       @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                      @PathVariable String id,
+                                      @PathVariable("id") String id,
                                       @Valid @RequestBody UpdatePublication request) {
         permission.require(PrimeHrAction.EDIT, token);
         return service.update(agency(authentication), id, request, token, correlationId);
@@ -102,7 +102,7 @@ public class RspPublicationController {
     public PublicationResponse submit(Authentication authentication,
                                       @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                       @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                      @PathVariable String id,
+                                      @PathVariable("id") String id,
                                       @Valid @RequestBody PublicationTransition request) {
         permission.require(PrimeHrAction.SUBMIT, token);
         return service.submit(agency(authentication), id, request, token, correlationId);
@@ -112,7 +112,7 @@ public class RspPublicationController {
     public PublicationResponse returnSubmission(Authentication authentication,
                                                 @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                                 @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                                @PathVariable String id,
+                                                @PathVariable("id") String id,
                                                 @Valid @RequestBody PublicationTransition request) {
         permission.require(PrimeHrAction.APPROVE, token);
         return service.returnSubmission(agency(authentication), id, request, correlationId);
@@ -122,7 +122,7 @@ public class RspPublicationController {
     public PublicationResponse approve(Authentication authentication,
                                        @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                        @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                       @PathVariable String id,
+                                       @PathVariable("id") String id,
                                        @Valid @RequestBody PublicationTransition request) {
         EffectiveFeaturePermission effective = permission.require(PrimeHrAction.APPROVE, token);
         return service.approve(agency(authentication), id, request, token,
@@ -133,7 +133,7 @@ public class RspPublicationController {
     public PublicationResponse publish(Authentication authentication,
                                        @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                        @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                       @PathVariable String id,
+                                       @PathVariable("id") String id,
                                        @Valid @RequestBody PublicationTransition request) {
         EffectiveFeaturePermission effective = permission.require(PrimeHrAction.PUBLISH, token);
         return service.publish(agency(authentication), id, request, token,
@@ -144,7 +144,7 @@ public class RspPublicationController {
     public PublicationResponse cancel(Authentication authentication,
                                       @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                       @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                      @PathVariable String id,
+                                      @PathVariable("id") String id,
                                       @Valid @RequestBody PublicationTransition request) {
         permission.require(PrimeHrAction.ARCHIVE, token);
         return service.cancel(agency(authentication), id, request, correlationId);
@@ -154,7 +154,7 @@ public class RspPublicationController {
     public PublicationResponse close(Authentication authentication,
                                      @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                      @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                     @PathVariable String id,
+                                     @PathVariable("id") String id,
                                      @Valid @RequestBody PublicationTransition request) {
         permission.require(PrimeHrAction.ARCHIVE, token);
         return service.close(agency(authentication), id, request, correlationId);

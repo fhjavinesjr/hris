@@ -15,7 +15,7 @@ import java.util.Objects;
                 columnNames = {"agency_id", "applicant_id", "vacancy_publication_id", "application_version"})
 })
 public class PositionApplication extends RspAuditedEntity {
-    public enum Status { DRAFT, SUBMITTED, WITHDRAWN }
+    public enum Status { DRAFT, SUBMITTED, UNDER_SCREENING, QUALIFIED, DISQUALIFIED, WITHDRAWN }
 
     @Column(name = "applicant_id", nullable = false, length = 36) private String applicantId;
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -68,11 +68,37 @@ public class PositionApplication extends RspAuditedEntity {
     }
 
     public void withdraw(String reason, Instant at) {
-        require(Status.SUBMITTED);
+        if (status != Status.SUBMITTED && status != Status.UNDER_SCREENING) {
+            throw new IllegalLifecycleTransitionException(
+                    "Only SUBMITTED or UNDER_SCREENING applications may be withdrawn");
+        }
         withdrawalReason = requiredText(reason, "withdrawalReason");
         withdrawnAt = Objects.requireNonNull(at, "withdrawnAt");
         status = Status.WITHDRAWN;
         safeStatus = Status.WITHDRAWN.name();
+    }
+
+    public void beginScreening() {
+        require(Status.SUBMITTED);
+        status = Status.UNDER_SCREENING;
+        safeStatus = "UNDER REVIEW";
+    }
+
+    public void beginScreeningCorrection() {
+        if (status != Status.QUALIFIED && status != Status.DISQUALIFIED) {
+            throw new IllegalLifecycleTransitionException("Only a final screened application may begin a correction");
+        }
+        status = Status.UNDER_SCREENING;
+        safeStatus = "UNDER REVIEW";
+    }
+
+    public void completeScreening(Status outcome) {
+        if (status != Status.UNDER_SCREENING ||
+                (outcome != Status.QUALIFIED && outcome != Status.DISQUALIFIED)) {
+            throw new IllegalLifecycleTransitionException("Only an application under screening may receive a final outcome");
+        }
+        status = outcome;
+        safeStatus = outcome == Status.QUALIFIED ? "QUALIFIED" : "NOT QUALIFIED";
     }
 
     private void require(Status expected) {

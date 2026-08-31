@@ -27,8 +27,8 @@ public class RspApplicantIntakeController {
     @GetMapping
     public PageResponse<ApplicationDtos.Application> list(Authentication authentication,
                                                            @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
-                                                           @RequestParam(defaultValue = "0") int page,
-                                                           @RequestParam(defaultValue = "20") int size) {
+                                                           @RequestParam(name = "page", defaultValue = "0") int page,
+                                                           @RequestParam(name = "size", defaultValue = "20") int size) {
         permission.require(PrimeHrAction.ACCESS, token);
         return service.staffApplications(agencyScope.resolveAgencyId(authentication), page, size);
     }
@@ -36,7 +36,7 @@ public class RspApplicantIntakeController {
     @GetMapping("/{id}")
     public ApplicationDtos.Application get(Authentication authentication,
                                            @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
-                                           @PathVariable String id) {
+                                           @PathVariable("id") String id) {
         permission.require(PrimeHrAction.ACCESS, token);
         return service.staffApplication(agencyScope.resolveAgencyId(authentication), id);
     }
@@ -44,7 +44,7 @@ public class RspApplicantIntakeController {
     @GetMapping("/{id}/communications")
     public List<ApplicationDtos.Communication> communications(Authentication authentication,
                                                                @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
-                                                               @PathVariable String id) {
+                                                               @PathVariable("id") String id) {
         permission.require(PrimeHrAction.ACCESS, token);
         return service.staffCommunications(agencyScope.resolveAgencyId(authentication), id);
     }
@@ -53,7 +53,7 @@ public class RspApplicantIntakeController {
     public ApplicationDtos.Communication message(Authentication authentication,
                                                   @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
                                                   @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
-                                                  @PathVariable String id,
+                                                  @PathVariable("id") String id,
                                                   @Valid @RequestBody ApplicationDtos.StaffMessage request) {
         permission.require(PrimeHrAction.ADD, token);
         return service.sendStaffMessage(agencyScope.resolveAgencyId(authentication), id, request,
@@ -63,8 +63,8 @@ public class RspApplicantIntakeController {
     @GetMapping("/{id}/documents/{documentId}/content")
     public ResponseEntity<InputStreamResource> document(Authentication authentication,
                                                          @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
-                                                         @PathVariable String id,
-                                                         @PathVariable String documentId) {
+                                                         @PathVariable("id") String id,
+                                                         @PathVariable("documentId") String documentId) {
         permission.require(PrimeHrAction.ACCESS, token);
         var value = service.staffDocument(agencyScope.resolveAgencyId(authentication), id, documentId,
                 authentication.getName());

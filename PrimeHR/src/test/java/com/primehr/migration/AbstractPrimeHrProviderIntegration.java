@@ -75,6 +75,9 @@ abstract class AbstractPrimeHrProviderIntegration {
             "rsp_applicant_account", "rsp_privacy_notice", "rsp_applicant_consent",
             "rsp_applicant_profile", "rsp_applicant_profile_entry", "rsp_applicant_document",
             "rsp_position_application", "rsp_application_document_snapshot", "rsp_applicant_communication",
+            "rsp_screening_policy", "rsp_screening_policy_criterion", "rsp_screening_reason_code",
+            "rsp_publication_screening_policy", "rsp_screening_case", "rsp_screening_assignment",
+            "rsp_screening_finding", "rsp_screening_evidence_link", "rsp_screening_decision",
             "flyway_schema_history");
     private static final Set<String> EXPECTED_INDEXES = Set.of(
             "ix_prime_category_agency_active", "ix_prime_scale_agency_active",
@@ -114,6 +117,14 @@ abstract class AbstractPrimeHrProviderIntegration {
             "uk_rsp_application_acknowledgment", "ix_rsp_application_owner", "ix_rsp_application_queue",
             "ix_rsp_application_vacancy", "ix_rsp_appdoc_application",
             "ix_rsp_communication_application", "ix_rsp_communication_applicant");
+    private static final Set<String> PHASE_5C_1_INDEXES = Set.of(
+            "ix_rsp_screening_policy_lookup", "ix_rsp_screening_criterion_policy",
+            "ix_rsp_screening_reason_policy", "ix_rsp_publication_screening_lookup");
+    private static final Set<String> PHASE_5C_2_INDEXES = Set.of(
+            "uk_rsp_screening_case_current", "ix_rsp_screening_case_queue",
+            "ix_rsp_screening_case_publication", "ix_rsp_screening_assignment_queue",
+            "ix_rsp_screening_finding_case", "ix_rsp_screening_evidence_case",
+            "ix_rsp_screening_decision_outcome");
 
     @Autowired private Flyway flyway;
     @Autowired private DataSource dataSource;
@@ -127,9 +138,9 @@ abstract class AbstractPrimeHrProviderIntegration {
     @Value("${spring.flyway.default-schema}") private String databaseSchema;
 
     @Test
-    void flywayV1ThroughV14CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
+    void flywayV1ThroughV17CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
         assertThat(flyway.info().current()).isNotNull();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("14");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("17");
 
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
@@ -143,6 +154,8 @@ abstract class AbstractPrimeHrProviderIntegration {
                     .containsAll(PHASE_5A_1_INDEXES).containsAll(PHASE_5A_2_INDEXES);
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_5B_1_INDEXES);
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_5B_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_5C_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_5C_2_INDEXES);
 
             assertThat(importedKeyCount(metadata, connection, "prime_proficiency_level")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "prime_competency")).isGreaterThanOrEqualTo(2);
@@ -175,6 +188,15 @@ abstract class AbstractPrimeHrProviderIntegration {
             assertThat(importedKeyCount(metadata, connection, "rsp_position_application")).isGreaterThanOrEqualTo(3);
             assertThat(importedKeyCount(metadata, connection, "rsp_application_document_snapshot")).isGreaterThanOrEqualTo(2);
             assertThat(importedKeyCount(metadata, connection, "rsp_applicant_communication")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "rsp_screening_policy")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "rsp_screening_policy_criterion")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "rsp_screening_reason_code")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "rsp_publication_screening_policy")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "rsp_screening_case")).isGreaterThanOrEqualTo(4);
+            assertThat(importedKeyCount(metadata, connection, "rsp_screening_assignment")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "rsp_screening_finding")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "rsp_screening_evidence_link")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "rsp_screening_decision")).isGreaterThanOrEqualTo(2);
         }
     }
 

@@ -81,7 +81,9 @@ public class PrimeHrExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiErrorResponse> dataConflict(DataIntegrityViolationException exception,
                                                           HttpServletRequest request) {
-        return error(HttpStatus.CONFLICT, "The requested applicant record already exists", request, List.of());
+        log.warn("Database constraint rejected request for {}: {}", request.getRequestURI(),
+                exception.getMostSpecificCause().getMessage());
+        return error(HttpStatus.CONFLICT, "The request conflicts with an existing record", request, List.of());
     }
 
     @ExceptionHandler(AuthorizationDependencyException.class)

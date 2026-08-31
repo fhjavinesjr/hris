@@ -175,7 +175,7 @@ class PrimeHrOpenApiContractTest {
                 "/rsp/vacancy-publications/{publicationId}/publish",
                 "/rsp/vacancy-publications/{publicationId}/cancel",
                 "/rsp/vacancy-publications/{publicationId}/close");
-        assertThat(primePaths).noneMatch(path -> path.contains("applicants") || path.contains("screening"));
+        assertThat(primePaths).noneMatch(path -> path.contains("shortlist") || path.contains("selection"));
         Map<?, ?> schemas = (Map<?, ?>) ((Map<?, ?>) primeHr.get("components")).get("schemas");
         assertThat(schemas.keySet().stream().map(Object::toString).toList()).contains(
                 "VacancyType", "RecruitmentPlanStatus", "VacancyRequestStatus",
@@ -214,7 +214,7 @@ class PrimeHrOpenApiContractTest {
                 "/applicant/v1/me/documents/{documentId}",
                 "/applicant/v1/me/documents/{documentId}/content",
                 "/applicant/v1/me/documents/{documentId}/replace");
-        assertThat(paths).noneMatch(path -> path.contains("/screening") || path.contains("/shortlist"));
+        assertThat(paths).noneMatch(path -> path.contains("/shortlist"));
     }
 
     @Test
@@ -230,8 +230,48 @@ class PrimeHrOpenApiContractTest {
                 "/rsp/applications", "/rsp/applications/{applicationId}",
                 "/rsp/applications/{applicationId}/documents/{documentId}/content",
                 "/rsp/applications/{applicationId}/communications");
-        assertThat(paths).noneMatch(path -> path.contains("screening") || path.contains("shortlist")
-                || path.contains("qualified") || path.contains("selection"));
+        assertThat(paths).noneMatch(path -> path.contains("shortlist") || path.contains("selection"));
+    }
+
+    @Test
+    void phaseFiveCPointOneContractExposesPolicyBindingAndAdvisoryEvaluationOnly() throws IOException {
+        Map<String, Object> primeHr = yaml("primehr-v1.yaml");
+        List<String> paths = ((Map<?, ?>) primeHr.get("paths")).keySet().stream()
+                .map(Object::toString).toList();
+        assertThat(paths).contains("/rsp/screening-policies", "/rsp/screening-policies/{policyId}",
+                "/rsp/screening-policies/{policyId}/publish",
+                "/rsp/screening-policies/{policyId}/successors",
+                "/rsp/screening-policies/{policyId}/preview",
+                "/rsp/vacancy-publications/{publicationId}/screening-policy");
+        assertThat(paths).noneMatch(path -> path.contains("shortlist")
+                || path.contains("interview") || path.contains("selection"));
+        Map<?, ?> schemas = (Map<?, ?>) ((Map<?, ?>) primeHr.get("components")).get("schemas");
+        assertThat(schemas.keySet().stream().map(Object::toString).toList()).contains(
+                "ScreeningCriterionCategory", "ScreeningEvaluationMode", "ScreeningPolicyStatus",
+                "ScreeningCriterionInput", "ScreeningReasonCodeInput", "SaveScreeningPolicyRequest",
+                "PublishScreeningPolicyRequest", "BindScreeningPolicyRequest", "ScreeningEvaluation");
+    }
+
+    @Test
+    void phaseFiveCPointTwoContractExposesAssignedScreeningWithoutLaterSelection() throws IOException {
+        Map<String, Object> primeHr = yaml("primehr-v1.yaml");
+        List<String> paths = ((Map<?, ?>) primeHr.get("paths")).keySet().stream()
+                .map(Object::toString).toList();
+        assertThat(paths).contains("/rsp/screening-cases",
+                "/rsp/applications/{applicationId}/screening-cases",
+                "/rsp/screening-cases/{caseId}", "/rsp/screening-cases/{caseId}/successors",
+                "/rsp/screening-cases/{caseId}/assignments",
+                "/rsp/screening-cases/{caseId}/findings/{criterionId}",
+                "/rsp/screening-cases/{caseId}/submit", "/rsp/screening-cases/{caseId}/return",
+                "/rsp/screening-cases/{caseId}/finalize", "/rsp/screening-cases/{caseId}/override",
+                "/rsp/screening-cases/{caseId}/history");
+        assertThat(paths).noneMatch(path -> path.contains("shortlist") || path.contains("interview")
+                || path.contains("ranking") || path.contains("selection") || path.contains("appointment"));
+        Map<?, ?> schemas = (Map<?, ?>) ((Map<?, ?>) primeHr.get("components")).get("schemas");
+        assertThat(schemas.keySet().stream().map(Object::toString).toList()).contains(
+                "ScreeningCaseStatus", "ScreeningOutcome", "ScreeningFindingResult",
+                "ScreeningAssignmentRole", "ScreeningEvidenceType", "OpenScreeningCaseRequest",
+                "SaveScreeningFindingRequest", "SubmitScreeningRecommendationRequest", "ScreeningCase");
     }
 
     @SuppressWarnings("unchecked")

@@ -41,6 +41,12 @@ class CompetencyMigrationParityTest {
     private static final String SQL_SERVER_V13 = "db/migration/sqlserver/V13__rsp_applicant_foundation.sql";
     private static final String POSTGRES_V14 = "db/migration/postgresql/V14__rsp_application_intake.sql";
     private static final String SQL_SERVER_V14 = "db/migration/sqlserver/V14__rsp_application_intake.sql";
+    private static final String POSTGRES_V15 = "db/migration/postgresql/V15__rsp_screening_policy_foundation.sql";
+    private static final String SQL_SERVER_V15 = "db/migration/sqlserver/V15__rsp_screening_policy_foundation.sql";
+    private static final String POSTGRES_V16 = "db/migration/postgresql/V16__rsp_application_screening.sql";
+    private static final String SQL_SERVER_V16 = "db/migration/sqlserver/V16__rsp_application_screening.sql";
+    private static final String POSTGRES_V17 = "db/migration/postgresql/V17__rsp_application_screening_status_integrity.sql";
+    private static final String SQL_SERVER_V17 = "db/migration/sqlserver/V17__rsp_application_screening_status_integrity.sql";
     private static final Set<String> TABLES = Set.of(
             "prime_competency_category", "prime_proficiency_scale", "prime_proficiency_level",
             "prime_competency", "prime_behavioral_indicator");
@@ -335,6 +341,73 @@ class CompetencyMigrationParityTest {
                 .doesNotContain("drop table").doesNotContain(" limit ").doesNotContain("::");
         assertThat(sqlServer.toLowerCase()).doesNotContain("insert into").doesNotContain("delete from")
                 .doesNotContain("drop table").doesNotContain(" top ").doesNotContain("isnull(");
+    }
+
+    @Test
+    void phase5cScreeningPolicyMigrationsAreEquivalentProviderNeutralAndForwardOnly() throws IOException {
+        String postgres = read(POSTGRES_V15);
+        String sqlServer = read(SQL_SERVER_V15);
+        assertThat(tableNames(postgres)).containsExactlyInAnyOrder("rsp_screening_policy",
+                "rsp_screening_policy_criterion", "rsp_screening_reason_code",
+                "rsp_publication_screening_policy");
+        assertThat(tableNames(sqlServer)).isEqualTo(tableNames(postgres));
+        for (String required : Set.of("uk_rsp_screening_policy_version", "uk_rsp_screening_criterion_code",
+                "uk_rsp_screening_criterion_order", "uk_rsp_screening_reason_code",
+                "uk_rsp_screening_reason_order", "uk_rsp_publication_screening_policy",
+                "fk_rsp_screening_policy_prior", "fk_rsp_screening_criterion_policy",
+                "fk_rsp_screening_reason_policy", "fk_rsp_publication_screening_vacancy",
+                "fk_rsp_publication_screening_policy", "ck_rsp_screening_policy_status",
+                "ck_rsp_screening_policy_publish", "ck_rsp_screening_criterion_category",
+                "ck_rsp_screening_criterion_mode", "ix_rsp_screening_policy_lookup",
+                "ix_rsp_screening_criterion_policy", "ix_rsp_screening_reason_policy",
+                "ix_rsp_publication_screening_lookup")) {
+            assertThat(postgres).contains(required);
+            assertThat(sqlServer).contains(required);
+        }
+        assertThat(postgres.toLowerCase()).doesNotContain("insert into").doesNotContain("delete from")
+                .doesNotContain("drop table").doesNotContain(" limit ").doesNotContain("::");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("insert into").doesNotContain("delete from")
+                .doesNotContain("drop table").doesNotContain(" top ").doesNotContain("isnull(");
+    }
+
+    @Test
+    void phase5cApplicationScreeningMigrationsAreEquivalentAndPreserveExistingApplications() throws IOException {
+        String postgres = read(POSTGRES_V16);
+        String sqlServer = read(SQL_SERVER_V16);
+        assertThat(tableNames(postgres)).containsExactlyInAnyOrder("rsp_screening_case",
+                "rsp_screening_assignment", "rsp_screening_finding", "rsp_screening_evidence_link",
+                "rsp_screening_decision");
+        assertThat(tableNames(sqlServer)).isEqualTo(tableNames(postgres));
+        for (String required : Set.of("uk_rsp_screening_case_revision", "uk_rsp_screening_case_current",
+                "uk_rsp_screening_assignment", "uk_rsp_screening_finding", "uk_rsp_screening_evidence",
+                "uk_rsp_screening_decision_case", "fk_rsp_screening_case_application",
+                "fk_rsp_screening_case_policy", "fk_rsp_screening_assignment_case",
+                "fk_rsp_screening_finding_case", "fk_rsp_screening_evidence_finding",
+                "fk_rsp_screening_decision_case", "ck_rsp_screening_case_status",
+                "ck_rsp_screening_finding_result", "ix_rsp_screening_case_queue",
+                "ix_rsp_screening_assignment_queue", "ix_rsp_screening_finding_case",
+                "ix_rsp_screening_evidence_case", "ix_rsp_screening_decision_outcome")) {
+            assertThat(postgres).contains(required);
+            assertThat(sqlServer).contains(required);
+        }
+        assertThat(postgres.toLowerCase()).doesNotContain("insert into").doesNotContain("delete from")
+                .doesNotContain("drop table").doesNotContain(" limit ").doesNotContain("::");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("insert into").doesNotContain("delete from")
+                .doesNotContain("drop table").doesNotContain(" top ").doesNotContain("isnull(");
+    }
+
+    @Test
+    void phase5cStatusIntegrityMigrationSupportsEverySubmittedApplicationOutcome() throws IOException {
+        String postgres = read(POSTGRES_V17);
+        String sqlServer = read(SQL_SERVER_V17);
+        for (String status : Set.of("SUBMITTED", "UNDER_SCREENING", "QUALIFIED", "DISQUALIFIED", "WITHDRAWN")) {
+            assertThat(postgres).contains(status);
+            assertThat(sqlServer).contains(status);
+        }
+        assertThat(postgres).contains("ck_rsp_application_submission", "acknowledgment_number", "submitted_at");
+        assertThat(sqlServer).contains("ck_rsp_application_submission", "acknowledgment_number", "submitted_at");
+        assertThat(postgres.toLowerCase()).doesNotContain("insert into", "delete from", " limit ", "::");
+        assertThat(sqlServer.toLowerCase()).doesNotContain("insert into", "delete from", " top ", "isnull(");
     }
 
     private static Set<String> tableNames(String sql) {

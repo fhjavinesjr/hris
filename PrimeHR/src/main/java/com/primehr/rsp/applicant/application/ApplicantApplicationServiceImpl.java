@@ -9,6 +9,7 @@ import com.primehr.rsp.applicant.infrastructure.*;
 import com.primehr.rsp.applicant.storage.DocumentStorage;
 import com.primehr.rsp.domain.*;
 import com.primehr.rsp.infrastructure.*;
+import com.primehr.rsp.screening.application.ScreeningWithdrawalCoordinator;
 import com.primehr.shared.api.PageResponse;
 import com.primehr.shared.audit.PrimeHrAuditService;
 import com.primehr.shared.exception.*;
@@ -23,7 +24,8 @@ import java.util.*;
 @Transactional
 public class ApplicantApplicationServiceImpl implements ApplicantApplicationService {
     private static final Set<PositionApplication.Status> ACTIVE_STATUSES =
-            Set.of(PositionApplication.Status.DRAFT, PositionApplication.Status.SUBMITTED);
+            Set.of(PositionApplication.Status.DRAFT, PositionApplication.Status.SUBMITTED,
+                    PositionApplication.Status.UNDER_SCREENING);
 
     private final PrimeHrProperties properties;
     private final PositionApplicationRepository applications;
@@ -40,6 +42,7 @@ public class ApplicantApplicationServiceImpl implements ApplicantApplicationServ
     private final DocumentStorage storage;
     private final PrimeHrAuditService audit;
     private final ObjectMapper json;
+    private final ScreeningWithdrawalCoordinator screeningWithdrawal;
 
     public ApplicantApplicationServiceImpl(PrimeHrProperties properties,
                                            PositionApplicationRepository applications,
@@ -54,7 +57,8 @@ public class ApplicantApplicationServiceImpl implements ApplicantApplicationServ
                                            VacancyPublicationRepository publications,
                                            VacancyPublicationRequirementRepository publicationRequirements,
                                            DocumentStorage storage, PrimeHrAuditService audit,
-                                           ObjectMapper objectMapper) {
+                                           ObjectMapper objectMapper,
+                                           ScreeningWithdrawalCoordinator screeningWithdrawal) {
         this.properties = properties;
         this.applications = applications;
         this.evidence = evidence;
@@ -70,6 +74,7 @@ public class ApplicantApplicationServiceImpl implements ApplicantApplicationServ
         this.storage = storage;
         this.audit = audit;
         this.json = objectMapper;
+        this.screeningWithdrawal = screeningWithdrawal;
     }
 
     @Override @Transactional(readOnly = true)
@@ -172,6 +177,8 @@ public class ApplicantApplicationServiceImpl implements ApplicantApplicationServ
         PositionApplication application = requireOwned(applicantId, applicationId);
         if (application.getStatus() == PositionApplication.Status.WITHDRAWN) return response(application);
         requireVersion(application, request.recordVersion());
+        screeningWithdrawal.cancelOpenCase(agency(), application.getId(), applicantId,
+                request.reason(), correlationId);
         application.withdraw(request.reason(), Instant.now());
         applications.saveAndFlush(application);
         communications.save(new ApplicantCommunication(agency(), application.getId(), applicantId,
