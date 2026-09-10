@@ -1,0 +1,2 @@
+package com.primehr.performancemanagement.infrastructure;import com.primehr.performancemanagement.domain.PerformanceCycleMilestone;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface PerformanceCycleMilestoneRepository extends JpaRepository<PerformanceCycleMilestone,String>{List<PerformanceCycleMilestone>findByAgencyIdAndCycleIdOrderByDisplayOrderAsc(String agency,String cycle);void deleteByAgencyIdAndCycleId(String agency,String cycle);}

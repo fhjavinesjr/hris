@@ -52,6 +52,11 @@ public abstract class RspAuditedEntity {
         this.agencyId = requiredText(agencyId, "agencyId");
     }
 
+    protected RspAuditedEntity(String id, String agencyId) {
+        this.id = requiredText(id, "id");
+        this.agencyId = requiredText(agencyId, "agencyId");
+    }
+
     @PrePersist
     void assignId() {
         if (id == null) {

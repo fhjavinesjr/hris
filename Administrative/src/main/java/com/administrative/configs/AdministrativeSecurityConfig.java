@@ -54,7 +54,8 @@ public class AdministrativeSecurityConfig {
                 }))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/api/public/runtime-config").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/employee/login", "/api/employee/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/employee/login", "/api/employee/activate").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/employee/register", "/api/hris/installAuth").hasAuthority("1")
                         .requestMatchers(HttpMethod.POST, "/api/sso/exchange").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/secure").hasRole("ADMIN")

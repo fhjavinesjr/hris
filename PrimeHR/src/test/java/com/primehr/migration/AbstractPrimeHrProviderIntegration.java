@@ -78,6 +78,22 @@ abstract class AbstractPrimeHrProviderIntegration {
             "rsp_screening_policy", "rsp_screening_policy_criterion", "rsp_screening_reason_code",
             "rsp_publication_screening_policy", "rsp_screening_case", "rsp_screening_assignment",
             "rsp_screening_finding", "rsp_screening_evidence_link", "rsp_screening_decision",
+            "rsp_evaluation_policy", "rsp_evaluation_policy_stage", "rsp_evaluation_policy_criterion",
+            "rsp_publication_evaluation_policy", "prime_committee", "prime_committee_member",
+            "rsp_evaluation_proceeding", "rsp_evaluation_candidate", "rsp_evaluation_session",
+            "rsp_evaluation_session_candidate", "rsp_evaluation_assignment", "rsp_conflict_declaration",
+            "rsp_stage_result", "rsp_panel_rating", "rsp_panel_rating_item", "rsp_reference_check",
+            "rsp_evaluation_evidence", "rsp_hrmpsb_meeting", "rsp_hrmpsb_attendance",
+            "rsp_hrmpsb_resolution", "rsp_comparative_evaluation", "rsp_comparative_evaluation_item",
+            "rsp_selection_case", "rsp_selection_candidate_decision", "rsp_selection_notice", "rsp_offer_response",
+            "rsp_appointment_handoff", "rsp_appointment_handoff_attempt",
+            "spms_policy", "spms_policy_version", "spms_cycle", "spms_cycle_milestone",
+            "spms_pmt", "spms_pmt_member", "spms_rating_scale", "spms_rating_scale_version", "spms_rating_band",
+            "spms_success_indicator", "spms_success_indicator_version", "spms_indicator_dimension", "spms_indicator_dimension_level",
+            "spms_template", "spms_template_version", "spms_template_section", "spms_template_item",
+            "spms_objective", "spms_objective_version", "spms_plan_assignment", "spms_plan_assignment_objective",
+            "spms_commitment", "spms_commitment_version", "spms_commitment_section", "spms_commitment_item", "spms_commitment_cascade",
+            "spms_commitment_route", "spms_commitment_route_step", "spms_commitment_action",
             "flyway_schema_history");
     private static final Set<String> EXPECTED_INDEXES = Set.of(
             "ix_prime_category_agency_active", "ix_prime_scale_agency_active",
@@ -125,6 +141,30 @@ abstract class AbstractPrimeHrProviderIntegration {
             "ix_rsp_screening_case_publication", "ix_rsp_screening_assignment_queue",
             "ix_rsp_screening_finding_case", "ix_rsp_screening_evidence_case",
             "ix_rsp_screening_decision_outcome");
+    private static final Set<String> PHASE_5D_1_INDEXES = Set.of(
+            "ix_rsp_evaluation_policy_lookup", "ix_rsp_evaluation_stage_policy",
+            "ix_rsp_evaluation_criterion_stage", "ix_rsp_publication_evaluation_lookup",
+            "ix_prime_committee_lookup", "ix_prime_committee_member_employee",
+            "ix_rsp_evaluation_proceeding_queue", "ix_rsp_evaluation_proceeding_committee",
+            "ix_rsp_evaluation_candidate_application", "ix_rsp_evaluation_candidate_proceeding");
+    private static final Set<String> PHASE_5D_2_INDEXES = Set.of(
+            "ix_rsp_eval_session_queue", "ix_rsp_eval_sc_candidate",
+            "ix_rsp_eval_assignment_employee", "ix_rsp_conflict_actor", "ix_rsp_stage_result_queue",
+            "ix_rsp_panel_rating_queue", "ix_rsp_evidence_owner");
+    private static final Set<String> PHASE_5E_1_INDEXES = Set.of(
+            "uk_rsp_selection_current", "ix_rsp_selection_source", "uk_rsp_selection_one_selected",
+            "ix_rsp_selection_candidate_applicant", "uk_rsp_selection_notice_current", "uk_rsp_offer_idempotency");
+    private static final Set<String> PHASE_6A_INDEXES = Set.of(
+            "ix_spms_policy_effective", "ix_spms_cycle_period", "ix_spms_milestone_cycle",
+            "ix_spms_pmt_effective", "ix_spms_pmt_member_effective");
+    private static final Set<String> PHASE_6B_1_INDEXES = Set.of(
+            "ix_spms_rating_scale_effective", "ix_spms_rating_band_version");
+    private static final Set<String> PHASE_6B_2_INDEXES = Set.of(
+            "ix_spms_success_indicator_status", "ix_spms_indicator_dimension", "ix_spms_indicator_level");
+    private static final Set<String> PHASE_6B_3_INDEXES = Set.of("ix_spms_template_status","ix_spms_template_section","ix_spms_template_item");
+    private static final Set<String> PHASE_6C_1_INDEXES = Set.of("ix_spms_objective_status","ix_spms_objective_parent","ix_spms_assignment_cycle","ix_spms_assignment_owner","ix_spms_assignment_objective");
+    private static final Set<String> PHASE_6C_2_INDEXES = Set.of("ix_spms_commitment_assignment","ix_spms_commitment_status","ix_spms_commitment_owner","ix_spms_commitment_section","ix_spms_commitment_item","ix_spms_cascade_upstream","ix_spms_cascade_downstream");
+    private static final Set<String> PHASE_6C_3_INDEXES = Set.of("ix_spms_commitment_route_current","ix_spms_commitment_route_actor","ix_spms_commitment_action_history");
 
     @Autowired private Flyway flyway;
     @Autowired private DataSource dataSource;
@@ -138,9 +178,9 @@ abstract class AbstractPrimeHrProviderIntegration {
     @Value("${spring.flyway.default-schema}") private String databaseSchema;
 
     @Test
-    void flywayV1ThroughV17CreateTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
+    void flywayV1ThroughV30CreatesTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
         assertThat(flyway.info().current()).isNotNull();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("17");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("30");
 
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
@@ -156,12 +196,37 @@ abstract class AbstractPrimeHrProviderIntegration {
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_5B_2_INDEXES);
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_5C_1_INDEXES);
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_5C_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_5D_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_5D_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_5E_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6A_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6B_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6B_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6B_3_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6C_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6C_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6C_3_INDEXES);
 
             assertThat(importedKeyCount(metadata, connection, "prime_proficiency_level")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "prime_competency")).isGreaterThanOrEqualTo(2);
             assertThat(importedKeyCount(metadata, connection, "prime_behavioral_indicator")).isGreaterThanOrEqualTo(2);
             assertThat(importedKeyCount(metadata, connection, "prime_position_profile_requirement"))
                     .isGreaterThanOrEqualTo(3);
+            assertThat(importedKeyCount(metadata, connection, "spms_policy_version")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "spms_cycle")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "spms_cycle_milestone")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "spms_pmt_member")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "spms_rating_scale_version")).isGreaterThanOrEqualTo(3);
+            assertThat(importedKeyCount(metadata, connection, "spms_rating_band")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "spms_success_indicator_version")).isGreaterThanOrEqualTo(4);
+            assertThat(importedKeyCount(metadata, connection, "spms_indicator_dimension")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "spms_indicator_dimension_level")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "spms_template_version")).isGreaterThanOrEqualTo(4);
+            assertThat(importedKeyCount(metadata, connection, "spms_template_section")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "spms_template_item")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "spms_objective_version")).isGreaterThanOrEqualTo(5);
+            assertThat(importedKeyCount(metadata, connection, "spms_plan_assignment")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "spms_plan_assignment_objective")).isGreaterThanOrEqualTo(2);
             assertThat(importedKeyCount(metadata, connection, "prime_assessment_tool")).isGreaterThanOrEqualTo(2);
             assertThat(importedKeyCount(metadata, connection, "prime_assessment_case")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "prime_assessor_assignment")).isGreaterThanOrEqualTo(1);
@@ -197,6 +262,12 @@ abstract class AbstractPrimeHrProviderIntegration {
             assertThat(importedKeyCount(metadata, connection, "rsp_screening_finding")).isGreaterThanOrEqualTo(2);
             assertThat(importedKeyCount(metadata, connection, "rsp_screening_evidence_link")).isGreaterThanOrEqualTo(2);
             assertThat(importedKeyCount(metadata, connection, "rsp_screening_decision")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "rsp_evaluation_policy_stage")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "rsp_evaluation_policy_criterion")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "rsp_publication_evaluation_policy")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "prime_committee_member")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "rsp_evaluation_proceeding")).isGreaterThanOrEqualTo(3);
+            assertThat(importedKeyCount(metadata, connection, "rsp_evaluation_candidate")).isGreaterThanOrEqualTo(3);
         }
     }
 

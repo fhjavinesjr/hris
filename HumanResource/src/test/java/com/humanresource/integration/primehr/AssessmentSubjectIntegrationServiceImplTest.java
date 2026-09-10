@@ -51,4 +51,17 @@ class AssessmentSubjectIntegrationServiceImplTest {
         assertThat(service.list(" FER ", 0, 10, true).content()).singleElement()
                 .extracting(AssessmentSubjectResponse::employeeNo).isEqualTo("001");
     }
+
+    @Test
+    void resolvesAnActiveParticipantByExactEmployeeNumber() {
+        AssessmentSubjectRow row = new AssessmentSubjectRow(1L, "001", "Ferdinand", "Javines", null,
+                LocalDateTime.of(2026, 8, 1, 9, 0), 10L, LocalDateTime.of(2026, 7, 1, 8, 0), 14, 3);
+        when(repository.findPrimeHrAssessmentSubjectByEmployeeNo(eq("001"), any())).thenReturn(Optional.of(row));
+
+        AssessmentSubjectResponse result = service.getByEmployeeNo(" 001 ");
+
+        assertThat(result.employeeId()).isEqualTo(1L);
+        assertThat(result.sourceFingerprint()).hasSize(64);
+        verify(repository).findPrimeHrAssessmentSubjectByEmployeeNo(eq("001"), any());
+    }
 }

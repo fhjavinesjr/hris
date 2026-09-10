@@ -1,0 +1,3 @@
+package com.primehr.rsp.handoff.infrastructure;
+import com.primehr.rsp.handoff.domain.AppointmentHandoff;import org.springframework.data.jpa.repository.JpaRepository;import java.util.Optional;
+public interface AppointmentHandoffRepository extends JpaRepository<AppointmentHandoff,String>{Optional<AppointmentHandoff>findByIdAndAgencyId(String id,String agency);Optional<AppointmentHandoff>findByAgencyIdAndCurrentSelectionKey(String agency,String selection);java.util.List<AppointmentHandoff>findByAgencyIdAndSelectionCaseIdOrderByHandoffRevisionDesc(String agency,String selection);long countByAgencyIdAndSelectionCaseId(String agency,String selection);}

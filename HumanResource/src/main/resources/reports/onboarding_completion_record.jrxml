@@ -1,0 +1,42 @@
+<!-- Provider-neutral bean-data-source onboarding completion record. -->
+<jasperReport name="onboarding_completion_record" language="java" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="782" leftMargin="30" rightMargin="30" topMargin="25" bottomMargin="25" uuid="6be5c3da-930c-4ac2-8188-030000000001">
+  <parameter name="agencyName" class="java.lang.String"/><parameter name="agencyAddress" class="java.lang.String"/>
+  <parameter name="intakeId" class="java.lang.String"/><parameter name="handoffId" class="java.lang.String"/>
+  <parameter name="selectionId" class="java.lang.String"/><parameter name="applicationId" class="java.lang.String"/>
+  <parameter name="employeeReference" class="java.lang.String"/><parameter name="appointmentReference" class="java.lang.String"/>
+  <parameter name="templateReference" class="java.lang.String"/><parameter name="completedAt" class="java.lang.String"/>
+  <parameter name="sourceFingerprint" class="java.lang.String"/><parameter name="generated" class="java.lang.String"/>
+  <field name="number" class="java.lang.Integer"/><field name="code" class="java.lang.String"/>
+  <field name="label" class="java.lang.String"/><field name="status" class="java.lang.String"/>
+  <field name="evidenceReference" class="java.lang.String"/><field name="completedBy" class="java.lang.String"/>
+  <field name="verifiedBy" class="java.lang.String"/>
+  <title height="150">
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000002" x="0" y="0" width="782" height="22" fontName="DejaVu Sans" fontSize="13" bold="true" hTextAlign="Center"><expression><![CDATA[$P{agencyName}]]></expression></element>
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000003" x="0" y="22" width="782" height="18" fontName="DejaVu Sans" fontSize="8" hTextAlign="Center"><expression><![CDATA[$P{agencyAddress}]]></expression></element>
+    <element kind="staticText" uuid="6be5c3da-930c-4ac2-8188-030000000004" x="0" y="48" width="782" height="28" fontName="DejaVu Sans" fontSize="15" bold="true" hTextAlign="Center"><text><![CDATA[ONBOARDING COMPLETION RECORD]]></text></element>
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000005" x="0" y="84" width="391" height="50" fontName="DejaVu Sans" fontSize="8"><expression><![CDATA["Intake: "+$P{intakeId}+"\nHandoff: "+$P{handoffId}+"\nSelection / Application: "+$P{selectionId}+" / "+$P{applicationId}]]></expression></element>
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000006" x="391" y="84" width="391" height="50" fontName="DejaVu Sans" fontSize="8"><expression><![CDATA["Employee: "+$P{employeeReference}+"\nAppointment: "+$P{appointmentReference}+"\nTemplate: "+$P{templateReference}+" | Completed: "+$P{completedAt}]]></expression></element>
+  </title>
+  <columnHeader height="30">
+    <element kind="staticText" uuid="6be5c3da-930c-4ac2-8188-030000000007" x="0" y="0" width="35" height="30" mode="Opaque" backcolor="#E5E7EB" fontName="DejaVu Sans" fontSize="8" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[#]]></text></element>
+    <element kind="staticText" uuid="6be5c3da-930c-4ac2-8188-030000000008" x="35" y="0" width="105" height="30" mode="Opaque" backcolor="#E5E7EB" fontName="DejaVu Sans" fontSize="8" bold="true" vTextAlign="Middle"><text><![CDATA[Code]]></text></element>
+    <element kind="staticText" uuid="6be5c3da-930c-4ac2-8188-030000000009" x="140" y="0" width="220" height="30" mode="Opaque" backcolor="#E5E7EB" fontName="DejaVu Sans" fontSize="8" bold="true" vTextAlign="Middle"><text><![CDATA[Required checklist item]]></text></element>
+    <element kind="staticText" uuid="6be5c3da-930c-4ac2-8188-030000000010" x="360" y="0" width="72" height="30" mode="Opaque" backcolor="#E5E7EB" fontName="DejaVu Sans" fontSize="8" bold="true" vTextAlign="Middle"><text><![CDATA[Status]]></text></element>
+    <element kind="staticText" uuid="6be5c3da-930c-4ac2-8188-030000000011" x="432" y="0" width="150" height="30" mode="Opaque" backcolor="#E5E7EB" fontName="DejaVu Sans" fontSize="8" bold="true" vTextAlign="Middle"><text><![CDATA[Evidence fingerprint]]></text></element>
+    <element kind="staticText" uuid="6be5c3da-930c-4ac2-8188-030000000012" x="582" y="0" width="100" height="30" mode="Opaque" backcolor="#E5E7EB" fontName="DejaVu Sans" fontSize="8" bold="true" vTextAlign="Middle"><text><![CDATA[Completed by]]></text></element>
+    <element kind="staticText" uuid="6be5c3da-930c-4ac2-8188-030000000013" x="682" y="0" width="100" height="30" mode="Opaque" backcolor="#E5E7EB" fontName="DejaVu Sans" fontSize="8" bold="true" vTextAlign="Middle"><text><![CDATA[Verified by]]></text></element>
+  </columnHeader>
+  <detail><band height="28">
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000014" x="0" y="0" width="35" height="28" fontName="DejaVu Sans" fontSize="7" hTextAlign="Center" vTextAlign="Middle"><expression><![CDATA[$F{number}]]></expression></element>
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000015" x="35" y="0" width="105" height="28" fontName="DejaVu Sans" fontSize="7" vTextAlign="Middle" textAdjust="StretchHeight"><expression><![CDATA[$F{code}]]></expression></element>
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000016" x="140" y="0" width="220" height="28" fontName="DejaVu Sans" fontSize="7" vTextAlign="Middle" textAdjust="StretchHeight"><expression><![CDATA[$F{label}]]></expression></element>
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000017" x="360" y="0" width="72" height="28" fontName="DejaVu Sans" fontSize="7" vTextAlign="Middle"><expression><![CDATA[$F{status}]]></expression></element>
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000018" x="432" y="0" width="150" height="28" fontName="DejaVu Sans" fontSize="7" vTextAlign="Middle" textAdjust="StretchHeight"><expression><![CDATA[$F{evidenceReference}]]></expression></element>
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000019" x="582" y="0" width="100" height="28" fontName="DejaVu Sans" fontSize="7" vTextAlign="Middle"><expression><![CDATA[$F{completedBy}]]></expression></element>
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000020" x="682" y="0" width="100" height="28" fontName="DejaVu Sans" fontSize="7" vTextAlign="Middle"><expression><![CDATA[$F{verifiedBy}]]></expression></element>
+  </band></detail>
+  <pageFooter height="35">
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000021" x="0" y="0" width="690" height="28" fontName="DejaVu Sans" fontSize="6"><expression><![CDATA["CONFIDENTIAL HR RECORD | Source "+$P{sourceFingerprint}+" | "+$P{generated}]]></expression></element>
+    <element kind="textField" uuid="6be5c3da-930c-4ac2-8188-030000000022" x="690" y="0" width="92" height="20" fontName="DejaVu Sans" fontSize="7" hTextAlign="Right"><expression><![CDATA["Page "+$V{PAGE_NUMBER}]]></expression></element>
+  </pageFooter>
+</jasperReport>

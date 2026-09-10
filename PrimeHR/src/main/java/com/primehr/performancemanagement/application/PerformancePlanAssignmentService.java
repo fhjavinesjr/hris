@@ -1,0 +1,3 @@
+package com.primehr.performancemanagement.application;
+import com.primehr.performancemanagement.api.PerformancePlanAssignmentDtos.*;import java.util.*;
+public interface PerformancePlanAssignmentService{List<AssignmentResponse>list(String a);AssignmentResponse get(String a,String id);AssignmentResponse create(String a,AssignmentInput i,String token,String c);AssignmentResponse update(String a,String id,AssignmentInput i,String token,String c);AssignmentResponse activate(String a,String id,Transition i,String token,String c);AssignmentResponse retire(String a,String id,Transition i,String c);ReadinessResponse readiness(String a,String id,String token);}

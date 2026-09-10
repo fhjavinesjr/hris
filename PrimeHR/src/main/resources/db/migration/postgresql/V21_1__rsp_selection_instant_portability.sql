@@ -1,0 +1,1 @@
+-- PostgreSQL V21 already stores every Java Instant as TIMESTAMP WITH TIME ZONE.

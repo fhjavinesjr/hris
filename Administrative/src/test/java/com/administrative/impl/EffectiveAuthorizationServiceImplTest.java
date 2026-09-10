@@ -20,6 +20,16 @@ class EffectiveAuthorizationServiceImplTest {
             new EffectiveAuthorizationServiceImpl(repository, new ObjectMapper());
 
     @Test
+    void phaseFiveFProcessReportPermissionsAreCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("RSP Reporter", false,
+                "{\"primehr.rsp-register-report\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.rsp-process-analytics\":{\"canAccess\":false,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("RSP Reporter")).thenReturn(Optional.of(ruleset));
+        assertThat(service.resolve("001", "RSP Reporter", "primehr.rsp-register-report").canAccess()).isTrue();
+        assertThat(service.resolve("001", "RSP Reporter", "primehr.rsp-process-analytics").canAccess()).isFalse();
+    }
+
+    @Test
     void resolvesOnlyCanonicalPersistedFeatureFlags() {
         PermissionRuleset ruleset = new PermissionRuleset("HR Editor", false,
                 "{\"primehr.competency\":{\"canAccess\":true,\"canAdd\":false," +
@@ -258,5 +268,95 @@ class EffectiveAuthorizationServiceImplTest {
         assertThat(permission.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
         assertThat(service.resolve("001", "Application Screening", "primehr.rsp-screening-policy").canAccess())
                 .isFalse();
+    }
+
+    @Test
+    void phaseFiveDEvaluationAndGovernanceActionsAreIndependentAndFailClosed() {
+        PermissionRuleset ruleset = new PermissionRuleset("Evaluation Coordinator", false,
+                "{\"primehr.rsp-evaluation-policy\":{\"canAccess\":true,\"canPublish\":true," +
+                        "\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.hrmpsb-governance\":{\"canAccess\":true,\"canFinalize\":true," +
+                        "\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.rsp-candidate-evaluation\":{\"canAccess\":true,\"canAssess\":true," +
+                        "\"canSubmit\":true,\"canValidate\":false,\"canFinalize\":false," +
+                        "\"dataScope\":\"ASSIGNED_RECORDS\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("Evaluation Coordinator")).thenReturn(Optional.of(ruleset));
+
+        var policy = service.resolve("001", "Evaluation Coordinator", "primehr.rsp-evaluation-policy");
+        assertThat(policy.canPublish()).isTrue();
+        assertThat(policy.canFinalize()).isFalse();
+        assertThat(policy.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+
+        var governance = service.resolve("001", "Evaluation Coordinator", "primehr.hrmpsb-governance");
+        assertThat(governance.canFinalize()).isTrue();
+        assertThat(governance.canPublish()).isFalse();
+
+        var evaluation = service.resolve("001", "Evaluation Coordinator", "primehr.rsp-candidate-evaluation");
+        assertThat(evaluation.canAssess()).isTrue();
+        assertThat(evaluation.canSubmit()).isTrue();
+        assertThat(evaluation.canValidate()).isFalse();
+        assertThat(evaluation.canFinalize()).isFalse();
+        assertThat(evaluation.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+    }
+
+    @Test
+    void phaseFiveEControlsAreCanonicalIndependentAndFailClosed() {
+        PermissionRuleset ruleset = new PermissionRuleset("Appointment Team", false,
+                "{\"primehr.rsp-selection-decision\":{\"canAccess\":true,\"canSubmit\":true," +
+                        "\"canApprove\":false,\"canFinalize\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.rsp-appointment-handoff\":{\"canAccess\":true,\"canAdd\":true," +
+                        "\"canSubmit\":false,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"hrm.appointment-intake\":{\"canAccess\":true,\"canFinalize\":true," +
+                        "\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"hrm.onboarding-configuration\":{\"canAccess\":true,\"canPublish\":true," +
+                        "\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"hrm.onboarding\":{\"canAccess\":true,\"canEdit\":true," +
+                        "\"canApprove\":true,\"canFinalize\":false,\"dataScope\":\"AGENCY_WIDE\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("Appointment Team")).thenReturn(Optional.of(ruleset));
+
+        assertThat(service.resolve("001", "Appointment Team", "primehr.rsp-selection-decision").canSubmit()).isTrue();
+        assertThat(service.resolve("001", "Appointment Team", "primehr.rsp-selection-decision").canApprove()).isFalse();
+        assertThat(service.resolve("001", "Appointment Team", "primehr.rsp-appointment-handoff").canSubmit()).isFalse();
+        assertThat(service.resolve("001", "Appointment Team", "hrm.appointment-intake").canFinalize()).isTrue();
+        assertThat(service.resolve("001", "Appointment Team", "hrm.onboarding-configuration").canPublish()).isTrue();
+        assertThat(service.resolve("001", "Appointment Team", "hrm.onboarding").canApprove()).isTrue();
+        assertThat(service.resolve("001", "Appointment Team", "hrm.onboarding").canFinalize()).isFalse();
+        assertThat(service.resolve("001", "Missing", "hrm.onboarding").dataScope()).isEqualTo(PermissionDataScope.NONE);
+    }
+
+    @Test
+    void phaseFiveFReportKeysResolveIndependentlyAndFailClosed() {
+        PermissionRuleset ruleset = new PermissionRuleset("RSP Reports", false,
+                "{\"primehr.rsp-comparative-report\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.rsp-selection-report\":{\"canAccess\":false,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.rsp-evidence-index-report\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("RSP Reports")).thenReturn(Optional.of(ruleset));
+
+        assertThat(service.resolve("001", "RSP Reports", "primehr.rsp-comparative-report").canAccess()).isTrue();
+        assertThat(service.resolve("001", "RSP Reports", "primehr.rsp-selection-report").canAccess()).isFalse();
+        assertThat(service.resolve("001", "RSP Reports", "primehr.rsp-evidence-index-report").canAccess()).isTrue();
+        assertThat(service.resolve("001", "RSP Reports", "primehr.rsp-comparative-report").dataScope())
+                .isEqualTo(PermissionDataScope.AGENCY_WIDE);
+    }
+
+    @Test
+    void phaseFiveFAppointmentDocumentKeysAreCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("Appointment Documents", false,
+                "{\"hrm.appointment-report\":{\"canAccess\":true},"
+                        + "\"hrm.onboarding-report\":{\"canAccess\":false},"
+                        + "\"hrm.appointment-documents\":{\"canAccess\":true,\"canAdd\":true,"
+                        + "\"canEdit\":false,\"canFinalize\":true}}" );
+        when(repository.findByPermissionNameIgnoreCase("Appointment Documents"))
+                .thenReturn(Optional.of(ruleset));
+
+        assertThat(service.resolve("001", "Appointment Documents", "hrm.appointment-report").canAccess())
+                .isTrue();
+        assertThat(service.resolve("001", "Appointment Documents", "hrm.onboarding-report").canAccess())
+                .isFalse();
+        var documents = service.resolve("001", "Appointment Documents", "hrm.appointment-documents");
+        assertThat(documents.canAccess()).isTrue();
+        assertThat(documents.canAdd()).isTrue();
+        assertThat(documents.canEdit()).isFalse();
+        assertThat(documents.canFinalize()).isTrue();
     }
 }

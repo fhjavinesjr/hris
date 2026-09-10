@@ -1,0 +1,3 @@
+package com.primehr.rsp.evaluation.infrastructure;
+import com.primehr.rsp.evaluation.domain.EvaluationCandidate; import org.springframework.data.jpa.repository.*; import java.util.*;
+public interface EvaluationCandidateRepository extends JpaRepository<EvaluationCandidate,String>{Optional<EvaluationCandidate>findByIdAndAgencyId(String id,String agency);Optional<EvaluationCandidate>findByAgencyIdAndApplicationId(String agency,String application);List<EvaluationCandidate> findByAgencyIdAndProceedingIdOrderByAdmittedAtAsc(String agency,String proceeding);boolean existsByAgencyIdAndProceedingIdAndApplicationId(String agency,String proceeding,String application);long countByAgencyIdAndProceedingId(String agency,String proceeding);}

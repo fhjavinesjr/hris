@@ -1,0 +1,3 @@
+package com.primehr.performancemanagement.application;
+import com.primehr.performancemanagement.api.PerformanceObjectiveDtos.*;import java.util.*;
+public interface PerformanceObjectiveService{List<ObjectiveResponse>list(String a);ObjectiveResponse get(String a,String id);ObjectiveResponse create(String a,ObjectiveInput i,String token,String c);ObjectiveResponse update(String a,String id,ObjectiveInput i,String token,String c);ObjectiveResponse revision(String a,String id,Transition i,String token,String c);ObjectiveResponse publish(String a,String id,Transition i,String token,String c);ObjectiveResponse retire(String a,String id,Transition i,String c);ReadinessResponse readiness(String a,String id,String token);}

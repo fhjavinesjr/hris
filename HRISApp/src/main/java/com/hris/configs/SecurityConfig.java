@@ -51,7 +51,7 @@ public class SecurityConfig {
                     corsConfiguration.setAllowedOrigins(allowedOrigins); // Frontend URL (React/Next.js)
                     corsConfiguration.setAllowedOriginPatterns(allowedOriginPatterns); // Vercel deployments
                     corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+                    corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key", "X-Correlation-Id", "X-Agency-Id"));
                     corsConfiguration.setAllowCredentials(true); // If you need cookies/session
                     return corsConfiguration;
                 }))
@@ -60,7 +60,12 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/runtime-config").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/employee/login", "/api/employee/register", "/api/hris/installAuth").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/employee/login", "/api/employee/activate").permitAll()
+                        .requestMatchers("/api/integration/v1/primehr/appointment-handoffs/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/employee/register", "/api/hris/installAuth").hasAuthority("1")
+                        .requestMatchers(HttpMethod.POST, "/api/employeeAppointment/create").hasAuthority("1")
+                        .requestMatchers(HttpMethod.PUT, "/api/employeeAppointment/update/**", "/api/employeeAppointment/deactivate/**").hasAuthority("1")
+                        .requestMatchers(HttpMethod.DELETE, "/api/employeeAppointment/delete/**").hasAuthority("1")
                         .requestMatchers(HttpMethod.POST, "/api/sso/exchange").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/secure").hasRole("ADMIN")

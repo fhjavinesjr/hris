@@ -1,0 +1,2 @@
+package com.primehr.performancemanagement.infrastructure;import com.primehr.performancemanagement.domain.PerformancePolicy;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface PerformancePolicyRepository extends JpaRepository<PerformancePolicy,String>{Optional<PerformancePolicy>findByIdAndAgencyId(String id,String agency);boolean existsByAgencyIdAndNormalizedCode(String agency,String code);}

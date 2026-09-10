@@ -1,0 +1,34 @@
+<!-- Official source: 2025 ORAOHRA Annex L; provider-neutral parameter report. -->
+<jasperReport name="csc_assumption_to_duty_2025" language="java" pageWidth="595" pageHeight="842" columnWidth="515" leftMargin="40" rightMargin="40" topMargin="25" bottomMargin="25" uuid="5be5c3da-930c-4ac2-8188-020000000001">
+  <parameter name="agencyName" class="java.lang.String"/><parameter name="agencyAddress" class="java.lang.String"/>
+  <parameter name="appointeeName" class="java.lang.String"/><parameter name="position" class="java.lang.String"/>
+  <parameter name="office" class="java.lang.String"/><parameter name="issueDate" class="java.lang.String"/>
+  <parameter name="assumptionDate" class="java.lang.String"/><parameter name="venue" class="java.lang.String"/>
+  <parameter name="certifyingName" class="java.lang.String"/><parameter name="certifyingPosition" class="java.lang.String"/>
+  <parameter name="attestingName" class="java.lang.String"/><parameter name="attestingPosition" class="java.lang.String"/>
+  <parameter name="templateCode" class="java.lang.String"/><parameter name="templateVersion" class="java.lang.String"/>
+  <parameter name="sourceFingerprint" class="java.lang.String"/><parameter name="generated" class="java.lang.String"/>
+  <title height="765" splitType="Prevent">
+    <element kind="staticText" uuid="5be5c3da-930c-4ac2-8188-020000000002" x="0" y="0" width="180" height="28" fontName="DejaVu Sans" fontSize="9"><text><![CDATA[CS Form No. 4
+Revised 2025]]></text></element>
+    <element kind="staticText" uuid="5be5c3da-930c-4ac2-8188-020000000003" x="0" y="48" width="515" height="20" fontName="DejaVu Sans" fontSize="11" bold="true" hTextAlign="Center"><text><![CDATA[REPUBLIC OF THE PHILIPPINES]]></text></element>
+    <element kind="textField" uuid="5be5c3da-930c-4ac2-8188-020000000004" x="0" y="70" width="515" height="20" fontName="DejaVu Sans" fontSize="11" bold="true" hTextAlign="Center"><expression><![CDATA[$P{agencyName}]]></expression></element>
+    <element kind="staticText" uuid="5be5c3da-930c-4ac2-8188-020000000005" x="0" y="120" width="515" height="28" fontName="DejaVu Sans" fontSize="14" bold="true" hTextAlign="Center"><text><![CDATA[CERTIFICATION OF ASSUMPTION TO DUTY]]></text></element>
+    <element kind="textField" uuid="5be5c3da-930c-4ac2-8188-020000000006" x="20" y="180" width="475" height="185" fontName="DejaVu Sans" fontSize="11" hTextAlign="Justified" textAdjust="StretchHeight"><expression><![CDATA["This is to certify that Ms./Mr. "+$P{appointeeName}+" has assumed the duties and responsibilities as "+$P{position}+" of "+$P{office}+" effective "+$P{assumptionDate}+".\n\nThis certification is issued in connection with the issuance of the appointment of Ms./Mr. "+$P{appointeeName}+" as "+$P{position}+".\n\nDone this "+$P{issueDate}+" in "+$P{venue}+"."]]></expression></element>
+    <element kind="textField" uuid="5be5c3da-930c-4ac2-8188-020000000007" x="290" y="400" width="205" height="20" fontName="DejaVu Sans" hTextAlign="Center"><expression><![CDATA[$P{certifyingName}]]></expression><box><bottomPen lineWidth="0.7"/></box></element>
+    <element kind="textField" uuid="5be5c3da-930c-4ac2-8188-020000000008" x="290" y="420" width="205" height="35" fontName="DejaVu Sans" fontSize="9" hTextAlign="Center"><expression><![CDATA[$P{certifyingPosition}+"\nHead of Office/Department/Unit"]]></expression></element>
+    <element kind="textField" uuid="5be5c3da-930c-4ac2-8188-020000000009" x="20" y="470" width="170" height="18" fontName="DejaVu Sans" fontSize="9"><expression><![CDATA["Date: "+$P{issueDate}]]></expression></element>
+    <element kind="staticText" uuid="5be5c3da-930c-4ac2-8188-020000000010" x="20" y="525" width="170" height="18" fontName="DejaVu Sans" fontSize="9"><text><![CDATA[Attested by:]]></text></element>
+    <element kind="textField" uuid="5be5c3da-930c-4ac2-8188-020000000011" x="20" y="560" width="205" height="20" fontName="DejaVu Sans" hTextAlign="Center"><expression><![CDATA[$P{attestingName}]]></expression><box><bottomPen lineWidth="0.7"/></box></element>
+    <element kind="textField" uuid="5be5c3da-930c-4ac2-8188-020000000012" x="20" y="580" width="205" height="35" fontName="DejaVu Sans" fontSize="9" hTextAlign="Center"><expression><![CDATA[$P{attestingPosition}+"\nHRMO"]]></expression></element>
+    <element kind="staticText" uuid="5be5c3da-930c-4ac2-8188-020000000013" x="20" y="650" width="70" height="60" fontName="DejaVu Sans" fontSize="8"><text><![CDATA[201 file
+Admin
+COA
+CSC]]></text></element>
+    <element kind="staticText" uuid="5be5c3da-930c-4ac2-8188-020000000014" x="330" y="650" width="165" height="60" fontName="DejaVu Sans" fontSize="8" bold="true" hTextAlign="Center" vTextAlign="Middle"><text><![CDATA[For submission to CSC FO
+within 30 days from the
+date of assumption of the
+appointee]]></text><box><pen lineWidth="0.7"/></box></element>
+    <element kind="textField" uuid="5be5c3da-930c-4ac2-8188-020000000015" x="0" y="730" width="515" height="26" fontName="DejaVu Sans" fontSize="6" hTextAlign="Center"><expression><![CDATA[$P{templateCode}+" "+$P{templateVersion}+" | Source "+$P{sourceFingerprint}+" | "+$P{generated}]]></expression></element>
+  </title>
+</jasperReport>

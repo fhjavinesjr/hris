@@ -45,16 +45,22 @@ public class EffectiveAuthorizationController {
                 .map(authority -> authority.getAuthority())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "The authenticated account has no assigned role"));
-        if (!EffectiveAuthorizationServiceImpl.PRIMEHR_RSP_APPLICATION_SCREENING.equals(featureKey)) {
+        boolean screeningAssignment = EffectiveAuthorizationServiceImpl.PRIMEHR_RSP_APPLICATION_SCREENING
+                .equals(featureKey);
+        boolean committeeAssignment = EffectiveAuthorizationServiceImpl.PRIMEHR_RSP_CANDIDATE_EVALUATION
+                .equals(featureKey);
+        if (!screeningAssignment && !committeeAssignment) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only application-screening assignment permission may be resolved");
+                    "Only governed assignment permissions may be resolved");
         }
-        EffectiveFeaturePermissionResponse caller = service.resolve(authentication.getName(), callerRole,
-                EffectiveAuthorizationServiceImpl.PRIMEHR_RSP_APPLICATION_SCREENING);
+        String callerFeature = screeningAssignment
+                ? EffectiveAuthorizationServiceImpl.PRIMEHR_RSP_APPLICATION_SCREENING
+                : EffectiveAuthorizationServiceImpl.PRIMEHR_HRMPSB_GOVERNANCE;
+        EffectiveFeaturePermissionResponse caller = service.resolve(authentication.getName(), callerRole, callerFeature);
         if (!caller.administrator() && (!caller.canAccess() || !caller.canAdd()
                 || caller.dataScope() != com.administrative.dtos.PermissionDataScope.AGENCY_WIDE)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Application-screening assignment permission is required");
+                    "Agency-wide governed assignment permission is required");
         }
         return service.resolve(employeeNo, employeeRole, featureKey);
     }

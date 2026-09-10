@@ -12,6 +12,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import com.primehr.integration.administrative.AuthorizationDependencyException;
 import com.primehr.integration.administrative.PositionTargetDependencyException;
+import com.primehr.integration.administrative.OrganizationDirectoryDependencyException;
 import com.primehr.integration.humanresource.HumanResourceDependencyException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -69,6 +70,7 @@ public class PrimeHrExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiErrorResponse> forbidden(AccessDeniedException exception, HttpServletRequest request) {
+        log.warn("Access denied for {}: {}", request.getRequestURI(), exception.getMessage());
         return error(HttpStatus.FORBIDDEN, "Access denied", request, List.of());
     }
 
@@ -98,6 +100,13 @@ public class PrimeHrExceptionHandler {
                                                                        HttpServletRequest request) {
         log.warn("Administrative position-target dependency unavailable for {}", request.getRequestURI());
         return error(HttpStatus.SERVICE_UNAVAILABLE, "POSITION_TARGET_SERVICE_UNAVAILABLE", request, List.of());
+    }
+
+    @ExceptionHandler(OrganizationDirectoryDependencyException.class)
+    public ResponseEntity<ApiErrorResponse> organizationDirectoryUnavailable(
+            OrganizationDirectoryDependencyException exception, HttpServletRequest request) {
+        log.warn("Administrative organization-directory dependency unavailable for {}", request.getRequestURI());
+        return error(HttpStatus.SERVICE_UNAVAILABLE, "ORGANIZATION_DIRECTORY_UNAVAILABLE", request, List.of());
     }
 
     @ExceptionHandler(HumanResourceDependencyException.class)

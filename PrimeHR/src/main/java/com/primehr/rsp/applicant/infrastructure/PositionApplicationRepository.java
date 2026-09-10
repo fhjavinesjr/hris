@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface PositionApplicationRepository extends JpaRepository<PositionApplication, String> {
@@ -19,4 +20,6 @@ public interface PositionApplicationRepository extends JpaRepository<PositionApp
                                                                       Collection<PositionApplication.Status> statuses);
     Optional<PositionApplication> findFirstByAgencyIdAndApplicantIdAndPublicationIdOrderByApplicationVersionDesc(
             String agencyId, String applicantId, String publicationId);
+    List<PositionApplication> findByAgencyIdAndPublicationIdOrderByCreatedAtAsc(
+            String agencyId, String publicationId);
 }

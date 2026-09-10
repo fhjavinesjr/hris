@@ -1,0 +1,5 @@
+package com.primehr.performancemanagement.infrastructure;
+import com.primehr.performancemanagement.domain.PerformanceCommitmentRouteStep;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.*;
+public interface PerformanceCommitmentRouteStepRepository extends JpaRepository<PerformanceCommitmentRouteStep,String>{List<PerformanceCommitmentRouteStep>findByAgencyIdAndRouteIdOrderByLevelAsc(String agency,String route);Optional<PerformanceCommitmentRouteStep>findByAgencyIdAndRouteIdAndLevel(String agency,String route,int level);}

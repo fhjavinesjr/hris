@@ -1,0 +1,3 @@
+package com.primehr.rsp.evaluation.application;
+import com.primehr.rsp.evaluation.api.CommitteeDtos.*; import com.primehr.shared.api.PageResponse;
+public interface CommitteeService {PageResponse<CommitteeResponse> list(String agency,int page,int size);CommitteeResponse get(String agency,String id);CommitteeResponse create(String agency,SaveCommittee request,String token,String correlation);CommitteeResponse update(String agency,String id,SaveCommittee request,String token,String correlation);CommitteeResponse publish(String agency,String id,Publish request,String token,String correlation);CommitteeResponse successor(String agency,String id,Transition request,String correlation);}

@@ -356,7 +356,17 @@ An administrator override is an exceptional action requiring administrator autho
 
 Careers displays only applicant-safe status and communication. It never exposes findings, internal explanations, policy instructions, staff identities, or audit data. `QUALIFIED`/`NOT QUALIFIED` is a screening result, not selection, appointment, or onboarding.
 
-## 19. Common messages
+## 19. Phase 5D evaluation operations
+
+Configure **Evaluation Policy**, **HRMPSB Governance**, and **Candidate Evaluation** independently in Administrative. Access does not imply action authority. Published policies and committees are immutable; create effective successors for future changes.
+
+Authorized staff admit only current qualified applications, validate frozen source versions, schedule examination/interview sessions, record attendance, maintain eligible assignments, and observe candidate-specific conflict/recusal controls. Examination results follow independent submit/validation. Panel ratings remain member-owned until submitted, and lawful reference checks keep applicant-safe communication separate from confidential notes.
+
+Generate comparative evaluation only after all mandatory validated inputs and minimum-rater requirements are satisfied. The calculation preserves policy versions, stage breakdowns, ties, exclusions, and a deterministic fingerprint. HRMPSB deliberation requires eligible attendance and quorum. Its resolution is only a recommendation and does not select or appoint anyone.
+
+Careers exposes only the applicant's progress and approved schedule details. Never disclose scores, rankings, panel identities/ratings, conflicts, reference notes, minutes, evidence, or recommendations through applicant communication.
+
+## 20. Common messages
 
 - **Access denied**: ask an administrator to review the exact feature/action permissions, then sign in again through the portal.
 - **Incomplete**: supply effective-from and at least one active, valid requirement.
@@ -385,8 +395,38 @@ Careers displays only applicant-safe status and communication. It never exposes 
 - **No screening policy is bound**: publish and bind an effective policy before opening the case.
 - **The screening record changed**: reload after another session saved; the stale write was rejected.
 - **Reason code required/incompatible**: choose a published reason compatible with `DISQUALIFIED` and complete required internal/safe text.
+- **Evaluation source changed**: reopen and review the current vacancy, policy, committee, application, and screening versions.
+- **Conflict/recusal blocks this action**: obtain an authorized independent resolution or assign an eligible alternate.
+- **Minimum raters/results not complete**: complete all mandatory submitted/validated inputs; missing results are not zero.
+- **Quorum is not met**: record eligible attendance before beginning or finalizing deliberation.
 
-## 20. Operational controls
+## 21. Operational controls
+
+### Phase 6A performance foundation
+
+Administrative permission rules use three independent agency-wide rows:
+
+- **Performance Policy**: Access reads policy history; Add creates drafts/successor revisions; Edit changes drafts; Publish publishes or retires immutable versions.
+- **Performance Cycle**: Access reads cycles/calendars; Add creates drafts; Edit changes draft details/calendars; Finalize opens, closes, or cancels with a reason.
+- **Performance Management Team**: Access reads PMT history; Add creates drafts; Edit changes draft details/rosters; Publish activates or deactivates with a reason.
+
+After a permission change, sign in again so the effective ruleset is refreshed.
+
+Create and publish the effective SPMS policy first. Then create a cycle tied to the exact published policy version and add its positively ordered required milestones before opening it. Published policy versions and non-draft cycle calendars are immutable; use an audited policy successor or later authorized correction workflow instead of overwriting history.
+
+For PMT governance, enter the mandate/effectivity and an employee-number roster using only the controlled roles shown by the screen. Activation requires exactly one effective chairperson and verifies active employment through the authenticated HRM contract. If HRM is unavailable, no activation change is saved. Active rosters are immutable and deactivation preserves their history.
+
+Phase 6A does not include performance templates, KRA/KPI definitions, OPCR/DPCR/IPCR commitments, monitoring, ratings, calibration, coaching, appeals, or reports. Those later capabilities remain approval-gated.
+
+### Phase 5E operational readiness
+
+- Phase 5E.1-5E.4 workflows and UI are available only through their exact authorization boundaries.
+- Publish one effective onboarding template before PrimeHR submits a selected candidate handoff. Receipt and case creation fail together when no effective template exists.
+- Required evidence must be submitted and independently verified by a different user before appointment approval.
+- HRM must explicitly link an exact existing employee or review unique employee/biometric numbers for a new employee. Applicant passwords and PDS data are never copied.
+- Appointment creation re-resolves Plantilla, Job Position, Business Unit, Nature of Appointment, effective Salary Schedule, and qualification source. Daily salary uses `monthly x 12 / 365`.
+- New employees receive a 72-hour one-time activation invitation by default; only its hash is stored. Existing employees keep their current credential.
+- The prior 49 duplicate-active-Plantilla warning in `hrisof` was valid and was resolved on 2026-09-07. HumanResource V2 is applied, no appointment history was deleted, and the reviewed before/action snapshot remains in `dbo.phase5e_active_appointment_remediation_20260907` for audit or recovery review.
 
 - Configure permissions in Administrative and reauthenticate after changing a ruleset.
 - Maintain Job Position and Plantilla only in Administrative.

@@ -1,0 +1,2 @@
+package com.primehr.performancemanagement.infrastructure;import com.primehr.performancemanagement.domain.PerformanceManagementTeamMember;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface PerformanceManagementTeamMemberRepository extends JpaRepository<PerformanceManagementTeamMember,String>{List<PerformanceManagementTeamMember>findByAgencyIdAndPmtIdOrderByEffectiveFromAscRoleAscEmployeeNoAsc(String agency,String pmt);void deleteByAgencyIdAndPmtId(String agency,String pmt);}

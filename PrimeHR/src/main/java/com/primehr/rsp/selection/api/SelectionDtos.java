@@ -1,0 +1,12 @@
+package com.primehr.rsp.selection.api;
+import com.primehr.rsp.selection.domain.*;import jakarta.validation.constraints.*;import java.math.BigDecimal;import java.time.*;import java.util.List;
+public final class SelectionDtos{private SelectionDtos(){}
+ public record CreateSelection(@NotBlank String proceedingId,@NotBlank String assignedApproverEmployeeNo,@NotNull @Future Instant offerResponseDeadline,@NotBlank @Size(max=2000)String selectedSafeText,@NotBlank @Size(max=2000)String nonSelectedSafeText){}
+ public record DecideSelection(@NotNull SelectionCase.Outcome outcome,String selectedCandidateId,@NotBlank @Size(max=3000)String reason,@Size(max=1000)String varianceBasis,@Size(max=3000)String varianceReason,LocalDate reviewDate,@PositiveOrZero long recordVersion){}
+ public record Transition(@PositiveOrZero long recordVersion,@Size(max=2000)String reason,@Size(max=2000)String administratorExceptionReason){}
+ public record Successor(@NotBlank String assignedApproverEmployeeNo,@NotNull @Future Instant offerResponseDeadline,@NotBlank @Size(max=2000)String selectedSafeText,@NotBlank @Size(max=2000)String nonSelectedSafeText,@NotBlank @Size(max=2000)String reason,@PositiveOrZero long recordVersion){}
+ public record CandidateResponse(String id,String candidateId,String applicationId,String applicantId,BigDecimal totalScore,int rankNumber,int tieGroup,boolean excluded,String exclusionReason,String recommendation,String recommendationReason,boolean selected,long recordVersion){}
+ public record CaseResponse(String id,String proceedingId,String publicationId,String comparativeEvaluationId,String comparativeFingerprint,String meetingId,int caseRevision,String supersedesId,String status,String outcome,String selectedCandidateId,String assignedApproverEmployeeNo,String decisionReason,String varianceBasis,String varianceReason,LocalDate reviewDate,Instant offerResponseDeadline,String sourceFingerprint,String submittedBy,Instant submittedAt,String approvedBy,Instant approvedAt,String finalizedBy,Instant finalizedAt,String returnReason,String administratorExceptionReason,long recordVersion,List<CandidateResponse>candidates){}
+ public record ApplicantOfferResponse(@NotNull OfferResponse.Status response,@NotBlank @Size(max=100)String idempotencyKey,@Size(max=1000)String comment){}
+ public record ApplicantSelectionStatus(String applicationId,String status,String safeText,Instant releasedAt,Instant offerDeadline,String offerStatus,Instant respondedAt,long recordVersion){}
+}

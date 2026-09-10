@@ -1,0 +1,38 @@
+<!-- SQL-free, bean-backed confidential RSP comparative evaluation report. -->
+<jasperReport name="rsp_comparative_evaluation" language="java" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="806" leftMargin="18" rightMargin="18" topMargin="14" bottomMargin="14" uuid="92ba437c-7ab3-4c4d-8c90-b6a10e1409a1">
+  <property name="net.sf.jasperreports.compiler.xml.parser.validation" value="false"/>
+  <parameter name="agency" class="java.lang.String"/><parameter name="classification" class="java.lang.String"/><parameter name="templateVersion" class="java.lang.String"/><parameter name="generated" class="java.lang.String"/>
+  <parameter name="proceedingId" class="java.lang.String"/><parameter name="publicationId" class="java.lang.String"/><parameter name="vacancy" class="java.lang.String"/><parameter name="assignment" class="java.lang.String"/><parameter name="policy" class="java.lang.String"/><parameter name="committee" class="java.lang.String"/><parameter name="meeting" class="java.lang.String"/><parameter name="sourceFingerprint" class="java.lang.String"/><parameter name="finalized" class="java.lang.String"/>
+  <field name="rowNumber" class="java.lang.Integer"/><field name="candidate" class="java.lang.String"/><field name="applicationId" class="java.lang.String"/><field name="totalScore" class="java.math.BigDecimal"/><field name="rankNumber" class="java.lang.Integer"/><field name="tieGroup" class="java.lang.Integer"/><field name="stageBreakdown" class="java.lang.String"/><field name="gateResult" class="java.lang.String"/><field name="recommendation" class="java.lang.String"/>
+  <title height="154" splitType="Stretch">
+    <element kind="textField" x="0" y="0" width="806" height="18" fontName="Arial" fontSize="9" bold="true" hTextAlign="Center"><expression><![CDATA[$P{agency}]]></expression></element>
+    <element kind="staticText" x="0" y="19" width="806" height="23" fontName="Arial" fontSize="14" bold="true" hTextAlign="Center"><text><![CDATA[FORMAL COMPARATIVE EVALUATION REPORT]]></text></element>
+    <element kind="textField" mode="Opaque" x="0" y="43" width="806" height="16" backcolor="#FDE2E2" fontName="Arial" fontSize="7" bold="true" hTextAlign="Center"><expression><![CDATA[$P{classification}]]></expression></element>
+    <element kind="textField" x="0" y="62" width="403" height="16" fontName="Arial" fontSize="7"><expression><![CDATA["Proceeding: " + $P{proceedingId} + " | Publication: " + $P{publicationId}]]></expression></element>
+    <element kind="textField" x="403" y="62" width="403" height="16" fontName="Arial" fontSize="7"><expression><![CDATA["Finalized: " + $P{finalized}]]></expression></element>
+    <element kind="textField" x="0" y="79" width="403" height="16" fontName="Arial" fontSize="7"><expression><![CDATA["Vacancy: " + $P{vacancy}]]></expression></element>
+    <element kind="textField" x="403" y="79" width="403" height="16" fontName="Arial" fontSize="7"><expression><![CDATA["Assignment: " + $P{assignment}]]></expression></element>
+    <element kind="textField" x="0" y="96" width="806" height="16" fontName="Arial" fontSize="7"><expression><![CDATA["Policy: " + $P{policy}]]></expression></element>
+    <element kind="textField" x="0" y="113" width="806" height="16" fontName="Arial" fontSize="7"><expression><![CDATA["Committee: " + $P{committee} + " | " + $P{meeting}]]></expression></element>
+    <element kind="textField" x="0" y="130" width="806" height="20" fontName="Arial" fontSize="6"><expression><![CDATA["Source SHA-256: " + $P{sourceFingerprint} + " | Generated: " + $P{generated}]]></expression></element>
+  </title>
+  <columnHeader height="30">
+    <element kind="staticText" mode="Opaque" x="0" y="0" width="24" height="30" backcolor="#DDE5F2" fontName="Arial" fontSize="6" bold="true" hTextAlign="Center"><text><![CDATA[#]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="24" y="0" width="120" height="30" backcolor="#DDE5F2" fontName="Arial" fontSize="6" bold="true" hTextAlign="Center"><text><![CDATA[Candidate / Application]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="144" y="0" width="55" height="30" backcolor="#DDE5F2" fontName="Arial" fontSize="6" bold="true" hTextAlign="Center"><text><![CDATA[Score]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="199" y="0" width="46" height="30" backcolor="#DDE5F2" fontName="Arial" fontSize="6" bold="true" hTextAlign="Center"><text><![CDATA[Rank / Tie]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="245" y="0" width="285" height="30" backcolor="#DDE5F2" fontName="Arial" fontSize="6" bold="true" hTextAlign="Center"><text><![CDATA[Validated stage breakdown]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="530" y="0" width="96" height="30" backcolor="#DDE5F2" fontName="Arial" fontSize="6" bold="true" hTextAlign="Center"><text><![CDATA[Gate]]></text><box><pen lineWidth="0.4"/></box></element>
+    <element kind="staticText" mode="Opaque" x="626" y="0" width="180" height="30" backcolor="#DDE5F2" fontName="Arial" fontSize="6" bold="true" hTextAlign="Center"><text><![CDATA[HRMPSB recommendation]]></text><box><pen lineWidth="0.4"/></box></element>
+  </columnHeader>
+  <detail><band height="42" splitType="Stretch">
+    <element kind="textField" x="0" y="0" width="24" height="42" fontName="Arial" fontSize="6" stretchType="ContainerHeight" hTextAlign="Center"><expression><![CDATA[$F{rowNumber}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="24" y="0" width="120" height="42" fontName="Arial" fontSize="6" textAdjust="StretchHeight" stretchType="ContainerHeight"><expression><![CDATA[$F{candidate} + "\n" + $F{applicationId}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="144" y="0" width="55" height="42" fontName="Arial" fontSize="6" stretchType="ContainerHeight" hTextAlign="Center"><expression><![CDATA[$F{totalScore}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="199" y="0" width="46" height="42" fontName="Arial" fontSize="6" stretchType="ContainerHeight" hTextAlign="Center"><expression><![CDATA[$F{rankNumber} + " / " + $F{tieGroup}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="245" y="0" width="285" height="42" fontName="Arial" fontSize="6" textAdjust="StretchHeight" stretchType="ContainerHeight"><expression><![CDATA[$F{stageBreakdown}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="530" y="0" width="96" height="42" fontName="Arial" fontSize="6" textAdjust="StretchHeight" stretchType="ContainerHeight"><expression><![CDATA[$F{gateResult}]]></expression><box><pen lineWidth="0.3"/></box></element>
+    <element kind="textField" x="626" y="0" width="180" height="42" fontName="Arial" fontSize="6" textAdjust="StretchHeight" stretchType="ContainerHeight"><expression><![CDATA[$F{recommendation}]]></expression><box><pen lineWidth="0.3"/></box></element>
+  </band></detail>
+  <pageFooter height="16"><element kind="textField" x="0" y="2" width="806" height="12" fontName="Arial" fontSize="6" hTextAlign="Right"><expression><![CDATA["Page " + $V{PAGE_NUMBER} + " | " + $P{templateVersion}]]></expression></element></pageFooter>
+</jasperReport>

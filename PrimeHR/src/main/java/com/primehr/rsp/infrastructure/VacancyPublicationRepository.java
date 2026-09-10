@@ -16,4 +16,6 @@ public interface VacancyPublicationRepository extends JpaRepository<VacancyPubli
     boolean existsByAgencyIdAndVacancyRequestId(String agencyId, String vacancyRequestId);
     List<VacancyPublication> findByAgencyIdAndStatusAndOpeningDateLessThanEqualAndClosingDateGreaterThanEqual(
             String agencyId, VacancyPublicationStatus status, LocalDate openingDate, LocalDate closingDate);
+    Page<VacancyPublication> findByAgencyIdAndClosingDateBetweenOrderByClosingDateDesc(
+            String agencyId, LocalDate from, LocalDate to, Pageable pageable);
 }

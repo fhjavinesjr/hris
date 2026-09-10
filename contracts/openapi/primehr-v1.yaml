@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: ISOFT PRIME-HRM API
-  version: 5.6.0-phase-5c.2
-  description: Staff PRIME-HRM APIs plus separately authenticated applicant services, versioned screening policies, assigned screening, and independently validated applicant-safe outcomes. Staff operations use an ISOFT employee JWT; applicant self-service uses an isolated applicant JWT.
+  version: 6.8.0-phase-6c.3
+  description: Governed Performance Management objectives, assignments, immutable commitment composition, exact-version cascading, route snapshots, and auditable commitment approval lifecycles. Accomplishments, ratings, calibration, coaching, reports, and Phase 6C UI remain excluded.
 servers:
   - url: /api/primehr/v1
 security:
@@ -112,6 +112,224 @@ paths:
     post: {operationId: overrideScreeningCase, responses: {'200': {description: Administrator-only reasoned override}, '403': {$ref: '#/components/responses/Forbidden'}}}
   /rsp/screening-cases/{caseId}/history:
     get: {operationId: getScreeningCaseHistory, responses: {'200': {description: Immutable screening revision history}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/evaluation-policies:
+    get: {operationId: listEvaluationPolicies, responses: {'200': {description: Agency-wide versioned evaluation policy page}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createEvaluationPolicyDraft, responses: {'201': {description: Evaluation policy draft created}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation-policies/{policyId}:
+    get: {operationId: getEvaluationPolicy, responses: {'200': {description: Exact evaluation policy version}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    put: {operationId: updateEvaluationPolicyDraft, responses: {'200': {description: Evaluation policy draft updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation-policies/{policyId}/publish:
+    post: {operationId: publishEvaluationPolicy, responses: {'200': {description: Immutable evaluation policy version published}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation-policies/{policyId}/successors:
+    post: {operationId: createEvaluationPolicySuccessor, responses: {'201': {description: Successor evaluation policy draft created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/vacancy-publications/{publicationId}/evaluation-policy:
+    put: {operationId: bindEvaluationPolicy, responses: {'200': {description: Exact published evaluation policy bound to vacancy}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /committees:
+    get: {operationId: listCommittees, responses: {'200': {description: Agency-wide HRMPSB committee versions}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createCommitteeDraft, responses: {'201': {description: HRMPSB committee draft created}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /committees/{committeeId}:
+    get: {operationId: getCommittee, responses: {'200': {description: Exact HRMPSB committee version}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    put: {operationId: updateCommitteeDraft, responses: {'200': {description: HRMPSB committee draft updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /committees/{committeeId}/publish:
+    post: {operationId: publishCommittee, responses: {'200': {description: Effective immutable HRMPSB roster published}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /committees/{committeeId}/successors:
+    post: {operationId: createCommitteeSuccessor, responses: {'201': {description: Successor HRMPSB committee draft created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation-proceedings:
+    get: {operationId: listAssignedEvaluationProceedings, responses: {'200': {description: Proceedings assigned to the effective HRMPSB member}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createEvaluationProceeding, responses: {'201': {description: Exact-source evaluation proceeding draft created}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation-proceedings/{proceedingId}:
+    get: {operationId: getAssignedEvaluationProceeding, responses: {'200': {description: Assigned proceeding with immutable sources and admitted candidates}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/evaluation-proceedings/{proceedingId}/candidates:
+    put: {operationId: admitQualifiedEvaluationCandidates, responses: {'200': {description: Current qualified candidates admitted with immutable source snapshots}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation-proceedings/{proceedingId}/open:
+    post: {operationId: openEvaluationProceeding, responses: {'200': {description: Fresh qualified candidate set frozen and proceeding opened}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation-proceedings/{proceedingId}/cancel:
+    post: {operationId: cancelEvaluationProceeding, responses: {'200': {description: Draft or open proceeding cancelled with reason}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/proceedings/{proceedingId}/sessions:
+    post: {operationId: createEvaluationSession, responses: {'201': {description: Controlled examination or interview session created}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/proceedings/{proceedingId}:
+    get: {operationId: getEvaluationExecutionOverview, responses: {'200': {description: Permission-filtered execution, deliberation, evidence, and immutable comparison history; another member's unsubmitted rating remains private}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/evaluation/sessions/{sessionId}:
+    put: {operationId: updateEvaluationSession, responses: {'200': {description: Mutable session schedule updated with optimistic locking}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/sessions/{sessionId}/{action}:
+    post: {operationId: transitionEvaluationSession, responses: {'200': {description: Session scheduled, completed, or cancelled according to lifecycle}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/sessions/{sessionId}/candidates/{candidateId}/attendance:
+    put: {operationId: recordEvaluationAttendance, responses: {'200': {description: Candidate attendance, no-show, excusal, or withdrawal evidence recorded}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/proceedings/{proceedingId}/assignments:
+    put: {operationId: replaceEvaluationAssignments, responses: {'200': {description: Versioned examiner, validator, panel, reference-check, observer, or alternate assignments}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/evaluation/proceedings/{proceedingId}/conflicts:
+    post: {operationId: declareEvaluationConflict, responses: {'201': {description: HRMPSB member conflict declaration recorded}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/conflicts/{conflictId}/resolve:
+    post: {operationId: resolveEvaluationConflict, responses: {'200': {description: Independent conflict resolution recorded}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/evaluation/proceedings/{proceedingId}/stage-results:
+    post: {operationId: recordStageResult, responses: {'201': {description: Examination or gate result recorded without treating missing results as zero}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/stage-results/{resultId}/{action}:
+    post: {operationId: transitionStageResult, responses: {'200': {description: Result submitted, independently validated, or returned}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/proceedings/{proceedingId}/panel-ratings:
+    put: {operationId: saveIndependentPanelRating, responses: {'200': {description: Assigned member-owned criterion rating saved}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/evaluation/panel-ratings/{ratingId}/{action}:
+    post: {operationId: transitionPanelRating, responses: {'200': {description: Independent panel rating submitted or returned for correction}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/proceedings/{proceedingId}/reference-checks:
+    post: {operationId: createReferenceCheck, responses: {'201': {description: Lawful-purpose reference check opened}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/evaluation/reference-checks/{referenceId}/complete:
+    post: {operationId: completeReferenceCheck, responses: {'200': {description: Assigned checker records separated applicant-safe and confidential findings}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/reference-checks/{referenceId}/validate:
+    post: {operationId: validateReferenceCheck, responses: {'200': {description: Independent validation recorded}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/proceedings/{proceedingId}/comparative-evaluations:
+    post: {operationId: generateComparativeEvaluation, responses: {'201': {description: Immutable deterministic weighted scores and ranks generated for deliberation}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/proceedings/{proceedingId}/meetings:
+    post: {operationId: createHrmpsbMeeting, responses: {'201': {description: HRMPSB deliberation meeting created from finalized comparative evidence}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/meetings/{meetingId}:
+    put: {operationId: updateHrmpsbMeeting, responses: {'200': {description: Non-final meeting schedule, agenda, quorum, and minutes updated}}}
+  /rsp/evaluation/meetings/{meetingId}/{action}:
+    post: {operationId: transitionHrmpsbMeeting, responses: {'200': {description: Meeting scheduled, begun, or finalized after quorum and candidate resolution gates}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/meetings/{meetingId}/attendance:
+    post: {operationId: recordHrmpsbAttendance, responses: {'200': {description: Effective committee attendance and voting eligibility recorded}}}
+  /rsp/evaluation/meetings/{meetingId}/resolutions:
+    post: {operationId: recordHrmpsbResolution, responses: {'200': {description: Candidate deliberation recommendation recorded without making a selection or appointment}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/evaluation/proceedings/{proceedingId}/evidence:
+    post: {operationId: uploadEvaluationEvidence, responses: {'201': {description: Restricted evidence stored with signature, checksum, classification, and retention metadata}}}
+  /rsp/evaluation/evidence/{evidenceId}/content:
+    get: {operationId: downloadEvaluationEvidence, responses: {'200': {description: Authorized restricted evaluation evidence}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /applicant/v1/me/applications/{applicationId}/evaluation:
+    servers: [{url: /api/primehr}]
+    get: {operationId: getOwnApplicantSafeEvaluationStatus, responses: {'200': {description: Own schedules and coarse progress only; no scores, ranks, conflicts, confidential notes, or deliberation details}, '404': {$ref: '#/components/responses/NotFound'}}}
+  /rsp/selection-cases:
+    get: {operationId: listSelectionCases, responses: {'200': {description: Agency-wide authorized selection cases}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createSelectionCase, responses: {'201': {description: Selection draft frozen from finalized Phase 5D evidence}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/selection-cases/{selectionId}:
+    get: {operationId: getSelectionCase, responses: {'200': {description: Exact immutable-source selection case}, '404': {$ref: '#/components/responses/NotFound'}}}
+  /rsp/selection-cases/{selectionId}/decision:
+    put: {operationId: decideSelectionCase, responses: {'200': {description: Human selection, no-selection, or deferral recorded}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/selection-cases/{selectionId}/submit:
+    post: {operationId: submitSelectionCase, responses: {'200': {description: Decision submitted for independent appointing-authority review}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/selection-cases/{selectionId}/return:
+    post: {operationId: returnSelectionCase, responses: {'200': {description: Selection returned with reason}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/selection-cases/{selectionId}/approve:
+    post: {operationId: approveSelectionCase, responses: {'200': {description: Assigned appointing authority approves the human decision}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /rsp/selection-cases/{selectionId}/finalize:
+    post: {operationId: finalizeSelectionCase, responses: {'200': {description: Immutable decision and applicant-safe notices released}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/selection-cases/{selectionId}/cancel:
+    post: {operationId: cancelSelectionCase, responses: {'200': {description: Non-final selection cancelled with reason}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/selection-cases/{selectionId}/successors:
+    post: {operationId: createSelectionCorrection, responses: {'201': {description: Controlled successor preserving finalized history}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /applicant/v1/me/applications/{applicationId}/selection:
+    servers: [{url: /api/primehr}]
+    get: {operationId: getOwnApplicantSafeSelectionStatus, responses: {'200': {description: Own released safe selection notice and offer status only}, '404': {$ref: '#/components/responses/NotFound'}}}
+  /applicant/v1/me/applications/{applicationId}/selection/response:
+    servers: [{url: /api/primehr}]
+    post: {operationId: respondToOwnSelectionOffer, responses: {'200': {description: Idempotent applicant-owned accept or decline response}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/selection-cases/{selectionId}/appointment-handoffs:
+    post: {operationId: createAppointmentHandoff, responses: {'201': {description: Immutable DRAFT handoff created only for a finalized selection with an accepted offer}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /rsp/appointment-handoffs/{handoffId}:
+    get: {operationId: getAppointmentHandoff, responses: {'200': {description: Durable handoff and delivery-attempt history}, '404': {$ref: '#/components/responses/NotFound'}}}
+  /rsp/appointment-handoffs/{handoffId}/submit:
+    post: {operationId: submitAppointmentHandoff, responses: {'200': {description: Service-authenticated delivery attempted with the stable handoff id and fingerprint}}}
+  /rsp/appointment-handoffs/{handoffId}/retry:
+    post: {operationId: retryAppointmentHandoff, responses: {'200': {description: Same immutable payload and idempotency key delivered again}}}
+  /rsp/appointment-handoffs/{handoffId}/reconcile:
+    post: {operationId: reconcileAppointmentHandoff, responses: {'200': {description: HumanResource receipt recovered or its state refreshed after response loss}}}
+  /rsp/reports/comparative-evaluations/{proceedingId}.pdf:
+    get:
+      operationId: generateFormalRspComparativeEvaluation
+      description: Requires independent primehr.rsp-comparative-report agency-wide access. Only a finalized, fingerprint-consistent proceeding is rendered.
+      responses:
+        '200': {description: SQL-free confidential comparative-evaluation PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /rsp/reports/selections/{selectionId}.pdf:
+    get:
+      operationId: generateFormalRspSelectionProcessRecord
+      description: Requires independent primehr.rsp-selection-report agency-wide access. The report ends at the HumanResource handoff receipt.
+      responses:
+        '200': {description: SQL-free confidential selection and appointment-process PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /rsp/reports/evidence-index/{selectionId}.pdf:
+    get:
+      operationId: generateFormalRspEvidenceIndex
+      description: Requires independent primehr.rsp-evidence-index-report agency-wide access. Returns metadata only, never evidence binaries, storage keys, or signed URLs.
+      responses:
+        '200': {description: SQL-free confidential process-evidence metadata index PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /rsp/reports/register:
+    get:
+      operationId: getRspRegister
+      description: Requires primehr.rsp-register-report agency-wide access. Paged by publications with an explicit event-date basis and optional authoritative workflow/organization filters; current revisions are the default and history is explicit.
+      parameters:
+        - {$ref: '#/components/parameters/RspReportFrom'}
+        - {$ref: '#/components/parameters/RspReportTo'}
+        - {$ref: '#/components/parameters/RspReportDateBasis'}
+        - {$ref: '#/components/parameters/RspReportHistory'}
+        - {$ref: '#/components/parameters/RspPublicationStatus'}
+        - {$ref: '#/components/parameters/RspProceedingStatus'}
+        - {$ref: '#/components/parameters/RspSelectionStatus'}
+        - {$ref: '#/components/parameters/RspSelectionOutcome'}
+        - {$ref: '#/components/parameters/RspJobPositionId'}
+        - {$ref: '#/components/parameters/RspPlantillaId'}
+        - {$ref: '#/components/parameters/RspAreaId'}
+        - {$ref: '#/components/parameters/RspBusinessUnitId'}
+        - {name: page, in: query, schema: {type: integer, minimum: 0, default: 0}}
+        - {name: size, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 25}}
+      responses: {'200': {description: Typed RSP register page}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /rsp/reports/register.pdf:
+    get:
+      operationId: generateRspRegisterPdf
+      description: Same filter, revision, permission, and page semantics as the typed register endpoint.
+      parameters:
+        - {$ref: '#/components/parameters/RspReportFrom'}
+        - {$ref: '#/components/parameters/RspReportTo'}
+        - {$ref: '#/components/parameters/RspReportDateBasis'}
+        - {$ref: '#/components/parameters/RspReportHistory'}
+        - {$ref: '#/components/parameters/RspPublicationStatus'}
+        - {$ref: '#/components/parameters/RspProceedingStatus'}
+        - {$ref: '#/components/parameters/RspSelectionStatus'}
+        - {$ref: '#/components/parameters/RspSelectionOutcome'}
+        - {$ref: '#/components/parameters/RspJobPositionId'}
+        - {$ref: '#/components/parameters/RspPlantillaId'}
+        - {$ref: '#/components/parameters/RspAreaId'}
+        - {$ref: '#/components/parameters/RspBusinessUnitId'}
+      responses: {'200': {description: SQL-free RSP register PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /rsp/reports/process-analytics:
+    get:
+      operationId: getRspProcessAnalytics
+      description: Requires primehr.rsp-process-analytics agency-wide access. Aggregate funnel, controlled reason/channel/outcome counts, and documented durations for the exact filter cohort; no demographic inference, candidate ranking, quota, or automated recommendation.
+      parameters:
+        - {$ref: '#/components/parameters/RspReportFrom'}
+        - {$ref: '#/components/parameters/RspReportTo'}
+        - {$ref: '#/components/parameters/RspReportDateBasis'}
+        - {$ref: '#/components/parameters/RspReportHistory'}
+        - {$ref: '#/components/parameters/RspPublicationStatus'}
+        - {$ref: '#/components/parameters/RspProceedingStatus'}
+        - {$ref: '#/components/parameters/RspSelectionStatus'}
+        - {$ref: '#/components/parameters/RspSelectionOutcome'}
+        - {$ref: '#/components/parameters/RspJobPositionId'}
+        - {$ref: '#/components/parameters/RspPlantillaId'}
+        - {$ref: '#/components/parameters/RspAreaId'}
+        - {$ref: '#/components/parameters/RspBusinessUnitId'}
+      responses: {'200': {description: Typed documented metrics}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /rsp/reports/process-analytics.pdf:
+    get:
+      operationId: generateRspProcessAnalyticsPdf
+      description: PDF rendering of the same documented, current-revision, non-demographic metrics.
+      parameters:
+        - {$ref: '#/components/parameters/RspReportFrom'}
+        - {$ref: '#/components/parameters/RspReportTo'}
+        - {$ref: '#/components/parameters/RspReportDateBasis'}
+        - {$ref: '#/components/parameters/RspReportHistory'}
+        - {$ref: '#/components/parameters/RspPublicationStatus'}
+        - {$ref: '#/components/parameters/RspProceedingStatus'}
+        - {$ref: '#/components/parameters/RspSelectionStatus'}
+        - {$ref: '#/components/parameters/RspSelectionOutcome'}
+        - {$ref: '#/components/parameters/RspJobPositionId'}
+        - {$ref: '#/components/parameters/RspPlantillaId'}
+        - {$ref: '#/components/parameters/RspAreaId'}
+        - {$ref: '#/components/parameters/RspBusinessUnitId'}
+      responses: {'200': {description: SQL-free RSP process analytics PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}}
   /admin/assessment-cycles:
     get: {operationId: listAssessmentCycles, responses: {'200': {description: DRAFT assessment-cycle page}}}
     post: {operationId: createAssessmentCycle, responses: {'201': {description: DRAFT cycle created}}}
@@ -738,6 +956,161 @@ paths:
     post: {operationId: cancelVacancyPublication, responses: {'200': {description: Approved or published publication cancelled with reason}, '409': {$ref: '#/components/responses/Conflict'}}}
   /rsp/vacancy-publications/{publicationId}/close:
     post: {operationId: closeVacancyPublication, responses: {'200': {description: Published publication closed}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/policies:
+    get: {operationId: listPerformancePolicies, responses: {'200': {description: Agency policy version history, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/PerformancePolicyResponse'}}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createPerformancePolicy, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformancePolicyInput'}}}}, responses: {'201': {description: Draft policy created, content: {application/json: {schema: {$ref: '#/components/schemas/PerformancePolicyResponse'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/policies/effective:
+    get:
+      operationId: getEffectivePerformancePolicy
+      parameters: [{name: on, in: query, required: true, schema: {type: string, format: date}}]
+      responses: {'200': {description: Exact effective published policy, content: {application/json: {schema: {$ref: '#/components/schemas/PerformancePolicyResponse'}}}}, '404': {$ref: '#/components/responses/NotFound'}}
+  /performance-management/policies/{policyId}:
+    parameters: [{name: policyId, in: path, required: true, schema: {type: string, maxLength: 36}}]
+    get: {operationId: getPerformancePolicyVersion, responses: {'200': {description: Policy version, content: {application/json: {schema: {$ref: '#/components/schemas/PerformancePolicyResponse'}}}}, '404': {$ref: '#/components/responses/NotFound'}}}
+    put: {operationId: updatePerformancePolicyDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformancePolicyInput'}}}}, responses: {'200': {description: Draft updated, content: {application/json: {schema: {$ref: '#/components/schemas/PerformancePolicyResponse'}}}}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/policies/{policyId}/publish:
+    post: {operationId: publishPerformancePolicy, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformancePolicyPublish'}}}}, responses: {'200': {description: Immutable policy published}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/policies/{policyId}/revisions:
+    post: {operationId: createPerformancePolicyRevision, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceVersionTransition'}}}}, responses: {'201': {description: Successor draft created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/policies/{policyId}/retire:
+    post: {operationId: retirePerformancePolicy, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceVersionTransition'}}}}, responses: {'200': {description: Policy retired without deletion}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/cycles:
+    get: {operationId: listPerformanceCycles, responses: {'200': {description: Paged agency cycles, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCyclePage'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createPerformanceCycle, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCycleInput'}}}}, responses: {'201': {description: Draft cycle created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/cycles/{cycleId}:
+    parameters: [{name: cycleId, in: path, required: true, schema: {type: string, maxLength: 36}}]
+    get: {operationId: getPerformanceCycle, responses: {'200': {description: Cycle with ordered calendar}, '404': {$ref: '#/components/responses/NotFound'}}}
+    put: {operationId: updatePerformanceCycleDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCycleInput'}}}}, responses: {'200': {description: Draft cycle updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/cycles/{cycleId}/milestones:
+    put: {operationId: replacePerformanceCycleCalendar, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceMilestonesInput'}}}}, responses: {'200': {description: Draft calendar atomically replaced}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/cycles/{cycleId}/open:
+    post: {operationId: openPerformanceCycle, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCycleTransition'}}}}, responses: {'200': {description: Valid cycle opened}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/cycles/{cycleId}/close:
+    post: {operationId: closePerformanceCycle, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCycleTransition'}}}}, responses: {'200': {description: Open cycle closed}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/cycles/{cycleId}/cancel:
+    post: {operationId: cancelPerformanceCycle, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCycleTransition'}}}}, responses: {'200': {description: Draft or open cycle cancelled without deletion}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/pmts:
+    get: {operationId: listPerformanceManagementTeams, responses: {'200': {description: Paged PMT history, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceManagementTeamPage'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createPerformanceManagementTeam, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceManagementTeamInput'}}}}, responses: {'201': {description: PMT draft created after active-employment validation, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceManagementTeamResponse'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '503': {$ref: '#/components/responses/HumanResourceUnavailable'}}}
+  /performance-management/pmts/{pmtId}:
+    parameters: [{name: pmtId, in: path, required: true, schema: {type: string, maxLength: 36}}]
+    get: {operationId: getPerformanceManagementTeam, responses: {'200': {description: PMT and effective-dated roster, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceManagementTeamResponse'}}}}, '404': {$ref: '#/components/responses/NotFound'}}}
+    put: {operationId: updatePerformanceManagementTeamDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceManagementTeamInput'}}}}, responses: {'200': {description: PMT draft updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/pmts/{pmtId}/members:
+    put: {operationId: replacePerformanceManagementTeamMembers, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceManagementTeamMembersInput'}}}}, responses: {'200': {description: Draft roster replaced after active-employment validation}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/pmts/{pmtId}/activate:
+    post: {operationId: activatePerformanceManagementTeam, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceManagementTeamTransition'}}}}, responses: {'200': {description: Governed PMT activated}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/HumanResourceUnavailable'}}}
+  /performance-management/pmts/{pmtId}/deactivate:
+    post: {operationId: deactivatePerformanceManagementTeam, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceManagementTeamTransition'}}}}, responses: {'200': {description: PMT deactivated with history retained}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/rating-scales:
+    get: {operationId: listPerformanceRatingScales, responses: {'200': {description: Agency rating-scale version history}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: createPerformanceRatingScale, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceRatingScaleInput'}}}}, responses: {'201': {description: Rating-scale draft created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/rating-scales/{versionId}:
+    parameters: [{name: versionId, in: path, required: true, schema: {type: string, maxLength: 36}}]
+    get: {operationId: getPerformanceRatingScale, responses: {'200': {description: Exact rating-scale version}, '404': {$ref: '#/components/responses/NotFound'}}}
+    put: {operationId: updatePerformanceRatingScaleDraft, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceRatingScaleInput'}}}}, responses: {'200': {description: Draft updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/rating-scales/{versionId}/bands:
+    put: {operationId: replacePerformanceRatingBands, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceRatingBandsInput'}}}}, responses: {'200': {description: Ordered bands atomically replaced}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/rating-scales/{versionId}/revisions:
+    post: {operationId: createPerformanceRatingScaleRevision, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceVersionTransition'}}}}, responses: {'201': {description: Successor draft and bands copied}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/rating-scales/{versionId}/publish:
+    post: {operationId: publishPerformanceRatingScale, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceRatingScalePublish'}}}}, responses: {'200': {description: Immutable rating-scale version published}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/rating-scales/{versionId}/retire:
+    post: {operationId: retirePerformanceRatingScale, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceVersionTransition'}}}}, responses: {'200': {description: Rating-scale version retired without deletion}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/rating-scales/{versionId}/preview:
+    post: {operationId: previewPerformanceRatingScale, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceRatingPreviewInput'}}}}, responses: {'200': {description: Deterministic non-persistent definition preview}, '400': {$ref: '#/components/responses/BadRequest'}}}
+  /performance-management/success-indicators:
+    get: {operationId: listPerformanceSuccessIndicators, responses: {'200': {description: Agency success-indicator version history}}}
+    post: {operationId: createPerformanceSuccessIndicator, responses: {'201': {description: Draft success indicator created}}}
+  /performance-management/success-indicators/{versionId}:
+    get: {operationId: getPerformanceSuccessIndicator, responses: {'200': {description: Exact success-indicator version}}}
+    put: {operationId: updatePerformanceSuccessIndicator, responses: {'200': {description: Draft metadata updated}}}
+  /performance-management/success-indicators/{versionId}/dimensions:
+    put: {operationId: replacePerformanceSuccessIndicatorDimensions, responses: {'200': {description: Weighted dimensions and complete band rubrics replaced atomically}}}
+  /performance-management/success-indicators/{versionId}/revisions:
+    post: {operationId: createPerformanceSuccessIndicatorRevision, responses: {'201': {description: Successor draft created}}}
+  /performance-management/success-indicators/{versionId}/publish:
+    post: {operationId: publishPerformanceSuccessIndicator, responses: {'200': {description: Immutable version published}}}
+  /performance-management/success-indicators/{versionId}/retire:
+    post: {operationId: retirePerformanceSuccessIndicator, responses: {'200': {description: Version retired without deletion}}}
+  /performance-management/success-indicators/{versionId}/preview:
+    post: {operationId: previewPerformanceSuccessIndicator, responses: {'200': {description: Weighted non-persistent definition preview}}}
+  /performance-management/templates:
+    get: {operationId: listPerformanceTemplates, responses: {'200': {description: Agency template version history}}}
+    post: {operationId: createPerformanceTemplate, responses: {'201': {description: Draft template created}}}
+  /performance-management/templates/{versionId}:
+    get: {operationId: getPerformanceTemplate, responses: {'200': {description: Exact template version}}}
+    put: {operationId: updatePerformanceTemplate, responses: {'200': {description: Draft metadata updated}}}
+  /performance-management/templates/{versionId}/structure:
+    put: {operationId: replacePerformanceTemplateStructure, responses: {'200': {description: Sections and exact indicator-version items replaced atomically}}}
+  /performance-management/templates/{versionId}/revisions:
+    post: {operationId: createPerformanceTemplateRevision, responses: {'201': {description: Successor draft created}}}
+  /performance-management/templates/{versionId}/publish:
+    post: {operationId: publishPerformanceTemplate, responses: {'200': {description: Ready immutable template published}}}
+  /performance-management/templates/{versionId}/retire:
+    post: {operationId: retirePerformanceTemplate, responses: {'200': {description: Template retired without deletion}}}
+  /performance-management/templates/{versionId}/readiness:
+    get: {operationId: getPerformanceTemplateReadiness, responses: {'200': {description: Publication readiness diagnostics}}}
+  /performance-management/templates/{versionId}/preview:
+    post: {operationId: previewPerformanceTemplate, responses: {'200': {description: Non-persistent section and overall weighted preview}}}
+  /performance-management/objectives:
+    get: {operationId: listPerformanceObjectives, responses: {'200': {description: Objective definition versions}}}
+    post: {operationId: createPerformanceObjective, responses: {'201': {description: Draft objective created}}}
+  /performance-management/objectives/{versionId}:
+    get: {operationId: getPerformanceObjective, responses: {'200': {description: Exact objective version}}}
+    put: {operationId: updatePerformanceObjective, responses: {'200': {description: Draft objective updated}}}
+  /performance-management/objectives/{versionId}/revisions:
+    post: {operationId: createPerformanceObjectiveRevision, responses: {'201': {description: Successor draft created}}}
+  /performance-management/objectives/{versionId}/publish:
+    post: {operationId: publishPerformanceObjective, responses: {'200': {description: Objective published after source and hierarchy validation}}}
+  /performance-management/objectives/{versionId}/retire:
+    post: {operationId: retirePerformanceObjective, responses: {'200': {description: Objective retired}}}
+  /performance-management/objectives/{versionId}/readiness:
+    get: {operationId: getPerformanceObjectiveReadiness, responses: {'200': {description: Publication readiness}}}
+  /performance-management/plan-assignments:
+    get: {operationId: listPerformancePlanAssignments, responses: {'200': {description: Cycle plan assignments}}}
+    post: {operationId: createPerformancePlanAssignment, responses: {'201': {description: Draft assignment created}}}
+  /performance-management/plan-assignments/{assignmentId}:
+    get: {operationId: getPerformancePlanAssignment, responses: {'200': {description: Exact plan assignment}}}
+    put: {operationId: updatePerformancePlanAssignment, responses: {'200': {description: Draft assignment refreshed}}}
+  /performance-management/plan-assignments/{assignmentId}/activate:
+    post: {operationId: activatePerformancePlanAssignment, responses: {'200': {description: Assignment activated after authoritative source revalidation}}}
+  /performance-management/plan-assignments/{assignmentId}/retire:
+    post: {operationId: retirePerformancePlanAssignment, responses: {'200': {description: Assignment retired}}}
+  /performance-management/plan-assignments/{assignmentId}/readiness:
+    get: {operationId: getPerformancePlanAssignmentReadiness, responses: {'200': {description: Activation readiness}}}
+  /performance-management/commitments:
+    get: {operationId: listPerformanceCommitments, responses: {'200': {description: Scope-filtered commitment versions}}}
+  /performance-management/commitments/from-assignment/{assignmentId}:
+    post: {operationId: generatePerformanceCommitment, responses: {'201': {description: Idempotently generated commitment draft}}}
+  /performance-management/commitments/{versionId}:
+    get: {operationId: getPerformanceCommitment, responses: {'200': {description: Exact scope-authorized commitment snapshot}}}
+  /performance-management/commitments/{versionId}/targets:
+    put: {operationId: replacePerformanceCommitmentTargets, responses: {'200': {description: Atomic structured target replacement}}}
+  /performance-management/commitments/{versionId}/cascades:
+    put: {operationId: replacePerformanceCommitmentCascades, responses: {'200': {description: Atomic exact-version cascade replacement}}}
+  /performance-management/commitments/{versionId}/readiness:
+    get: {operationId: getPerformanceCommitmentReadiness, responses: {'200': {description: Non-transitioning composition readiness}}}
+  /performance-management/commitments/{versionId}/workflow:
+    get: {operationId: getPerformanceCommitmentWorkflow, responses: {'200': {description: Scope-authorized route and action history}}}
+  /performance-management/commitments/{versionId}/submit:
+    post: {operationId: submitPerformanceCommitment, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentWorkflowCommand'}}}}, responses: {'200': {description: Submitted with an immutable approval-route snapshot}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/commitments/{versionId}/withdraw:
+    post: {operationId: withdrawPerformanceCommitment, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentWorkflowCommand'}}}}, responses: {'200': {description: Withdrawn before the first route decision}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/commitments/{versionId}/recommend:
+    post: {operationId: recommendPerformanceCommitment, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentWorkflowCommand'}}}}, responses: {'200': {description: Recommended by the exact current intermediate actor}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/commitments/{versionId}/return:
+    post: {operationId: returnPerformanceCommitment, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentWorkflowCommand'}}}}, responses: {'200': {description: Returned by the exact current route actor}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/commitments/{versionId}/approve:
+    post: {operationId: approvePerformanceCommitment, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentWorkflowCommand'}}}}, responses: {'200': {description: Finally approved by the exact final actor}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/commitments/{versionId}/reject:
+    post: {operationId: rejectPerformanceCommitment, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentWorkflowCommand'}}}}, responses: {'200': {description: Finally rejected by the exact final actor}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/commitments/{versionId}/amendments:
+    post: {operationId: createPerformanceCommitmentAmendment, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentAmendmentCommand'}}}}, responses: {'201': {description: Amendment draft successor of an approved version}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/commitments/{versionId}/void:
+    post: {operationId: voidPerformanceCommitment, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentWorkflowCommand'}}}}, responses: {'200': {description: Exceptionally voided without deleting history}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/commitments/{versionId}/route-rebase:
+    post: {operationId: rebasePerformanceCommitmentRoute, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentWorkflowCommand'}}}}, responses: {'200': {description: Rebased before the first route decision}, '409': {$ref: '#/components/responses/Conflict'}}}
 components:
   securitySchemes:
     bearerAuth:
@@ -768,6 +1141,18 @@ components:
     RequirementId: {name: requirementId, in: path, required: true, schema: {type: string, maxLength: 36}}
     AggregateType: {name: aggregateType, in: query, required: true, schema: {type: string}}
     AggregateId: {name: aggregateId, in: query, required: true, schema: {type: string, maxLength: 36}}
+    RspReportFrom: {name: from, in: query, required: true, schema: {type: string, format: date}}
+    RspReportTo: {name: to, in: query, required: true, schema: {type: string, format: date}}
+    RspReportDateBasis: {name: dateBasis, in: query, schema: {type: string, enum: [PUBLICATION_DATE, PUBLICATION_CLOSING_DATE, PROCEEDING_FINALIZATION_DATE, SELECTION_FINALIZATION_DATE, HANDOFF_ACKNOWLEDGMENT_DATE], default: PUBLICATION_CLOSING_DATE}}
+    RspReportHistory: {name: includeHistory, in: query, schema: {type: boolean, default: false}}
+    RspPublicationStatus: {name: publicationStatus, in: query, schema: {type: string, enum: [DRAFT, SUBMITTED, RETURNED, APPROVED, PUBLISHED, CLOSED, CANCELLED]}}
+    RspProceedingStatus: {name: proceedingStatus, in: query, schema: {type: string, enum: [DRAFT, OPEN, IN_ASSESSMENT, FOR_DELIBERATION, FINALIZED, CANCELLED]}}
+    RspSelectionStatus: {name: selectionStatus, in: query, schema: {type: string, enum: [DRAFT, SUBMITTED, RETURNED, APPROVED, FINALIZED, CANCELLED, SUPERSEDED]}}
+    RspSelectionOutcome: {name: outcome, in: query, schema: {type: string, enum: [SELECTED, NO_SELECTION, DEFERRED]}}
+    RspJobPositionId: {name: jobPositionId, in: query, schema: {type: integer, format: int64, minimum: 1}}
+    RspPlantillaId: {name: plantillaId, in: query, schema: {type: integer, format: int64, minimum: 1}}
+    RspAreaId: {name: areaId, in: query, description: Resolved to Business Units through the authenticated Administrative organization contract., schema: {type: integer, format: int64, minimum: 1}}
+    RspBusinessUnitId: {name: businessUnitId, in: query, schema: {type: integer, format: int64, minimum: 1}}
   requestBodies:
     CategoryDraft: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CategoryDraftRequest'}}}}
     ScaleDraft: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ScaleDraftRequest'}}}}
@@ -807,6 +1192,7 @@ components:
     Conflict: {description: Optimistic conflict or illegal lifecycle transition, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     AuthorizationUnavailable: {description: Administrative authorization could not be verified, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     PositionTargetUnavailable: {description: The authoritative Administrative position target could not be verified, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    HumanResourceUnavailable: {description: The authenticated authoritative HumanResource employee or active-employment contract could not be verified; the PMT mutation fails closed, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
     AdminRecord: {description: Agency-scoped administration record, content: {application/json: {schema: {$ref: '#/components/schemas/AdminRecord'}}}}
     AdminPage: {description: Page of agency-scoped administration records, content: {application/json: {schema: {$ref: '#/components/schemas/AdminPage'}}}}
     PositionProfileRecord: {description: Versioned position competency profile, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfile'}}}}
@@ -815,6 +1201,366 @@ components:
     PositionProfileComparison: {description: Exact-version requirement comparison, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfileComparison'}}}}
     AuditEventPage: {description: Page of append-only position-profile audit events, content: {application/json: {schema: {$ref: '#/components/schemas/AuditEventPage'}}}}
   schemas:
+    PerformanceCommitmentWorkflowCommand:
+      type: object
+      required: [recordVersion, contentRevision, lifecycleRevision, requestKey, overrideWindow]
+      properties:
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        contentRevision: {type: integer, minimum: 0}
+        lifecycleRevision: {type: integer, minimum: 0}
+        routeRevision: {type: integer, minimum: 1, nullable: true}
+        requestKey: {type: string, maxLength: 100}
+        reason: {type: string, maxLength: 2000, nullable: true}
+        overrideWindow: {type: boolean}
+        overrideMilestone: {type: string, maxLength: 80, nullable: true}
+    PerformanceCommitmentAmendmentCommand:
+      type: object
+      required: [recordVersion, requestKey, reason]
+      properties:
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        requestKey: {type: string, maxLength: 100}
+        reason: {type: string, maxLength: 2000}
+    PerformanceTemplateFormType: {type: string, enum: [OPCR, DPCR, IPCR, CUSTOM]}
+    PerformanceTemplateSectionType: {type: string, enum: [CORE, STRATEGIC, SUPPORT, OTHER]}
+    PerformanceTemplateStatus: {type: string, enum: [DRAFT, PUBLISHED, RETIRED]}
+    PerformanceTemplateInput: {type: object, required: [code, title, formType, policyVersionId, ratingScaleVersionId, formLabel, legalBasis]}
+    PerformanceTemplateItemInput: {type: object, required: [indicatorVersionId, weightPercent, required, displayOrder]}
+    PerformanceTemplateSectionInput: {type: object, required: [type, code, title, weightPercent, displayOrder, items]}
+    PerformanceTemplateStructureInput: {type: object, required: [recordVersion, sections]}
+    PerformanceTemplateReadiness: {type: object, required: [ready, errors]}
+    PerformanceTemplatePreviewInput: {type: object, required: [scores]}
+    PerformanceTemplatePreview: {type: object, required: [overallScore, ratingBandId, ratingLabel, sections, formula]}
+    PerformanceDimensionType: {type: string, enum: [QUALITY, EFFICIENCY, TIMELINESS, AGENCY_DEFINED]}
+    PerformanceRubricOperator: {type: string, enum: [LT, LTE, EQ, GTE, GT, BETWEEN, MANUAL_CRITERIA]}
+    PerformanceSuccessIndicatorStatus: {type: string, enum: [DRAFT, PUBLISHED, RETIRED]}
+    PerformanceDefinitionTransition: {type: object, required: [recordVersion, reason], properties: {recordVersion: {type: integer, format: int64}, reason: {type: string, maxLength: 1000}, effectiveFrom: {type: string, format: date, nullable: true}, effectiveTo: {type: string, format: date, nullable: true}}}
+    PerformanceSuccessIndicatorInput: {type: object, required: [code, title, outputDescription, keyResultArea, performanceIndicator, successStatement, policyVersionId, ratingScaleVersionId, measureType, unitOfMeasure, direction, requiresEvidence]}
+    PerformanceIndicatorLevelInput: {type: object, required: [ratingBandId, operator]}
+    PerformanceIndicatorDimensionInput: {type: object, required: [type, code, label, weightPercent, displayOrder, levels]}
+    PerformanceIndicatorDimensionsInput: {type: object, required: [recordVersion, dimensions]}
+    PerformanceSuccessIndicatorPreviewInput: {type: object, required: [actuals]}
+    PerformanceSuccessIndicatorPreview: {type: object, required: [indicatorScore, dimensions, formula]}
+    PerformanceMeasureType: {type: string, enum: [COUNT, NUMBER, PERCENTAGE, CURRENCY, DURATION, DATE_MILESTONE, BOOLEAN, MANUAL_RUBRIC]}
+    PerformanceMeasureDirection: {type: string, enum: [HIGHER_IS_BETTER, LOWER_IS_BETTER, EXACT_TARGET, WITHIN_RANGE, MANUAL_RUBRIC]}
+    PerformanceDimensionScoreSource: {type: string, enum: [THRESHOLD_BAND, MANUAL_RUBRIC]}
+    PerformanceRoundingMode: {type: string, enum: [HALF_UP, HALF_EVEN, DOWN]}
+    PerformanceRatingScaleStatus: {type: string, enum: [DRAFT, PUBLISHED, RETIRED]}
+    PerformanceRatingScaleInput:
+      type: object
+      required: [code, title, legalBasis, policyVersionId, minimumScore, maximumScore, roundingScale, roundingMode, measureType, direction, dimensionScoreSource]
+      properties:
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        legalBasis: {type: string, maxLength: 1000}
+        policyVersionId: {type: string, maxLength: 36}
+        minimumScore: {type: number}
+        maximumScore: {type: number}
+        roundingScale: {type: integer, minimum: 0, maximum: 6}
+        roundingMode: {$ref: '#/components/schemas/PerformanceRoundingMode'}
+        measureType: {$ref: '#/components/schemas/PerformanceMeasureType'}
+        direction: {$ref: '#/components/schemas/PerformanceMeasureDirection'}
+        dimensionScoreSource: {$ref: '#/components/schemas/PerformanceDimensionScoreSource'}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    PerformanceRatingBandInput:
+      type: object
+      required: [code, numericScore, label, lowerBound, upperBound, displayOrder]
+      properties:
+        code: {type: string, maxLength: 80}
+        numericScore: {type: number}
+        label: {type: string, maxLength: 200}
+        lowerBound: {type: number}
+        upperBound: {type: number}
+        displayOrder: {type: integer, minimum: 1}
+        guidance: {type: string, maxLength: 2000, nullable: true}
+    PerformanceRatingBandsInput:
+      type: object
+      required: [recordVersion, bands]
+      properties:
+        recordVersion: {type: integer, format: int64}
+        bands: {type: array, minItems: 1, items: {$ref: '#/components/schemas/PerformanceRatingBandInput'}}
+    PerformanceRatingScalePublish:
+      type: object
+      required: [recordVersion, effectiveFrom, reason]
+      properties:
+        recordVersion: {type: integer, format: int64}
+        effectiveFrom: {type: string, format: date}
+        effectiveTo: {type: string, format: date, nullable: true}
+        reason: {type: string, maxLength: 1000}
+    PerformanceRatingPreviewInput:
+      type: object
+      required: [sampleValue]
+      properties: {sampleValue: {type: number}}
+    PerformanceRatingPreview:
+      type: object
+      required: [inputValue, roundedScore, roundingUnit, matchedBandCode, matchedBandLabel, numericScore, calculation]
+      properties:
+        inputValue: {type: number}
+        roundedScore: {type: number}
+        roundingUnit: {type: number}
+        matchedBandCode: {type: string, maxLength: 80}
+        matchedBandLabel: {type: string, maxLength: 200}
+        numericScore: {type: number}
+        calculation: {type: string}
+    PerformancePolicyFrequency: {type: string, enum: [ANNUAL, SEMI_ANNUAL, QUARTERLY, CUSTOM]}
+    PerformancePolicyStatus: {type: string, enum: [DRAFT, PUBLISHED, RETIRED]}
+    PerformancePolicyInput:
+      type: object
+      required: [code, title, legalBasis, displayLabel, cycleFrequency]
+      properties:
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        legalBasis: {type: string, maxLength: 1000}
+        displayLabel: {type: string, maxLength: 120}
+        cycleFrequency: {$ref: '#/components/schemas/PerformancePolicyFrequency'}
+        requiresMidCycleReview: {type: boolean}
+        requiresSelfAssessment: {type: boolean}
+        requiresPmtCalibration: {type: boolean}
+        requiresAcknowledgment: {type: boolean}
+        requiresAppeal: {type: boolean}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    PerformancePolicyPublish:
+      type: object
+      required: [recordVersion, effectiveFrom, reason]
+      properties:
+        recordVersion: {type: integer, format: int64}
+        effectiveFrom: {type: string, format: date}
+        effectiveTo: {type: string, format: date, nullable: true}
+        reason: {type: string, maxLength: 1000}
+    PerformanceVersionTransition:
+      type: object
+      required: [recordVersion, reason]
+      properties: {recordVersion: {type: integer, format: int64}, reason: {type: string, maxLength: 1000}}
+    PerformancePolicyResponse:
+      type: object
+      required: [id, policyId, code, title, legalBasis, displayLabel, cycleFrequency, definitionVersion, status, requiresMidCycleReview, requiresSelfAssessment, requiresPmtCalibration, requiresAcknowledgment, requiresAppeal, recordVersion]
+      properties:
+        id: {type: string, maxLength: 36}
+        policyId: {type: string, maxLength: 36}
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        legalBasis: {type: string, maxLength: 1000}
+        displayLabel: {type: string, maxLength: 120}
+        cycleFrequency: {$ref: '#/components/schemas/PerformancePolicyFrequency'}
+        definitionVersion: {type: integer, minimum: 1}
+        supersedesId: {type: string, maxLength: 36, nullable: true}
+        status: {$ref: '#/components/schemas/PerformancePolicyStatus'}
+        effectiveFrom: {type: string, format: date, nullable: true}
+        effectiveTo: {type: string, format: date, nullable: true}
+        publishedBy: {type: string, nullable: true}
+        publishedAt: {type: string, format: date-time, nullable: true}
+        retiredBy: {type: string, nullable: true}
+        retiredAt: {type: string, format: date-time, nullable: true}
+        retirementReason: {type: string, maxLength: 1000, nullable: true}
+        requiresMidCycleReview: {type: boolean}
+        requiresSelfAssessment: {type: boolean}
+        requiresPmtCalibration: {type: boolean}
+        requiresAcknowledgment: {type: boolean}
+        requiresAppeal: {type: boolean}
+        recordVersion: {type: integer, format: int64}
+    PerformanceCycleStatus: {type: string, enum: [DRAFT, OPEN, CLOSED, CANCELLED]}
+    PerformanceMilestoneType: {type: string, enum: [PLANNING_OPEN, PLANNING_DUE, APPROVAL_DUE, MONITORING_START, MID_CYCLE_REVIEW, ACCOMPLISHMENT_DUE, RATING_DUE, CALIBRATION_DUE, FINALIZATION_DUE, ACKNOWLEDGMENT_DUE, APPEAL_DUE, CUSTOM]}
+    PerformanceCycleInput:
+      type: object
+      required: [code, name, periodStart, periodEnd, policyVersionId, timezone]
+      properties:
+        code: {type: string, maxLength: 80}
+        name: {type: string, maxLength: 200}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        policyVersionId: {type: string, maxLength: 36}
+        timezone: {type: string, maxLength: 60}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    PerformanceMilestoneInput:
+      type: object
+      required: [type, key, label, startsAt, required, displayOrder, postCycleCloseout]
+      properties:
+        type: {$ref: '#/components/schemas/PerformanceMilestoneType'}
+        key: {type: string, maxLength: 120}
+        label: {type: string, maxLength: 200}
+        startsAt: {type: string, format: date-time}
+        endsAt: {type: string, format: date-time, nullable: true}
+        required: {type: boolean}
+        displayOrder: {type: integer, minimum: 1}
+        instructions: {type: string, maxLength: 2000, nullable: true}
+        postCycleCloseout: {type: boolean}
+    PerformanceMilestonesInput:
+      type: object
+      required: [recordVersion, milestones]
+      properties:
+        recordVersion: {type: integer, format: int64}
+        milestones: {type: array, minItems: 1, items: {$ref: '#/components/schemas/PerformanceMilestoneInput'}}
+    PerformanceCycleTransition:
+      type: object
+      required: [recordVersion, reason]
+      properties: {recordVersion: {type: integer, format: int64}, reason: {type: string, maxLength: 1000}}
+    PerformanceMilestoneResponse:
+      allOf:
+        - {$ref: '#/components/schemas/PerformanceMilestoneInput'}
+        - type: object
+          required: [id]
+          properties: {id: {type: string, maxLength: 36}}
+    PerformanceCycleResponse:
+      type: object
+      required: [id, code, name, periodStart, periodEnd, policyVersionId, timezone, coverageScope, status, calendarRevision, recordVersion, milestones]
+      properties:
+        id: {type: string, maxLength: 36}
+        code: {type: string, maxLength: 80}
+        name: {type: string, maxLength: 200}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        policyVersionId: {type: string, maxLength: 36}
+        timezone: {type: string, maxLength: 60}
+        coverageScope: {type: string, enum: [AGENCY_WIDE]}
+        status: {$ref: '#/components/schemas/PerformanceCycleStatus'}
+        calendarRevision: {type: integer, minimum: 0}
+        transitionReason: {type: string, maxLength: 1000, nullable: true}
+        recordVersion: {type: integer, format: int64}
+        milestones: {type: array, items: {$ref: '#/components/schemas/PerformanceMilestoneResponse'}}
+    PerformanceCyclePage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content: {type: array, items: {$ref: '#/components/schemas/PerformanceCycleResponse'}}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1}
+        totalElements: {type: integer, format: int64, minimum: 0}
+        totalPages: {type: integer, minimum: 0}
+        first: {type: boolean}
+        last: {type: boolean}
+    PerformanceManagementTeamStatus: {type: string, enum: [DRAFT, ACTIVE, INACTIVE]}
+    PerformanceManagementTeamRole: {type: string, enum: [CHAIRPERSON, VICE_CHAIRPERSON, SECRETARIAT, MEMBER, TECHNICAL_SUPPORT]}
+    PerformanceManagementTeamMemberInput:
+      type: object
+      required: [employeeNo, role, voting, effectiveFrom]
+      properties:
+        employeeNo: {type: string, maxLength: 100}
+        role: {$ref: '#/components/schemas/PerformanceManagementTeamRole'}
+        voting: {type: boolean}
+        effectiveFrom: {type: string, format: date}
+        effectiveTo: {type: string, format: date, nullable: true}
+        designationReference: {type: string, maxLength: 500, nullable: true}
+        remarks: {type: string, maxLength: 1000, nullable: true}
+    PerformanceManagementTeamInput:
+      type: object
+      required: [code, name, mandateReference, effectiveFrom, members]
+      properties:
+        code: {type: string, maxLength: 80}
+        name: {type: string, maxLength: 200}
+        mandateReference: {type: string, maxLength: 1000}
+        effectiveFrom: {type: string, format: date}
+        effectiveTo: {type: string, format: date, nullable: true}
+        members: {type: array, minItems: 1, items: {$ref: '#/components/schemas/PerformanceManagementTeamMemberInput'}}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    PerformanceManagementTeamMembersInput:
+      type: object
+      required: [recordVersion, members]
+      properties:
+        recordVersion: {type: integer, format: int64}
+        members: {type: array, minItems: 1, items: {$ref: '#/components/schemas/PerformanceManagementTeamMemberInput'}}
+    PerformanceManagementTeamTransition:
+      type: object
+      required: [recordVersion, reason]
+      properties: {recordVersion: {type: integer, format: int64}, reason: {type: string, maxLength: 1000}}
+    PerformanceManagementTeamMemberResponse:
+      type: object
+      required: [id, employeeId, employeeNo, employeeNameSnapshot, role, voting, effectiveFrom]
+      properties:
+        id: {type: string, maxLength: 36}
+        employeeId: {type: integer, format: int64}
+        employeeNo: {type: string, maxLength: 100}
+        employeeNameSnapshot: {type: string, maxLength: 300}
+        jobPositionIdSnapshot: {type: integer, format: int64, nullable: true}
+        plantillaIdSnapshot: {type: integer, format: int64, nullable: true}
+        role: {$ref: '#/components/schemas/PerformanceManagementTeamRole'}
+        voting: {type: boolean}
+        effectiveFrom: {type: string, format: date}
+        effectiveTo: {type: string, format: date, nullable: true}
+        designationReference: {type: string, maxLength: 500, nullable: true}
+        remarks: {type: string, maxLength: 1000, nullable: true}
+    PerformanceManagementTeamResponse:
+      type: object
+      required: [id, code, name, mandateReference, effectiveFrom, status, rosterRevision, recordVersion, members]
+      properties:
+        id: {type: string, maxLength: 36}
+        code: {type: string, maxLength: 80}
+        name: {type: string, maxLength: 200}
+        mandateReference: {type: string, maxLength: 1000}
+        effectiveFrom: {type: string, format: date}
+        effectiveTo: {type: string, format: date, nullable: true}
+        status: {$ref: '#/components/schemas/PerformanceManagementTeamStatus'}
+        rosterRevision: {type: integer, minimum: 0}
+        transitionReason: {type: string, maxLength: 1000, nullable: true}
+        recordVersion: {type: integer, format: int64}
+        members: {type: array, items: {$ref: '#/components/schemas/PerformanceManagementTeamMemberResponse'}}
+    PerformanceManagementTeamPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content: {type: array, items: {$ref: '#/components/schemas/PerformanceManagementTeamResponse'}}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1}
+        totalElements: {type: integer, format: int64, minimum: 0}
+        totalPages: {type: integer, minimum: 0}
+        first: {type: boolean}
+        last: {type: boolean}
+    SelectionOutcome:
+      type: string
+      enum: [SELECTED, NO_SELECTION, DEFERRED]
+    SelectionCaseStatus:
+      type: string
+      enum: [DRAFT, SUBMITTED, RETURNED, APPROVED, FINALIZED, CANCELLED, SUPERSEDED]
+    OfferResponseStatus:
+      type: string
+      enum: [PENDING, ACCEPTED, DECLINED, EXPIRED]
+    AppointmentHandoffStatus:
+      type: string
+      enum: [DRAFT, READY, SENT, ACKNOWLEDGED, RETRYABLE_FAILURE, CANCELLED, CLOSED]
+    AppointmentHandoffCommand:
+      type: object
+      required: [recordVersion]
+      properties:
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    AppointmentHandoffAttempt:
+      type: object
+      required: [attemptNumber, attemptedAt, endpointIdentity, resultCategory, payloadFingerprint]
+      properties:
+        attemptNumber: {type: integer, minimum: 1}
+        attemptedAt: {type: string, format: date-time}
+        endpointIdentity: {type: string}
+        resultCategory: {type: string}
+        httpStatus: {type: integer, nullable: true}
+        safeDiagnostic: {type: string, nullable: true}
+        payloadFingerprint: {type: string, minLength: 64, maxLength: 64}
+    CreateSelectionRequest:
+      type: object
+      required: [proceedingId, assignedApproverEmployeeNo, offerResponseDeadline, selectedSafeText, nonSelectedSafeText]
+      properties:
+        proceedingId: {type: string}
+        assignedApproverEmployeeNo: {type: string}
+        offerResponseDeadline: {type: string, format: date-time}
+        selectedSafeText: {type: string, maxLength: 2000}
+        nonSelectedSafeText: {type: string, maxLength: 2000}
+    DecideSelectionRequest:
+      type: object
+      required: [outcome, reason, recordVersion]
+      properties:
+        outcome: {$ref: '#/components/schemas/SelectionOutcome'}
+        selectedCandidateId: {type: string, nullable: true}
+        reason: {type: string, maxLength: 3000}
+        varianceBasis: {type: string, maxLength: 1000, nullable: true}
+        varianceReason: {type: string, maxLength: 3000, nullable: true}
+        reviewDate: {type: string, format: date, nullable: true}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+    ApplicantOfferResponseRequest:
+      type: object
+      required: [response, idempotencyKey]
+      properties:
+        response: {type: string, enum: [ACCEPTED, DECLINED]}
+        idempotencyKey: {type: string, maxLength: 100}
+        comment: {type: string, maxLength: 1000, nullable: true}
     ScreeningCriterionCategory: {type: string, enum: [REQUIRED_DOCUMENT, EDUCATION, TRAINING, EXPERIENCE, ELIGIBILITY, LICENSE, COMPETENCY_PREREQUISITE, SCREENING_QUESTION]}
     ScreeningEvaluationMode: {type: string, enum: [PRESENCE, NUMERIC_THRESHOLD, DATE_OR_DURATION, MANUAL_REVIEW, DECLARATION]}
     ScreeningPolicyStatus: {type: string, enum: [DRAFT, PUBLISHED, SUPERSEDED]}

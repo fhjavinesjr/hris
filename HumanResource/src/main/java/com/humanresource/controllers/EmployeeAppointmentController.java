@@ -4,6 +4,7 @@ import com.hris.common.dtos.MetadataResponse;
 import com.humanresource.dtos.EmployeeAppointmentDTO;
 import com.humanresource.services.EmployeeAppointmentService;
 import com.humanresource.services.EmployeeAppointmentReportService;
+import com.humanresource.onboarding.HrmPermissionGuard;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,12 +21,15 @@ public class EmployeeAppointmentController {
 
     private final EmployeeAppointmentService employeeAppointmentService;
     private final EmployeeAppointmentReportService employeeAppointmentReportService;
+    private final HrmPermissionGuard permissions;
 
     public EmployeeAppointmentController(
             EmployeeAppointmentService employeeAppointmentService,
-            EmployeeAppointmentReportService employeeAppointmentReportService) {
+            EmployeeAppointmentReportService employeeAppointmentReportService,
+            HrmPermissionGuard permissions) {
         this.employeeAppointmentService = employeeAppointmentService;
         this.employeeAppointmentReportService = employeeAppointmentReportService;
+        this.permissions = permissions;
     }
 
     @PostMapping("/employeeAppointment/create")
@@ -109,13 +113,17 @@ public class EmployeeAppointmentController {
     @GetMapping(value = "/employeeAppointment/report/{employeeAppointmentId}", produces = MediaType.APPLICATION_PDF_VALUE)
     public void generatePersonnelActionReport(
             @PathVariable Long employeeAppointmentId,
+            @RequestHeader("Authorization") String token,
             HttpServletResponse response) throws Exception {
+        permissions.require(token, "hrm.appointment-report", HrmPermissionGuard.Action.ACCESS);
         String fileName = "PersonnelAction_" + employeeAppointmentId + ".pdf";
         String encodedFileName = URLEncoder
                 .encode(fileName, StandardCharsets.UTF_8)
                 .replace("+", "%20");
 
         response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("X-Content-Type-Options", "nosniff");
         response.setHeader(
                 "Content-Disposition",
                 "inline; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName);

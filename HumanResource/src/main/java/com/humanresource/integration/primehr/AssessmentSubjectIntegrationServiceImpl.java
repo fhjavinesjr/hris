@@ -50,6 +50,15 @@ public class AssessmentSubjectIntegrationServiceImpl implements AssessmentSubjec
         return response(row, Instant.now());
     }
 
+    @Override
+    public AssessmentSubjectResponse getByEmployeeNo(String employeeNo) {
+        if (employeeNo == null || employeeNo.isBlank()) throw new IllegalArgumentException("employeeNo is required");
+        AssessmentSubjectRow row = employees.findPrimeHrAssessmentSubjectByEmployeeNo(employeeNo.trim(), LocalDateTime.now())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Eligible active performance participant was not found"));
+        return response(row, Instant.now());
+    }
+
     private static AssessmentSubjectResponse response(AssessmentSubjectRow row, Instant fetchedAt) {
         String displayName = Stream.of(row.firstname(), row.lastname(), row.suffix())
                 .filter(value -> value != null && !value.isBlank()).map(String::trim)

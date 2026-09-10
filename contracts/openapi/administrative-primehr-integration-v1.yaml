@@ -1,11 +1,19 @@
 openapi: 3.0.3
 info:
   title: ISOFT HRIS Administrative to PrimeHR Integration API
-  version: 1.0.0-phase-2.1
-  description: Authenticated read-only projection of authoritative Job Position and Plantilla masters for position competency profiles. Existing master CRUD contracts are unchanged.
+  version: 1.1.0-phase-6c.1
+  description: Authenticated read-only projections of authoritative Administrative organization, personnel membership, and approval-route sources. Existing master CRUD contracts are unchanged.
 security:
   - bearerAuth: []
 paths:
+  /api/integration/v1/primehr/performance/organization-targets:
+    get: {operationId: listPrimeHrPerformanceOrganizations, responses: {'200': {description: Paged Area or Business Unit targets}, '403': {description: Agency-wide feature access required}}}
+  /api/integration/v1/primehr/performance/organization-targets/{type}/{id}:
+    get: {operationId: getPrimeHrPerformanceOrganization, responses: {'200': {description: Exact authoritative organization snapshot}, '404': {description: Organization not found}}}
+  /api/integration/v1/primehr/performance/personnel-membership/{employeeId}:
+    get: {operationId: getPrimeHrPerformancePersonnelMembership, responses: {'200': {description: Exact employee organizational membership}, '409': {description: Missing or duplicate membership}}}
+  /api/integration/v1/primehr/performance/approval-routes:
+    get: {operationId: getPrimeHrPerformanceApprovalRoute, responses: {'200': {description: Ordered contiguous approval route}, '409': {description: Invalid or incomplete route}}}
   /api/integration/v1/primehr/position-targets:
     get:
       operationId: listPrimeHrPositionTargets

@@ -51,7 +51,8 @@ public class PrimeHrSecurityConfiguration {
                         .requestMatchers(HttpMethod.PATCH, "/api/primehr/v1/admin/**").denyAll()
                         .requestMatchers("/api/primehr/v1/admin/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/primehr/v1/competency-gaps/**",
-                                "/api/primehr/v1/ld-referrals/**", "/api/primehr/v1/rsp/**").authenticated()
+                                "/api/primehr/v1/ld-referrals/**", "/api/primehr/v1/rsp/**",
+                                "/api/primehr/v1/committees/**", "/api/primehr/v1/performance-management/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/primehr/v1/**")
                         .hasAuthority(PrimeHrAuthorities.COMPETENCY_READ)
                         .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/assessments/**").authenticated()
@@ -62,6 +63,10 @@ public class PrimeHrSecurityConfiguration {
                         .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/ld-referrals/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/primehr/v1/rsp/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/rsp/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/primehr/v1/performance-management/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/performance-management/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/primehr/v1/committees/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/committees/**").authenticated()
                         .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, exception) -> writeSecurityError(

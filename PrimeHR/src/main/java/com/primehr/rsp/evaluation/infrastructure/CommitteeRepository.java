@@ -1,0 +1,3 @@
+package com.primehr.rsp.evaluation.infrastructure;
+import com.primehr.rsp.evaluation.domain.Committee; import org.springframework.data.domain.*; import org.springframework.data.jpa.repository.*; import java.util.*;
+public interface CommitteeRepository extends JpaRepository<Committee,String>{Optional<Committee> findByIdAndAgencyId(String id,String agency);Page<Committee> findByAgencyId(String agency,Pageable pageable);boolean existsByAgencyIdAndNormalizedCodeAndDefinitionVersion(String agency,String code,int version);List<Committee> findByAgencyIdAndNormalizedCodeOrderByDefinitionVersion(String agency,String code);}

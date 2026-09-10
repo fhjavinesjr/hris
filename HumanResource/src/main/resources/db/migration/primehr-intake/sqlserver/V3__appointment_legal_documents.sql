@@ -1,0 +1,57 @@
+CREATE TABLE [${hrmSchema}].hrm_appointment_document (
+ id VARCHAR(36) PRIMARY KEY,
+ agency_id VARCHAR(64) NOT NULL,
+ appointment_id BIGINT NOT NULL REFERENCES [${hrmSchema}].employeeappointment(employeeAppointmentId),
+ onboarding_case_id VARCHAR(36) NOT NULL REFERENCES [${hrmSchema}].hrm_onboarding_case(id),
+ document_kind VARCHAR(30) NOT NULL,
+ status VARCHAR(20) NOT NULL,
+ official_template_code VARCHAR(80) NOT NULL,
+ official_template_version VARCHAR(40) NOT NULL,
+ official_template_checksum VARCHAR(64) NOT NULL,
+ source_snapshot NVARCHAR(MAX) NULL,
+ source_fingerprint VARCHAR(64) NULL,
+ oath_date DATE NULL,
+ assumption_date DATE NULL,
+ issue_date DATE NOT NULL,
+ venue NVARCHAR(300) NOT NULL,
+ administering_employee_id BIGINT NULL REFERENCES [${hrmSchema}].employee(employeeId),
+ administering_name NVARCHAR(300) NULL,
+ administering_position NVARCHAR(300) NULL,
+ certifying_employee_id BIGINT NULL REFERENCES [${hrmSchema}].employee(employeeId),
+ certifying_name NVARCHAR(300) NULL,
+ certifying_position NVARCHAR(300) NULL,
+ attesting_employee_id BIGINT NULL REFERENCES [${hrmSchema}].employee(employeeId),
+ attesting_name NVARCHAR(300) NULL,
+ attesting_position NVARCHAR(300) NULL,
+ supersedes_id VARCHAR(36) NULL REFERENCES [${hrmSchema}].hrm_appointment_document(id),
+ record_version BIGINT NOT NULL DEFAULT 0,
+ created_by VARCHAR(100) NOT NULL,
+ created_at DATETIMEOFFSET NOT NULL,
+ updated_by VARCHAR(100) NOT NULL,
+ updated_at DATETIMEOFFSET NOT NULL,
+ finalized_by VARCHAR(100) NULL,
+ finalized_at DATETIMEOFFSET NULL,
+ superseded_by VARCHAR(100) NULL,
+ superseded_at DATETIMEOFFSET NULL,
+ CONSTRAINT ck_hrm_appointment_document_kind CHECK(document_kind IN ('OATH_OF_OFFICE','ASSUMPTION_TO_DUTY')),
+ CONSTRAINT ck_hrm_appointment_document_status CHECK(status IN ('DRAFT','FINALIZED','SUPERSEDED')),
+ CONSTRAINT ck_hrm_appointment_document_version CHECK(record_version >= 0),
+ CONSTRAINT ck_hrm_appointment_document_dates CHECK((document_kind='OATH_OF_OFFICE' AND oath_date IS NOT NULL) OR (document_kind='ASSUMPTION_TO_DUTY' AND assumption_date IS NOT NULL))
+);
+CREATE UNIQUE INDEX uk_hrm_appointment_document_current ON [${hrmSchema}].hrm_appointment_document(agency_id,appointment_id,document_kind) WHERE status IN ('DRAFT','FINALIZED');
+CREATE INDEX ix_hrm_appointment_document_lookup ON [${hrmSchema}].hrm_appointment_document(agency_id,appointment_id,document_kind,created_at);
+
+CREATE TABLE [${hrmSchema}].hrm_appointment_document_audit_event (
+ id VARCHAR(36) PRIMARY KEY,
+ agency_id VARCHAR(64) NOT NULL,
+ document_id VARCHAR(36) NULL REFERENCES [${hrmSchema}].hrm_appointment_document(id),
+ subject_id VARCHAR(100) NOT NULL,
+ action_code VARCHAR(80) NOT NULL,
+ actor VARCHAR(100) NOT NULL,
+ reason NVARCHAR(500) NULL,
+ before_metadata NVARCHAR(MAX) NULL,
+ after_metadata NVARCHAR(MAX) NULL,
+ correlation_id VARCHAR(100) NULL,
+ occurred_at DATETIMEOFFSET NOT NULL
+);
+CREATE INDEX ix_hrm_appointment_document_audit ON [${hrmSchema}].hrm_appointment_document_audit_event(agency_id,subject_id,occurred_at);

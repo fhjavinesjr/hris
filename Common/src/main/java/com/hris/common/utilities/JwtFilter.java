@@ -33,9 +33,9 @@ public class JwtFilter extends OncePerRequestFilter {
         if(request.getRequestURI().startsWith("/h2-console") ||
             request.getRequestURI().equals("/api/public/runtime-config") ||
             request.getRequestURI().startsWith("/api/employee/login") ||
-            request.getRequestURI().startsWith("/api/employee/register") ||
-            request.getRequestURI().startsWith("/api/sso/exchange") ||
-            request.getRequestURI().startsWith("/api/hris/installAuth")) {
+            request.getRequestURI().startsWith("/api/employee/activate") ||
+            request.getRequestURI().startsWith("/api/integration/v1/primehr/appointment-handoffs") ||
+            request.getRequestURI().startsWith("/api/sso/exchange")) {
 
             filterChain.doFilter(request, response);
             return;

@@ -1,0 +1,3 @@
+package com.primehr.rsp.evaluation.application;
+import com.primehr.rsp.evaluation.api.EvaluationPolicyDtos.*; import com.primehr.shared.api.PageResponse;
+public interface EvaluationPolicyService {PageResponse<PolicyResponse> list(String agency,int page,int size);PolicyResponse get(String agency,String id);PolicyResponse create(String agency,SavePolicy request,String correlation);PolicyResponse update(String agency,String id,SavePolicy request,String correlation);PolicyResponse publish(String agency,String id,Publish request,String correlation);PolicyResponse successor(String agency,String id,Transition request,String correlation);BindingResponse bind(String agency,String publicationId,BindPolicy request,String correlation);}

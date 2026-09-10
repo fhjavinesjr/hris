@@ -30,6 +30,20 @@ class EffectiveAuthorizationControllerTest {
         verify(service, never()).resolve("SCR-1", "SCREENER", "primehr.rsp-application-screening");
     }
 
+    @Test void governanceCoordinatorCanResolveCandidateEvaluationPermissionForCommitteeMembership() {
+        var caller = new EffectiveFeaturePermissionResponse("primehr.hrmpsb-governance", false,
+                true, true, true, false, false, false, false, false, false, false,
+                PermissionDataScope.AGENCY_WIDE);
+        var target = new EffectiveFeaturePermissionResponse("primehr.rsp-candidate-evaluation", false,
+                true, false, true, false, false, true, false, true, false, false,
+                PermissionDataScope.AGENCY_WIDE);
+        when(service.resolve("ASSIGNER", "ROLE_ASSIGNER", "primehr.hrmpsb-governance")).thenReturn(caller);
+        when(service.resolve("MEMBER-1", "MEMBER", "primehr.rsp-candidate-evaluation")).thenReturn(target);
+
+        assertThat(controller.effectiveEmployee(auth(), "MEMBER-1", "MEMBER",
+                "primehr.rsp-candidate-evaluation")).isSameAs(target);
+    }
+
     @Test void assignmentLookupCannotBeUsedToInspectUnrelatedFeaturePermissions() {
         assertThatThrownBy(() -> controller.effectiveEmployee(auth(), "SCR-1", "SCREENER",
                 "primehr.payroll"))

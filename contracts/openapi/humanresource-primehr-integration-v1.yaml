@@ -1,11 +1,17 @@
 openapi: 3.0.3
 info:
   title: ISOFT HRIS HumanResource to PrimeHR Integration API
-  version: 1.0.0-phase-3.1
-  description: Minimal authenticated employee and current-appointment projection for PRIME-HRM assessment administration. Credentials, biometric identifiers, salary, contact data, and PDS data are excluded.
+  version: 1.4.0-phase-6c.1
+  description: Existing read projections plus authorized performance-participant appointment snapshots. Applicant credentials, PDS, evidence binaries, storage paths, and activation tokens are never copied.
 security:
   - bearerAuth: []
 paths:
+  /api/integration/v1/primehr/performance-participants:
+    get: {operationId: listPrimeHrPerformanceParticipants, responses: {'200': {description: Eligible employees with active appointment snapshots}, '403': {description: Agency-wide plan-assignment access required}}}
+  /api/integration/v1/primehr/performance-participants/{employeeId}:
+    get: {operationId: getPrimeHrPerformanceParticipant, responses: {'200': {description: Exact employee appointment snapshot}, '404': {description: Eligible employee not found}}}
+  /api/integration/v1/primehr/performance-participants/by-employee-no/{employeeNo}:
+    get: {operationId: getPrimeHrPerformanceParticipantByEmployeeNo, responses: {'200': {description: Exact employee appointment snapshot}, '404': {description: Eligible employee not found}}}
   /api/integration/v1/primehr/assessment-subjects:
     get:
       operationId: listPrimeHrAssessmentSubjects
@@ -40,10 +46,213 @@ paths:
         '200': {description: Exact current active-appointment occupancy snapshot}
         '401': {description: Missing or invalid employee JWT}
         '403': {description: Agency-wide RSP planning access is not permitted}
+  /api/integration/v1/primehr/appointment-handoffs:
+    post:
+      operationId: receivePrimeHrAppointmentHandoff
+      security: [{serviceBearerAuth: []}]
+      parameters:
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string}}
+        - {name: X-Correlation-Id, in: header, required: false, schema: {type: string}}
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/AppointmentHandoffRequest'}}}
+      responses:
+        '202': {description: Stable receipt created or returned for the identical retry, content: {application/json: {schema: {$ref: '#/components/schemas/AppointmentHandoffReceipt'}}}}
+        '400': {description: Invalid schema, idempotency key, or payload fingerprint}
+        '401': {description: Missing or invalid PrimeHR service identity}
+        '403': {description: Service-token agency mismatch}
+        '409': {description: Handoff id or selection was previously used with different content}
+  /api/integration/v1/primehr/appointment-handoffs/{handoffId}:
+    get:
+      operationId: getPrimeHrAppointmentHandoffReceipt
+      security: [{serviceBearerAuth: []}]
+      parameters:
+        - {name: handoffId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Exact receipt for response-loss recovery, content: {application/json: {schema: {$ref: '#/components/schemas/AppointmentHandoffReceipt'}}}}
+        '401': {description: Missing or invalid PrimeHR service identity}
+        '404': {description: Receipt not found for the token agency}
+  /api/hrm/v1/onboarding-templates:
+    post:
+      operationId: createOnboardingTemplate
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'201': {description: Versioned draft checklist template created}, '403': {description: Add permission denied}}
+  /api/hrm/v1/onboarding-templates/{id}/publish:
+    post:
+      operationId: publishOnboardingTemplate
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'200': {description: Template published and prior current version superseded}, '403': {description: Publish permission denied}, '409': {description: Invalid lifecycle}}
+  /api/hrm/v1/appointment-intakes:
+    get:
+      operationId: listAppointmentIntakes
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'200': {description: Agency-scoped handoff onboarding cases}, '403': {description: Access permission denied}}
+  /api/hrm/v1/appointment-intakes/{id}:
+    get:
+      operationId: getAppointmentIntake
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'200': {description: Intake with immutable checklist snapshot}, '404': {description: Intake not found}}
+  /api/hrm/v1/appointment-intakes/{id}/begin-review:
+    post:
+      operationId: beginAppointmentIntakeReview
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'200': {description: Intake moved to IN_REVIEW}, '409': {description: Stale version or invalid lifecycle}}
+  /api/hrm/v1/appointment-intakes/{id}/return:
+    post:
+      operationId: returnAppointmentIntake
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'200': {description: Intake returned with reason}}
+  /api/hrm/v1/appointment-intakes/{id}/identity-resolution:
+    put:
+      operationId: resolveAppointmentIntakeIdentity
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'200': {description: Exact existing link or reviewed new-employee decision recorded}, '409': {description: Duplicate or stale identity}}
+  /api/hrm/v1/appointment-intakes/{id}/checklist/{itemId}:
+    put:
+      operationId: updateOnboardingChecklistItem
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'200': {description: Evidence submitted, independently verified, or rejected}, '409': {description: Self-verification or stale state}}
+  /api/hrm/v1/appointment-intakes/{id}/approve:
+    post:
+      operationId: approveAppointmentIntake
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'200': {description: Required verified evidence accepted and intake ready}}
+  /api/hrm/v1/appointment-intakes/{id}/create-appointment:
+    post:
+      operationId: createAuthoritativeAppointment
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'200': {description: Atomic stable employee, appointment, provenance and optional activation result}, '409': {description: Occupied, stale, duplicate, or chronological conflict}, '503': {description: Administrative source unavailable}}
+  /api/hrm/v1/appointment-intakes/{id}/complete-onboarding:
+    post:
+      operationId: completeOnboarding
+      parameters: [{$ref: '#/components/parameters/AgencyId'}]
+      responses: {'200': {description: Onboarding and handoff receipt completed}}
+  /api/hrm/v1/appointment-intakes/{intakeId}/onboarding-completion.pdf:
+    get:
+      operationId: generateOnboardingCompletionPdf
+      parameters:
+        - {$ref: '#/components/parameters/AgencyId'}
+        - {name: intakeId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: COMPLETED onboarding checklist PDF containing evidence fingerprints only, content: {application/pdf: {schema: {type: string, format: binary}}}}
+        '403': {description: hrm.onboarding-report access denied}
+        '409': {description: Intake is not COMPLETED or has no checklist snapshot}
+  /api/hrm/v1/appointments/{appointmentId}/documents:
+    post:
+      operationId: createAppointmentDocumentDraft
+      parameters:
+        - {$ref: '#/components/parameters/AgencyId'}
+        - {name: appointmentId, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/CreateAppointmentDocument'}}}
+      responses:
+        '201': {description: Oath or assumption-to-duty draft created, content: {application/json: {schema: {$ref: '#/components/schemas/AppointmentDocument'}}}}
+        '403': {description: hrm.appointment-documents add denied}
+        '409': {description: Invalid provenance, lifecycle, duplicate current document, or correction link}
+  /api/hrm/v1/appointments/{appointmentId}/documents/{documentId}:
+    put:
+      operationId: updateAppointmentDocumentDraft
+      parameters:
+        - {$ref: '#/components/parameters/AgencyId'}
+        - {name: appointmentId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: documentId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Draft updated with optimistic version enforcement}
+        '403': {description: hrm.appointment-documents edit denied}
+        '409': {description: Finalized document is immutable or record version is stale}
+  /api/hrm/v1/appointments/{appointmentId}/documents/{documentId}/finalize:
+    post:
+      operationId: finalizeAppointmentDocument
+      parameters:
+        - {$ref: '#/components/parameters/AgencyId'}
+        - {name: appointmentId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: documentId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Immutable source/signatory snapshot finalized}
+        '403': {description: hrm.appointment-documents finalize denied}
+        '409': {description: Invalid lifecycle, signatory contract, authoritative date, or stale version}
+  /api/hrm/v1/appointments/{appointmentId}/documents/{documentId}.pdf:
+    get:
+      operationId: generateFinalizedAppointmentDocumentPdf
+      parameters:
+        - {$ref: '#/components/parameters/AgencyId'}
+        - {name: appointmentId, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: documentId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Finalized CSC form PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}
+        '403': {description: hrm.appointment-documents access denied}
+        '409': {description: Draft document or stale source fingerprint}
+  /api/employee/activate:
+    post:
+      operationId: activateEmployeeAccount
+      security: []
+      responses: {'204': {description: Initial password set and token consumed atomically}, '400': {description: Token invalid, expired, revoked, or consumed}}
 components:
+  parameters:
+    AgencyId: {name: X-Agency-Id, in: header, required: true, schema: {type: string}, description: Exact authorized agency scope}
   securitySchemes:
     bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+    serviceBearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
   schemas:
+    CreateAppointmentDocument:
+      type: object
+      additionalProperties: false
+      required: [kind, issueDate, venue]
+      properties:
+        kind: {type: string, enum: [OATH_OF_OFFICE, ASSUMPTION_TO_DUTY]}
+        issueDate: {type: string, format: date}
+        oathDate: {type: string, format: date, nullable: true}
+        assumptionDate: {type: string, format: date, nullable: true}
+        venue: {type: string}
+        administeringEmployeeId: {type: integer, format: int64, nullable: true}
+        certifyingEmployeeId: {type: integer, format: int64, nullable: true}
+        attestingEmployeeId: {type: integer, format: int64, nullable: true}
+        supersedesDocumentId: {type: string, nullable: true}
+        reason: {type: string, nullable: true}
+    AppointmentDocument:
+      type: object
+      additionalProperties: false
+      properties:
+        id: {type: string}
+        appointmentId: {type: integer, format: int64}
+        onboardingCaseId: {type: string}
+        kind: {type: string, enum: [OATH_OF_OFFICE, ASSUMPTION_TO_DUTY]}
+        status: {type: string, enum: [DRAFT, FINALIZED, SUPERSEDED]}
+        officialTemplateCode: {type: string}
+        officialTemplateVersion: {type: string}
+        sourceFingerprint: {type: string, minLength: 64, maxLength: 64, nullable: true}
+        recordVersion: {type: integer, format: int64}
+    AppointmentHandoffRequest:
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, handoffId, agencyId, selectionId, applicationId, applicantId, sourceFingerprint, payloadSnapshot, sourceActor]
+      properties:
+        schemaVersion: {type: integer, minimum: 1}
+        handoffId: {type: string}
+        agencyId: {type: string}
+        selectionId: {type: string}
+        applicationId: {type: string}
+        applicantId: {type: string}
+        sourceFingerprint: {type: string, minLength: 64, maxLength: 64}
+        payloadSnapshot: {type: object, description: Immutable minimum selection, applicant/contact, position-source, and consent/offer snapshot}
+        correlationId: {type: string, nullable: true}
+        sourceActor: {type: string}
+    AppointmentHandoffReceipt:
+      type: object
+      additionalProperties: false
+      required: [receiptId, handoffId, agencyId, schemaVersion, sourceFingerprint, selectionId, applicationId, applicantId, state, recordVersion]
+      properties:
+        receiptId: {type: string}
+        handoffId: {type: string}
+        agencyId: {type: string}
+        schemaVersion: {type: integer}
+        sourceFingerprint: {type: string, minLength: 64, maxLength: 64}
+        selectionId: {type: string}
+        applicationId: {type: string}
+        applicantId: {type: string}
+        state: {type: string, enum: [RECEIVED, IN_REVIEW, APPOINTMENT_CREATED, COMPLETED, CANCELLED]}
+        recordVersion: {type: integer, format: int64}
     PlantillaOccupancy:
       type: object
       additionalProperties: false

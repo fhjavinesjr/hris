@@ -10,4 +10,6 @@ import java.util.List;
 public interface ApprovalWorkflowRepository extends JpaRepository<ApprovalWorkflow, Long> {
 
     List<ApprovalWorkflow> findByBusinessUnitIdAndEmployeeRequestId(Long businessUnitId, Long employeeRequestId);
+    List<ApprovalWorkflow> findByBusinessUnitIdAndEmployeeRequestIdOrderByApprovalLevelAscApprovalWorkflowIdAsc(
+            Long businessUnitId, Long employeeRequestId);
 }

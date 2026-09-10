@@ -11,12 +11,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     // Avoid using raw SQL queries to prevent SQL injection attacks.
 
     Optional<Employee> findByEmployeeNo(String employeeNo);
+    boolean existsByBiometricNo(String biometricNo);
+    boolean existsByEmailIgnoreCase(String email);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from Employee e where e.employeeId=:employeeId")
+    Optional<Employee> findByIdForUpdate(@Param("employeeId") Long employeeId);
 
     @Query(value = "select new com.humanresource.integration.primehr.AssessmentSubjectRow(" +
             "e.employeeId, e.employeeNo, e.firstname, e.lastname, e.suffix, e.updatedAt, " +
@@ -47,5 +54,15 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
             "and not exists (select s.separationId from Separation s " +
             "where s.employeeId = e.employeeId and s.separationDate <= :asOf)")
     Optional<AssessmentSubjectRow> findPrimeHrAssessmentSubject(@Param("employeeId") Long employeeId,
+            @Param("asOf") LocalDateTime asOf);
+
+    @Query("select new com.humanresource.integration.primehr.AssessmentSubjectRow(" +
+            "e.employeeId, e.employeeNo, e.firstname, e.lastname, e.suffix, e.updatedAt, " +
+            "a.employeeAppointmentId, a.assumptionToDutyDate, a.jobPositionId, a.plantillaId) " +
+            "from Employee e join EmployeeAppointment a on a.employeeId = e.employeeId " +
+            "where lower(e.employeeNo) = lower(:employeeNo) and a.activeAppointment = true " +
+            "and not exists (select s.separationId from Separation s " +
+            "where s.employeeId = e.employeeId and s.separationDate <= :asOf)")
+    Optional<AssessmentSubjectRow> findPrimeHrAssessmentSubjectByEmployeeNo(@Param("employeeNo") String employeeNo,
             @Param("asOf") LocalDateTime asOf);
 }

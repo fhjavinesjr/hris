@@ -1,0 +1,3 @@
+package com.primehr.rsp.evaluation.application;
+import com.primehr.rsp.evaluation.api.EvaluationProceedingDtos.*; import com.primehr.shared.api.PageResponse;
+public interface EvaluationProceedingService {PageResponse<ProceedingResponse> list(String agency,String actor,int page,int size);ProceedingResponse get(String agency,String id,String actor);ProceedingResponse create(String agency,CreateProceeding request,String actor,String correlation);ProceedingResponse admit(String agency,String id,AdmitCandidates request,String actor,String correlation);ProceedingResponse open(String agency,String id,Transition request,String actor,String correlation);ProceedingResponse cancel(String agency,String id,Transition request,String actor,String correlation);}

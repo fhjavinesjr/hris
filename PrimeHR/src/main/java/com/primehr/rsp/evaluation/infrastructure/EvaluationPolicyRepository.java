@@ -1,0 +1,3 @@
+package com.primehr.rsp.evaluation.infrastructure;
+import com.primehr.rsp.evaluation.domain.EvaluationPolicy; import org.springframework.data.domain.*; import org.springframework.data.jpa.repository.*; import java.util.*;
+public interface EvaluationPolicyRepository extends JpaRepository<EvaluationPolicy,String>{Optional<EvaluationPolicy> findByIdAndAgencyId(String id,String agencyId);Page<EvaluationPolicy> findByAgencyId(String agencyId,Pageable pageable);boolean existsByAgencyIdAndNormalizedCodeAndDefinitionVersion(String agency,String code,int version);List<EvaluationPolicy> findByAgencyIdAndNormalizedCodeOrderByDefinitionVersion(String agency,String code);}

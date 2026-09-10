@@ -1,0 +1,2 @@
+package com.primehr.security;import com.primehr.integration.administrative.*;import org.springframework.stereotype.Component;
+@Component public class PerformancePmtPermissionGuard{public static final String FEATURE="primehr.performance-pmt";private final AdministrativeAuthorizationClient client;public PerformancePmtPermissionGuard(AdministrativeAuthorizationClient c){client=c;}public void require(PrimeHrAction a,String token){PerformancePolicyPermissionGuard.requireAgencyWide(client.resolve(FEATURE,token),a);}}

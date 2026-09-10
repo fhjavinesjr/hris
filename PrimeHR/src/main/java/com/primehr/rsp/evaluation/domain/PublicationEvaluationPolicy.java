@@ -1,0 +1,9 @@
+package com.primehr.rsp.evaluation.domain;
+import com.primehr.rsp.domain.*; import jakarta.persistence.*; import org.hibernate.annotations.Nationalized; import java.time.*; import java.util.*;
+@Entity @Table(name="rsp_publication_evaluation_policy",uniqueConstraints=@UniqueConstraint(name="uk_rsp_publication_evaluation_policy",columnNames={"agency_id","vacancy_publication_id"}))
+public class PublicationEvaluationPolicy extends RspAuditedEntity {
+ @ManyToOne(fetch=FetchType.LAZY,optional=false) @JoinColumn(name="vacancy_publication_id",nullable=false) private VacancyPublication publication; @ManyToOne(fetch=FetchType.LAZY,optional=false) @JoinColumn(name="evaluation_policy_id",nullable=false) private EvaluationPolicy policy; @Nationalized @Column(name="policy_snapshot",nullable=false,length=32000) private String policySnapshot; @Column(name="policy_fingerprint",nullable=false,length=64) private String policyFingerprint; @Column(name="bound_by",nullable=false,length=100) private String boundBy; @Column(name="bound_at",nullable=false) private Instant boundAt;
+ protected PublicationEvaluationPolicy(){}
+ public PublicationEvaluationPolicy(String agency,VacancyPublication publication,EvaluationPolicy policy,String snapshot,String fingerprint,String actor,Instant at){super(agency);this.publication=Objects.requireNonNull(publication);this.policy=Objects.requireNonNull(policy);policySnapshot=requiredText(snapshot,"policySnapshot");policyFingerprint=requiredText(fingerprint,"policyFingerprint");boundBy=requiredText(actor,"actor");boundAt=Objects.requireNonNull(at);}
+ public VacancyPublication getPublication(){return publication;} public EvaluationPolicy getPolicy(){return policy;} public String getPolicySnapshot(){return policySnapshot;} public String getPolicyFingerprint(){return policyFingerprint;} public String getBoundBy(){return boundBy;} public Instant getBoundAt(){return boundAt;}
+}

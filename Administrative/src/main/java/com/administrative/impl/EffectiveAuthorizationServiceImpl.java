@@ -29,13 +29,36 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String PRIMEHR_RSP_APPLICANT_INTAKE = "primehr.rsp-applicant-intake";
     public static final String PRIMEHR_RSP_SCREENING_POLICY = "primehr.rsp-screening-policy";
     public static final String PRIMEHR_RSP_APPLICATION_SCREENING = "primehr.rsp-application-screening";
+    public static final String PRIMEHR_RSP_EVALUATION_POLICY = "primehr.rsp-evaluation-policy";
+    public static final String PRIMEHR_HRMPSB_GOVERNANCE = "primehr.hrmpsb-governance";
+    public static final String PRIMEHR_RSP_CANDIDATE_EVALUATION = "primehr.rsp-candidate-evaluation";
+    public static final String PRIMEHR_RSP_SELECTION_DECISION = "primehr.rsp-selection-decision";
+    public static final String PRIMEHR_RSP_APPOINTMENT_HANDOFF = "primehr.rsp-appointment-handoff";
+    public static final String PRIMEHR_RSP_COMPARATIVE_REPORT = "primehr.rsp-comparative-report";
+    public static final String PRIMEHR_RSP_SELECTION_REPORT = "primehr.rsp-selection-report";
+    public static final String PRIMEHR_RSP_EVIDENCE_INDEX_REPORT = "primehr.rsp-evidence-index-report";
+    public static final String PRIMEHR_RSP_REGISTER_REPORT = "primehr.rsp-register-report";
+    public static final String PRIMEHR_RSP_PROCESS_ANALYTICS = "primehr.rsp-process-analytics";
+    public static final String HRM_APPOINTMENT_INTAKE = "hrm.appointment-intake";
+    public static final String HRM_ONBOARDING_CONFIGURATION = "hrm.onboarding-configuration";
+    public static final String HRM_ONBOARDING = "hrm.onboarding";
+    public static final String HRM_APPOINTMENT_REPORT = "hrm.appointment-report";
+    public static final String HRM_ONBOARDING_REPORT = "hrm.onboarding-report";
+    public static final String HRM_APPOINTMENT_DOCUMENTS = "hrm.appointment-documents";
     private static final Set<String> SUPPORTED_FEATURES = Set.of(PRIMEHR_COMPETENCY,
             PRIMEHR_POSITION_PROFILE, PRIMEHR_ASSESSMENT_ADMINISTRATION, PRIMEHR_COMPETENCY_ASSESSMENT,
             PRIMEHR_ASSESSMENT_VALIDATION, PRIMEHR_PERSON_PROFILE, PRIMEHR_GAP_CONFIGURATION,
             PRIMEHR_COMPETENCY_GAP, PRIMEHR_LD_REFERRAL, ADMIN_QUALIFICATION_STANDARD,
             PRIMEHR_RSP_RECRUITMENT_PLANNING, PRIMEHR_RSP_VACANCY_PUBLICATION,
             PRIMEHR_RSP_APPLICANT_INTAKE, PRIMEHR_RSP_SCREENING_POLICY,
-            PRIMEHR_RSP_APPLICATION_SCREENING);
+            PRIMEHR_RSP_APPLICATION_SCREENING, PRIMEHR_RSP_EVALUATION_POLICY,
+            PRIMEHR_HRMPSB_GOVERNANCE, PRIMEHR_RSP_CANDIDATE_EVALUATION,
+            PRIMEHR_RSP_SELECTION_DECISION, PRIMEHR_RSP_APPOINTMENT_HANDOFF,
+            PRIMEHR_RSP_COMPARATIVE_REPORT, PRIMEHR_RSP_SELECTION_REPORT,
+            PRIMEHR_RSP_EVIDENCE_INDEX_REPORT, PRIMEHR_RSP_REGISTER_REPORT,
+            PRIMEHR_RSP_PROCESS_ANALYTICS,
+            HRM_APPOINTMENT_INTAKE, HRM_ONBOARDING_CONFIGURATION, HRM_ONBOARDING,
+            HRM_APPOINTMENT_REPORT, HRM_ONBOARDING_REPORT, HRM_APPOINTMENT_DOCUMENTS);
     private static final String INSTALL_ADMIN_EMPLOYEE_NO = "admin";
 
     private final PermissionRulesetRepository repository;
