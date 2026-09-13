@@ -1,6 +1,7 @@
 package com.payroll.impl;
 
 import com.payroll.dtos.GeneralPayrollReportRow;
+import com.payroll.reports.JasperReportRegistry;
 import com.payroll.services.GeneralPayrollReportService;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperCompileManager;
@@ -95,17 +96,7 @@ public class GeneralPayrollReportServiceImpl implements GeneralPayrollReportServ
     }
 
     private JasperReport compile(String classpathPath) throws Exception {
-        ClassPathResource resource = new ClassPathResource(classpathPath);
-        if (!resource.exists()) {
-            throw new IllegalStateException("General Payroll JRXML not found in classpath: " + classpathPath);
-        }
-        try (InputStream is = resource.getInputStream()) {
-            try {
-                return JasperCompileManager.compileReport(is);
-            } catch (JRException ex) {
-                throw new JRException("Failed to compile General Payroll JRXML: " + classpathPath + " — " + ex.getMessage(), ex);
-            }
-        }
+        return JasperReportRegistry.get(classpathPath);
     }
 
     private String clean(String value, String fallback) {

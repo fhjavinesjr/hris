@@ -96,6 +96,40 @@ class LeaveMonetizationImplTest {
         verify(repository, never()).save(any(LeaveMonetization.class));
     }
 
+    @Test
+    void createRejectsLessThanTenTotalDaysBeforeEnteringApprovalWorkflow() throws Exception {
+        LeaveMonetizationDTO request = request(3.0, 5.0);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.create(request)
+        );
+
+        assertEquals(
+                "Leave monetization requires at least 10 total days. Total days entered: 8.0.",
+                exception.getMessage()
+        );
+        verify(leaveBalanceService, never()).getCurrentBalance(any());
+        verify(repository, never()).save(any(LeaveMonetization.class));
+    }
+
+    @Test
+    void createRejectsARequestThatWouldViolateTheFilingTimeVlReserve() throws Exception {
+        when(leaveBalanceService.getCurrentBalance(1L)).thenReturn(balance(12.0, 20.0));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.create(request(10.0, 0.0))
+        );
+
+        assertEquals(
+                "Insufficient Vacation Leave credits. At least 5 VL days must remain after monetization; "
+                        + "current VL balance: 12.0 days.",
+                exception.getMessage()
+        );
+        verify(repository, never()).save(any(LeaveMonetization.class));
+    }
+
     private LeaveMonetizationDTO request(double vlDays, double slDays) {
         LeaveMonetizationDTO request = new LeaveMonetizationDTO();
         request.setEmployeeId(1L);

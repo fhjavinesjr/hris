@@ -5,6 +5,7 @@ import com.humanresource.entitymodels.OvertimeRequest;
 import com.humanresource.repositories.OvertimeRequestRepository;
 import com.humanresource.entitymodels.ReportHeaderSettings;
 import com.humanresource.repositories.ReportHeaderSettingsRepository;
+import com.humanresource.reports.JasperReportRegistry;
 import com.humanresource.services.OvertimeRequestService;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
@@ -469,7 +470,7 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
     @Transactional(readOnly = true)
     @Override
     public void generateOvertimeAuthorization(Long overtimeRequestId, OutputStream out) throws Exception {
-        JasperReport report = compile("reports/OvertimeAuthorization.jrxml");
+        JasperReport report = JasperReportRegistry.get("reports/OvertimeAuthorization.jrxml");
 
         Map<String, Object> params = new HashMap<>();
         params.put("OVERTIME_REQUEST_ID", overtimeRequestId);
@@ -493,10 +494,4 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
         return bytes == null ? null : new ByteArrayInputStream(bytes);
     }
 
-    private JasperReport compile(String classpathPath) throws Exception {
-        ClassPathResource resource = new ClassPathResource(classpathPath);
-        try (InputStream is = resource.getInputStream()) {
-            return JasperCompileManager.compileReport(is);
-        }
-    }
 }

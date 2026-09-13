@@ -127,6 +127,10 @@ public class LeaveMonetizationController {
                         .body(new MetadataResponse("Failed to update leave monetization"));
             }
             return ResponseEntity.ok(new MetadataResponse(id, "Leave monetization updated successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new MetadataResponse(e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new MetadataResponse(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MetadataResponse("Failed to update leave monetization"));

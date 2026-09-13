@@ -3,6 +3,7 @@ package com.primehr.rsp.report;
 import com.primehr.rsp.api.RspPublicationDtos.PublicationResponse;
 import com.primehr.rsp.api.RspPublicationDtos.RequirementSnapshotResponse;
 import com.primehr.rsp.domain.VacancyPublicationStatus;
+import com.primehr.reports.JasperReportRegistry;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -35,8 +36,8 @@ public class VacancyNoticeReportServiceImpl implements VacancyNoticeReportServic
             throw new IllegalArgumentException(
                     "An official vacancy notice is available only for APPROVED or PUBLISHED records");
         }
-        try (InputStream input = new ClassPathResource(TEMPLATE).getInputStream()) {
-            JasperReport report = JasperCompileManager.compileReport(input);
+        try {
+            JasperReport report = JasperReportRegistry.get(TEMPLATE);
             JasperPrint print = JasperFillManager.fillReport(report, parameters(agencyId, publication),
                     new JRBeanCollectionDataSource(rows(publication)));
             return JasperExportManager.exportReportToPdf(print);

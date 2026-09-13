@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class LeaveMonetizationImpl implements LeaveMonetizationService {
 
     private static final Logger log = LoggerFactory.getLogger(LeaveMonetizationImpl.class);
+    private static final double MINIMUM_MONETIZATION_DAYS = 10.0;
 
     private final LeaveMonetizationRepository leaveMonetizationRepository;
     private final LeaveBalanceService leaveBalanceService;
@@ -97,9 +98,7 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
         double totalDays = noOfDaysSL + noOfDaysVL;
 
         validatePerLeaveTypeCaps(noOfDaysVL, noOfDaysSL);
-        if (totalDays <= 0) {
-            throw new IllegalArgumentException("Total days to monetize must be greater than zero");
-        }
+        validateMinimumTotal(totalDays);
 
         try {
             LeaveMonetization entity = new LeaveMonetization();
@@ -109,6 +108,7 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
             entity.setNoOfDaysVL(noOfDaysVL);
             entity.setTotalDays(totalDays);
             refreshCurrentBalanceSnapshot(entity);
+            validateFilingBalances(entity);
             entity.setReason(dto.getReason());
             applyAdministrativeWorkflow(entity, dto);
             entity.setPayrollIncluded(false);
@@ -119,6 +119,8 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
             LeaveMonetizationDTO result = toDTO(entity);
             enrichEmployeeInfo(result);
             return result;
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("Error creating LeaveMonetization for employeeId {}: ", dto.getEmployeeId(), ex);
             throw ex;
@@ -230,11 +232,7 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
         double vlBefore = entity.getVlBalanceBefore() != null ? entity.getVlBalanceBefore() : 0.0;
 
         validatePerLeaveTypeCaps(noOfDaysVL, noOfDaysSL);
-        // CSC Rule 1: Minimum 10 days (CSC MC No. 41 s. 1998)
-        if (totalDays < 10.0) {
-            throw new IllegalArgumentException(
-                    "Leave monetization requires a minimum of 10 days. Total days filed: " + totalDays);
-        }
+        validateMinimumTotal(totalDays);
 
         refreshCurrentBalanceSnapshot(entity);
         slBefore = entity.getSlBalanceBefore();
@@ -315,12 +313,14 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
         if (dto.getDateFiled() != null) entity.setDateFiled(dto.getDateFiled());
         if (dto.getNoOfDaysSL() != null) entity.setNoOfDaysSL(dto.getNoOfDaysSL());
         if (dto.getNoOfDaysVL() != null) entity.setNoOfDaysVL(dto.getNoOfDaysVL());
-        double total = (dto.getNoOfDaysVL() != null ? dto.getNoOfDaysVL() : entity.getNoOfDaysVL())
-                     + (dto.getNoOfDaysSL() != null ? dto.getNoOfDaysSL() : entity.getNoOfDaysSL());
-        validatePerLeaveTypeCaps(entity.getNoOfDaysVL(), entity.getNoOfDaysSL());
+        double total = nvl(dto.getNoOfDaysVL() != null ? dto.getNoOfDaysVL() : entity.getNoOfDaysVL())
+                     + nvl(dto.getNoOfDaysSL() != null ? dto.getNoOfDaysSL() : entity.getNoOfDaysSL());
+        validatePerLeaveTypeCaps(nvl(entity.getNoOfDaysVL()), nvl(entity.getNoOfDaysSL()));
+        validateMinimumTotal(total);
         entity.setTotalDays(round3(total));
         if (dto.getReason() != null) entity.setReason(dto.getReason());
         refreshCurrentBalanceSnapshot(entity);
+        validateFilingBalances(entity);
         applyAdministrativeWorkflow(entity, dto);
         entity.setUpdatedAt(LocalDateTime.now());
         entity = leaveMonetizationRepository.save(entity);
@@ -388,10 +388,7 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
         double vlBefore = entity.getVlBalanceBefore() != null ? entity.getVlBalanceBefore() : 0.0;
 
         validatePerLeaveTypeCaps(noOfDaysVL, noOfDaysSL);
-        if (totalDays < 10.0) {
-            throw new IllegalArgumentException(
-                    "Leave monetization requires a minimum of 10 days. Total days filed: " + totalDays);
-        }
+        validateMinimumTotal(totalDays);
         double vlAfter = vlBefore - noOfDaysVL;
         if (vlAfter < 5.0) {
             throw new IllegalArgumentException(
@@ -436,6 +433,34 @@ public class LeaveMonetizationImpl implements LeaveMonetizationService {
         }
         if (noOfDaysSL > 10.0) {
             throw new IllegalArgumentException("Sick Leave monetization is limited to 10 days per filing.");
+        }
+    }
+
+    private static void validateMinimumTotal(double totalDays) {
+        if (totalDays < MINIMUM_MONETIZATION_DAYS) {
+            throw new IllegalArgumentException(
+                    "Leave monetization requires at least 10 total days. Total days entered: "
+                            + round3(totalDays) + ".");
+        }
+    }
+
+    private static void validateFilingBalances(LeaveMonetization entity) {
+        double noOfDaysVL = nvl(entity.getNoOfDaysVL());
+        double noOfDaysSL = nvl(entity.getNoOfDaysSL());
+        double vlBefore = nvl(entity.getVlBalanceBefore());
+        double slBefore = nvl(entity.getSlBalanceBefore());
+        double vlAfter = vlBefore - noOfDaysVL;
+        double slAfter = slBefore - noOfDaysSL;
+
+        if (vlAfter < 5.0) {
+            throw new IllegalArgumentException(
+                    "Insufficient Vacation Leave credits. At least 5 VL days must remain after monetization; "
+                            + "current VL balance: " + round3(vlBefore) + " days.");
+        }
+        if (noOfDaysSL > 0 && slAfter < 5.0) {
+            throw new IllegalArgumentException(
+                    "Insufficient Sick Leave credits under the current agency workflow. At least 5 SL days "
+                            + "must remain; current SL balance: " + round3(slBefore) + " days.");
         }
     }
 

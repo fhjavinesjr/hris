@@ -18,4 +18,13 @@ public interface LeaveBalanceService {
     LeaveBalanceDTO getCurrentBalanceExcludingMonetization(
             Long employeeId,
             Long leaveMonetizationId) throws Exception;
+
+    /**
+     * Computes the running balance without reserving the specified leave
+     * application. Report generation uses this as the credit available before
+     * the application shown in Section 7.A of CS Form No. 6.
+     */
+    LeaveBalanceDTO getCurrentBalanceExcludingLeaveApplication(
+            Long employeeId,
+            Long leaveApplicationId) throws Exception;
 }

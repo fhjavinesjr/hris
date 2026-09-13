@@ -1,5 +1,6 @@
 package com.primehr.gap.report;
 
+import com.primehr.reports.JasperReportRegistry;
 import com.primehr.gap.api.CompetencyGapDtos.AnalysisResponse;
 import com.primehr.gap.api.CompetencyGapDtos.GapItemResponse;
 import net.sf.jasperreports.engine.*;
@@ -21,8 +22,8 @@ public class CompetencyGapReportServiceImpl implements CompetencyGapReportServic
     @Override
     public byte[] generate(AnalysisResponse analysis) {
         Objects.requireNonNull(analysis, "analysis");
-        try (InputStream input = new ClassPathResource(TEMPLATE).getInputStream()) {
-            JasperReport report = JasperCompileManager.compileReport(input);
+        try {
+            JasperReport report = JasperReportRegistry.get(TEMPLATE);
             JasperPrint print = JasperFillManager.fillReport(report, parameters(analysis),
                     new JRBeanCollectionDataSource(rows(analysis)));
             return JasperExportManager.exportReportToPdf(print);

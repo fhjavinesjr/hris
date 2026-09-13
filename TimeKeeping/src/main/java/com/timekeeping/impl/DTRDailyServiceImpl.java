@@ -11,6 +11,7 @@ import com.timekeeping.reports.DtrReportDataLoader;
 import com.timekeeping.repositories.DTRDailyRepository;
 import com.timekeeping.repositories.DTRSegmentRepository;
 import com.timekeeping.repositories.WorkScheduleRepository;
+import com.timekeeping.reports.JasperReportRegistry;
 import com.timekeeping.services.DTRDailyService;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
@@ -841,7 +842,7 @@ public class DTRDailyServiceImpl implements DTRDailyService {
 
     @Override
     public void generateDtrReport(String employeeId, LocalDate fromDate, LocalDate toDate, OutputStream out) throws Exception {
-        JasperReport report = compile("reports/dtrNew.jrxml");
+        JasperReport report = JasperReportRegistry.get("reports/dtrNew.jrxml");
 
         Map<String, Object> params = new HashMap<>();
         params.put("EMPLOYEE_ID", employeeId);
@@ -925,13 +926,6 @@ public class DTRDailyServiceImpl implements DTRDailyService {
         return "true".equalsIgnoreCase(text) || "t".equalsIgnoreCase(text)
                 || "yes".equalsIgnoreCase(text) || "y".equalsIgnoreCase(text)
                 || "1".equals(text);
-    }
-
-    private JasperReport compile(String classpathPath) throws Exception {
-        ClassPathResource resource = new ClassPathResource(classpathPath);
-        try (InputStream is = resource.getInputStream()) {
-            return JasperCompileManager.compileReport(is);
-        }
     }
 
     private DTRDailyDTO toDTO(DTRDaily entity) {

@@ -8,6 +8,7 @@ import com.humanresource.entitymodels.PersonalData;
 import com.humanresource.impl.EmployeeAppointmentReportDataLoader;
 import com.humanresource.onboarding.AppointmentDocumentDtos.*;
 import com.humanresource.repositories.EmployeeAppointmentRepository;
+import com.humanresource.reports.JasperReportRegistry;
 import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.repositories.PersonalDataRepository;
 import microsoft.sql.DateTimeOffset;
@@ -408,8 +409,8 @@ public class AppointmentDocumentService {
         String path = kind == DocumentKind.OATH_OF_OFFICE
                 ? "reports/csc_oath_of_office_2025.jrxml"
                 : "reports/csc_assumption_to_duty_2025.jrxml";
-        try (InputStream stream = new ClassPathResource(path).getInputStream()) {
-            return sha(stream.readAllBytes());
+        try {
+            return sha(JasperReportRegistry.bytes(path));
         } catch (Exception exception) {
             throw new IllegalStateException("Official CSC template is unavailable", exception);
         }

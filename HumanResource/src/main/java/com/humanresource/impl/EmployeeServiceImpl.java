@@ -29,7 +29,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     // List of fields that should NOT be updated
     // Blacklisted
-    private static final List<String> NOT_ALLOWED_FIELDS = Arrays.asList("employeeId", "employeeNo", "employeePassword", "createdAt");
+    private static final List<String> NOT_ALLOWED_FIELDS = Arrays.asList("employeeId", "employeePassword", "createdAt");
 
     private final EmployeeRepository employeeRepository;
 
@@ -118,11 +118,35 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employeeDTO.getShortJobDesc(), employeeDTO.getCreatedAt(), employeeDTO.getUpdatedAt());
         existingEmployee.setEmployeeId(employeeId);
 
+        if (updates.containsKey("employeeNo")) {
+            Object requestedValue = updates.get("employeeNo");
+            if (!(requestedValue instanceof String requestedEmployeeNo) || requestedEmployeeNo.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Employee No must not be blank");
+            }
+
+            String normalizedEmployeeNo = requestedEmployeeNo.trim();
+            if (INSTALL_ADMIN_EMPLOYEE_NO.equalsIgnoreCase(existingEmployee.getEmployeeNo())
+                    && !INSTALL_ADMIN_EMPLOYEE_NO.equalsIgnoreCase(normalizedEmployeeNo)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "The installation administrator Employee No cannot be changed");
+            }
+
+            employeeRepository.findByEmployeeNoIgnoreCase(normalizedEmployeeNo)
+                    .filter(employee -> !employee.getEmployeeId().equals(employeeId))
+                    .ifPresent(employee -> {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "Employee No is already in use");
+                    });
+        }
+
         // Remove disallowed fields before updating
         Map<String, Object> filteredUpdates = new java.util.HashMap<>();
         updates.entrySet().stream()
                 .filter(entrySet -> !NOT_ALLOWED_FIELDS.contains(entrySet.getKey()))
                 .forEach(entrySet -> filteredUpdates.put(entrySet.getKey(), entrySet.getValue()));
+
+        if (filteredUpdates.get("employeeNo") instanceof String employeeNo) {
+            filteredUpdates.put("employeeNo", employeeNo.trim());
+        }
 
         objectMapper.updateValue(existingEmployee, filteredUpdates);
 

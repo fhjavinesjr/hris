@@ -73,25 +73,29 @@ public class PhilHealthContributionController {
     public ResponseEntity<List<Map<String, Object>>> getPhilHealthBrackets() throws Exception {
         List<PhilHealthContributionDTO> all = philHealthContributionService.getAllPhilHealthContribution();
         List<Map<String, Object>> brackets = new java.util.ArrayList<>();
+        Double greatestSalaryFrom = all.stream()
+                .map(dto -> parseAmount(dto.getMonthlySalaryRangeFrom()))
+                .filter(java.util.Objects::nonNull)
+                .max(Double::compareTo)
+                .orElse(null);
         
         for (PhilHealthContributionDTO dto : all) {
             Map<String, Object> bracket = new LinkedHashMap<>();
             
             // Parse salary range
-            Double salaryFrom = null;
-            Double salaryTo = null;
-            try {
-                if (dto.getMonthlySalaryRangeFrom() != null && !dto.getMonthlySalaryRangeFrom().isBlank()) {
-                    salaryFrom = Double.parseDouble(dto.getMonthlySalaryRangeFrom().replace(",", ""));
-                }
-                if (dto.getMonthlySalaryRangeTo() != null && !dto.getMonthlySalaryRangeTo().isBlank()) {
-                    salaryTo = Double.parseDouble(dto.getMonthlySalaryRangeTo().replace(",", ""));
-                }
-            } catch (Exception ignored) {}
+            Double salaryFrom = parseAmount(dto.getMonthlySalaryRangeFrom());
+            Double salaryTo = parseAmount(dto.getMonthlySalaryRangeTo());
+            Double psTo = parseAmount(dto.getPersonalShareTo());
+            Double esTo = parseAmount(dto.getEmployerShareTo());
+            boolean fixedShare = (psTo == null || psTo == 0.0) && (esTo == null || esTo == 0.0);
+            boolean isHighestFixedBracket = fixedShare && salaryFrom != null
+                    && salaryFrom.equals(greatestSalaryFrom);
             
             bracket.put("salaryFrom", salaryFrom);
             bracket.put("salaryTo", salaryTo);
-            bracket.put("isAndUp", salaryTo == null && salaryFrom != null);
+            // Historical rows use an artificial high salaryTo value. The highest fixed-share
+            // bracket is the statutory income ceiling and must also cover every salary above it.
+            bracket.put("isAndUp", salaryFrom != null && (salaryTo == null || isHighestFixedBracket));
             
             // Parse rate percentage
             Double rate = 0.0;
@@ -109,20 +113,12 @@ public class PhilHealthContributionController {
             Double esFixed = null;
             // psFixed = personalShareFrom (the floor or cap fixed amount for this bracket)
             // psTo    = personalShareTo  (>0 means ranged/rate-based bracket; 0 means fixed-amount bracket)
-            Double psTo = null;
-            Double esTo = null;
             try {
                 if (dto.getPersonalShareFrom() != null && !dto.getPersonalShareFrom().isBlank()) {
                     psFixed = Double.parseDouble(dto.getPersonalShareFrom().replace(",", ""));
                 }
-                if (dto.getPersonalShareTo() != null && !dto.getPersonalShareTo().isBlank()) {
-                    psTo = Double.parseDouble(dto.getPersonalShareTo().replace(",", ""));
-                }
                 if (dto.getEmployerShareFrom() != null && !dto.getEmployerShareFrom().isBlank()) {
                     esFixed = Double.parseDouble(dto.getEmployerShareFrom().replace(",", ""));
-                }
-                if (dto.getEmployerShareTo() != null && !dto.getEmployerShareTo().isBlank()) {
-                    esTo = Double.parseDouble(dto.getEmployerShareTo().replace(",", ""));
                 }
             } catch (Exception ignored) {}
             bracket.put("psFixed", psFixed);
@@ -134,6 +130,17 @@ public class PhilHealthContributionController {
         }
         
         return ResponseEntity.ok(brackets);
+    }
+
+    private static Double parseAmount(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(value.replace(",", ""));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
 }

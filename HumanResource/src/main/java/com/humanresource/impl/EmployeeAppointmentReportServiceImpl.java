@@ -1,6 +1,7 @@
 package com.humanresource.impl;
 
 import com.humanresource.dtos.PersonnelActionReportData;
+import com.humanresource.reports.JasperReportRegistry;
 import com.humanresource.services.EmployeeAppointmentReportService;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
@@ -32,19 +33,15 @@ public class EmployeeAppointmentReportServiceImpl implements EmployeeAppointment
     @Override
     public void generatePersonnelActionReport(Long employeeAppointmentId, OutputStream outputStream) throws Exception {
         PersonnelActionReportData data = dataLoader.load(employeeAppointmentId);
-        ClassPathResource resource = new ClassPathResource("reports/personnel_action.jrxml");
-
-        try (InputStream inputStream = resource.getInputStream()) {
-            JasperReport report = JasperCompileManager.compileReport(inputStream);
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("logoleft", imageStream(data.getLeftHeaderLogo()));
-            parameters.put("logoright", imageStream(data.getRightHeaderLogo()));
-            JasperPrint print = JasperFillManager.fillReport(
-                    report,
-                    parameters,
-                    new JRBeanCollectionDataSource(List.of(data)));
-            JasperExportManager.exportReportToPdfStream(print, outputStream);
-        }
+        JasperReport report = JasperReportRegistry.get("reports/personnel_action.jrxml");
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("logoleft", imageStream(data.getLeftHeaderLogo()));
+        parameters.put("logoright", imageStream(data.getRightHeaderLogo()));
+        JasperPrint print = JasperFillManager.fillReport(
+                report,
+                parameters,
+                new JRBeanCollectionDataSource(List.of(data)));
+        JasperExportManager.exportReportToPdfStream(print, outputStream);
     }
 
     private static InputStream imageStream(byte[] bytes) {

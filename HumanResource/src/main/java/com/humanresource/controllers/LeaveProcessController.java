@@ -19,16 +19,15 @@ import java.util.List;
  *   POST /api/leave-information/process
  *   Body: {
  *     "salaryPeriodSettingId": 1,
- *     "cutoffStartDate": "2024-11-16",
+ *     "cutoffStartDate": "2024-11-01",
  *     "cutoffEndDate": "2024-11-30",
  *     "scope": "ALL",          // or "EMPLOYEE"
  *     "employeeId": null,      // required when scope = EMPLOYEE
  *     "processedById": 1
  *   }
  *
- * The frontend (HR Management UI) resolves the cutoff dates from the
- * SalaryPeriodSetting, then passes the already-resolved dates here.
- * This keeps the engine independent of date-resolution logic.
+ * The date fields identify the selected posting month. The service computes
+ * the preceding calendar month's attendance (November posts October DTR).
  */
 @RestController
 @RequestMapping("/api/leave-information")

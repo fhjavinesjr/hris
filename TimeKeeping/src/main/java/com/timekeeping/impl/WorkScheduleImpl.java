@@ -5,6 +5,7 @@ import com.timekeeping.dtos.WorkScheduleReportRow;
 import com.timekeeping.entitymodels.WorkSchedule;
 import com.timekeeping.reports.WorkScheduleReportDataLoader;
 import com.timekeeping.repositories.WorkScheduleRepository;
+import com.timekeeping.reports.JasperReportRegistry;
 import com.timekeeping.services.WorkScheduleService;
 import jakarta.transaction.Transactional;
 import net.sf.jasperreports.engine.JasperCompileManager;
@@ -137,7 +138,7 @@ public class WorkScheduleImpl implements WorkScheduleService {
 
     @Override
     public void generateWorkScheduleReport(Long areaId, Long businessUnitId, LocalDate fromDate, LocalDate toDate, String preparedBy, String preparedByPos, String approvedBy, String approvedByPos, OutputStream out) throws Exception {
-        JasperReport report = compile("reports/works_schedule.jrxml");
+        JasperReport report = JasperReportRegistry.get("reports/works_schedule.jrxml");
 
         Map<String, Object> params = new HashMap<>();
         params.put("areaId", areaId);
@@ -303,10 +304,4 @@ public class WorkScheduleImpl implements WorkScheduleService {
                 || "yes".equalsIgnoreCase(text) || "y".equalsIgnoreCase(text) || "1".equals(text);
     }
 
-    private JasperReport compile(String classpathPath) throws Exception {
-        ClassPathResource resource = new ClassPathResource(classpathPath);
-        try (InputStream is = resource.getInputStream()) {
-            return JasperCompileManager.compileReport(is);
-        }
-    }
 }

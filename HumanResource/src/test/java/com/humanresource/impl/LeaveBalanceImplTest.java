@@ -98,6 +98,26 @@ class LeaveBalanceImplTest {
         assertEquals(20.0, balance.getSickLeaveBalance());
     }
 
+    @Test
+    void leaveFormCanShowBalanceBeforeItsOwnApplication() throws Exception {
+        LeaveApplication application = new LeaveApplication();
+        application.setLeaveApplicationId(9L);
+        application.setStartDate(LocalDate.now());
+        application.setEndDate(LocalDate.now().plusDays(1));
+        application.setNoOfDays(2.0);
+        application.setLeaveType("Vacation Leave");
+        application.setStatus("Approved");
+        when(leaveApplicationRepository.findByEmployeeId(1L)).thenReturn(List.of(application));
+
+        LeaveBalanceDTO current = service.getCurrentBalance(1L);
+        LeaveBalanceDTO beforeApplication =
+                service.getCurrentBalanceExcludingLeaveApplication(1L, 9L);
+
+        assertEquals(16.0, current.getVacationLeaveBalance());
+        assertEquals(18.0, beforeApplication.getVacationLeaveBalance());
+        assertEquals(20.0, beforeApplication.getSickLeaveBalance());
+    }
+
     private LeaveBeginningBalance beginningBalance(String type, double balance) {
         LeaveBeginningBalance beginning = new LeaveBeginningBalance();
         beginning.setEmployeeId(1L);

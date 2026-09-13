@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  * Algorithm (faithful port of old HRIS LeaveInformationAction.generate()):
  *   1.  Guard checks: skip Contractual, separated, no beginning balance, locked period
  *   2.  Resolve previous balance (from last LeaveInformation or from LeaveBeginningBalance)
- *   3.  Day-by-day loop through cutoffStartDate..cutoffEndDate:
+ *   3.  Day-by-day loop through the calendar month before the posting period:
  *         - Skip weekends and holidays
  *         - If DTR record exists → accrue late + undertime minutes
  *         - If no DTR → check approved leaves for that day
@@ -144,7 +144,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         }
 
         // Pre-load holiday dates for the period (JdbcTemplate cross-module query)
-        Set<LocalDate> holidayDates = loadHolidayDates(periodStart, periodEnd);
+        Set<LocalDate> holidayDates = loadHolidayDates(attendanceStart(periodStart), attendanceEnd(periodStart));
 
         for (Employee emp : employees) {
             String empLabel = emp.getEmployeeNo() + " - " + emp.getLastname();
@@ -239,6 +239,8 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
             List<String> skippedReasons, String empLabel) {
 
         Long employeeId = emp.getEmployeeId();
+        LocalDate attendanceStart = attendanceStart(periodStart);
+        LocalDate attendanceEnd = attendanceEnd(periodStart);
 
         // Guard 1: Must have an active appointment, matching regular-payroll eligibility.
         EmployeeAppointment appt = appointmentRepository
@@ -260,7 +262,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         if (!separations.isEmpty()) {
             boolean separatedBeforePeriod = separations.stream()
                     .anyMatch(s -> s.getSeparationDate() != null &&
-                              s.getSeparationDate().toLocalDate().isBefore(periodEnd));
+                              s.getSeparationDate().toLocalDate().isBefore(attendanceEnd));
             if (separatedBeforePeriod) {
                 skippedReasons.add(empLabel + ": Employee is separated");
                 return null;
@@ -280,9 +282,13 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         LeaveBeginningBalance slBeg = slBegOpt.get();
         LeaveBeginningBalance vlBeg = vlBegOpt.get();
 
-        // Guard 5: Beginning balance asOfDate must not be after the period end
-        if (slBeg.getAsOfDate() != null && slBeg.getAsOfDate().isAfter(periodEnd)) {
+        // Guard 5: Beginning balances must exist by the attendance cutoff end.
+        if (slBeg.getAsOfDate() != null && slBeg.getAsOfDate().isAfter(attendanceEnd)) {
             skippedReasons.add(empLabel + ": SL beginning balance date is after period end");
+            return null;
+        }
+        if (vlBeg.getAsOfDate() != null && vlBeg.getAsOfDate().isAfter(attendanceEnd)) {
+            skippedReasons.add(empLabel + ": VL beginning balance date is after period end");
             return null;
         }
 
@@ -301,16 +307,20 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         }
 
         // ── Check if this is the beginning balance period ─────────────────────
-        // Fetch the most recent prior LeaveInformation record for this employee.
-        // If none exists, this is the very first period — stamp the beginning balance
-        // directly from LeaveBeginningBalance (isBegBalance = true, zero earnings /
-        // deductions). The NEXT period processed will find this record as lastPeriod
-        // and carry its balance forward into normal leave-earning computation.
+        // Carry forward only a completed period before this cutoff starts.
+        // A beginning balance dated before the attendance cutoff is an opening
+        // balance; it must not suppress the first attendance computation.
         Optional<LeaveInformation> lastPeriod =
                 leaveInfoRepository.findTopByEmployeeIdAndCutoffEndDateBeforeOrderByCutoffEndDateDesc(
-                        employeeId, periodEnd);
+                        employeeId, periodStart);
 
-        if (lastPeriod.isEmpty()) {
+        boolean beginningBalanceBeforePeriod = slBeg.getAsOfDate() != null
+                && vlBeg.getAsOfDate() != null
+                && slBeg.getAsOfDate().isBefore(attendanceStart)
+                && vlBeg.getAsOfDate().isBefore(attendanceStart);
+        // Preserve balance-only initialization for the cutoff containing the
+        // beginning balance date (and legacy undated beginning balances).
+        if (lastPeriod.isEmpty() && !beginningBalanceBeforePeriod) {
             LocalDate begAsOfDate = slBeg.getAsOfDate();
             String begParticulars = "Beginning Balance as of " +
                     (begAsOfDate != null ? begAsOfDate.toString() : periodEnd.toString());
@@ -361,9 +371,10 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         }
 
         // ── Resolve previous balances ────────────────────────────────────────
-        // At this point lastPeriod is always present (isEmpty case returned above).
-        double prevSL = nvl(lastPeriod.get().getSickLeaveBalance());
-        double prevVL = nvl(lastPeriod.get().getVacationLeaveBalance());
+        double prevSL = nvl(lastPeriod.isPresent()
+                ? lastPeriod.get().getSickLeaveBalance() : slBeg.getBalance());
+        double prevVL = nvl(lastPeriod.isPresent()
+                ? lastPeriod.get().getVacationLeaveBalance() : vlBeg.getBalance());
 
         // ── Pre-load approved leave applications for this employee ───────────
         // Includes leaves that are:
@@ -383,13 +394,13 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         // Until then, all filing screens continue to use the dashboard balance.
         List<LeaveMonetization> approvedMonetizations = leaveMonetizationRepository
                 .findByEmployeeIdAndApprovalStatusAndApprovedAtBetween(
-                        employeeId, "Approved", periodStart, periodEnd);
+                        employeeId, "Approved", attendanceStart, attendanceEnd);
 
         // ── Pre-load approved pass slips for this employee ───────────────────
         // Approved pass slips represent official-business absences; minutes covered
         // by a pass slip must not be charged to VL via the day equivalent deduction.
         List<PassSlip> approvedPassSlips = passSlipRepository
-                .findByEmployeeIdAndPassSlipDateBetween(employeeId, periodStart, periodEnd)
+                .findByEmployeeIdAndPassSlipDateBetween(employeeId, attendanceStart, attendanceEnd)
                 .stream()
                 .filter(ps -> "Approved".equalsIgnoreCase(ps.getStatus()))
                 .collect(Collectors.toList());
@@ -401,8 +412,8 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         List<CompensatoryTimeOff> approvedCtos = ctoRepository
                 .findByEmployeeIdAndStatus(employeeId, "Approved")
                 .stream()
-                .filter(c -> !c.getDateOfOffset().isBefore(periodStart)
-                          && !c.getDateOfOffset().isAfter(periodEnd))
+                .filter(c -> !c.getDateOfOffset().isBefore(attendanceStart)
+                          && !c.getDateOfOffset().isAfter(attendanceEnd))
                 .collect(Collectors.toList());
 
         // ── Pre-load approved Official Engagement Applications for this employee ──
@@ -411,7 +422,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         // OEs offset late/undertime minutes in the same way as pass slips.
         List<OfficialEngagementApplication> approvedOEs = oeRepository
                 .findByEmployeeIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                        employeeId, periodEnd, periodStart)
+                        employeeId, attendanceEnd, attendanceStart)
                 .stream()
                 .filter(oe -> "Approved".equalsIgnoreCase(oe.getStatus()))
                 .collect(Collectors.toList());
@@ -422,7 +433,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         // compute late and undertime instead of marking absent. For present days,
         // the corrected times override the DTR late/undertime.
         List<TimeCorrection> approvedTCs = tcRepository
-                .findByEmployeeIdAndWorkDateBetween(employeeId, periodStart, periodEnd)
+                .findByEmployeeIdAndWorkDateBetween(employeeId, attendanceStart, attendanceEnd)
                 .stream()
                 .filter(tc -> "Approved".equalsIgnoreCase(tc.getStatus()))
                 .collect(Collectors.toList());
@@ -444,8 +455,8 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         //  which is the Long database ID — NOT the biometric device number)
         String dtrEmployeeId = String.valueOf(emp.getEmployeeId());
 
-        LocalDate day = periodStart;
-        while (!day.isAfter(periodEnd)) {
+        LocalDate day = attendanceStart;
+        while (!day.isAfter(attendanceEnd)) {
             DayOfWeek dow = day.getDayOfWeek();
 
             // Skip weekends UNLESS the employee has an explicit work schedule on that day
@@ -471,7 +482,8 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
             // Check DTR record for this working day
             Map<String, Object> dtrRow = loadDtrDaily(dtrEmployeeId, day);
 
-            if (dtrRow != null) {
+            if (dtrRow != null && !"ABSENT".equalsIgnoreCase(
+                    String.valueOf(dtrRow.get("attendance_status")))) {
                 // Employee was present — accrue late and undertime
                 int late = toInt(dtrRow.get("total_late_minutes"));
                 int ut = toInt(dtrRow.get("total_undertime_minutes"));
@@ -509,7 +521,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                 totalLateMinutes += netLate;
                 totalUndertimeMinutes += netUt;
             } else {
-                // No DTR record — check Time Correction first (employee corrected a missed punch).
+                // Missing or explicitly absent DTR — check approved exceptions first.
                 TimeCorrection tc = findTCForDay(day, approvedTCs);
                 if (tc != null) {
                     int[] corrected = computeTimeCorrectionLateUt(tc, scheduledShift);
@@ -592,11 +604,11 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         double earnedSL = DEFAULT_EARN_RATE;
 
         // VL: look up from EarningLeave table by absent days; falls back to 1.25
-        double earnedVL = lookupVlEarnRate((int) Math.round(absentCount), periodEnd);
+        double earnedVL = lookupVlEarnRate((int) Math.round(absentCount), attendanceEnd);
 
         // ── Compute Day Equivalent (late+UT deduction from VL) ───────────────
         int totalLateUt = totalLateMinutes + totalUndertimeMinutes;
-        double dayEquivFraction = computeDayEquivalent(totalLateUt, periodEnd);
+        double dayEquivFraction = computeDayEquivalent(totalLateUt, attendanceEnd);
 
         double[] monetizedDays = totalMonetizedDays(approvedMonetizations);
         double monetizedSL = monetizedDays[0];
@@ -919,8 +931,17 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
     //  Helper utilities
     // ─────────────────────────────────────────────────────────────────────────
 
+    // Leave credits are posted in the month after the attendance was rendered.
+    static LocalDate attendanceStart(LocalDate postingStart) {
+        return postingStart.withDayOfMonth(1).minusMonths(1);
+    }
+
+    static LocalDate attendanceEnd(LocalDate postingStart) {
+        return postingStart.withDayOfMonth(1).minusDays(1);
+    }
+
     private void appendParticular(StringBuilder sb, LocalDate date, String tag) {
-        if (sb.length() > 0) sb.append("|");
+        if (sb.length() > 0) sb.append(" | ");
         sb.append(date).append(" ").append(tag);
     }
 

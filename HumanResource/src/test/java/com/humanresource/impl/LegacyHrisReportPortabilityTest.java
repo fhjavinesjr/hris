@@ -111,6 +111,9 @@ class LegacyHrisReportPortabilityTest {
         assertTrue(leaveCardParameters.contains("SEPARATION_TEXT"));
         assertTrue(leaveFormParameters.contains("WORKING_DAYS_APPLIED"));
         assertTrue(leaveFormParameters.contains("INCLUSIVE_DATES"));
+        assertTrue(leaveFormParameters.contains("CREDIT_DATE_AS_OF"));
+        assertTrue(leaveFormParameters.contains("CERTIFIED_VL_CREDIT"));
+        assertTrue(leaveFormParameters.contains("CERTIFIED_SL_CREDIT"));
     }
 
     @Test

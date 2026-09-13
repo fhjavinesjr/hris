@@ -1,6 +1,7 @@
 package com.payroll.impl;
 
 import com.payroll.services.EarningsReportService;
+import com.payroll.reports.JasperReportRegistry;
 import net.sf.jasperreports.engine.*;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -83,13 +84,7 @@ public class EarningsReportServiceImpl implements EarningsReportService {
     }
 
     private JasperReport compile(String classpathPath) throws Exception {
-        Resource resource = resourceLoader.getResource(classpathPath);
-        if (!resource.exists()) {
-            throw new IllegalStateException("Earnings report JRXML not found: " + classpathPath);
-        }
-        try (InputStream is = resource.getInputStream()) {
-            return JasperCompileManager.compileReport(is);
-        }
+        return JasperReportRegistry.get(classpathPath);
     }
 
     private String safe(String value) {

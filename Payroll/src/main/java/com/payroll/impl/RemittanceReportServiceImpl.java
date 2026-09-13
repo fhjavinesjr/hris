@@ -1,6 +1,7 @@
 package com.payroll.impl;
 
 import com.payroll.services.RemittanceReportService;
+import com.payroll.reports.JasperReportRegistry;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -118,12 +119,8 @@ public class RemittanceReportServiceImpl implements RemittanceReportService {
     }
 
     private void export(String reportPath, Map<String, Object> params, OutputStream out) throws Exception {
-        Resource resource = resourceLoader.getResource("classpath:" + reportPath);
-        if (!resource.exists()) {
-            throw new IllegalStateException("Report template not found: " + reportPath);
-        }
-        try (InputStream is = resource.getInputStream(); Connection conn = dataSource.getConnection()) {
-            JasperReport report = JasperCompileManager.compileReport(is);
+        try (Connection conn = dataSource.getConnection()) {
+            JasperReport report = JasperReportRegistry.get(reportPath);
             JasperPrint print = JasperFillManager.fillReport(report, params, conn);
             JasperExportManager.exportReportToPdfStream(print, out);
         }

@@ -67,18 +67,26 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
 
     @Override
     public LeaveBalanceDTO getCurrentBalance(Long employeeId) throws Exception {
-        return getCurrentBalanceInternal(employeeId, null);
+        return getCurrentBalanceInternal(employeeId, null, null);
     }
 
     @Override
     public LeaveBalanceDTO getCurrentBalanceExcludingMonetization(
             Long employeeId,
             Long leaveMonetizationId) throws Exception {
-        return getCurrentBalanceInternal(employeeId, leaveMonetizationId);
+        return getCurrentBalanceInternal(employeeId, null, leaveMonetizationId);
+    }
+
+    @Override
+    public LeaveBalanceDTO getCurrentBalanceExcludingLeaveApplication(
+            Long employeeId,
+            Long leaveApplicationId) throws Exception {
+        return getCurrentBalanceInternal(employeeId, leaveApplicationId, null);
     }
 
     private LeaveBalanceDTO getCurrentBalanceInternal(
             Long employeeId,
+            Long excludedLeaveApplicationId,
             Long excludedMonetizationId) throws Exception {
         LeaveBalanceDTO result = new LeaveBalanceDTO();
         result.setEmployeeId(employeeId);
@@ -124,6 +132,10 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
         final LocalDate cutoffFinal = cutoffAfter;
 
         for (LeaveApplication app : allApps) {
+            if (excludedLeaveApplicationId != null
+                    && excludedLeaveApplicationId.equals(app.getLeaveApplicationId())) {
+                continue;
+            }
             if (app.getStartDate() == null) continue;
             if (!app.getStartDate().isAfter(cutoffFinal)) continue;
             if (isInactiveStatus(app.getStatus())) continue;

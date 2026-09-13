@@ -4,6 +4,7 @@ import com.payroll.dtos.PayslipDTO;
 import com.payroll.dtos.PayslipLineDTO;
 import com.payroll.services.PayslipService;
 import com.payroll.services.PayrollPeriodLockService;
+import com.payroll.reports.JasperReportRegistry;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -317,16 +318,8 @@ public class PayslipServiceImpl implements PayslipService {
         // boolean and row-limiting rules out of the report query.
         parameters.put("payrollDetailId", payrollDetailId);
 
-        Resource reportResource = resourceLoader.getResource("classpath:reports/payslip.jrxml");
-        if (!reportResource.exists()) {
-            reportResource = resourceLoader.getResource("classpath:payslip.jrxml");
-        }
-        if (!reportResource.exists()) {
-            throw new IllegalStateException("Payslip JRXML template was not found. Expected reports/payslip.jrxml in resources.");
-        }
-
         try (Connection connection = dataSource.getConnection()) {
-            JasperReport report = JasperCompileManager.compileReport(reportResource.getInputStream());
+            JasperReport report = JasperReportRegistry.get("reports/payslip.jrxml");
             JasperPrint print = JasperFillManager.fillReport(report, parameters, connection);
             JasperExportManager.exportReportToPdfStream(print, outputStream);
         }

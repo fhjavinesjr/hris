@@ -1,5 +1,6 @@
 package com.humanresource.onboarding;
 
+import com.humanresource.reports.JasperReportRegistry;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JasperCompileManager;
@@ -72,10 +73,9 @@ public class AppointmentDocumentReportRenderer {
     }
 
     private byte[] render(String path, Map<String, Object> parameters, JRDataSource source) {
-        try (InputStream input = new ClassPathResource(path).getInputStream();
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             JasperPrint print = JasperFillManager.fillReport(
-                    JasperCompileManager.compileReport(input), parameters, source);
+                    JasperReportRegistry.get(path), parameters, source);
             JasperExportManager.exportReportToPdfStream(print, output);
             return output.toByteArray();
         } catch (Exception exception) {

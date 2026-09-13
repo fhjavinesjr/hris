@@ -19,6 +19,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     // Avoid using raw SQL queries to prevent SQL injection attacks.
 
     Optional<Employee> findByEmployeeNo(String employeeNo);
+    Optional<Employee> findByEmployeeNoIgnoreCase(String employeeNo);
     boolean existsByBiometricNo(String biometricNo);
     boolean existsByEmailIgnoreCase(String email);
     @Lock(LockModeType.PESSIMISTIC_WRITE)

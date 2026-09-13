@@ -126,7 +126,9 @@ public class LeaveProcessBatchServiceImpl implements LeaveProcessBatchService {
 
             final LocalDate periodStart = req.getCutoffStartDate();
             final LocalDate periodEnd = req.getCutoffEndDate();
-            final Set<LocalDate> holidayDates = leaveProcessService.loadHolidayDates(periodStart, periodEnd);
+            final Set<LocalDate> holidayDates = leaveProcessService.loadHolidayDates(
+                    LeaveProcessServiceImpl.attendanceStart(periodStart),
+                    LeaveProcessServiceImpl.attendanceEnd(periodStart));
 
             List<Employee> employees = leaveProcessService.resolveEmployeesForRequest(req);
 

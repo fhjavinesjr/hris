@@ -1,5 +1,6 @@
 package com.primehr.rsp.report;
 
+import com.primehr.reports.JasperReportRegistry;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -42,8 +43,8 @@ public class RspFormalReportRenderer {
 
     private static Map<String,Object> base(String agency,String classification,String generated){Map<String,Object> p=new LinkedHashMap<>();p.put("agency",agency);p.put("classification",classification);p.put("generated",generated);p.put("templateVersion","PHASE-5F.1-v1");return p;}
     private static byte[] render(String template,Map<String,Object> parameters,List<?> rows){
-        try(InputStream in=new ClassPathResource(template).getInputStream()){
-            JasperReport report=JasperCompileManager.compileReport(in);
+        try{
+            JasperReport report=JasperReportRegistry.get(template);
             JasperPrint print=JasperFillManager.fillReport(report,parameters,new JRBeanCollectionDataSource(rows));
             return JasperExportManager.exportReportToPdf(print);
         }catch(Exception e){throw new IllegalStateException("Unable to generate formal RSP report",e);}

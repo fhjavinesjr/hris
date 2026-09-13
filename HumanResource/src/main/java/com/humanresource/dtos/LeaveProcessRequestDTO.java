@@ -10,13 +10,13 @@ import java.util.List;
  */
 public class LeaveProcessRequestDTO implements Serializable {
 
-    /** ID of the salary period setting to use for cut-off date resolution */
+    /** ID of the selected salary period setting retained for ledger traceability. */
     private Long salaryPeriodSettingId;
 
-    /** The resolved cut-off start date (from SalaryPeriodResolver) */
+    /** Posting month start. Attendance is always the preceding calendar month. */
     private LocalDate cutoffStartDate;
 
-    /** The resolved cut-off end date */
+    /** Posting month end, retained under the existing API field name. */
     private LocalDate cutoffEndDate;
 
     /** Scope: ALL | EMPLOYEE */

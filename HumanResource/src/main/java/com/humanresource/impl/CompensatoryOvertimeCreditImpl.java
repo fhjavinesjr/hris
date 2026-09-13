@@ -7,6 +7,7 @@ import com.humanresource.entitymodels.OvertimeRequest;
 import com.humanresource.entitymodels.ReportHeaderSettings;
 import com.humanresource.repositories.OvertimeRequestRepository;
 import com.humanresource.repositories.ReportHeaderSettingsRepository;
+import com.humanresource.reports.JasperReportRegistry;
 import org.springframework.jdbc.core.JdbcTemplate;
 import com.humanresource.repositories.CompensatoryOvertimeCreditRepository;
 import com.humanresource.repositories.CompensatoryTimeOffRepository;
@@ -530,7 +531,7 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     @Override
     public void generateCertificateCoc(Long cocId, OutputStream out) throws Exception {
-        JasperReport report = compile("reports/CertificateCOC.jrxml");
+        JasperReport report = JasperReportRegistry.get("reports/CertificateCOC.jrxml");
 
         Map<String, Object> params = new HashMap<>();
         params.put("COC_ID", cocId);
@@ -562,10 +563,4 @@ public class CompensatoryOvertimeCreditImpl implements CompensatoryOvertimeCredi
         return dateFiled == null ? "" : REPORT_DATE_FORMAT.format(dateFiled.plusYears(1));
     }
 
-    private JasperReport compile(String classpathPath) throws Exception {
-        ClassPathResource resource = new ClassPathResource(classpathPath);
-        try (InputStream is = resource.getInputStream()) {
-            return JasperCompileManager.compileReport(is);
-        }
-    }
 }

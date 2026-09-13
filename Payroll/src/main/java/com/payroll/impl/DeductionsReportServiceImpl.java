@@ -1,6 +1,7 @@
 package com.payroll.impl;
 
 import com.payroll.services.DeductionsReportService;
+import com.payroll.reports.JasperReportRegistry;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -83,13 +84,7 @@ public class DeductionsReportServiceImpl implements DeductionsReportService {
     }
 
     private JasperReport compile(String classpathPath) throws Exception {
-        Resource resource = resourceLoader.getResource(classpathPath);
-        if (!resource.exists()) {
-            throw new IllegalStateException("Deductions report JRXML not found: " + classpathPath);
-        }
-        try (InputStream is = resource.getInputStream()) {
-            return JasperCompileManager.compileReport(is);
-        }
+        return JasperReportRegistry.get(classpathPath);
     }
 
     private String safe(String value) {

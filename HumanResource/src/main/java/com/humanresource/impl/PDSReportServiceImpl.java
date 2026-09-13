@@ -10,6 +10,7 @@ import com.humanresource.repositories.PersonalDataRepository;
 import com.humanresource.repositories.ReferencesRepository;
 import com.humanresource.repositories.VoluntaryWorkRepository;
 import com.humanresource.repositories.WorkExperienceRepository;
+import com.humanresource.reports.JasperReportRegistry;
 import com.humanresource.services.PDSReportService;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JRException;
@@ -197,19 +198,7 @@ public class PDSReportServiceImpl implements PDSReportService {
     }
 
     private JasperReport loadCompiledReport(String classpathPath) throws Exception {
-        ClassPathResource resource = new ClassPathResource(classpathPath);
-        if (!resource.exists()) {
-            throw new IllegalStateException("PDS compiled Jasper file not found in classpath: " + classpathPath);
-        }
-        try (InputStream is = resource.getInputStream()) {
-            Object report = JRLoader.loadObject(is);
-            if (!(report instanceof JasperReport)) {
-                throw new IllegalStateException("Classpath file is not a JasperReport: " + classpathPath);
-            }
-            return (JasperReport) report;
-        } catch (JRException e) {
-            throw new JRException("Unable to load compiled PDS Jasper file: " + classpathPath, e);
-        }
+        return JasperReportRegistry.get(classpathPath);
     }
 
     private JasperPrint mergeReports(List<JasperPrint> prints) {

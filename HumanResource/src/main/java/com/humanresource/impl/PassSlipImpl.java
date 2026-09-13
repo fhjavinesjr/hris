@@ -5,6 +5,7 @@ import com.humanresource.entitymodels.PassSlip;
 import com.humanresource.entitymodels.ReportHeaderSettings;
 import com.humanresource.repositories.PassSlipRepository;
 import com.humanresource.repositories.ReportHeaderSettingsRepository;
+import com.humanresource.reports.JasperReportRegistry;
 import com.humanresource.services.DateConflictChecker;
 import com.humanresource.services.PassSlipService;
 import jakarta.transaction.Transactional;
@@ -244,11 +245,8 @@ public class PassSlipImpl implements PassSlipService {
             throw new IllegalArgumentException("passSlipId is required.");
         }
 
-        ClassPathResource reportResource = new ClassPathResource("reports/permitSlip.jrxml");
-        try (InputStream inputStream = reportResource.getInputStream();
-             Connection connection = dataSource.getConnection()) {
-
-            JasperReport jasperReport = JasperCompileManager.compileReport(inputStream);
+        try (Connection connection = dataSource.getConnection()) {
+            JasperReport jasperReport = JasperReportRegistry.get("reports/permitSlip.jrxml");
 
             Map<String, Object> params = new HashMap<>();
             params.put("passSlipId", passSlipId);
