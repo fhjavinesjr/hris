@@ -17,6 +17,8 @@
 	<parameter name="CREDIT_DATE_AS_OF" class="java.sql.Date"/>
 	<parameter name="CERTIFIED_VL_CREDIT" class="java.lang.Double"/>
 	<parameter name="CERTIFIED_SL_CREDIT" class="java.lang.Double"/>
+	<parameter name="LESS_VL_THIS_APPLICATION" class="java.lang.Double"/>
+	<parameter name="LESS_SL_THIS_APPLICATION" class="java.lang.Double"/>
 	<parameter name="LEAVE_TYPE_CODE" class="java.lang.Integer"/>
 	<parameter name="OTHER_LEAVE_TYPE" class="java.lang.String"/>
 	<parameter name="VL_IN_COUNTRY" class="java.lang.Integer"/>
@@ -38,6 +40,11 @@
 				la.noOfDays,
 				la.details,
 				la.commutation,
+				CASE
+					WHEN la.withPay IS NULL THEN 1
+					WHEN LOWER(CAST(la.withPay AS varchar(5))) IN ('1', 'true', 't') THEN 1
+					ELSE 0
+				END AS withPay,
 				la.approvedStatus,
 				la.approvalMessage,
 				la.recommendationStatus,
@@ -64,6 +71,7 @@
 				lm.totalDays AS noOfDays,
 				COALESCE(lm.reason, '') AS details,
 				'not requested' AS commutation,
+				CAST(1 AS integer) AS withPay,
 				lm.approvalStatus AS approvedStatus,
 				COALESCE(lm.approvalRemarks, '') AS approvalMessage,
 				lm.recommendationStatus AS recommendationStatus,
@@ -135,11 +143,18 @@
 			CAST(CAST($P{CERTIFIED_VL_CREDIT} AS float) + CAST($P{CERTIFIED_SL_CREDIT} AS float) AS float) AS totalCredit,
 			CAST(
 				CASE
-					WHEN COALESCE(src.approvedStatus, '') = 'Approved' THEN $P{WORKING_DAYS_APPLIED}
+					WHEN COALESCE(src.approvedStatus, '') = 'Approved' AND src.withPay = 1
+						THEN $P{WORKING_DAYS_APPLIED}
 					ELSE 0
 				END
 			AS float) AS daysApprovedWithPay,
-			CAST(0 AS float) AS daysApprovedWithoutPay,
+			CAST(
+				CASE
+					WHEN COALESCE(src.approvedStatus, '') = 'Approved' AND src.withPay = 0
+						THEN $P{WORKING_DAYS_APPLIED}
+					ELSE 0
+				END
+			AS float) AS daysApprovedWithoutPay,
 			CAST(0 AS float) AS daysApprovedOther,
 			CASE
 				WHEN COALESCE(src.approvedStatus, '') = 'Disapproved' THEN COALESCE(src.approvalMessage, '')
@@ -195,51 +210,17 @@
 			END AS hospitalAgency,
 			COALESCE(st.companyName, '') AS currentCompanySetting,
 			COALESCE(st.address, '') AS currentCompanyAddressSetting,
-			CAST(
-				CASE
-					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysVL, 0)
-					WHEN src.leaveType IN ('Vacation Leave', 'Forced Leave') THEN $P{WORKING_DAYS_APPLIED}
-					ELSE 0
-				END
-			AS float) AS lessVlThisApplication,
-			CAST(
-				CASE
-					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysSL, 0)
-					WHEN src.leaveType = 'Sick Leave' THEN $P{WORKING_DAYS_APPLIED}
-					ELSE 0
-				END
-			AS float) AS lessSlThisApplication,
-			CAST(
-				CASE
-					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysSL, 0) + COALESCE(src.noOfDaysVL, 0)
-					WHEN src.leaveType IN ('Vacation Leave', 'Forced Leave', 'Sick Leave') THEN $P{WORKING_DAYS_APPLIED}
-					ELSE 0
-				END
-			AS float) AS lessTotalThisApplication,
-			CAST(
-				CAST($P{CERTIFIED_VL_CREDIT} AS float) -
-				CASE
-					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysVL, 0)
-					WHEN src.leaveType IN ('Vacation Leave', 'Forced Leave') THEN $P{WORKING_DAYS_APPLIED}
-					ELSE 0
-				END
-			AS float) AS balanceVl,
-			CAST(
-				CAST($P{CERTIFIED_SL_CREDIT} AS float) -
-				CASE
-					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysSL, 0)
-					WHEN src.leaveType = 'Sick Leave' THEN $P{WORKING_DAYS_APPLIED}
-					ELSE 0
-				END
-			AS float) AS balanceSl,
-			CAST(
-				(CAST($P{CERTIFIED_VL_CREDIT} AS float) + CAST($P{CERTIFIED_SL_CREDIT} AS float)) -
-				CASE
-					WHEN src.isMone = 1 THEN COALESCE(src.noOfDaysSL, 0) + COALESCE(src.noOfDaysVL, 0)
-					WHEN src.leaveType IN ('Vacation Leave', 'Forced Leave', 'Sick Leave') THEN $P{WORKING_DAYS_APPLIED}
-					ELSE 0
-				END
-			AS float) AS balanceTotal
+			CAST($P{LESS_VL_THIS_APPLICATION} AS float) AS lessVlThisApplication,
+			CAST($P{LESS_SL_THIS_APPLICATION} AS float) AS lessSlThisApplication,
+			CAST(CAST($P{LESS_VL_THIS_APPLICATION} AS float)
+				+ CAST($P{LESS_SL_THIS_APPLICATION} AS float) AS float) AS lessTotalThisApplication,
+			CAST(CAST($P{CERTIFIED_VL_CREDIT} AS float)
+				- CAST($P{LESS_VL_THIS_APPLICATION} AS float) AS float) AS balanceVl,
+			CAST(CAST($P{CERTIFIED_SL_CREDIT} AS float)
+				- CAST($P{LESS_SL_THIS_APPLICATION} AS float) AS float) AS balanceSl,
+			CAST(CAST($P{CERTIFIED_VL_CREDIT} AS float) + CAST($P{CERTIFIED_SL_CREDIT} AS float)
+				- CAST($P{LESS_VL_THIS_APPLICATION} AS float)
+				- CAST($P{LESS_SL_THIS_APPLICATION} AS float) AS float) AS balanceTotal
 		FROM source_data src
 		LEFT JOIN employee e ON e.employeeId = src.employeeId
 		LEFT JOIN personaldata pd ON pd.employeeId = src.employeeId

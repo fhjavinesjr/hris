@@ -9,6 +9,8 @@ public interface PassSlipService {
 
     PassSlipDTO create(PassSlipDTO dto) throws Exception;
 
+    PassSlipDTO createOverride(PassSlipDTO dto) throws Exception;
+
     List<PassSlipDTO> getAll() throws Exception;
 
     List<PassSlipDTO> getAllByEmployeeId(Long employeeId) throws Exception;
@@ -22,6 +24,8 @@ public interface PassSlipService {
     PassSlipDTO recommend(Long passSlipId, Long recommendedById, String remarks) throws Exception;
 
     PassSlipDTO update(Long passSlipId, PassSlipDTO dto) throws Exception;
+
+    PassSlipDTO updateOverride(Long passSlipId, PassSlipDTO dto) throws Exception;
 
     Boolean delete(Long passSlipId) throws Exception;
 

@@ -70,6 +70,7 @@ public class LeaveFormReportServiceImpl implements LeaveFormReportService {
                         leaveApplication.getStartDate(),
                         leaveApplication.getEndDate(),
                         leaveApplication.getNoOfDays());
+        boolean withPay = leaveApplication == null || !Boolean.FALSE.equals(leaveApplication.getWithPay());
         putDateParameters(
                 params,
                 leaveApplication == null ? null : leaveApplication.getStartDate(),
@@ -85,9 +86,9 @@ public class LeaveFormReportServiceImpl implements LeaveFormReportService {
                         : (leaveApplication.getStartDate() == null
                         ? leaveApplication.getDateFiled()
                         : leaveApplication.getStartDate()),
-                consumesVacationCredit(leaveApplication == null ? null : leaveApplication.getLeaveType())
+                withPay && consumesVacationCredit(leaveApplication == null ? null : leaveApplication.getLeaveType())
                         ? applicationDays : 0.0,
-                normalize(leaveApplication == null ? null : leaveApplication.getLeaveType()).equals("sick leave")
+                withPay && normalize(leaveApplication == null ? null : leaveApplication.getLeaveType()).equals("sick leave")
                         ? applicationDays : 0.0
         );
         putLeaveDetailParameters(
@@ -182,6 +183,8 @@ public class LeaveFormReportServiceImpl implements LeaveFormReportService {
         // then shows this application under Less and returns to current dashboard.
         params.put("CERTIFIED_VL_CREDIT", balanceBeforeApplication(currentVl, appliedVl));
         params.put("CERTIFIED_SL_CREDIT", balanceBeforeApplication(currentSl, appliedSl));
+        params.put("LESS_VL_THIS_APPLICATION", appliedVl);
+        params.put("LESS_SL_THIS_APPLICATION", appliedSl);
     }
 
     static LocalDate previousMonthEnd(LocalDate referenceDate) {

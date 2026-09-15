@@ -6,6 +6,7 @@ import com.humanresource.services.EmployeeAppointmentService;
 import com.humanresource.services.EmployeeAppointmentReportService;
 import com.humanresource.onboarding.HrmPermissionGuard;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,8 @@ import java.nio.charset.StandardCharsets;
 @RestController
 @RequestMapping("/api")
 public class EmployeeAppointmentController {
+
+    private static final String EMPLOYMENT_RECORD = "hrm.employmentRecord";
 
     private final EmployeeAppointmentService employeeAppointmentService;
     private final EmployeeAppointmentReportService employeeAppointmentReportService;
@@ -33,7 +36,10 @@ public class EmployeeAppointmentController {
     }
 
     @PostMapping("/employeeAppointment/create")
-    public ResponseEntity<MetadataResponse> createEmployeeAppointment(@RequestBody EmployeeAppointmentDTO employeeAppointmentDTO) throws Exception {
+    public ResponseEntity<MetadataResponse> createEmployeeAppointment(
+            @Valid @RequestBody EmployeeAppointmentDTO employeeAppointmentDTO,
+            @RequestHeader("Authorization") String token) throws Exception {
+        permissions.requireAction(token, EMPLOYMENT_RECORD, HrmPermissionGuard.Action.ADD);
         employeeAppointmentDTO = employeeAppointmentService.createEmployeeAppointment(employeeAppointmentDTO);
         if(employeeAppointmentDTO == null) {
             return ResponseEntity
@@ -57,7 +63,11 @@ public class EmployeeAppointmentController {
     }
 
     @PutMapping("/employeeAppointment/update/{employeeAppointmentId}")
-    public ResponseEntity<MetadataResponse> updateEmployeeAppointment(@PathVariable("employeeAppointmentId") Long employeeAppointmentId, @RequestBody EmployeeAppointmentDTO employeeAppointmentDTO) throws Exception {
+    public ResponseEntity<MetadataResponse> updateEmployeeAppointment(
+            @PathVariable("employeeAppointmentId") Long employeeAppointmentId,
+            @Valid @RequestBody EmployeeAppointmentDTO employeeAppointmentDTO,
+            @RequestHeader("Authorization") String token) throws Exception {
+        permissions.requireAction(token, EMPLOYMENT_RECORD, HrmPermissionGuard.Action.EDIT);
         employeeAppointmentDTO = employeeAppointmentService.updateEmployeeAppointment(employeeAppointmentId, employeeAppointmentDTO);
         if(employeeAppointmentDTO == null) {
             return ResponseEntity
@@ -69,7 +79,10 @@ public class EmployeeAppointmentController {
     }
 
     @DeleteMapping("/employeeAppointment/delete/{employeeAppointmentId}")
-    public ResponseEntity<MetadataResponse> deleteEmployeeAppointment(@PathVariable("employeeAppointmentId") Long employeeAppointmentId) throws Exception {
+    public ResponseEntity<MetadataResponse> deleteEmployeeAppointment(
+            @PathVariable("employeeAppointmentId") Long employeeAppointmentId,
+            @RequestHeader("Authorization") String token) throws Exception {
+        permissions.requireAction(token, EMPLOYMENT_RECORD, HrmPermissionGuard.Action.DELETE);
         Boolean boolDel = employeeAppointmentService.deleteEmployeeAppointment(employeeAppointmentId);
         if(!boolDel) {
             return ResponseEntity
@@ -100,7 +113,10 @@ public class EmployeeAppointmentController {
     }
 
     @PutMapping("/employeeAppointment/deactivate/{employeeAppointmentId}")
-    public ResponseEntity<MetadataResponse> deactivateAppointment(@PathVariable Long employeeAppointmentId) throws Exception {
+    public ResponseEntity<MetadataResponse> deactivateAppointment(
+            @PathVariable Long employeeAppointmentId,
+            @RequestHeader("Authorization") String token) throws Exception {
+        permissions.requireAction(token, EMPLOYMENT_RECORD, HrmPermissionGuard.Action.EDIT);
         Boolean success = employeeAppointmentService.deactivateAppointment(employeeAppointmentId);
         if (!success) {
             return ResponseEntity
@@ -115,7 +131,7 @@ public class EmployeeAppointmentController {
             @PathVariable Long employeeAppointmentId,
             @RequestHeader("Authorization") String token,
             HttpServletResponse response) throws Exception {
-        permissions.require(token, "hrm.appointment-report", HrmPermissionGuard.Action.ACCESS);
+        permissions.requireAction(token, EMPLOYMENT_RECORD, HrmPermissionGuard.Action.ACCESS);
         String fileName = "PersonnelAction_" + employeeAppointmentId + ".pdf";
         String encodedFileName = URLEncoder
                 .encode(fileName, StandardCharsets.UTF_8)

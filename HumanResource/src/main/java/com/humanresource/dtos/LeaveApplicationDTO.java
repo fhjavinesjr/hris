@@ -51,6 +51,8 @@ public class LeaveApplicationDTO implements Serializable {
 
     private Boolean dueExigencyService;
 
+    private Boolean withPay = true;
+
     public LeaveApplicationDTO() {
     }
 
@@ -222,5 +224,13 @@ public class LeaveApplicationDTO implements Serializable {
 
     public void setDueExigencyService(Boolean dueExigencyService) {
         this.dueExigencyService = dueExigencyService;
+    }
+
+    public Boolean getWithPay() {
+        return withPay;
+    }
+
+    public void setWithPay(Boolean withPay) {
+        this.withPay = withPay;
     }
 }

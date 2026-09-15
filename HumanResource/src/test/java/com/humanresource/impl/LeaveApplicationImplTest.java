@@ -9,9 +9,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,6 +52,19 @@ class LeaveApplicationImplTest {
 
         assertEquals("Pending", result.getStatus());
         assertNull(result.getApprovedStatus());
+    }
+
+    @Test
+    void updatePersistsExplicitLeaveWithoutPay() throws Exception {
+        LeaveApplication entity = pendingLeaveApplication();
+        LeaveApplicationDTO update = fullUpdate(entity);
+        update.setWithPay(false);
+        when(leaveApplicationRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        LeaveApplicationDTO result = service.updateLeaveApplication(1L, update);
+
+        assertFalse(result.getWithPay());
+        assertFalse(entity.getWithPay());
     }
 
     @Test
@@ -100,6 +115,86 @@ class LeaveApplicationImplTest {
         verify(leaveApplicationRepository, never()).save(any(LeaveApplication.class));
     }
 
+    @Test
+    void paternityLeaveCannotExceedSevenWorkingDays() {
+        LeaveApplicationDTO request = leaveRequest(
+                "Paternity Leave",
+                LocalDate.of(2026, 9, 7),
+                LocalDate.of(2026, 9, 16)
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.createLeaveApplication(request)
+        );
+
+        assertEquals(
+                "Paternity Leave cannot exceed 7 working days per filing. It may be availed continuously or intermittently.",
+                exception.getMessage()
+        );
+        verify(leaveApplicationRepository, never()).save(any(LeaveApplication.class));
+    }
+
+    @Test
+    void maternityLeaveCannotExceedOneHundredFiveCalendarDays() {
+        LocalDate start = LocalDate.of(2026, 1, 1);
+        LeaveApplicationDTO request = leaveRequest("Maternity Leave", start, start.plusDays(105));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.createLeaveApplication(request)
+        );
+
+        assertEquals(
+                "Maternity Leave for live childbirth cannot exceed 105 calendar days and must be continuous and uninterrupted.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void soloParentLeaveCountsStaggeredApplicationsAgainstAnnualLimit() {
+        LeaveApplication existing = pendingLeaveApplication();
+        existing.setLeaveType("Solo Parent Leave");
+        existing.setStartDate(LocalDate.of(2026, 1, 5));
+        existing.setEndDate(LocalDate.of(2026, 1, 9));
+        when(leaveApplicationRepository.findByEmployeeId(100L)).thenReturn(List.of(existing));
+
+        LeaveApplicationDTO request = leaveRequest(
+                "Solo Parent Leave",
+                LocalDate.of(2026, 2, 2),
+                LocalDate.of(2026, 2, 4)
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.createLeaveApplication(request)
+        );
+
+        assertEquals(
+                "Solo Parent Leave is limited to 7 working days in 2026. Only 2 working day(s) remain.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void soloParentLeaveMayBeFiledInStaggeredApplicationsWithinAnnualLimit() throws Exception {
+        LeaveApplication existing = pendingLeaveApplication();
+        existing.setLeaveType("Solo Parent Leave");
+        existing.setStartDate(LocalDate.of(2026, 1, 5));
+        existing.setEndDate(LocalDate.of(2026, 1, 7));
+        when(leaveApplicationRepository.findByEmployeeId(100L)).thenReturn(List.of(existing));
+
+        LeaveApplicationDTO request = leaveRequest(
+                "Solo Parent Leave",
+                LocalDate.of(2026, 2, 2),
+                LocalDate.of(2026, 2, 5)
+        );
+
+        service.createLeaveApplication(request);
+
+        verify(leaveApplicationRepository).save(any(LeaveApplication.class));
+    }
+
     private LeaveApplication pendingLeaveApplication() {
         return new LeaveApplication(
                 1L,
@@ -144,5 +239,17 @@ class LeaveApplicationImplTest {
                 entity.getApprovalMessage(),
                 entity.getDueExigencyService()
         );
+    }
+
+    private LeaveApplicationDTO leaveRequest(String leaveType, LocalDate start, LocalDate end) {
+        LeaveApplicationDTO request = new LeaveApplicationDTO();
+        request.setEmployeeId(100L);
+        request.setDateFiled(LocalDate.of(2026, 1, 1));
+        request.setLeaveType(leaveType);
+        request.setStartDate(start);
+        request.setEndDate(end);
+        request.setStatus("Pending");
+        request.setWithPay(true);
+        return request;
     }
 }

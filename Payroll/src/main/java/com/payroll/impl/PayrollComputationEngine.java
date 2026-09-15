@@ -418,10 +418,18 @@ public class PayrollComputationEngine {
                             s.halfDayWithoutPay += 0.5;
                         }
                     } else {
-                        s.workDaysPresent++;
+                        if (Boolean.TRUE.equals(leave.getWithPay())) {
+                            s.workDaysPresent++;
+                        } else {
+                            s.awolDays++;
+                            s.absentDays++;
+                            appendDate(awolDates, cursor);
+                        }
                     }
-                    // Tally leave by type
-                    tallyLeaveUsed(s, leave);
+                    // Only paid leave consumes the corresponding leave credit.
+                    if (Boolean.TRUE.equals(leave.getWithPay())) {
+                        tallyLeaveUsed(s, leave);
+                    }
 
                 } else if (dtrHasSpecialApproval(dtr)) {
                     // OB / OT / TA approved — treat as full present
@@ -440,6 +448,10 @@ public class PayrollComputationEngine {
                 if (isHoliday && !isRestDay) {
                     s.workDaysPresent++;
                 }
+            } else if (dtr != null && dtrHasSpecialApproval(dtr)) {
+                // Includes only a full-shift Official pass slip. Partial Official
+                // and Personal pass slips remain minute-based in the DTR summary.
+                s.workDaysPresent++;
             } else {
                 // No DTR and not a day-off/holiday
                 if (leave != null && Boolean.TRUE.equals(leave.getWithPay())) {
@@ -449,6 +461,7 @@ public class PayrollComputationEngine {
                 } else if (leave != null && !Boolean.TRUE.equals(leave.getWithPay())) {
                     // Without-pay leave = AWOL for salary deduction
                     s.awolDays++;
+                    s.absentDays++;
                     appendDate(awolDates, cursor);
                 } else {
                     // Genuine AWOL
@@ -477,11 +490,17 @@ public class PayrollComputationEngine {
 
     private void tallyLeaveUsed(AttendanceSummary s, ApprovedLeaveDTO leave) {
         double days = leave.getNoOfDaysApplied() != null ? leave.getNoOfDaysApplied() : 1.0;
-        switch (leave.getLeaveType() != null ? leave.getLeaveType() : "") {
-            case "VL" -> s.vlUsed += days;
-            case "SL" -> s.slUsed += days;
-            case "CL" -> s.clUsed += days;
-            case "RL" -> s.rlUsed += days;
+        String leaveType = leave.getLeaveType() != null
+                ? leave.getLeaveType().trim().toUpperCase()
+                : "";
+        if ("VL".equals(leaveType) || leaveType.contains("VACATION")) {
+            s.vlUsed += days;
+        } else if ("SL".equals(leaveType) || leaveType.contains("SICK")) {
+            s.slUsed += days;
+        } else if ("CL".equals(leaveType) || leaveType.contains("FORCED")) {
+            s.clUsed += days;
+        } else if ("RL".equals(leaveType) || leaveType.contains("REHABILITATION")) {
+            s.rlUsed += days;
         }
         s.leaveCount++;
     }

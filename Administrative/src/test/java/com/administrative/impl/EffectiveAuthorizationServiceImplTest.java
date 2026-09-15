@@ -325,6 +325,20 @@ class EffectiveAuthorizationServiceImplTest {
     }
 
     @Test
+    void employmentRecordUsesItsConfiguredAddAndEditPermissions() {
+        PermissionRuleset ruleset = new PermissionRuleset("HR Records", false,
+                "{\"hrm.employmentRecord\":{\"canAccess\":true,\"canAdd\":true,\"canEdit\":true}}" );
+        when(repository.findByPermissionNameIgnoreCase("HR Records")).thenReturn(Optional.of(ruleset));
+
+        var permission = service.resolve("001", "HR Records", "hrm.employmentRecord");
+
+        assertThat(permission.canAccess()).isTrue();
+        assertThat(permission.canAdd()).isTrue();
+        assertThat(permission.canEdit()).isTrue();
+        assertThat(permission.dataScope()).isEqualTo(PermissionDataScope.NONE);
+    }
+
+    @Test
     void phaseFiveFReportKeysResolveIndependentlyAndFailClosed() {
         PermissionRuleset ruleset = new PermissionRuleset("RSP Reports", false,
                 "{\"primehr.rsp-comparative-report\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}," +

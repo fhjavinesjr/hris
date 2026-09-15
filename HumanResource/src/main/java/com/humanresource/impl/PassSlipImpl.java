@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -74,32 +75,44 @@ public class PassSlipImpl implements PassSlipService {
         return dto;
     }
 
-    private PassSlip toEntity(PassSlipDTO dto) {
+    private PassSlip toEntity(PassSlipDTO dto, boolean allowWorkflowFields) {
         PassSlip e = new PassSlip();
         e.setEmployeeId(dto.getEmployeeId());
         e.setDateFiled(dto.getDateFiled());
         e.setPassSlipDate(dto.getPassSlipDate());
-        e.setPurpose(dto.getPurpose());
+        e.setPurpose(normalizePurpose(dto.getPurpose()));
         e.setDepartureTime(dto.getDepartureTime());
         e.setArrivalTime(dto.getArrivalTime());
         e.setDetails(dto.getDetails());
-        e.setStatus(dto.getStatus() != null ? dto.getStatus() : "Pending");
-        e.setApprovedById(dto.getApprovedById());
-        e.setApprovedAt(dto.getApprovedAt());
-        e.setApprovalRemarks(dto.getApprovalRemarks());
-        e.setRecommendationStatus(dto.getRecommendationStatus());
-        e.setRecommendedById(dto.getRecommendedById());
-        e.setRecommendationRemarks(dto.getRecommendationRemarks());
+        e.setStatus(allowWorkflowFields ? normalizeStatus(dto.getStatus()) : "Pending");
+        if (allowWorkflowFields) {
+            e.setApprovedById(dto.getApprovedById());
+            e.setApprovedAt("Approved".equals(e.getStatus()) ? LocalDateTime.now() : dto.getApprovedAt());
+            e.setApprovalRemarks(dto.getApprovalRemarks());
+            e.setRecommendationStatus(dto.getRecommendationStatus());
+            e.setRecommendedById(dto.getRecommendedById());
+            e.setRecommendationRemarks(dto.getRecommendationRemarks());
+        }
         return e;
     }
 
     @Transactional
     @Override
     public PassSlipDTO create(PassSlipDTO dto) throws Exception {
-        // Validate before persisting — throws IllegalArgumentException on conflict
+        return create(dto, false);
+    }
+
+    @Transactional
+    @Override
+    public PassSlipDTO createOverride(PassSlipDTO dto) throws Exception {
+        return create(dto, true);
+    }
+
+    private PassSlipDTO create(PassSlipDTO dto, boolean allowWorkflowFields) {
+        validateApplication(dto);
         conflictChecker.checkSingleDate(dto.getEmployeeId(), dto.getPassSlipDate());
         try {
-            PassSlip entity = toEntity(dto);
+            PassSlip entity = toEntity(dto, allowWorkflowFields);
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
             entity = repository.save(entity);
@@ -177,6 +190,16 @@ public class PassSlipImpl implements PassSlipService {
     @Transactional
     @Override
     public PassSlipDTO update(Long passSlipId, PassSlipDTO dto) throws Exception {
+        return update(passSlipId, dto, false);
+    }
+
+    @Transactional
+    @Override
+    public PassSlipDTO updateOverride(Long passSlipId, PassSlipDTO dto) throws Exception {
+        return update(passSlipId, dto, true);
+    }
+
+    private PassSlipDTO update(Long passSlipId, PassSlipDTO dto, boolean allowWorkflowFields) {
         try {
             Optional<PassSlip> optional = repository.findById(passSlipId);
             if (optional.isEmpty()) return null;
@@ -200,20 +223,29 @@ public class PassSlipImpl implements PassSlipService {
                 );
             }
 
+            validateApplication(dto);
+            if (!allowWorkflowFields && !"Pending".equalsIgnoreCase(entity.getStatus())) {
+                throw new IllegalStateException("Only a pending Pass Slip can be edited by the employee.");
+            }
+
             if (dto.getDateFiled() != null) entity.setDateFiled(dto.getDateFiled());
             if (dto.getPassSlipDate() != null) entity.setPassSlipDate(dto.getPassSlipDate());
-            if (dto.getPurpose() != null) entity.setPurpose(dto.getPurpose());
+            if (dto.getPurpose() != null) entity.setPurpose(normalizePurpose(dto.getPurpose()));
             if (dto.getDepartureTime() != null) entity.setDepartureTime(dto.getDepartureTime());
             if (dto.getArrivalTime() != null) entity.setArrivalTime(dto.getArrivalTime());
             if (dto.getDetails() != null) entity.setDetails(dto.getDetails());
-            entity.setStatus(dto.getStatus() != null ? dto.getStatus() : entity.getStatus());
-            entity.setApprovedById(dto.getApprovedById());
-            entity.setApprovalRemarks(dto.getApprovalRemarks());
-            if (dto.getRecommendationStatus() != null) {
-                entity.setRecommendationStatus(dto.getRecommendationStatus());
+            if (allowWorkflowFields) {
+                String status = normalizeStatus(dto.getStatus() != null ? dto.getStatus() : entity.getStatus());
+                entity.setStatus(status);
+                entity.setApprovedById(dto.getApprovedById());
+                entity.setApprovedAt("Approved".equals(status) ? LocalDateTime.now() : null);
+                entity.setApprovalRemarks(dto.getApprovalRemarks());
+                if (dto.getRecommendationStatus() != null) {
+                    entity.setRecommendationStatus(dto.getRecommendationStatus());
+                }
+                entity.setRecommendedById(dto.getRecommendedById());
+                entity.setRecommendationRemarks(dto.getRecommendationRemarks());
             }
-            entity.setRecommendedById(dto.getRecommendedById());
-            entity.setRecommendationRemarks(dto.getRecommendationRemarks());
             entity.setUpdatedAt(LocalDateTime.now());
             entity = repository.save(entity);
             return toDTO(entity);
@@ -244,6 +276,11 @@ public class PassSlipImpl implements PassSlipService {
         if (passSlipId == null) {
             throw new IllegalArgumentException("passSlipId is required.");
         }
+        PassSlip passSlip = repository.findById(passSlipId)
+                .orElseThrow(() -> new IllegalArgumentException("Pass Slip not found."));
+        if (!"Approved".equalsIgnoreCase(passSlip.getStatus())) {
+            throw new IllegalStateException("Only an approved Pass Slip can be printed.");
+        }
 
         try (Connection connection = dataSource.getConnection()) {
             JasperReport jasperReport = JasperReportRegistry.get("reports/permitSlip.jrxml");
@@ -272,6 +309,43 @@ public class PassSlipImpl implements PassSlipService {
 
     private static InputStream imageStream(byte[] bytes) {
         return bytes == null ? null : new ByteArrayInputStream(bytes);
+    }
+
+    private void validateApplication(PassSlipDTO dto) {
+        if (dto == null || dto.getEmployeeId() == null || dto.getDateFiled() == null
+                || dto.getPassSlipDate() == null) {
+            throw new IllegalArgumentException("Employee, Date Filed, and Pass Slip Date are required.");
+        }
+        normalizePurpose(dto.getPurpose());
+        if (dto.getDepartureTime() == null || dto.getArrivalTime() == null) {
+            throw new IllegalArgumentException("Departure and return times are required.");
+        }
+        if (!dto.getArrivalTime().isAfter(dto.getDepartureTime())) {
+            throw new IllegalArgumentException("Return time must be later than departure time.");
+        }
+        if (dto.getDetails() == null || dto.getDetails().trim().isEmpty()) {
+            throw new IllegalArgumentException("Pass Slip details are required.");
+        }
+    }
+
+    private String normalizePurpose(String purpose) {
+        if (purpose == null) throw new IllegalArgumentException("Purpose is required.");
+        return switch (purpose.trim().toUpperCase(Locale.ROOT)) {
+            case "PERSONAL" -> "Personal";
+            case "OFFICIAL", "OFFICIAL BUSINESS", "OFFICIAL TIME" -> "Official";
+            default -> throw new IllegalArgumentException("Purpose must be Personal or Official.");
+        };
+    }
+
+    private String normalizeStatus(String status) {
+        if (status == null || status.isBlank()) return "Pending";
+        return switch (status.trim().toUpperCase(Locale.ROOT)) {
+            case "PENDING" -> "Pending";
+            case "APPROVED" -> "Approved";
+            case "DISAPPROVED" -> "Disapproved";
+            case "CANCELLED" -> "Cancelled";
+            default -> throw new IllegalArgumentException("Invalid Pass Slip status.");
+        };
     }
 
 }

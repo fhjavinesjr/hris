@@ -118,7 +118,7 @@
 			COALESCE(st.address, '') AS currentCompanyAddressSetting,
 			CAST(COALESCE(li.previousVacationLeaveBalance, 0) AS float) AS previousVacationLeaveBalance,
 			CAST(COALESCE(li.previousSickLeaveBalance, 0) AS float) AS previousSickLeaveBalance,
-			CONCAT('Forwarded balance as of 12/31/', ($P{REPORT_YEAR} - 1)) AS forwardstatus,
+			'Previous Year' AS forwardstatus,
 			CAST($P{SEPARATION_TEXT} AS varchar(64)) AS isSeparated
 		FROM leave_information li
 		JOIN employee e ON e.employeeId = li.employeeId
@@ -698,7 +698,7 @@
 	<detail>
 		<band height="39" splitType="Stretch">
 			<element kind="textField" uuid="237527ae-df29-4932-8653-84b569c72517" mode="Opaque" x="0" y="0" width="64" height="39" stretchType="ContainerHeight" pattern="" hTextAlign="Center" vTextAlign="Middle">
-				<expression><![CDATA[new SimpleDateFormat("MMMM").format($F{cutOffStartDate})]]></expression>
+				<expression><![CDATA["true".equalsIgnoreCase($F{isBegBalance}) ? "Beginning Balance" : new SimpleDateFormat("MMMM").format($F{cutOffStartDate})]]></expression>
 				<box>
 					<pen lineWidth="0.5"/>
 					<topPen lineWidth="0.5"/>
@@ -839,7 +839,7 @@
 				</box>
 			</element>
 			<element kind="textField" uuid="03e77079-0c2f-491b-a705-da5f230b56f5" mode="Opaque" x="257" y="0" width="48" height="39" stretchType="ContainerHeight" pattern="###0.000" hTextAlign="Center" vTextAlign="Middle">
-				<expression><![CDATA[$F{vacationLeaveUsed}+$F{lateUndertimeEquivalent}+$F{absentCount}]]></expression>
+				<expression><![CDATA[$F{vacationLeaveUsed}+$F{lateUndertimeEquivalent}]]></expression>
 				<box>
 					<pen lineWidth="0.5"/>
 					<topPen lineWidth="0.5"/>

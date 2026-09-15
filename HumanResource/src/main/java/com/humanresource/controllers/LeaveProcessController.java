@@ -53,6 +53,9 @@ public class LeaveProcessController {
             }
             LeaveProcessBatchStartResponseDTO response = batchService.startBatch(request);
             return ResponseEntity.accepted().body(response);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest()
+                    .body(new LeaveProcessBatchStartResponseDTO(null, ex.getMessage()));
         } catch (Exception ex) {
             return ResponseEntity.internalServerError()
                     .body(new LeaveProcessBatchStartResponseDTO(null, "Server error: " + ex.getMessage()));

@@ -230,8 +230,10 @@ public final class DtrReportDataLoader {
             LocalDate toDate) {
         List<WorkScheduleSource> sourceRows = jdbc.query(
                 """
-                SELECT wsId, employeeId, wsDateTime, isDayOff
-                FROM work_schedule
+                SELECT ws.wsId, ws.employeeId, ws.wsDateTime, ws.isDayOff,
+                       ts.timeIn, ts.breakOut, ts.breakIn, ts.timeOut
+                FROM work_schedule ws
+                LEFT JOIN time_shift ts ON LOWER(ts.tsCode) = LOWER(ws.tsCode)
                 WHERE wsDateTime >= ?
                   AND wsDateTime < ?
                 ORDER BY wsId
@@ -240,7 +242,11 @@ public final class DtrReportDataLoader {
                         rs.getLong("wsId"),
                         rs.getString("employeeId"),
                         rs.getTimestamp("wsDateTime").toLocalDateTime().toLocalDate(),
-                        dbTrue(rs.getObject("isDayOff"))
+                        dbTrue(rs.getObject("isDayOff")),
+                        localTime(rs, "timeIn"),
+                        localTime(rs, "breakOut"),
+                        localTime(rs, "breakIn"),
+                        localTime(rs, "timeOut")
                 ),
                 Timestamp.valueOf(fromDate.atStartOfDay()),
                 Timestamp.valueOf(toDate.plusDays(1).atStartOfDay())
@@ -248,7 +254,8 @@ public final class DtrReportDataLoader {
         return sourceRows.stream()
                 .filter(row -> employeeAliases.contains(row.employeeReference())
                         || Long.valueOf(numericEmployeeId).equals(parseLong(row.employeeReference())))
-                .map(row -> new WorkScheduleDay(row.id(), row.date(), row.dayOff()))
+                .map(row -> new WorkScheduleDay(row.id(), row.date(), row.dayOff(),
+                        row.timeIn(), row.breakOut(), row.breakIn(), row.timeOut()))
                 .toList();
     }
 
@@ -327,7 +334,7 @@ public final class DtrReportDataLoader {
     private Map<LocalDate, PassSlip> loadPassSlips(long employeeId, LocalDate fromDate, LocalDate toDate) {
         List<PassSlip> rows = jdbc.query(
                 """
-                SELECT passSlipId, passSlipDate, departureTime, arrivalTime
+                SELECT passSlipId, passSlipDate, purpose, departureTime, arrivalTime
                 FROM pass_slip
                 WHERE employeeId = ?
                   AND status = 'Approved'
@@ -337,6 +344,7 @@ public final class DtrReportDataLoader {
                 (rs, rowNum) -> new PassSlip(
                         rs.getLong("passSlipId"),
                         localDate(rs, "passSlipDate"),
+                        rs.getString("purpose"),
                         localTime(rs, "departureTime"),
                         localTime(rs, "arrivalTime")
                 ),
@@ -600,7 +608,7 @@ public final class DtrReportDataLoader {
                 && officialEngagement == null
                 && !cto
                 && timeCorrection == null
-                && passSlip == null) {
+                && !isFullDayOfficialPassSlip(passSlip, schedule)) {
             absentMinutes = 480;
         } else {
             absentMinutes = 0;
@@ -619,7 +627,9 @@ public final class DtrReportDataLoader {
         } else if (daily == null && timeCorrection != null) {
             remarks = "TIME CORRECTED";
         } else if (daily == null && passSlip != null) {
-            remarks = "PASS SLIP";
+            remarks = isFullDayOfficialPassSlip(passSlip, schedule)
+                    ? passSlipRemark(passSlip)
+                    : "ABSENT / " + passSlipRemark(passSlip);
         } else if (daily == null) {
             remarks = "ABSENT";
         } else {
@@ -845,13 +855,49 @@ public final class DtrReportDataLoader {
                 null,
                 "",
                 0,
-                "PASS SLIP",
+                passSlipRemark(passSlip),
                 "",
                 null,
                 false,
                 "",
                 dayName(base.date())
         );
+    }
+
+    private boolean isFullDayOfficialPassSlip(PassSlip passSlip, WorkScheduleDay schedule) {
+        if (passSlip == null || !isOfficialPassSlip(passSlip)
+                || passSlip.departure() == null || passSlip.arrival() == null) {
+            return false;
+        }
+        LocalTime workStart = schedule != null && schedule.timeIn() != null
+                ? schedule.timeIn() : LocalTime.of(8, 0);
+        LocalTime workEnd = schedule != null && schedule.timeOut() != null
+                ? schedule.timeOut() : LocalTime.of(17, 0);
+        LocalTime breakStart = schedule != null ? schedule.breakOut() : LocalTime.NOON;
+        LocalTime breakEnd = schedule != null ? schedule.breakIn() : LocalTime.of(13, 0);
+        int covered = overlapMinutes(passSlip.departure(), passSlip.arrival(), workStart, workEnd)
+                - overlapMinutes(passSlip.departure(), passSlip.arrival(), breakStart, breakEnd);
+        int scheduled = overlapMinutes(workStart, workEnd, workStart, workEnd)
+                - overlapMinutes(workStart, workEnd, breakStart, breakEnd);
+        return scheduled > 0 && covered >= scheduled;
+    }
+
+    private int overlapMinutes(LocalTime firstStart, LocalTime firstEnd,
+                               LocalTime secondStart, LocalTime secondEnd) {
+        if (firstStart == null || firstEnd == null || secondStart == null || secondEnd == null) return 0;
+        LocalTime start = firstStart.isAfter(secondStart) ? firstStart : secondStart;
+        LocalTime end = firstEnd.isBefore(secondEnd) ? firstEnd : secondEnd;
+        return end.isAfter(start) ? (int) java.time.Duration.between(start, end).toMinutes() : 0;
+    }
+
+    private String passSlipRemark(PassSlip passSlip) {
+        String purpose = isOfficialPassSlip(passSlip) ? "OFFICIAL" : "PERSONAL";
+        return "PASS SLIP (" + purpose + ") " + passSlip.departure() + "-" + passSlip.arrival();
+    }
+
+    private boolean isOfficialPassSlip(PassSlip passSlip) {
+        return passSlip != null && passSlip.purpose() != null
+                && passSlip.purpose().trim().toUpperCase(Locale.ROOT).startsWith("OFFICIAL");
     }
 
     private static <T> Map<LocalDate, T> latestByDate(
@@ -1007,13 +1053,19 @@ public final class DtrReportDataLoader {
             int underMinutes,
             int underHours) {}
 
-    private record WorkScheduleDay(long id, LocalDate date, boolean dayOff) {}
+    private record WorkScheduleDay(long id, LocalDate date, boolean dayOff,
+                                   LocalTime timeIn, LocalTime breakOut,
+                                   LocalTime breakIn, LocalTime timeOut) {}
 
     private record WorkScheduleSource(
             long id,
             String employeeReference,
             LocalDate date,
-            boolean dayOff) {}
+            boolean dayOff,
+            LocalTime timeIn,
+            LocalTime breakOut,
+            LocalTime breakIn,
+            LocalTime timeOut) {}
 
     private record OfficialEngagement(long id, String officialType) {}
 
@@ -1026,6 +1078,7 @@ public final class DtrReportDataLoader {
     private record PassSlip(
             long id,
             LocalDate date,
+            String purpose,
             LocalTime departure,
             LocalTime arrival) {}
 

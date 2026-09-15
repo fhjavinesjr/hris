@@ -66,6 +66,10 @@ public class LeaveProcessBatchServiceImpl implements LeaveProcessBatchService {
             request.setScope("ALL");
         }
 
+        // Fail before a background job is created so the HR officer sees a
+        // clear prompt for missing/out-of-sequence balances or an open cutoff.
+        leaveProcessService.validateBatchRequest(request);
+
         final String jobId = UUID.randomUUID().toString();
         JobState state = new JobState();
         state.setJobId(jobId);
@@ -124,11 +128,10 @@ public class LeaveProcessBatchServiceImpl implements LeaveProcessBatchService {
         try {
             updateState(state, STATUS_FETCHING, 5, null, null);
 
-            final LocalDate periodStart = req.getCutoffStartDate();
-            final LocalDate periodEnd = req.getCutoffEndDate();
+            final LeaveProcessServiceImpl.LeaveProcessingPeriod period =
+                    leaveProcessService.resolveProcessingPeriod(req);
             final Set<LocalDate> holidayDates = leaveProcessService.loadHolidayDates(
-                    LeaveProcessServiceImpl.attendanceStart(periodStart),
-                    LeaveProcessServiceImpl.attendanceEnd(periodStart));
+                    period.cutoffStart(), period.cutoffEnd());
 
             List<Employee> employees = leaveProcessService.resolveEmployeesForRequest(req);
 
@@ -163,8 +166,7 @@ public class LeaveProcessBatchServiceImpl implements LeaveProcessBatchService {
                         try {
                             LeaveInformationDTO dto = leaveProcessService.processEmployee(
                                     emp,
-                                    periodStart,
-                                    periodEnd,
+                                    period,
                                     req.getSalaryPeriodSettingId(),
                                     req.getProcessedById(),
                                     holidayDates,

@@ -36,7 +36,6 @@ public class PassSlipDTO implements Serializable {
 
     private String details;
 
-    @NotNull(message = "status is mandatory")
     private String status;
 
     private Long approvedById;

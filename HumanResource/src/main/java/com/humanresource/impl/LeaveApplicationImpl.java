@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
@@ -58,6 +60,7 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
         dto.setApprovedStatus(entity.getApprovedStatus());
         dto.setApprovalMessage(entity.getApprovalMessage());
         dto.setDueExigencyService(entity.getDueExigencyService());
+        dto.setWithPay(!Boolean.FALSE.equals(entity.getWithPay()));
         return dto;
     }
 
@@ -65,6 +68,7 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
     @Override
     public LeaveApplicationDTO createLeaveApplication(LeaveApplicationDTO dto) throws Exception {
         // Validate BEFORE try-catch so IllegalArgumentException propagates to GlobalExceptionHandler
+        validateStatutoryLeaveDuration(dto, null);
         if (dto.getStartDate() != null && dto.getEndDate() != null) {
             conflictChecker.checkDateRange(dto.getEmployeeId(), dto.getStartDate(), dto.getEndDate());
         }
@@ -89,6 +93,7 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
                     dto.getApprovalMessage(),
                     dto.getDueExigencyService()
             );
+            entity.setWithPay(!Boolean.FALSE.equals(dto.getWithPay()));
 
             entity = leaveApplicationRepository.save(entity);
             return toDTO(entity);
@@ -138,6 +143,7 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
     @Override
     public LeaveApplicationDTO updateLeaveApplication(Long leaveApplicationId, LeaveApplicationDTO dto) throws Exception {
         LeaveApplication entity = findLeaveApplication(leaveApplicationId);
+        validateStatutoryLeaveDuration(dto, leaveApplicationId);
 
         entity.setEmployeeId(dto.getEmployeeId());
         entity.setDateFiled(dto.getDateFiled());
@@ -158,6 +164,7 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
         entity.setApprovedStatus(dto.getApprovedStatus());
         entity.setApprovalMessage(dto.getApprovalMessage());
         entity.setDueExigencyService(dto.getDueExigencyService());
+        entity.setWithPay(!Boolean.FALSE.equals(dto.getWithPay()));
 
         entity = leaveApplicationRepository.save(entity);
         return toDTO(entity);
@@ -252,9 +259,16 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
                     dto.setEmployeeNo(employeeNoById.get(leave.getEmployeeId()));
                     dto.setLeaveDate(day);
                     dto.setLeaveType(leave.getLeaveType());
-                    dto.setWithPay(true);
+                    dto.setWithPay(!Boolean.FALSE.equals(leave.getWithPay()));
                     dto.setWorkDayType("WHOLEDAY");
-                    dto.setNoOfDaysApplied(leave.getNoOfDays());
+                    // The endpoint returns one row per date. Sending the total
+                    // application duration on every row would multiply leave
+                    // usage during payroll aggregation.
+                    dto.setNoOfDaysApplied(
+                            leave.getNoOfDays() != null && leave.getNoOfDays() < 1.0
+                                    ? leave.getNoOfDays()
+                                    : 1.0
+                    );
                     result.add(dto);
                 }
             }
@@ -315,6 +329,120 @@ public class LeaveApplicationImpl implements LeaveApplicationService {
 
     private String normalizeRemarks(String remarks) {
         return remarks == null ? "" : remarks;
+    }
+
+    private void validateStatutoryLeaveDuration(LeaveApplicationDTO dto, Long excludedApplicationId) {
+        if (dto == null || isInactiveStatus(dto.getStatus(), dto.getApprovedStatus())) {
+            return;
+        }
+
+        String leaveType = dto.getLeaveType() == null ? "" : dto.getLeaveType().trim();
+        boolean guardedType = "Paternity Leave".equalsIgnoreCase(leaveType)
+                || "Maternity Leave".equalsIgnoreCase(leaveType)
+                || "Solo Parent Leave".equalsIgnoreCase(leaveType);
+        if (!guardedType) {
+            return;
+        }
+
+        LocalDate start = dto.getStartDate();
+        LocalDate end = dto.getEndDate();
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("Inclusive From and To dates are required for " + leaveType + ".");
+        }
+        if (end.isBefore(start)) {
+            throw new IllegalArgumentException("The inclusive To date cannot be earlier than the From date.");
+        }
+
+        if ("Paternity Leave".equalsIgnoreCase(leaveType)) {
+            int requestedDays = countWeekdays(start, end);
+            if (requestedDays > 7) {
+                throw new IllegalArgumentException(
+                        "Paternity Leave cannot exceed 7 working days per filing. It may be availed continuously or intermittently."
+                );
+            }
+            return;
+        }
+
+        if ("Maternity Leave".equalsIgnoreCase(leaveType)) {
+            long requestedCalendarDays = ChronoUnit.DAYS.between(start, end) + 1;
+            if (requestedCalendarDays > 105) {
+                throw new IllegalArgumentException(
+                        "Maternity Leave for live childbirth cannot exceed 105 calendar days and must be continuous and uninterrupted."
+                );
+            }
+            return;
+        }
+
+        validateSoloParentAnnualLimit(dto.getEmployeeId(), start, end, excludedApplicationId);
+    }
+
+    private void validateSoloParentAnnualLimit(Long employeeId, LocalDate start, LocalDate end,
+                                               Long excludedApplicationId) {
+        if (employeeId == null) {
+            throw new IllegalArgumentException("Employee is required for Solo Parent Leave.");
+        }
+
+        List<LeaveApplication> existingApplications = leaveApplicationRepository.findByEmployeeId(employeeId);
+        for (int year = start.getYear(); year <= end.getYear(); year++) {
+            final int leaveYear = year;
+            LocalDate yearStart = LocalDate.of(year, 1, 1);
+            LocalDate yearEnd = LocalDate.of(year, 12, 31);
+            int requestedDays = countWeekdays(
+                    start.isAfter(yearStart) ? start : yearStart,
+                    end.isBefore(yearEnd) ? end : yearEnd
+            );
+
+            int alreadyFiledDays = existingApplications.stream()
+                    .filter(application -> excludedApplicationId == null
+                            || !excludedApplicationId.equals(application.getLeaveApplicationId()))
+                    .filter(application -> "Solo Parent Leave".equalsIgnoreCase(application.getLeaveType()))
+                    .filter(application -> !isInactiveStatus(application.getStatus(), application.getApprovedStatus()))
+                    .mapToInt(application -> countWeekdaysWithinYear(
+                            application.getStartDate(), application.getEndDate(), yearStart, yearEnd))
+                    .sum();
+
+            if (alreadyFiledDays + requestedDays > 7) {
+                int remainingDays = Math.max(0, 7 - alreadyFiledDays);
+                throw new IllegalArgumentException(
+                        "Solo Parent Leave is limited to 7 working days in " + leaveYear
+                                + ". Only " + remainingDays + " working day(s) remain."
+                );
+            }
+        }
+    }
+
+    private int countWeekdaysWithinYear(LocalDate start, LocalDate end,
+                                        LocalDate yearStart, LocalDate yearEnd) {
+        if (start == null || end == null || end.isBefore(yearStart) || start.isAfter(yearEnd)) {
+            return 0;
+        }
+        return countWeekdays(start.isAfter(yearStart) ? start : yearStart,
+                end.isBefore(yearEnd) ? end : yearEnd);
+    }
+
+    private int countWeekdays(LocalDate start, LocalDate end) {
+        if (start == null || end == null || end.isBefore(start)) {
+            return 0;
+        }
+        int days = 0;
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            if (date.getDayOfWeek() != DayOfWeek.SATURDAY
+                    && date.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                days++;
+            }
+        }
+        return days;
+    }
+
+    private boolean isInactiveStatus(String status, String approvedStatus) {
+        return isInactiveStatus(status) || isInactiveStatus(approvedStatus);
+    }
+
+    private boolean isInactiveStatus(String status) {
+        return status != null && ("Disapproved".equalsIgnoreCase(status)
+                || "Rejected".equalsIgnoreCase(status)
+                || "Cancelled".equalsIgnoreCase(status)
+                || "Canceled".equalsIgnoreCase(status));
     }
 }
 

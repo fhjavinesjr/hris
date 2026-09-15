@@ -32,6 +32,9 @@ public interface EmployeeAppointmentRepository extends JpaRepository<EmployeeApp
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from EmployeeAppointment a where a.employeeId=:employeeId and a.activeAppointment=true")
     List<EmployeeAppointment> findActiveByEmployeeForUpdate(@Param("employeeId") Long employeeId);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from EmployeeAppointment a where a.employeeAppointmentId=:employeeAppointmentId")
+    Optional<EmployeeAppointment> findByIdForUpdate(@Param("employeeAppointmentId") Long employeeAppointmentId);
 
     Optional<EmployeeAppointment> findTop1ByEmployeeIdAndAssumptionToDutyDateBeforeOrderByAssumptionToDutyDateDescEmployeeAppointmentIdDesc(
             Long employeeId,

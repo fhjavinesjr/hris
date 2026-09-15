@@ -26,6 +26,9 @@ public class PDSReportController {
                             HttpServletResponse response) throws Exception {
 
         response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setHeader("X-PDS-Employee-Id", employeeId.toString());
         response.setHeader(
                 HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"PDS_" + employeeId + ".pdf\""

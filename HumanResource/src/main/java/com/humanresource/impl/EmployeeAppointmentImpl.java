@@ -7,7 +7,10 @@ import com.humanresource.services.EmployeeAppointmentService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,15 +29,40 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
     @Override
     public EmployeeAppointmentDTO createEmployeeAppointment(EmployeeAppointmentDTO employeeAppointmentDTO) throws Exception {
         try {
-            if(employeeAppointmentDTO.getEmployeeAppointmentId() != null
-                    && employeeAppointmentDTO.getEmployeeAppointmentId() > 0) {
-                //Modify previous active to inactive
-                EmployeeAppointment employeeAppointmentModifyActive = employeeAppointmentRepository.findTop1ByEmployeeIdOrderByAssumptionToDutyDateDesc(employeeAppointmentDTO.getEmployeeId());
-                employeeAppointmentModifyActive.setActiveAppointment(false);
-                employeeAppointmentRepository.save(employeeAppointmentModifyActive);
+            if (employeeAppointmentDTO.getAppointmentIssuedDate()
+                    .isAfter(employeeAppointmentDTO.getAssumptionToDutyDate())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Appointment issued date cannot be after assumption to duty date");
             }
 
-            //Add new employee appointment with active true
+            if (Boolean.TRUE.equals(employeeAppointmentDTO.getActiveAppointment())) {
+                List<EmployeeAppointment> plantillaOccupants = employeeAppointmentRepository
+                        .findActiveByPlantillaForUpdate(employeeAppointmentDTO.getPlantillaId());
+                boolean occupiedByAnotherEmployee = plantillaOccupants.stream()
+                        .anyMatch(appointment -> !employeeAppointmentDTO.getEmployeeId()
+                                .equals(appointment.getEmployeeId()));
+                if (occupiedByAnotherEmployee) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Plantilla is already occupied");
+                }
+
+                List<EmployeeAppointment> activeAppointments = employeeAppointmentRepository
+                        .findActiveByEmployeeForUpdate(employeeAppointmentDTO.getEmployeeId());
+                for (EmployeeAppointment activeAppointment : activeAppointments) {
+                    if (!employeeAppointmentDTO.getAssumptionToDutyDate()
+                            .isAfter(activeAppointment.getAssumptionToDutyDate())) {
+                        throw new ResponseStatusException(
+                                HttpStatus.CONFLICT,
+                                "New appointment must be later than the active appointment");
+                    }
+                    activeAppointment.setActiveAppointment(false);
+                }
+
+                // A flush is required here. Hibernate normally executes inserts before
+                // updates, which would violate the filtered one-active-appointment index.
+                employeeAppointmentRepository.saveAllAndFlush(activeAppointments);
+            }
+
             EmployeeAppointment employeeAppointment = new EmployeeAppointment(employeeAppointmentDTO.getEmployeeId()
                     ,employeeAppointmentDTO.getAppointmentIssuedDate()
                     ,employeeAppointmentDTO.getAssumptionToDutyDate()
@@ -49,12 +77,19 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
                     ,employeeAppointmentDTO.getDetails()
                     ,employeeAppointmentDTO.getActiveAppointment());
 
-            employeeAppointmentRepository.save(employeeAppointment);
+            employeeAppointment = employeeAppointmentRepository.saveAndFlush(employeeAppointment);
+            employeeAppointmentDTO.setEmployeeAppointmentId(employeeAppointment.getEmployeeAppointmentId());
 
             return employeeAppointmentDTO;
-        } catch(Exception e) {
-            log.error("Error in creating EmployeeAppointment: ", e);
-            return null;
+        } catch (ResponseStatusException exception) {
+            throw exception;
+        } catch (DataIntegrityViolationException exception) {
+            log.warn("Appointment creation conflicted with an existing record for employee {}",
+                    employeeAppointmentDTO.getEmployeeId());
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "The employee or Plantilla already has an appointment with conflicting details",
+                    exception);
         }
     }
 
@@ -119,6 +154,7 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
         EmployeeAppointment employeeAppointment = employeeAppointmentRepository.findTop1ByEmployeeIdOrderByAssumptionToDutyDateDesc(employeeId);
         EmployeeAppointmentDTO employeeAppointmentDTO = new EmployeeAppointmentDTO();
         if(employeeAppointment != null) {
+            employeeAppointmentDTO.setEmployeeAppointmentId(employeeAppointment.getEmployeeAppointmentId());
             employeeAppointmentDTO.setEmployeeId(employeeAppointment.getEmployeeId());
             employeeAppointmentDTO.setAppointmentIssuedDate(employeeAppointment.getAppointmentIssuedDate());
             employeeAppointmentDTO.setAssumptionToDutyDate(employeeAppointment.getAssumptionToDutyDate());
@@ -148,31 +184,83 @@ public class EmployeeAppointmentImpl implements EmployeeAppointmentService {
     @Override
     public EmployeeAppointmentDTO updateEmployeeAppointment(Long employeeAppointmentId, EmployeeAppointmentDTO employeeAppointmentDTO) throws Exception {
         try {
-            EmployeeAppointment employeeAppointment = employeeAppointmentRepository.findById(employeeAppointmentId).orElseThrow(() -> new RuntimeException("EmployeeAppointment not found"));
-            if(employeeAppointment != null) {
-                employeeAppointment.setEmployeeId(employeeAppointmentDTO.getEmployeeId());
-                employeeAppointment.setAppointmentIssuedDate(employeeAppointmentDTO.getAppointmentIssuedDate());
-                employeeAppointment.setAssumptionToDutyDate(employeeAppointmentDTO.getAssumptionToDutyDate());
-                employeeAppointment.setNatureOfAppointmentId(employeeAppointmentDTO.getNatureOfAppointmentId());
-                employeeAppointment.setPlantillaId(employeeAppointmentDTO.getPlantillaId());
-                employeeAppointment.setJobPositionId(employeeAppointmentDTO.getJobPositionId());
-                employeeAppointment.setSalaryGrade(employeeAppointmentDTO.getSalaryGrade());
-                employeeAppointment.setSalaryStep(employeeAppointmentDTO.getSalaryStep());
-                employeeAppointment.setSalaryPerAnnum(employeeAppointmentDTO.getSalaryPerAnnum());
-                employeeAppointment.setSalaryPerMonth(employeeAppointmentDTO.getSalaryPerMonth());
-                employeeAppointment.setSalaryPerDay(employeeAppointmentDTO.getSalaryPerDay());
-                employeeAppointment.setDetails(employeeAppointmentDTO.getDetails());
-                employeeAppointment.setActiveAppointment(employeeAppointmentDTO.getActiveAppointment());
+            EmployeeAppointment employeeAppointment = employeeAppointmentRepository
+                    .findByIdForUpdate(employeeAppointmentId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Employee appointment was not found"));
 
-                employeeAppointmentRepository.save(employeeAppointment);
-
-                return employeeAppointmentDTO;
+            if (!employeeAppointment.getEmployeeId().equals(employeeAppointmentDTO.getEmployeeId())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "An appointment cannot be moved to another employee");
             }
-        } catch(Exception e) {
-            log.error("Error failed fetching EmployeeAppointment: {}", e.getMessage());
-        }
 
-        return null;
+            if (employeeAppointmentDTO.getAppointmentIssuedDate()
+                    .isAfter(employeeAppointmentDTO.getAssumptionToDutyDate())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Appointment issued date cannot be after assumption to duty date");
+            }
+
+            if (Boolean.TRUE.equals(employeeAppointmentDTO.getActiveAppointment())) {
+                boolean plantillaOccupied = employeeAppointmentRepository
+                        .findActiveByPlantillaForUpdate(employeeAppointmentDTO.getPlantillaId())
+                        .stream()
+                        .anyMatch(appointment -> !employeeAppointmentId
+                                .equals(appointment.getEmployeeAppointmentId()));
+                if (plantillaOccupied) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Plantilla is already occupied");
+                }
+
+                boolean anotherActiveAppointment = employeeAppointmentRepository
+                        .findActiveByEmployeeForUpdate(employeeAppointmentDTO.getEmployeeId())
+                        .stream()
+                        .anyMatch(appointment -> !employeeAppointmentId
+                                .equals(appointment.getEmployeeAppointmentId()));
+                if (anotherActiveAppointment) {
+                    throw new ResponseStatusException(
+                            HttpStatus.CONFLICT, "The employee already has another active appointment");
+                }
+
+                boolean notLatestAppointment = employeeAppointmentRepository
+                        .findByEmployeeId(employeeAppointmentDTO.getEmployeeId())
+                        .stream()
+                        .filter(appointment -> !employeeAppointmentId
+                                .equals(appointment.getEmployeeAppointmentId()))
+                        .anyMatch(appointment -> !employeeAppointmentDTO.getAssumptionToDutyDate()
+                                .isAfter(appointment.getAssumptionToDutyDate()));
+                if (notLatestAppointment) {
+                    throw new ResponseStatusException(
+                            HttpStatus.CONFLICT,
+                            "The active appointment must be later than the employee's service history");
+                }
+            }
+
+            employeeAppointment.setAppointmentIssuedDate(employeeAppointmentDTO.getAppointmentIssuedDate());
+            employeeAppointment.setAssumptionToDutyDate(employeeAppointmentDTO.getAssumptionToDutyDate());
+            employeeAppointment.setNatureOfAppointmentId(employeeAppointmentDTO.getNatureOfAppointmentId());
+            employeeAppointment.setPlantillaId(employeeAppointmentDTO.getPlantillaId());
+            employeeAppointment.setJobPositionId(employeeAppointmentDTO.getJobPositionId());
+            employeeAppointment.setSalaryGrade(employeeAppointmentDTO.getSalaryGrade());
+            employeeAppointment.setSalaryStep(employeeAppointmentDTO.getSalaryStep());
+            employeeAppointment.setSalaryPerAnnum(employeeAppointmentDTO.getSalaryPerAnnum());
+            employeeAppointment.setSalaryPerMonth(employeeAppointmentDTO.getSalaryPerMonth());
+            employeeAppointment.setSalaryPerDay(employeeAppointmentDTO.getSalaryPerDay());
+            employeeAppointment.setDetails(employeeAppointmentDTO.getDetails());
+            employeeAppointment.setActiveAppointment(employeeAppointmentDTO.getActiveAppointment());
+
+            employeeAppointmentRepository.saveAndFlush(employeeAppointment);
+            employeeAppointmentDTO.setEmployeeAppointmentId(employeeAppointmentId);
+            return employeeAppointmentDTO;
+        } catch (ResponseStatusException exception) {
+            throw exception;
+        } catch (DataIntegrityViolationException exception) {
+            log.warn("Appointment update conflicted with an existing record for employee {}",
+                    employeeAppointmentDTO.getEmployeeId());
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "The employee or Plantilla already has an appointment with conflicting details",
+                    exception);
+        }
     }
 
     @Transactional

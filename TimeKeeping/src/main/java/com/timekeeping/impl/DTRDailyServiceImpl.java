@@ -711,8 +711,10 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "    SELECT " +
                 "        e.employeeNo, " +
                 "        e.employeeId, " +
+                "        ws.tsCode, " +
             "        COALESCE(d.work_date, CAST(ws.wsDateTime AS DATE)) AS dtrDate, " +
-                "        COALESCE(d.attendance_status, 'REST DAY') AS status, " +
+                "        COALESCE(d.attendance_status, CASE WHEN LOWER(CAST(ws.isDayOff AS VARCHAR(5))) " +
+                "            IN ('1', 'true', 't', 'yes', 'y') THEN 'REST DAY' ELSE 'ABSENT' END) AS status, " +
                 "        COALESCE(d.total_work_minutes, 0) AS workMinutes, " +
                 "        COALESCE(d.total_late_minutes, 0) AS lateMinutes, " +
                 "        COALESCE(d.total_undertime_minutes, 0) AS undertimeMinutes, " +
@@ -727,6 +729,7 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "    SELECT " +
                 "        e.employeeNo, " +
                 "        e.employeeId, " +
+                "        CAST(NULL AS VARCHAR(50)) AS tsCode, " +
                 "        d.work_date AS dtrDate, " +
                 "        d.attendance_status AS status, " +
                 "        d.total_work_minutes AS workMinutes, " +
@@ -754,7 +757,13 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "    ad.isRestDay, " +
                 "    CASE WHEN ob.officialEngagementApplicationId IS NOT NULL THEN 1 ELSE 0 END AS hasApprovedOb, " +
                 "    CASE WHEN ot.overtimeRequestId IS NOT NULL THEN 1 ELSE 0 END AS hasApprovedOt, " +
-                "    CASE WHEN ps.passSlipId IS NOT NULL THEN 1 ELSE 0 END AS hasApprovedPs, " +
+                "    ps.purpose AS passSlipPurpose, " +
+                "    ps.departureTime AS passSlipDeparture, " +
+                "    ps.arrivalTime AS passSlipArrival, " +
+                "    ts.timeIn AS scheduledTimeIn, " +
+                "    ts.breakOut AS scheduledBreakOut, " +
+                "    ts.breakIn AS scheduledBreakIn, " +
+                "    ts.timeOut AS scheduledTimeOut, " +
                 "    CASE WHEN tc.timeCorrectionId IS NOT NULL THEN 1 ELSE 0 END AS hasApprovedTc, " +
                 "    CASE WHEN cto.ctoId IS NOT NULL THEN 1 ELSE 0 END AS hasApprovedCto, " +
                 "    CASE WHEN ld.learningAndDevelopmentId IS NOT NULL THEN 1 ELSE 0 END AS hasTraining " +
@@ -771,6 +780,7 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "    ON ps.employeeId = ad.employeeId " +
                 "    AND ps.status = 'Approved' " +
                 "    AND ad.dtrDate = ps.passSlipDate " +
+                "LEFT JOIN time_shift ts ON LOWER(ts.tsCode) = LOWER(ad.tsCode) " +
                 "LEFT JOIN time_correction tc " +
                 "    ON tc.employeeId = ad.employeeId " +
                 "    AND tc.status = 'Approved' " +
@@ -806,7 +816,6 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                     // Get approval flags from database
                     Integer hasOb = rs.getInt("hasApprovedOb");
                     Integer hasOt = rs.getInt("hasApprovedOt");
-                    Integer hasPs = rs.getInt("hasApprovedPs");
                     Integer hasTc = rs.getInt("hasApprovedTc");
                     Integer hasCto = rs.getInt("hasApprovedCto");
                     Integer hasTraining = rs.getInt("hasTraining");
@@ -824,20 +833,86 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                                       "RESTDAY".equalsIgnoreCase(status);
                     row.put("restDay", restDay);
                     
-                    row.put("lateMinutes", rs.getInt("lateMinutes"));
-                    row.put("undertimeMinutes", rs.getInt("undertimeMinutes"));
+                    int lateMinutes = rs.getInt("lateMinutes");
+                    int undertimeMinutes = rs.getInt("undertimeMinutes");
+                    PassSlipAttendanceEffect passSlipEffect = passSlipAttendanceEffect(
+                            rs.getString("passSlipPurpose"),
+                            toLocalTime(rs.getObject("passSlipDeparture")),
+                            toLocalTime(rs.getObject("passSlipArrival")),
+                            toLocalTime(rs.getObject("scheduledTimeIn")),
+                            toLocalTime(rs.getObject("scheduledBreakOut")),
+                            toLocalTime(rs.getObject("scheduledBreakIn")),
+                            toLocalTime(rs.getObject("scheduledTimeOut")));
+                    lateMinutes = Math.max(0, lateMinutes - passSlipEffect.officialLateOffset());
+                    undertimeMinutes = Math.max(0,
+                            undertimeMinutes - passSlipEffect.officialUndertimeOffset())
+                            + passSlipEffect.personalUndertimeMinutes();
+                    row.put("lateMinutes", lateMinutes);
+                    row.put("undertimeMinutes", undertimeMinutes);
                     
                     // Set approval flags from database query results
                     // These flags tell payroll that the employee had approved requests to excuse absence/tardiness
                     row.put("hasApprovedOb", hasOb == 1);
                     row.put("hasApprovedOt", hasOt == 1);
-                    row.put("hasApprovedPs", hasPs == 1);
+                    // Payroll may treat this legacy flag as full paid presence, so it is
+                    // true only for Official time covering the complete scheduled shift.
+                    row.put("hasApprovedPs", passSlipEffect.fullDayOfficial());
+                    row.put("approvedPassSlipPurpose", passSlipEffect.purpose());
+                    row.put("approvedPassSlipMinutes", passSlipEffect.scheduledMinutes());
                     row.put("hasApprovedTc", hasTc == 1);
                     row.put("hasApprovedCto", hasCto == 1);
                     row.put("hasTraining", hasTraining == 1);
                     
                     return row;
                 });
+    }
+
+    private PassSlipAttendanceEffect passSlipAttendanceEffect(
+            String purpose, LocalTime departure, LocalTime arrival,
+            LocalTime scheduledIn, LocalTime scheduledBreakOut,
+            LocalTime scheduledBreakIn, LocalTime scheduledOut) {
+        if (purpose == null || departure == null || arrival == null || !arrival.isAfter(departure)) {
+            return PassSlipAttendanceEffect.NONE;
+        }
+        LocalTime workStart = scheduledIn != null ? scheduledIn : LocalTime.of(8, 0);
+        LocalTime workEnd = scheduledOut != null ? scheduledOut : LocalTime.of(17, 0);
+        LocalTime breakStart = scheduledIn == null && scheduledOut == null && scheduledBreakOut == null
+                ? LocalTime.NOON : scheduledBreakOut;
+        LocalTime breakEnd = scheduledIn == null && scheduledOut == null && scheduledBreakIn == null
+                ? LocalTime.of(13, 0) : scheduledBreakIn;
+        int scheduledMinutes = overlapMinutes(departure, arrival, workStart, workEnd)
+                - overlapMinutes(departure, arrival, breakStart, breakEnd);
+        scheduledMinutes = Math.max(0, scheduledMinutes);
+        int scheduledDayMinutes = overlapMinutes(workStart, workEnd, workStart, workEnd)
+                - overlapMinutes(workStart, workEnd, breakStart, breakEnd);
+        boolean official = purpose.trim().toUpperCase(Locale.ROOT).startsWith("OFFICIAL");
+        boolean touchesStart = !departure.isAfter(workStart);
+        boolean touchesEnd = !arrival.isBefore(workEnd);
+        int personalMinutes = !official && !touchesStart && !touchesEnd ? scheduledMinutes : 0;
+        return new PassSlipAttendanceEffect(
+                official ? "Official" : "Personal",
+                scheduledMinutes,
+                personalMinutes,
+                official && touchesStart ? scheduledMinutes : 0,
+                official && touchesEnd ? scheduledMinutes : 0,
+                official && scheduledDayMinutes > 0 && scheduledMinutes >= scheduledDayMinutes);
+    }
+
+    private int overlapMinutes(LocalTime firstStart, LocalTime firstEnd,
+                               LocalTime secondStart, LocalTime secondEnd) {
+        if (firstStart == null || firstEnd == null || secondStart == null || secondEnd == null) return 0;
+        LocalTime start = firstStart.isAfter(secondStart) ? firstStart : secondStart;
+        LocalTime end = firstEnd.isBefore(secondEnd) ? firstEnd : secondEnd;
+        return end.isAfter(start) ? (int) ChronoUnit.MINUTES.between(start, end) : 0;
+    }
+
+    private record PassSlipAttendanceEffect(String purpose, int scheduledMinutes,
+                                            int personalUndertimeMinutes,
+                                            int officialLateOffset,
+                                            int officialUndertimeOffset,
+                                            boolean fullDayOfficial) {
+        private static final PassSlipAttendanceEffect NONE =
+                new PassSlipAttendanceEffect(null, 0, 0, 0, 0, false);
     }
 
     @Override

@@ -139,6 +139,10 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
             if (app.getStartDate() == null) continue;
             if (!app.getStartDate().isAfter(cutoffFinal)) continue;
             if (isInactiveStatus(app.getStatus())) continue;
+            // Leave explicitly filed without pay is handled by DTR/payroll and
+            // must not reserve or consume the employee's VL/SL dashboard credit.
+            // Null remains backward-compatible as paid for legacy records.
+            if (Boolean.FALSE.equals(app.getWithPay())) continue;
 
             double days = nvl(app.getNoOfDays());
             // If noOfDays is not stored, estimate from inclusive date range

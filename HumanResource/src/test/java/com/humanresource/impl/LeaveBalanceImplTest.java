@@ -118,6 +118,43 @@ class LeaveBalanceImplTest {
         assertEquals(20.0, beforeApplication.getSickLeaveBalance());
     }
 
+    @Test
+    void leaveWithoutPayDoesNotReduceVlOrSlDashboardBalance() throws Exception {
+        LeaveApplication unpaidVl = leaveApplication("Vacation Leave", 2.0, false);
+        LeaveApplication unpaidSl = leaveApplication("Sick Leave", 3.0, false);
+        when(leaveApplicationRepository.findByEmployeeId(1L))
+                .thenReturn(List.of(unpaidVl, unpaidSl));
+
+        LeaveBalanceDTO balance = service.getCurrentBalance(1L);
+
+        assertEquals(18.0, balance.getVacationLeaveBalance());
+        assertEquals(20.0, balance.getSickLeaveBalance());
+    }
+
+    @Test
+    void paidAndLegacyNullPayFlagsStillReserveDashboardCredit() throws Exception {
+        LeaveApplication paidVl = leaveApplication("Vacation Leave", 2.0, true);
+        LeaveApplication legacySl = leaveApplication("Sick Leave", 3.0, null);
+        when(leaveApplicationRepository.findByEmployeeId(1L))
+                .thenReturn(List.of(paidVl, legacySl));
+
+        LeaveBalanceDTO balance = service.getCurrentBalance(1L);
+
+        assertEquals(16.0, balance.getVacationLeaveBalance());
+        assertEquals(17.0, balance.getSickLeaveBalance());
+    }
+
+    private LeaveApplication leaveApplication(String type, double days, Boolean withPay) {
+        LeaveApplication application = new LeaveApplication();
+        application.setStartDate(LocalDate.now());
+        application.setEndDate(LocalDate.now());
+        application.setNoOfDays(days);
+        application.setLeaveType(type);
+        application.setStatus("Pending");
+        application.setWithPay(withPay);
+        return application;
+    }
+
     private LeaveBeginningBalance beginningBalance(String type, double balance) {
         LeaveBeginningBalance beginning = new LeaveBeginningBalance();
         beginning.setEmployeeId(1L);

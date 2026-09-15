@@ -46,6 +46,8 @@ class LeaveFormPortablePdfSmokeTest {
             parameters.put("CREDIT_DATE_AS_OF", Date.valueOf("2026-08-31"));
             parameters.put("CERTIFIED_VL_CREDIT", 18.0);
             parameters.put("CERTIFIED_SL_CREDIT", 20.0);
+            parameters.put("LESS_VL_THIS_APPLICATION", 0.0);
+            parameters.put("LESS_SL_THIS_APPLICATION", 0.0);
             parameters.put("LEAVE_TYPE_CODE", 5);
             parameters.put("OTHER_LEAVE_TYPE", "");
             parameters.put("VL_IN_COUNTRY", 0);
@@ -113,7 +115,7 @@ class LeaveFormPortablePdfSmokeTest {
                     approvedStatus VARCHAR(50), approvalMessage VARCHAR(500),
                     recommendationStatus VARCHAR(50), recommendationMessage VARCHAR(500),
                     recommendingApprovalById BIGINT, authorizedOfficialId BIGINT,
-                    approvedById BIGINT
+                    approvedById BIGINT, withPay BOOLEAN
                 )
                 """);
         statement.execute("""
@@ -159,11 +161,11 @@ class LeaveFormPortablePdfSmokeTest {
                      startDate, endDate, noOfDays, details, commutation,
                      approvedStatus, approvalMessage, recommendationStatus,
                      recommendationMessage, recommendingApprovalById,
-                     authorizedOfficialId, approvedById)
+                     authorizedOfficialId, approvedById, withPay)
                 VALUES
                     (100, 1, DATE '2026-09-13', 'Forced Leave',
                      DATE '2026-09-21', DATE '2026-09-22', 2, '', 'not requested',
-                     'Approved', '', NULL, '', NULL, NULL, 6)
+                     'Approved', '', NULL, '', NULL, NULL, 6, FALSE)
                 """);
     }
 

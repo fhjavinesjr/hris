@@ -45,11 +45,14 @@ public class DtrDailySummaryDTO {
      */
     private Boolean hasApprovedTa = false;
 
-    /**
-     * true = employee has an approved Pass Slip for this date.
-     * Treated as present.
-     */
+    /** true only when an approved Official pass slip covers the full scheduled shift. */
     private Boolean hasApprovedPs = false;
+
+    /** Purpose of the approved pass slip, when one exists: Personal or Official. */
+    private String approvedPassSlipPurpose;
+
+    /** Scheduled working minutes covered by the approved pass slip, excluding breaks. */
+    private Integer approvedPassSlipMinutes = 0;
 
     /**
      * true = employee has an approved Time Correction for this date.
@@ -90,6 +93,10 @@ public class DtrDailySummaryDTO {
     public void setHasApprovedTa(Boolean hasApprovedTa) { this.hasApprovedTa = hasApprovedTa; }
     public Boolean getHasApprovedPs() { return hasApprovedPs; }
     public void setHasApprovedPs(Boolean hasApprovedPs) { this.hasApprovedPs = hasApprovedPs; }
+    public String getApprovedPassSlipPurpose() { return approvedPassSlipPurpose; }
+    public void setApprovedPassSlipPurpose(String approvedPassSlipPurpose) { this.approvedPassSlipPurpose = approvedPassSlipPurpose; }
+    public Integer getApprovedPassSlipMinutes() { return approvedPassSlipMinutes; }
+    public void setApprovedPassSlipMinutes(Integer approvedPassSlipMinutes) { this.approvedPassSlipMinutes = approvedPassSlipMinutes; }
     public Boolean getHasApprovedTc() { return hasApprovedTc; }
     public void setHasApprovedTc(Boolean hasApprovedTc) { this.hasApprovedTc = hasApprovedTc; }
     public Boolean getHasApprovedCto() { return hasApprovedCto; }

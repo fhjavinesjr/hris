@@ -74,6 +74,13 @@ public class LeaveApplication implements Serializable {
     @Column(name = "dueExigencyService")
     private Boolean dueExigencyService;
 
+    /**
+     * Requested/approved pay treatment for this leave. Null is treated as paid
+     * for records created before this field was introduced.
+     */
+    @Column(name = "withPay")
+    private Boolean withPay = true;
+
     public LeaveApplication() {
     }
 
@@ -245,5 +252,13 @@ public class LeaveApplication implements Serializable {
 
     public void setDueExigencyService(Boolean dueExigencyService) {
         this.dueExigencyService = dueExigencyService;
+    }
+
+    public Boolean getWithPay() {
+        return withPay;
+    }
+
+    public void setWithPay(Boolean withPay) {
+        this.withPay = withPay;
     }
 }

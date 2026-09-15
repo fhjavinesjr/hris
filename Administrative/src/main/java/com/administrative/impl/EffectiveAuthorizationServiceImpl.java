@@ -45,6 +45,7 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String HRM_APPOINTMENT_REPORT = "hrm.appointment-report";
     public static final String HRM_ONBOARDING_REPORT = "hrm.onboarding-report";
     public static final String HRM_APPOINTMENT_DOCUMENTS = "hrm.appointment-documents";
+    public static final String HRM_EMPLOYMENT_RECORD = "hrm.employmentRecord";
     private static final Set<String> SUPPORTED_FEATURES = Set.of(PRIMEHR_COMPETENCY,
             PRIMEHR_POSITION_PROFILE, PRIMEHR_ASSESSMENT_ADMINISTRATION, PRIMEHR_COMPETENCY_ASSESSMENT,
             PRIMEHR_ASSESSMENT_VALIDATION, PRIMEHR_PERSON_PROFILE, PRIMEHR_GAP_CONFIGURATION,
@@ -58,7 +59,8 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
             PRIMEHR_RSP_EVIDENCE_INDEX_REPORT, PRIMEHR_RSP_REGISTER_REPORT,
             PRIMEHR_RSP_PROCESS_ANALYTICS,
             HRM_APPOINTMENT_INTAKE, HRM_ONBOARDING_CONFIGURATION, HRM_ONBOARDING,
-            HRM_APPOINTMENT_REPORT, HRM_ONBOARDING_REPORT, HRM_APPOINTMENT_DOCUMENTS);
+            HRM_APPOINTMENT_REPORT, HRM_ONBOARDING_REPORT, HRM_APPOINTMENT_DOCUMENTS,
+            HRM_EMPLOYMENT_RECORD);
     private static final String INSTALL_ADMIN_EMPLOYEE_NO = "admin";
 
     private final PermissionRulesetRepository repository;

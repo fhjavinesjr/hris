@@ -52,8 +52,8 @@ class ReportDataLoaderTest {
                 null, null, Time.valueOf("06:00:00"), 15, 30
         );
         jdbc.update(
-                "INSERT INTO pass_slip (passSlipId, employeeId, passSlipDate, departureTime, arrivalTime, status) VALUES (?, ?, ?, ?, ?, ?)",
-                301L, 1L, Date.valueOf("2026-07-03"),
+                "INSERT INTO pass_slip (passSlipId, employeeId, passSlipDate, purpose, departureTime, arrivalTime, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                301L, 1L, Date.valueOf("2026-07-03"), "Personal",
                 Time.valueOf("10:00:00"), Time.valueOf("11:00:00"), "Approved"
         );
         jdbc.update(
@@ -94,7 +94,7 @@ class ReportDataLoaderTest {
         assertThat(overnightEnd.getIsForNextDay()).isTrue();
 
         DtrReportRow passSlip = onlyRow(rows, "2026-07-03");
-        assertThat(passSlip.getRemarks()).isEqualTo("PASS SLIP");
+        assertThat(passSlip.getRemarks()).isEqualTo("PASS SLIP (PERSONAL) 10:00-11:00");
         assertThat(passSlip.getIn1st()).isEqualTo(Time.valueOf("11:00:00"));
         assertThat(passSlip.getOut1st()).isEqualTo(Time.valueOf("10:00:00"));
 
@@ -249,10 +249,11 @@ class ReportDataLoaderTest {
         jdbc.execute("CREATE TABLE dtr_daily (dtr_daily_id BIGINT PRIMARY KEY, employee_id VARCHAR(100), work_date DATE, total_work_minutes INT, total_late_minutes INT, total_undertime_minutes INT, total_overtime_minutes INT, attendance_status VARCHAR(50))");
         jdbc.execute("CREATE TABLE dtr_segment (dtr_segment_id BIGINT PRIMARY KEY, dtr_daily_id BIGINT, segment_no INT, time_in TIME, break_out TIME, break_in TIME, time_out TIME, late_minutes INT, undertime_minutes INT)");
         jdbc.execute("CREATE TABLE work_schedule (wsId BIGINT PRIMARY KEY, employeeId VARCHAR(100), tsCode VARCHAR(100), isDayOff BOOLEAN, wsDateTime TIMESTAMP)");
+        jdbc.execute("CREATE TABLE time_shift (tsCode VARCHAR(100), timeIn TIME, breakOut TIME, breakIn TIME, timeOut TIME)");
         jdbc.execute("CREATE TABLE official_engagement_application (officialEngagementApplicationId BIGINT PRIMARY KEY, employeeId BIGINT, officialType VARCHAR(50), startDate DATE, endDate DATE, status VARCHAR(50))");
         jdbc.execute("CREATE TABLE overtime_request (overtimeRequestId BIGINT PRIMARY KEY, employeeId BIGINT, dateTimeFrom TIMESTAMP, status VARCHAR(50))");
         jdbc.execute("CREATE TABLE compensatory_time_off (ctoId BIGINT PRIMARY KEY, employeeId BIGINT, dateOfOffset DATE, status VARCHAR(50))");
-        jdbc.execute("CREATE TABLE pass_slip (passSlipId BIGINT PRIMARY KEY, employeeId BIGINT, passSlipDate DATE, departureTime TIME, arrivalTime TIME, status VARCHAR(50))");
+        jdbc.execute("CREATE TABLE pass_slip (passSlipId BIGINT PRIMARY KEY, employeeId BIGINT, passSlipDate DATE, purpose VARCHAR(50), departureTime TIME, arrivalTime TIME, status VARCHAR(50))");
         jdbc.execute("CREATE TABLE time_correction (timeCorrectionId BIGINT PRIMARY KEY, employeeId BIGINT, workDate DATE, correctedTimeIn TIME, correctedBreakOut TIME, correctedBreakIn TIME, correctedTimeOut TIME, status VARCHAR(50))");
         jdbc.execute("CREATE TABLE leave_application (leaveApplicationId BIGINT PRIMARY KEY, employeeId BIGINT, leaveType VARCHAR(100), startDate DATE, endDate DATE, approvedStatus VARCHAR(50))");
     }

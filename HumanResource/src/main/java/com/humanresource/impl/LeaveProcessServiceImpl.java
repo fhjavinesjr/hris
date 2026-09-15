@@ -38,6 +38,7 @@ import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -61,13 +62,11 @@ import java.util.stream.Collectors;
  *         - If DTR record exists → accrue late + undertime minutes
  *         - If no DTR → check approved leaves for that day
  *           (SL used, VL used, LWOP-SL, LWOP-VL, or absent)
- *   4.  Look up EarningLeave table for VL earn rate (defaults to 1.25 if not found)
- *         SL always earns 1.25 regardless of absences (CSC rule)
+ *   4.  Look up the Administrative EarningLeave table for the VL and SL earn rate
+ *       based on the period's days without pay
  *   5.  Compute Day Equivalent (late+UT total minutes → fractional VL deduction)
- *   6.  Compute new balances:
- *         newSL = prevSL + earnedSL - lwopSL - slUsed
- *           (unexcused absences do NOT deduct SL — CSC standard)
- *         newVL = prevVL + earnedVL - absentCount - lwopVL - vlUsed - dayEquivFraction
+ *   6.  Compute balances from paid leave, monetization, and late/undertime.
+ *       LWOP and AWOL remain separate and do not consume VL/SL credits.
  *   7.  Save LeaveInformation row; leave isLocked = false
  *
  * Cross-module data (same hrisof database) is accessed via JdbcTemplate.
@@ -133,8 +132,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         List<String> skippedReasons = new ArrayList<>();
         List<LeaveInformationDTO> processedList = new ArrayList<>();
 
-        LocalDate periodStart = req.getCutoffStartDate();
-        LocalDate periodEnd = req.getCutoffEndDate();
+        LeaveProcessingPeriod period = validateBatchRequest(req);
 
         // Build the working set of employees with role-based exclusions and optional selection allowlist.
         List<Employee> employees = resolveEmployeesForRequest(req);
@@ -144,13 +142,13 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         }
 
         // Pre-load holiday dates for the period (JdbcTemplate cross-module query)
-        Set<LocalDate> holidayDates = loadHolidayDates(attendanceStart(periodStart), attendanceEnd(periodStart));
+        Set<LocalDate> holidayDates = loadHolidayDates(period.cutoffStart(), period.cutoffEnd());
 
         for (Employee emp : employees) {
             String empLabel = emp.getEmployeeNo() + " - " + emp.getLastname();
             try {
                 LeaveInformationDTO result = processEmployee(
-                        emp, periodStart, periodEnd,
+                        emp, period,
                         req.getSalaryPeriodSettingId(), req.getProcessedById(),
                         holidayDates, skippedReasons, empLabel);
                 if (result != null) {
@@ -190,6 +188,116 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                 .filter(emp -> !isExcludedSystemUser(emp))
                 .collect(Collectors.toList());
     }
+
+    LeaveProcessingPeriod validateBatchRequest(LeaveProcessRequestDTO req) {
+        LeaveProcessingPeriod period = resolveProcessingPeriod(req);
+        if (!period.cutoffEnd().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("The DTR cutoff " + period.cutoffStart() + " to "
+                    + period.cutoffEnd() + " has not ended yet");
+        }
+
+        List<String> errors = new ArrayList<>();
+        for (Employee employee : resolveEmployeesForRequest(req)) {
+            Optional<LeaveBeginningBalance> sl = begBalanceRepository
+                    .findByEmployeeIdAndLeaveType(employee.getEmployeeId(), "Sick Leave");
+            Optional<LeaveBeginningBalance> vl = begBalanceRepository
+                    .findByEmployeeIdAndLeaveType(employee.getEmployeeId(), "Vacation Leave");
+            String label = employee.getEmployeeNo() + " - " + employee.getLastname();
+            if (sl.isEmpty() || vl.isEmpty()) {
+                errors.add(label + ": missing SL/VL beginning balance");
+                continue;
+            }
+            if (sl.get().getAsOfDate() == null || vl.get().getAsOfDate() == null) {
+                errors.add(label + ": beginning balance As Of date is required");
+                continue;
+            }
+            YearMonth slMonth = YearMonth.from(sl.get().getAsOfDate());
+            YearMonth vlMonth = YearMonth.from(vl.get().getAsOfDate());
+            if (!slMonth.equals(vlMonth)) {
+                errors.add(label + ": SL/VL beginning balance months do not match");
+                continue;
+            }
+            Optional<LeaveInformation> existing = leaveInfoRepository
+                    .findByEmployeeIdAndCutoffStartDateAndCutoffEndDate(
+                            employee.getEmployeeId(), period.cutoffStart(), period.cutoffEnd());
+            Optional<LeaveInformation> last = leaveInfoRepository
+                    .findTopByEmployeeIdAndCutoffEndDateBeforeOrderByCutoffEndDateDesc(
+                            employee.getEmployeeId(), period.cutoffStart());
+            if (last.isEmpty() && existing.isEmpty()
+                    && !YearMonth.from(period.postingStart()).equals(slMonth.plusMonths(1))) {
+                errors.add(label + ": first posting month must be " + slMonth.plusMonths(1));
+            } else if (last.isPresent() && existing.isEmpty()
+                    && !YearMonth.from(period.cutoffStart()).equals(
+                            YearMonth.from(last.get().getCutoffStartDate()).plusMonths(1))) {
+                errors.add(label + ": process "
+                        + YearMonth.from(last.get().getCutoffStartDate()).plusMonths(1) + " first");
+            }
+        }
+        if (!errors.isEmpty()) {
+            String message = errors.stream().limit(10).collect(Collectors.joining("; "));
+            if (errors.size() > 10) message += "; and " + (errors.size() - 10) + " more";
+            throw new IllegalArgumentException("Leave processing cannot start: " + message);
+        }
+        return period;
+    }
+
+    LeaveProcessingPeriod resolveProcessingPeriod(LeaveProcessRequestDTO req) {
+        if (req.getCutoffStartDate() == null || req.getCutoffEndDate() == null) {
+            throw new IllegalArgumentException("cutoffStartDate and cutoffEndDate are required");
+        }
+        if (req.getSalaryPeriodSettingId() == null) {
+            throw new IllegalArgumentException("An active Administrative LEAVE period setting is required");
+        }
+        LocalDate postingStart = req.getCutoffStartDate().withDayOfMonth(1);
+        LocalDate postingEnd = postingStart.withDayOfMonth(postingStart.lengthOfMonth());
+        List<Map<String, Object>> rows = jdbc.queryForList(
+                "SELECT periodContext, cutoffStartDay, cutoffStartMonthOffset, "
+                        + "cutoffEndDay, cutoffEndMonthOffset, isActive "
+                        + "FROM salary_period_setting WHERE salaryPeriodSettingId = ?",
+                req.getSalaryPeriodSettingId());
+        if (rows.isEmpty()) {
+            throw new IllegalArgumentException("The selected salary period setting no longer exists");
+        }
+        Map<String, Object> row = rows.get(0);
+        String context = String.valueOf(rowValue(row, "periodContext"));
+        if (!("LEAVE".equalsIgnoreCase(context) || "BOTH".equalsIgnoreCase(context))) {
+            throw new IllegalArgumentException("The selected period setting is not configured for LEAVE");
+        }
+        if (!isDbTrue(rowValue(row, "isActive"))) {
+            throw new IllegalArgumentException("The selected LEAVE period setting is inactive");
+        }
+        LocalDate cutoffStart = resolveCutoffDate(postingStart,
+                numberValue(row, "cutoffStartDay"), numberValue(row, "cutoffStartMonthOffset"));
+        LocalDate cutoffEnd = resolveCutoffDate(postingStart,
+                numberValue(row, "cutoffEndDay"), numberValue(row, "cutoffEndMonthOffset"));
+        if (cutoffEnd.isBefore(cutoffStart)) {
+            throw new IllegalArgumentException("Administrative LEAVE cutoff end is before its start");
+        }
+        return new LeaveProcessingPeriod(postingStart, postingEnd, cutoffStart, cutoffEnd);
+    }
+
+    private static LocalDate resolveCutoffDate(LocalDate postingStart, int day, int monthOffset) {
+        LocalDate targetMonth = postingStart.plusMonths(monthOffset).withDayOfMonth(1);
+        return targetMonth.withDayOfMonth(Math.min(Math.max(day, 1), targetMonth.lengthOfMonth()));
+    }
+
+    private static Object rowValue(Map<String, Object> row, String key) {
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(key)) return entry.getValue();
+        }
+        return null;
+    }
+
+    private static int numberValue(Map<String, Object> row, String key) {
+        Object value = rowValue(row, key);
+        if (!(value instanceof Number number)) {
+            throw new IllegalArgumentException("Administrative LEAVE setting is missing " + key);
+        }
+        return number.intValue();
+    }
+
+    record LeaveProcessingPeriod(LocalDate postingStart, LocalDate postingEnd,
+                                 LocalDate cutoffStart, LocalDate cutoffEnd) { }
 
     private boolean isExcludedSystemUser(Employee emp) {
         if (emp == null) {
@@ -238,9 +346,23 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
             Set<LocalDate> holidayDates,
             List<String> skippedReasons, String empLabel) {
 
+        return processEmployee(emp,
+                new LeaveProcessingPeriod(periodStart, periodEnd,
+                        attendanceStart(periodStart), attendanceEnd(periodStart)),
+                salaryPeriodSettingId, processedById, holidayDates, skippedReasons, empLabel);
+    }
+
+    LeaveInformationDTO processEmployee(
+            Employee emp,
+            LeaveProcessingPeriod period,
+            Long salaryPeriodSettingId, Long processedById,
+            Set<LocalDate> holidayDates,
+            List<String> skippedReasons, String empLabel) {
+
         Long employeeId = emp.getEmployeeId();
-        LocalDate attendanceStart = attendanceStart(periodStart);
-        LocalDate attendanceEnd = attendanceEnd(periodStart);
+        LocalDate postingStart = period.postingStart();
+        LocalDate attendanceStart = period.cutoffStart();
+        LocalDate attendanceEnd = period.cutoffEnd();
 
         // Guard 1: Must have an active appointment, matching regular-payroll eligibility.
         EmployeeAppointment appt = appointmentRepository
@@ -294,14 +416,14 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
 
         // Guard 6: Period must not already be locked
         Optional<LeaveInformation> existingOpt = leaveInfoRepository
-                .findByEmployeeIdAndCutoffStartDateAndCutoffEndDate(employeeId, periodStart, periodEnd);
+                .findByEmployeeIdAndCutoffStartDateAndCutoffEndDate(employeeId, attendanceStart, attendanceEnd);
         if (existingOpt.isPresent() && Boolean.TRUE.equals(existingOpt.get().getIsLocked())) {
             skippedReasons.add(empLabel + ": Period is locked — cannot re-process");
             return null;
         }
 
         // Guard 7: Cannot process a period if a later period already exists (no backfilling over future)
-        if (leaveInfoRepository.existsByEmployeeIdAndCutoffEndDateGreaterThan(employeeId, periodEnd)) {
+        if (leaveInfoRepository.existsByEmployeeIdAndCutoffEndDateGreaterThan(employeeId, attendanceEnd)) {
             skippedReasons.add(empLabel + ": A later period already exists — cannot backfill");
             return null;
         }
@@ -312,18 +434,41 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         // balance; it must not suppress the first attendance computation.
         Optional<LeaveInformation> lastPeriod =
                 leaveInfoRepository.findTopByEmployeeIdAndCutoffEndDateBeforeOrderByCutoffEndDateDesc(
-                        employeeId, periodStart);
+                        employeeId, attendanceStart);
 
-        boolean beginningBalanceBeforePeriod = slBeg.getAsOfDate() != null
-                && vlBeg.getAsOfDate() != null
-                && slBeg.getAsOfDate().isBefore(attendanceStart)
-                && vlBeg.getAsOfDate().isBefore(attendanceStart);
-        // Preserve balance-only initialization for the cutoff containing the
-        // beginning balance date (and legacy undated beginning balances).
-        if (lastPeriod.isEmpty() && !beginningBalanceBeforePeriod) {
+        if (slBeg.getAsOfDate() == null || vlBeg.getAsOfDate() == null) {
+            skippedReasons.add(empLabel + ": SL and VL beginning balances must have an As Of date");
+            return null;
+        }
+        YearMonth slBeginningMonth = YearMonth.from(slBeg.getAsOfDate());
+        YearMonth vlBeginningMonth = YearMonth.from(vlBeg.getAsOfDate());
+        if (!slBeginningMonth.equals(vlBeginningMonth)) {
+            skippedReasons.add(empLabel + ": SL and VL beginning balance dates must be in the same month");
+            return null;
+        }
+        if (lastPeriod.isEmpty() && existingOpt.isEmpty()
+                && !YearMonth.from(postingStart).equals(slBeginningMonth.plusMonths(1))) {
+            skippedReasons.add(empLabel + ": First posting month must immediately follow beginning balance month "
+                    + slBeginningMonth);
+            return null;
+        }
+        if (lastPeriod.isPresent()
+                && existingOpt.isEmpty()
+                && !YearMonth.from(attendanceStart).equals(
+                        YearMonth.from(lastPeriod.get().getCutoffStartDate()).plusMonths(1))) {
+            skippedReasons.add(empLabel + ": Previous leave month is missing; process "
+                    + YearMonth.from(lastPeriod.get().getCutoffStartDate()).plusMonths(1) + " first");
+            return null;
+        }
+
+        boolean openingPostingMonth = YearMonth.from(postingStart)
+                .equals(slBeginningMonth.plusMonths(1));
+        // The first valid posting creates a balance-only opening row. Actual
+        // DTR earnings begin with the next posting month.
+        if (lastPeriod.isEmpty() && openingPostingMonth) {
             LocalDate begAsOfDate = slBeg.getAsOfDate();
             String begParticulars = "Beginning Balance as of " +
-                    (begAsOfDate != null ? begAsOfDate.toString() : periodEnd.toString());
+                    (begAsOfDate != null ? begAsOfDate.toString() : attendanceEnd.toString());
 
             LeaveInformation begEntity;
             if (existingOpt.isPresent()) {
@@ -335,8 +480,8 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
 
             begEntity.setEmployeeId(employeeId);
             begEntity.setSalaryPeriodSettingId(salaryPeriodSettingId);
-            begEntity.setCutoffStartDate(periodStart);
-            begEntity.setCutoffEndDate(periodEnd);
+            begEntity.setCutoffStartDate(attendanceStart);
+            begEntity.setCutoffEndDate(attendanceEnd);
             begEntity.setProcessDate(LocalDateTime.now());
             begEntity.setProcessedById(processedById);
             begEntity.setEarnedSl(0.0);
@@ -397,8 +542,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                         employeeId, "Approved", attendanceStart, attendanceEnd);
 
         // ── Pre-load approved pass slips for this employee ───────────────────
-        // Approved pass slips represent official-business absences; minutes covered
-        // by a pass slip must not be charged to VL via the day equivalent deduction.
+        // Personal and Official pass slips have different downstream treatment.
         List<PassSlip> approvedPassSlips = passSlipRepository
                 .findByEmployeeIdAndPassSlipDateBetween(employeeId, attendanceStart, attendanceEnd)
                 .stream()
@@ -462,11 +606,12 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
             // Skip weekends UNLESS the employee has an explicit work schedule on that day
             // (isDayOff = 0 means the employee is scheduled to work, even on SAT/SUN).
             // Dynamic/flexible schedules can assign work days on weekends — we must respect that.
-            if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) {
-                if (!isScheduledWorkDay(dtrEmployeeId, day)) {
-                    day = day.plusDays(1);
-                    continue;
-                }
+            Boolean scheduledWorkDay = scheduledWorkDayStatus(dtrEmployeeId, day);
+            if (Boolean.FALSE.equals(scheduledWorkDay)
+                    || (scheduledWorkDay == null
+                    && (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY))) {
+                day = day.plusDays(1);
+                continue;
             }
 
             // Skip holidays
@@ -501,19 +646,23 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
 
                 // Subtract approved pass slip minutes so official-business time is not
                 // charged to VL. Offset is applied to late first, remainder to undertime.
-                int passSlipOffset = computePassSlipOffset(day, approvedPassSlips);
+                PassSlip passSlip = findPassSlipForDay(day, approvedPassSlips);
+                PassSlipEffect passSlipEffect = computePassSlipEffect(passSlip, scheduledShift);
 
                 // Subtract approved Official Engagement minutes (same pattern as PassSlip).
                 int oeOffset = computeOEOffset(day, approvedOEs, scheduledShift);
-                int totalOffset = passSlipOffset + oeOffset;
+                int netLate = Math.max(0, late - passSlipEffect.officialLateOffset() - oeOffset);
+                int remainingOeOffset = Math.max(0, oeOffset - late);
+                int netUt = Math.max(0, ut - passSlipEffect.officialUndertimeOffset()
+                        - remainingOeOffset) + passSlipEffect.personalUndertimeMinutes();
 
-                int netLate = Math.max(0, late - totalOffset);
-                int remainingOffset = Math.max(0, totalOffset - late);
-                int netUt = Math.max(0, ut - remainingOffset);
-
-                if (totalOffset > 0) {
-                    log.debug("Offset on {}: raw late={}, raw ut={}, passSlip={}, oe={} → netLate={}, netUt={}",
-                            day, late, ut, passSlipOffset, oeOffset, netLate, netUt);
+                if (passSlip != null) {
+                    appendParticular(particulars, day, passSlipParticular(passSlip));
+                    log.debug("Pass Slip on {}: purpose={}, scheduledMinutes={}, personalCharge={}, "
+                                    + "officialLateOffset={}, officialUtOffset={}",
+                            day, passSlip.getPurpose(), passSlipEffect.scheduledMinutes(),
+                            passSlipEffect.personalUndertimeMinutes(), passSlipEffect.officialLateOffset(),
+                            passSlipEffect.officialUndertimeOffset());
                 }
 
                 if (netLate > 0) lateCount++;
@@ -545,17 +694,23 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                                     day, cto.getHoursUsed(), ctoUt);
                         }
                         appendParticular(particulars, day, "[CTO]");
-                    } else if (isOEFullDay(day, approvedOEs, scheduledShift)) {
+                    } else if (isOEFullDay(day, approvedOEs, scheduledShift)
+                            && "ABSENT".equals(resolveAbsenceType(day, approvedLeaves))) {
                         // Official Engagement covers the full work day — not absent.
                         appendParticular(particulars, day, "[OE]");
-                    } else if (hasPassSlipForDay(day, approvedPassSlips)) {
-                        // Approved Pass Slip covers this day — employee is not absent.
-                        // Pass slips represent excused absences from the office (official or personal).
-                        // On a no-DTR day, the pass slip is the only record of the employee's activity;
-                        // we do not penalise them with an absent mark.
-                        appendParticular(particulars, day, "[PS]");
                     } else {
-                        // No CTO, no OE, no PassSlip — check approved leave applications
+                        PassSlip passSlip = findPassSlipForDay(day, approvedPassSlips);
+                        PassSlipEffect passSlipEffect = computePassSlipEffect(passSlip, scheduledShift);
+                        if (passSlip != null) {
+                            appendParticular(particulars, day, passSlipParticular(passSlip));
+                        }
+                        if (passSlipEffect.fullDayOfficial()) {
+                            day = day.plusDays(1);
+                            continue;
+                        }
+
+                        // A partial or Personal pass slip does not replace the day's DTR.
+                        // Continue through approved leave or absence handling.
                         String leaveTag = resolveAbsenceType(day, approvedLeaves);
                         switch (leaveTag) {
                         case "SL":
@@ -574,6 +729,14 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                             vlUsed += 0.5;
                             appendParticular(particulars, day, "[VL-HALF]");
                             break;
+                        case "FL":
+                            vlUsed += 1.0;
+                            appendParticular(particulars, day, "[FL]");
+                            break;
+                        case "HALF_FL":
+                            vlUsed += 0.5;
+                            appendParticular(particulars, day, "[FL-HALF]");
+                            break;
                         case "LWOP_SL":
                             lwopSL += 1.0;
                             appendParticular(particulars, day, "[LWOP-SL]");
@@ -582,11 +745,24 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                             lwopVL += 1.0;
                             appendParticular(particulars, day, "[LWOP-VL]");
                             break;
+                        case "HALF_LWOP_SL":
+                            lwopSL += 0.5;
+                            appendParticular(particulars, day, "[LWOP-SL-HALF]");
+                            break;
+                        case "HALF_LWOP_VL":
+                            lwopVL += 0.5;
+                            appendParticular(particulars, day, "[LWOP-VL-HALF]");
+                            break;
                         case "CTO":
                             // CTO filed as a leave application (fallback) — no deduction
                             appendParticular(particulars, day, "[CTO]");
                             break;
                         default:
+                            if (leaveTag.startsWith("SPECIAL_")) {
+                                appendParticular(particulars, day,
+                                        "[" + leaveTag.substring("SPECIAL_".length()) + "]");
+                                break;
+                            }
                             // ABSENT — no leave, no CTO, no excuse
                             absentCount += 1.0;
                             appendParticular(particulars, day, "[A]");
@@ -600,11 +776,13 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         }
 
         // ── Compute earned leave rates ────────────────────────────────────────
-        // SL: always 1.25 per period (CSC rule), absences do not reduce SL earning
-        double earnedSL = DEFAULT_EARN_RATE;
-
-        // VL: look up from EarningLeave table by absent days; falls back to 1.25
-        double earnedVL = lookupVlEarnRate((int) Math.round(absentCount), attendanceEnd);
+        // LWOP and AWOL do not consume an existing VL/SL balance directly. They
+        // reduce the credits earned for the period through the authoritative
+        // Administrative Earning Leave table, whose rate applies to both VL and SL.
+        double nonPayDays = absentCount + lwopSL + lwopVL;
+        double earnedLeaveRate = lookupEarnRate(nonPayDays, attendanceEnd);
+        double earnedSL = earnedLeaveRate;
+        double earnedVL = earnedLeaveRate;
 
         // ── Compute Day Equivalent (late+UT deduction from VL) ───────────────
         int totalLateUt = totalLateMinutes + totalUndertimeMinutes;
@@ -623,12 +801,10 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         }
 
         // ── Compute new balances ─────────────────────────────────────────────
-        //   newSL = prevSL + earnedSL - lwopSL - slUsed
-        //     (unexcused absences are charged to VL, not SL — CSC standard)
-        //   newVL = prevVL + earnedVL - absentCount - lwopVL - vlUsed - dayEquivFraction
-        double newSL = prevSL + earnedSL - lwopSL - slUsed - monetizedSL;
-        double newVL = prevVL + earnedVL - absentCount - lwopVL - vlUsed
-                - dayEquivFraction - monetizedVL;
+        // LWOP/AWOL affect the earning-rate lookup above and downstream
+        // payroll/personnel action; they are not charged again to VL or SL.
+        double newSL = prevSL + earnedSL - slUsed - monetizedSL;
+        double newVL = prevVL + earnedVL - vlUsed - dayEquivFraction - monetizedVL;
 
         // ── Build and save LeaveInformation row ──────────────────────────────
         LeaveInformation entity;
@@ -641,8 +817,8 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
 
         entity.setEmployeeId(employeeId);
         entity.setSalaryPeriodSettingId(salaryPeriodSettingId);
-        entity.setCutoffStartDate(periodStart);
-        entity.setCutoffEndDate(periodEnd);
+        entity.setCutoffStartDate(attendanceStart);
+        entity.setCutoffEndDate(attendanceEnd);
         entity.setProcessDate(LocalDateTime.now());
         entity.setProcessedById(processedById);
 
@@ -782,32 +958,84 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
     }
 
     /**
-     * Looks up VL earning rate from the earningleave table.
-     * The 'day' column stores the number of absent days; 'earn' is the rate.
-     * Returns DEFAULT_EARN_RATE (1.25) if no matching record is found.
+     * Looks up the common VL/SL earning rate from the Administrative earningleave table.
+     * The day column is persisted as text and may contain decimal keys (for example 0.5),
+     * so matching is deliberately performed numerically in Java. This avoids the
+     * PostgreSQL varchar-vs-integer comparison error while remaining SQL Server compatible.
      */
-    private double lookupVlEarnRate(int absentDays, LocalDate cutoffEndDate) {
+    private double lookupEarnRate(double nonPayDays, LocalDate cutoffEndDate) {
+        if (nonPayDays <= 0.0) {
+            return DEFAULT_EARN_RATE;
+        }
+
         try {
-            String sql = "SELECT earn, effectivityDate FROM earningleave " +
-                         "WHERE day = ? AND effectivityDate <= ? " +
+            String sql = "SELECT day, earn, effectivityDate FROM earningleave " +
+                         "WHERE effectivityDate <= ? " +
                          "ORDER BY effectivityDate DESC";
-            List<Map<String, Object>> rows = jdbc.queryForList(sql, absentDays, cutoffEndDate.atStartOfDay());
-            if (!rows.isEmpty() && rows.get(0).get("earn") != null) {
-                return Double.parseDouble(rows.get(0).get("earn").toString());
+            List<Map<String, Object>> rows = jdbc.queryForList(sql, cutoffEndDate.atStartOfDay());
+            Double configuredRate = findConfiguredEarnRate(rows, nonPayDays);
+            if (configuredRate != null) {
+                return configuredRate;
             }
 
-            String fallbackSql = "SELECT earn, effectivityDate FROM earningleave " +
-                                 "WHERE day = ? ORDER BY effectivityDate ASC";
-            rows = jdbc.queryForList(fallbackSql, absentDays);
-            if (!rows.isEmpty() && rows.get(0).get("earn") != null) {
-                log.debug("EarningLeave: using earliest available rate for absentDays={} (no rate effective on {})",
-                        absentDays, cutoffEndDate);
-                return Double.parseDouble(rows.get(0).get("earn").toString());
+            String fallbackSql = "SELECT day, earn, effectivityDate FROM earningleave " +
+                                 "ORDER BY effectivityDate ASC";
+            rows = jdbc.queryForList(fallbackSql);
+            configuredRate = findConfiguredEarnRate(rows, nonPayDays);
+            if (configuredRate != null) {
+                log.debug("EarningLeave: using earliest available rate for nonPayDays={} (no rate effective on {})",
+                        nonPayDays, cutoffEndDate);
+                return configuredRate;
             }
         } catch (Exception ex) {
-            log.warn("EarningLeave lookup failed for absentDays={}, using default 1.25: {}", absentDays, ex.getMessage());
+            throw new IllegalStateException("Unable to read the Administrative Earning Leave table for "
+                    + formatDays(nonPayDays) + " day(s) without pay", ex);
         }
-        return DEFAULT_EARN_RATE;
+
+        throw new IllegalStateException("No Administrative Earning Leave mapping is configured for "
+                + formatDays(nonPayDays) + " day(s) without pay as of " + cutoffEndDate);
+    }
+
+    private Double findConfiguredEarnRate(List<Map<String, Object>> rows, double nonPayDays) {
+        for (Map<String, Object> row : rows) {
+            Object configuredDay = getColumnValue(row, "day");
+            Object configuredEarn = getColumnValue(row, "earn");
+            if (configuredDay == null || configuredEarn == null) {
+                continue;
+            }
+            try {
+                double dayValue = Double.parseDouble(configuredDay.toString());
+                if (Math.abs(dayValue - nonPayDays) < 0.000001) {
+                    double rate = Double.parseDouble(configuredEarn.toString());
+                    if (!Double.isFinite(rate) || rate < 0.0) {
+                        throw new IllegalStateException("Invalid earned-leave rate " + configuredEarn
+                                + " for " + configuredDay + " day(s)");
+                    }
+                    return rate;
+                }
+            } catch (NumberFormatException ex) {
+                log.warn("Ignoring invalid Earning Leave mapping day='{}', earn='{}'",
+                        configuredDay, configuredEarn);
+            }
+        }
+        return null;
+    }
+
+    private Object getColumnValue(Map<String, Object> row, String columnName) {
+        Object value = row.get(columnName);
+        if (value != null) {
+            return value;
+        }
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            if (columnName.equalsIgnoreCase(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private String formatDays(double days) {
+        return days == Math.rint(days) ? String.valueOf((long) days) : String.valueOf(days);
     }
 
     /**
@@ -901,9 +1129,9 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
      *   "Vacation Leave"       → VL
      *   "LWOP-SL"              → LWOP_SL
      *   "LWOP-VL" / "LWOP"    → LWOP_VL
-     *   "Forced Leave"         → VL (charged to VL per CSC)
+     *   "Forced Leave"         → FL (charged to VL per CSC)
      *   "CTO" / "Compensatory" → CTO
-     *   others (Maternity, Paternity, SPL, etc.) → treated as VL deduction
+     *   others (Maternity, Paternity, SPL, etc.) → statutory code, no VL/SL deduction
      */
     private String resolveAbsenceType(LocalDate day, List<LeaveApplication> approvedLeaves) {
         for (LeaveApplication la : approvedLeaves) {
@@ -913,15 +1141,31 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                 double noOfDays = la.getNoOfDays() != null ? la.getNoOfDays() : 1.0;
                 boolean isHalf = noOfDays < 1.0;
 
+                // Preserve the SL/VL distinction for an approved leave that
+                // was explicitly classified without pay.
+                if (Boolean.FALSE.equals(la.getWithPay())) {
+                    if (type.contains("SICK")) return isHalf ? "HALF_LWOP_SL" : "LWOP_SL";
+                    return isHalf ? "HALF_LWOP_VL" : "LWOP_VL";
+                }
+
                 if (type.contains("SICK")) return isHalf ? "HALF_SL" : "SL";
-                if (type.contains("VACATION") || type.contains("FORCED")) return isHalf ? "HALF_VL" : "VL";
+                if (type.contains("FORCED")) return isHalf ? "HALF_FL" : "FL";
+                if (type.contains("VACATION")) return isHalf ? "HALF_VL" : "VL";
                 if (type.contains("LWOP-SL") || (type.contains("LWOP") && type.contains("SL"))) return "LWOP_SL";
                 if (type.contains("LWOP")) return "LWOP_VL";
                 if (type.contains("CTO") || type.contains("COMPENSATORY")) return "CTO";
 
-                // Special leaves (SPL, Maternity, Paternity, Solo Parent) — not charged to SL/VL balance
-                // Treated as present equivalent for SL/VL computation (no deduction)
-                return "CTO"; // use CTO tag to mean "approved, no SL/VL deduction"
+                // Statutory leaves are excused but not charged to ordinary VL/SL.
+                if (type.contains("MATERNITY")) return "SPECIAL_ML";
+                if (type.contains("PATERNITY")) return "SPECIAL_PL";
+                if (type.contains("SPECIAL PRIVILEGE")) return "SPECIAL_SPL";
+                if (type.contains("SOLO PARENT")) return "SPECIAL_SOPL";
+                if (type.contains("STUDY")) return "SPECIAL_STL";
+                if (type.contains("REHABILITATION")) return "SPECIAL_RP";
+                if (type.contains("ADOPTION")) return "SPECIAL_AL";
+                if (type.contains("WOMEN")) return "SPECIAL_MCW";
+                if (type.contains("EMERGENCY")) return "SPECIAL_SEL";
+                return "SPECIAL_OL";
             }
         }
         return "ABSENT";
@@ -942,7 +1186,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
 
     private void appendParticular(StringBuilder sb, LocalDate date, String tag) {
         if (sb.length() > 0) sb.append(" | ");
-        sb.append(date).append(" ").append(tag);
+        sb.append(date.getDayOfMonth()).append(" ").append(tag);
     }
 
     private double nvl(Double value) {
@@ -984,22 +1228,71 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
     }
 
     /**
-     * Computes the total approved pass slip minutes for a given working day.
-     *
-     * An approved pass slip means the employee was away on official business.
-     * That time must not be charged to VL via the day equivalent deduction.
-     * The offset is applied first to late minutes, then to undertime minutes.
-     * Multiple pass slips on the same day are summed.
+     * Computes only scheduled working minutes covered by a pass slip. Personal
+     * time inside the shift is charged as undertime. Official time offsets a
+     * boundary attendance deficiency only when it touches that boundary, so an
+     * afternoon errand cannot erase unrelated morning late.
      */
-    private int computePassSlipOffset(LocalDate day, List<PassSlip> passSlips) {
+    private PassSlipEffect computePassSlipEffect(PassSlip passSlip, ScheduledShift sched) {
+        if (passSlip == null || passSlip.getDepartureTime() == null || passSlip.getArrivalTime() == null) {
+            return PassSlipEffect.NONE;
+        }
+        java.time.LocalTime workStart = sched != null ? sched.timeIn : java.time.LocalTime.of(8, 0);
+        java.time.LocalTime workEnd = sched != null ? sched.timeOut : java.time.LocalTime.of(17, 0);
+        java.time.LocalTime breakStart = sched != null ? sched.breakOut : java.time.LocalTime.NOON;
+        java.time.LocalTime breakEnd = sched != null ? sched.breakIn : java.time.LocalTime.of(13, 0);
+        int scheduledMinutes = overlapMinutes(passSlip.getDepartureTime(), passSlip.getArrivalTime(),
+                workStart, workEnd)
+                - overlapMinutes(passSlip.getDepartureTime(), passSlip.getArrivalTime(), breakStart, breakEnd);
+        scheduledMinutes = Math.max(0, scheduledMinutes);
+        boolean official = isOfficialPassSlip(passSlip);
+        boolean fullDayOfficial = official && scheduledMinutes >= scheduledWorkingMinutes(sched);
+        int officialLateOffset = official && !passSlip.getDepartureTime().isAfter(workStart)
+                ? scheduledMinutes : 0;
+        int officialUtOffset = official && !passSlip.getArrivalTime().isBefore(workEnd)
+                ? scheduledMinutes : 0;
+        boolean touchesBoundary = !passSlip.getDepartureTime().isAfter(workStart)
+                || !passSlip.getArrivalTime().isBefore(workEnd);
+        int personalMinutes = !official && !touchesBoundary ? scheduledMinutes : 0;
+        return new PassSlipEffect(scheduledMinutes, personalMinutes, officialLateOffset,
+                officialUtOffset, fullDayOfficial);
+    }
+
+    private int scheduledWorkingMinutes(ScheduledShift sched) {
+        java.time.LocalTime start = sched != null ? sched.timeIn : java.time.LocalTime.of(8, 0);
+        java.time.LocalTime end = sched != null ? sched.timeOut : java.time.LocalTime.of(17, 0);
+        int minutes = Math.max(0, (int) Duration.between(start, end).toMinutes());
+        if (sched != null && sched.breakOut != null && sched.breakIn != null) {
+            minutes -= Math.max(0, (int) Duration.between(sched.breakOut, sched.breakIn).toMinutes());
+        } else if (sched == null) {
+            minutes -= 60;
+        }
+        return Math.max(1, minutes);
+    }
+
+    private int overlapMinutes(java.time.LocalTime firstStart, java.time.LocalTime firstEnd,
+                               java.time.LocalTime secondStart, java.time.LocalTime secondEnd) {
+        if (firstStart == null || firstEnd == null || secondStart == null || secondEnd == null) return 0;
+        java.time.LocalTime start = firstStart.isAfter(secondStart) ? firstStart : secondStart;
+        java.time.LocalTime end = firstEnd.isBefore(secondEnd) ? firstEnd : secondEnd;
+        return end.isAfter(start) ? (int) Duration.between(start, end).toMinutes() : 0;
+    }
+
+    private PassSlip findPassSlipForDay(LocalDate day, List<PassSlip> passSlips) {
         return passSlips.stream()
                 .filter(ps -> day.equals(ps.getPassSlipDate()))
-                .mapToInt(ps -> {
-                    if (ps.getDepartureTime() == null || ps.getArrivalTime() == null) return 0;
-                    int minutes = (int) Duration.between(ps.getDepartureTime(), ps.getArrivalTime()).toMinutes();
-                    return Math.max(0, minutes);
-                })
-                .sum();
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String passSlipParticular(PassSlip passSlip) {
+        String code = isOfficialPassSlip(passSlip) ? "PS-O" : "PS-P";
+        return "[" + code + " " + passSlip.getDepartureTime() + "-" + passSlip.getArrivalTime() + "]";
+    }
+
+    private boolean isOfficialPassSlip(PassSlip passSlip) {
+        return passSlip != null && passSlip.getPurpose() != null
+                && passSlip.getPurpose().trim().toUpperCase(java.util.Locale.ROOT).startsWith("OFFICIAL");
     }
 
     /**
@@ -1041,13 +1334,10 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         return computeOEOffset(day, oes, sched) >= scheduledWorkMinutes;
     }
 
-    /**
-     * Returns true if at least one approved pass slip exists for the given date.
-     * Used to suppress absent marks for no-DTR days where the employee filed a pass slip.
-     * Pass slips are already filtered to Approved status when the list is built.
-     */
-    private boolean hasPassSlipForDay(LocalDate day, List<PassSlip> passSlips) {
-        return passSlips.stream().anyMatch(ps -> day.equals(ps.getPassSlipDate()));
+    private record PassSlipEffect(int scheduledMinutes, int personalUndertimeMinutes,
+                                  int officialLateOffset, int officialUndertimeOffset,
+                                  boolean fullDayOfficial) {
+        private static final PassSlipEffect NONE = new PassSlipEffect(0, 0, 0, 0, false);
     }
 
     /**
@@ -1061,11 +1351,10 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
     }
 
     /**
-     * Returns true if the employee has an explicit non-day-off work schedule entry on the given date.
-     * Used to allow weekend processing when a flexible/dynamic schedule assigns a Saturday or Sunday
-     * as a regular work day (isDayOff = 0).
+     * Returns TRUE for an explicit work day, FALSE for an explicit day off,
+     * and null when no schedule is present so the weekday fallback can apply.
      */
-    private boolean isScheduledWorkDay(String dtrEmployeeId, LocalDate day) {
+    private Boolean scheduledWorkDayStatus(String dtrEmployeeId, LocalDate day) {
         try {
             String sql = "SELECT isDayOff FROM work_schedule " +
                          "WHERE employeeId = ? AND wsDateTime >= ? AND wsDateTime < ?";
@@ -1076,10 +1365,10 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
                     return true;
                 }
             }
-            return false;
+            return rows.isEmpty() ? null : false;
         } catch (Exception ex) {
             log.warn("Could not check scheduled work day for employee {} on {}: {}", dtrEmployeeId, day, ex.getMessage());
-            return false;
+            return null;
         }
     }
 
@@ -1092,7 +1381,7 @@ public class LeaveProcessServiceImpl implements LeaveProcessService {
         try {
             String sql = "SELECT ts.timeIn, ts.timeOut, ts.breakOut, ts.breakIn, ws.isDayOff " +
                          "FROM work_schedule ws " +
-                         "JOIN time_shift ts ON ws.tsCode = ts.tsCode " +
+                         "JOIN time_shift ts ON LOWER(ws.tsCode) = LOWER(ts.tsCode) " +
                          "WHERE ws.employeeId = ? AND ws.wsDateTime >= ? AND ws.wsDateTime < ? " +
                          "ORDER BY ws.wsId ASC";
             List<Map<String, Object>> rows = jdbc.queryForList(sql,

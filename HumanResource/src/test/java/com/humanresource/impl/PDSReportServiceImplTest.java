@@ -17,6 +17,7 @@ import com.humanresource.repositories.ReferencesRepository;
 import com.humanresource.repositories.VoluntaryWorkRepository;
 import com.humanresource.repositories.WorkExperienceRepository;
 import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +30,7 @@ import java.util.Base64;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -80,6 +82,7 @@ class PDSReportServiceImplTest {
         personalData.setSurname("Dela Cruz");
         personalData.setFirstname("Juan");
         personalData.setMiddlename("Santos");
+        personalData.setAgencyEmpNo("EMP-200");
         personalData.setDob(LocalDateTime.of(1990, 5, 6, 0, 0));
         personalData.setPob("Quezon City");
         personalData.setSex_id(1);
@@ -121,6 +124,10 @@ class PDSReportServiceImplTest {
         PdfReader reader = new PdfReader(pdf);
         try {
             assertEquals(4, reader.getNumberOfPages());
+            String pageOneText = new PdfTextExtractor(reader).getTextFromPage(1);
+            assertTrue(pageOneText.contains("Dela Cruz"));
+            assertTrue(pageOneText.contains("Juan"));
+            assertTrue(pageOneText.contains("EMP-200"));
         } finally {
             reader.close();
         }
@@ -142,6 +149,64 @@ class PDSReportServiceImplTest {
 
         assertTrue(exception.getMessage().contains("404"));
         verify(childrenRepository, never()).findByPersonalDataId(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void consecutiveReportsUseTheRequestedEmployeeInsteadOfReusingThePreviousEmployee() throws Exception {
+        PersonalData maria = minimalPersonalData(1L, 1L, "Reyes", "Maria", "202600001");
+        PersonalData carlos = minimalPersonalData(6L, 6L, "Aquinooo", "Carlosss", "202600006");
+        when(personalDataRepository.findByEmployeeId(1L)).thenReturn(maria);
+        when(personalDataRepository.findByEmployeeId(6L)).thenReturn(carlos);
+        stubEmptyRelatedRecords(1L);
+        stubEmptyRelatedRecords(6L);
+
+        ByteArrayOutputStream mariaOutput = new ByteArrayOutputStream();
+        ByteArrayOutputStream carlosOutput = new ByteArrayOutputStream();
+        service.generatePDS(1L, mariaOutput);
+        service.generatePDS(6L, carlosOutput);
+
+        String mariaPage = pageOneText(mariaOutput.toByteArray());
+        String carlosPage = pageOneText(carlosOutput.toByteArray());
+        assertTrue(mariaPage.contains("Reyes"));
+        assertTrue(mariaPage.contains("Maria"));
+        assertTrue(carlosPage.contains("Aquinooo"));
+        assertTrue(carlosPage.contains("Carlosss"));
+        assertTrue(carlosPage.contains("202600006"));
+        assertFalse(carlosPage.contains("202600001"));
+    }
+
+    private PersonalData minimalPersonalData(
+            Long personalDataId,
+            Long employeeId,
+            String surname,
+            String firstname,
+            String agencyEmployeeNo) {
+        PersonalData personalData = new PersonalData();
+        personalData.setPersonalDataId(personalDataId);
+        personalData.setEmployeeId(employeeId);
+        personalData.setSurname(surname);
+        personalData.setFirstname(firstname);
+        personalData.setAgencyEmpNo(agencyEmployeeNo);
+        return personalData;
+    }
+
+    private void stubEmptyRelatedRecords(Long personalDataId) {
+        when(educationalBackgroundRepository.findByPersonalDataId(personalDataId)).thenReturn(List.of());
+        when(childrenRepository.findByPersonalDataId(personalDataId)).thenReturn(List.of());
+        when(civilServiceEligibilityRepository.findByPersonalDataId(personalDataId)).thenReturn(List.of());
+        when(workExperienceRepository.findByPersonalDataId(personalDataId)).thenReturn(List.of());
+        when(voluntaryWorkRepository.findByPersonalDataId(personalDataId)).thenReturn(List.of());
+        when(learningAndDevelopmentRepository.findByPersonalDataId(personalDataId)).thenReturn(List.of());
+        when(referencesRepository.findByPersonalDataId(personalDataId)).thenReturn(List.of());
+    }
+
+    private String pageOneText(byte[] pdf) throws Exception {
+        PdfReader reader = new PdfReader(pdf);
+        try {
+            return new PdfTextExtractor(reader).getTextFromPage(1);
+        } finally {
+            reader.close();
+        }
     }
 
     private EducationalBackground education() {
