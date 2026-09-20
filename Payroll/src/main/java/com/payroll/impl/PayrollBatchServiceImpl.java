@@ -379,6 +379,7 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         HttpHeaders headers = bearerHeaders(token);
         LocalDate from = req.getCutoffStartDate();
         LocalDate to   = req.getCutoffEndDate();
+        LocalDate openingBalanceDate = from.minusDays(1);
 
         // Launch all fetches concurrently
         CompletableFuture<List<EmployeePayrollInfoDTO>> empFuture =
@@ -391,10 +392,12 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
                 CompletableFuture.supplyAsync(() -> fetchApprovedLeaves(from, to, headers), computeExecutor);
 
         CompletableFuture<Map<String, Double>> vlBalFuture =
-                CompletableFuture.supplyAsync(() -> fetchVlBalances(headers), computeExecutor);
+                CompletableFuture.supplyAsync(
+                        () -> fetchVlBalances(openingBalanceDate, headers), computeExecutor);
 
         CompletableFuture<Map<String, Double>> slBalFuture =
-                CompletableFuture.supplyAsync(() -> fetchSlBalances(headers), computeExecutor);
+                CompletableFuture.supplyAsync(
+                        () -> fetchSlBalances(openingBalanceDate, headers), computeExecutor);
 
         CompletableFuture<List<HolidayDTO>> holidayFuture =
                 CompletableFuture.supplyAsync(() -> fetchHolidays(from, to, headers), computeExecutor);
@@ -470,8 +473,27 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         snap.setLeavesMap(leaveFuture.join().stream()
                 .collect(Collectors.groupingBy(ApprovedLeaveDTO::getEmployeeNo)));
 
-        snap.setVlBalanceMap(vlBalFuture.join());
-        snap.setSlBalanceMap(slBalFuture.join());
+        Map<String, Double> vlBalances = new HashMap<>(vlBalFuture.join());
+        Map<String, Double> slBalances = new HashMap<>(slBalFuture.join());
+        Set<String> dashboardBalanceEmployees = new HashSet<>();
+
+        // Compatibility fallback: older/running HRM instances may not yet expose
+        // the historical bulk contract. In that case, use the exact values shown
+        // on the employee dashboard. They are marked as closing balances so the
+        // computation engine will not apply this period's movements a second time.
+        for (EmployeePayrollInfoDTO employee : empList) {
+            if (!vlBalances.containsKey(employee.getEmployeeNo())
+                    || !slBalances.containsKey(employee.getEmployeeNo())) {
+                CurrentLeaveBalanceDTO current = fetchCurrentLeaveBalance(employee, headers);
+                vlBalances.put(employee.getEmployeeNo(), valueOrZero(current.getVacationLeaveBalance()));
+                slBalances.put(employee.getEmployeeNo(), valueOrZero(current.getSickLeaveBalance()));
+                dashboardBalanceEmployees.add(employee.getEmployeeNo());
+            }
+        }
+
+        snap.setVlBalanceMap(vlBalances);
+        snap.setSlBalanceMap(slBalances);
+        snap.setDashboardLeaveBalanceEmployees(dashboardBalanceEmployees);
 
         snap.setHolidayMap(holidayFuture.join().stream()
                 .collect(Collectors.toMap(HolidayDTO::getDate, h -> h, (a, b) -> a)));
@@ -605,29 +627,76 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         }
     }
 
-    private Map<String, Double> fetchVlBalances(HttpHeaders h) {
-        String url = hrServiceUrl + "/api/leave-balance/bulk?leaveType=VL";
+    private Map<String, Double> fetchVlBalances(LocalDate asOfDate, HttpHeaders h) {
+        String url = hrServiceUrl + "/api/leave-balance/bulk?leaveType=VL&asOf=" + asOfDate;
         try {
             ResponseEntity<Map<String, Double>> resp = restTemplate.exchange(
                     url, HttpMethod.GET, new HttpEntity<>(h),
                     new ParameterizedTypeReference<Map<String, Double>>() {});
-            return resp.getBody() != null ? resp.getBody() : Collections.emptyMap();
+            Map<String, Double> balances = resp.getBody();
+            return balances != null ? balances : Collections.emptyMap();
         } catch (Exception ex) {
-            log.warn("Failed to fetch VL balances: {}", ex.getMessage());
+            log.warn("Posted VL balances as of {} are unavailable; dashboard fallback will be used: {}",
+                    asOfDate, ex.getMessage());
             return Collections.emptyMap();
         }
     }
 
-    private Map<String, Double> fetchSlBalances(HttpHeaders h) {
-        String url = hrServiceUrl + "/api/leave-balance/bulk?leaveType=SL";
+    private Map<String, Double> fetchSlBalances(LocalDate asOfDate, HttpHeaders h) {
+        String url = hrServiceUrl + "/api/leave-balance/bulk?leaveType=SL&asOf=" + asOfDate;
         try {
             ResponseEntity<Map<String, Double>> resp = restTemplate.exchange(
                     url, HttpMethod.GET, new HttpEntity<>(h),
                     new ParameterizedTypeReference<Map<String, Double>>() {});
-            return resp.getBody() != null ? resp.getBody() : Collections.emptyMap();
+            Map<String, Double> balances = resp.getBody();
+            return balances != null ? balances : Collections.emptyMap();
         } catch (Exception ex) {
-            log.warn("Failed to fetch SL balances: {}", ex.getMessage());
+            log.warn("Posted SL balances as of {} are unavailable; dashboard fallback will be used: {}",
+                    asOfDate, ex.getMessage());
             return Collections.emptyMap();
+        }
+    }
+
+    private CurrentLeaveBalanceDTO fetchCurrentLeaveBalance(
+            EmployeePayrollInfoDTO employee,
+            HttpHeaders headers) {
+        if (employee.getEmployeeId() == null) {
+            throw new IllegalStateException(
+                    "Unable to load dashboard leave balance for employee " + employee.getEmployeeNo()
+                            + ": HRM payroll information did not include the employee ID.");
+        }
+
+        String url = hrServiceUrl + "/api/leave-balance/current/" + employee.getEmployeeId();
+        try {
+            ResponseEntity<CurrentLeaveBalanceDTO> response = restTemplate.exchange(
+                    url, HttpMethod.GET, new HttpEntity<>(headers), CurrentLeaveBalanceDTO.class);
+            if (response.getBody() == null) {
+                throw new IllegalStateException("HRM returned an empty dashboard balance");
+            }
+            return response.getBody();
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "Unable to load dashboard leave balance for employee " + employee.getEmployeeNo()
+                            + "; payroll was not computed to prevent an incorrect zero balance.",
+                    ex);
+        }
+    }
+
+    private double valueOrZero(Double value) {
+        return value != null ? value : 0.0;
+    }
+
+    private static class CurrentLeaveBalanceDTO {
+        private Double vacationLeaveBalance;
+        private Double sickLeaveBalance;
+
+        public Double getVacationLeaveBalance() { return vacationLeaveBalance; }
+        public void setVacationLeaveBalance(Double vacationLeaveBalance) {
+            this.vacationLeaveBalance = vacationLeaveBalance;
+        }
+        public Double getSickLeaveBalance() { return sickLeaveBalance; }
+        public void setSickLeaveBalance(Double sickLeaveBalance) {
+            this.sickLeaveBalance = sickLeaveBalance;
         }
     }
 

@@ -540,8 +540,10 @@ public class PayrollComputationEngine {
                     snap.getPreviousBalanceMap().get(emp.getEmployeeNo());
             vlBalance = (prev != null) ? Math.max(prev.getVlBalance(), 0) : 0.0;
         }
-        // Add leave earned this period (accrued at start of period)
-        double effectiveVlBalance = vlBalance + earnedLeave;
+        // Dashboard fallback values are already current/closing balances.
+        boolean dashboardBalance = snap.getDashboardLeaveBalanceEmployees()
+                .contains(emp.getEmployeeNo());
+        double effectiveVlBalance = dashboardBalance ? vlBalance : vlBalance + earnedLeave;
 
         double lateUndertimeDays = totalMinutes / (double) WORK_MINUTES_PER_DAY;
 
@@ -831,6 +833,16 @@ public class PayrollComputationEngine {
                                                      double vlDeductedDays,
                                                      PayrollDataSnapshot snap) {
         LeaveBalanceResult r = new LeaveBalanceResult();
+
+        // HRM dashboard balances already include unposted leave reservations.
+        // Copy them exactly; applying payroll movements again would double-count.
+        if (snap.getDashboardLeaveBalanceEmployees().contains(emp.getEmployeeNo())) {
+            r.vlBalance = Math.max(
+                    snap.getVlBalanceMap().getOrDefault(emp.getEmployeeNo(), 0.0), 0.0);
+            r.slBalance = Math.max(
+                    snap.getSlBalanceMap().getOrDefault(emp.getEmployeeNo(), 0.0), 0.0);
+            return r;
+        }
 
         // Starting VL balance
         double prevVl = snap.getVlBalanceMap().getOrDefault(emp.getEmployeeNo(), -1.0);

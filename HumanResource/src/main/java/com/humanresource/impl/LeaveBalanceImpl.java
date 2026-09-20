@@ -5,10 +5,12 @@ import com.humanresource.entitymodels.LeaveApplication;
 import com.humanresource.entitymodels.LeaveBeginningBalance;
 import com.humanresource.entitymodels.LeaveInformation;
 import com.humanresource.entitymodels.LeaveMonetization;
+import com.humanresource.entitymodels.Employee;
 import com.humanresource.repositories.LeaveApplicationRepository;
 import com.humanresource.repositories.LeaveBeginningBalanceRepository;
 import com.humanresource.repositories.LeaveInformationRepository;
 import com.humanresource.repositories.LeaveMonetizationRepository;
+import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.services.LeaveBalanceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -53,21 +57,67 @@ public class LeaveBalanceImpl implements LeaveBalanceService {
     private final LeaveBeginningBalanceRepository begBalanceRepository;
     private final LeaveApplicationRepository leaveApplicationRepository;
     private final LeaveMonetizationRepository leaveMonetizationRepository;
+    private final EmployeeRepository employeeRepository;
 
     public LeaveBalanceImpl(
             LeaveInformationRepository leaveInfoRepository,
             LeaveBeginningBalanceRepository begBalanceRepository,
             LeaveApplicationRepository leaveApplicationRepository,
-            LeaveMonetizationRepository leaveMonetizationRepository) {
+            LeaveMonetizationRepository leaveMonetizationRepository,
+            EmployeeRepository employeeRepository) {
         this.leaveInfoRepository = leaveInfoRepository;
         this.begBalanceRepository = begBalanceRepository;
         this.leaveApplicationRepository = leaveApplicationRepository;
         this.leaveMonetizationRepository = leaveMonetizationRepository;
+        this.employeeRepository = employeeRepository;
     }
 
     @Override
     public LeaveBalanceDTO getCurrentBalance(Long employeeId) throws Exception {
         return getCurrentBalanceInternal(employeeId, null, null);
+    }
+
+    @Override
+    public Map<String, Double> getPostedBalancesAsOf(String leaveType, LocalDate asOfDate) {
+        if (asOfDate == null) {
+            throw new IllegalArgumentException("asOf date is required");
+        }
+
+        String normalizedType = leaveType == null ? "" : leaveType.trim().toUpperCase();
+        if (!"VL".equals(normalizedType) && !"SL".equals(normalizedType)) {
+            throw new IllegalArgumentException("leaveType must be VL or SL");
+        }
+
+        Map<Long, Double> balancesByEmployee = new LinkedHashMap<>();
+        for (LeaveInformation posted : leaveInfoRepository.findLatestPostedBalancesAsOf(asOfDate)) {
+            Double balance = "VL".equals(normalizedType)
+                    ? posted.getVacationLeaveBalance()
+                    : posted.getSickLeaveBalance();
+            balancesByEmployee.put(posted.getEmployeeId(), nvl(balance));
+        }
+
+        String beginningType = "VL".equals(normalizedType) ? "Vacation Leave" : "Sick Leave";
+        for (LeaveBeginningBalance beginning :
+                begBalanceRepository.findByLeaveTypeIgnoreCaseAndAsOfDateLessThanEqual(
+                        beginningType, asOfDate)) {
+            balancesByEmployee.putIfAbsent(beginning.getEmployeeId(), nvl(beginning.getBalance()));
+        }
+
+        // Resolve employee numbers only for employees that actually have an opening
+        // balance. Returning every employee (including thousands of unrelated zero
+        // rows) made this payroll dependency unnecessarily large and unreliable.
+        Map<String, Double> result = new LinkedHashMap<>();
+        for (Employee employee : employeeRepository.findAllById(balancesByEmployee.keySet())) {
+            if (employee.getEmployeeId() == null
+                    || employee.getEmployeeNo() == null
+                    || employee.getEmployeeNo().isBlank()) {
+                continue;
+            }
+            result.put(
+                    employee.getEmployeeNo(),
+                    round3(balancesByEmployee.get(employee.getEmployeeId())));
+        }
+        return result;
     }
 
     @Override

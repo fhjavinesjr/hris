@@ -6,6 +6,7 @@ package com.payroll.dtos;
  */
 public class EmployeePayrollInfoDTO {
 
+    private Long employeeId;
     private String employeeNo;
     private String fullName;
     private String department;
@@ -47,6 +48,8 @@ public class EmployeePayrollInfoDTO {
     private Boolean displayToLastPage = false;
 
     // Getters / Setters
+    public Long getEmployeeId() { return employeeId; }
+    public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
     public String getEmployeeNo() { return employeeNo; }
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
     public String getFullName() { return fullName; }

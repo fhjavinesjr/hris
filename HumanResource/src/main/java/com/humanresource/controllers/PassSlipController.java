@@ -52,7 +52,7 @@ public class PassSlipController {
     public ResponseEntity<MetadataResponse> createPassSlipOverride(
             @RequestHeader("Authorization") String token,
             @Valid @RequestBody PassSlipDTO dto) throws Exception {
-        permissionGuard.require(token, "hrm.ss.passSlip", HrmPermissionGuard.Action.ADD);
+        permissionGuard.requireAction(token, "hrm.ss.passSlip", HrmPermissionGuard.Action.ADD);
         PassSlipDTO created = passSlipService.createOverride(dto);
         if (created == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -68,6 +68,14 @@ public class PassSlipController {
 
     @GetMapping("/pass-slip/get-all/{employeeId}")
     public ResponseEntity<List<PassSlipDTO>> getAllByEmployeeId(@PathVariable Long employeeId) throws Exception {
+        return ResponseEntity.ok(passSlipService.getAllByEmployeeId(employeeId));
+    }
+
+    @GetMapping("/pass-slip/hrm/get-all/{employeeId}")
+    public ResponseEntity<List<PassSlipDTO>> getAllByEmployeeIdForHrm(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long employeeId) throws Exception {
+        permissionGuard.requireAction(token, "hrm.ss.passSlip", HrmPermissionGuard.Action.ACCESS);
         return ResponseEntity.ok(passSlipService.getAllByEmployeeId(employeeId));
     }
 
@@ -136,7 +144,7 @@ public class PassSlipController {
             @RequestHeader("Authorization") String token,
             @PathVariable Long passSlipId,
             @Valid @RequestBody PassSlipDTO dto) throws Exception {
-        permissionGuard.require(token, "hrm.ss.passSlip", HrmPermissionGuard.Action.EDIT);
+        permissionGuard.requireAction(token, "hrm.ss.passSlip", HrmPermissionGuard.Action.EDIT);
         PassSlipDTO result = passSlipService.updateOverride(passSlipId, dto);
         if (result == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -153,6 +161,14 @@ public class PassSlipController {
                     .body(new MetadataResponse("Failed to delete Pass Slip"));
         }
         return ResponseEntity.ok(new MetadataResponse(passSlipId, "Pass Slip deleted successfully"));
+    }
+
+    @DeleteMapping("/pass-slip/hrm/delete/{passSlipId}")
+    public ResponseEntity<MetadataResponse> deleteForHrm(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long passSlipId) throws Exception {
+        permissionGuard.requireAction(token, "hrm.ss.passSlip", HrmPermissionGuard.Action.DELETE);
+        return delete(passSlipId);
     }
 
     @GetMapping(value = "/pass-slip/report/{passSlipId}", produces = MediaType.APPLICATION_PDF_VALUE)

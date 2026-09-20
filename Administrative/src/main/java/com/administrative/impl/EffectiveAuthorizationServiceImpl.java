@@ -46,6 +46,14 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String HRM_ONBOARDING_REPORT = "hrm.onboarding-report";
     public static final String HRM_APPOINTMENT_DOCUMENTS = "hrm.appointment-documents";
     public static final String HRM_EMPLOYMENT_RECORD = "hrm.employmentRecord";
+    public static final String HRM_SELF_SERVICE_BEGINNING_BALANCE = "hrm.ss.beginBalance";
+    public static final String HRM_SELF_SERVICE_LEAVE_APPLICATION = "hrm.ss.leaveApp";
+    public static final String HRM_SELF_SERVICE_OVERTIME_REQUEST = "hrm.ss.overtimeReq";
+    public static final String HRM_SELF_SERVICE_COC = "hrm.ss.coc";
+    public static final String HRM_SELF_SERVICE_CTO = "hrm.ss.cto";
+    public static final String HRM_SELF_SERVICE_OFFICIAL_ENGAGEMENT = "hrm.ss.officialEngag";
+    public static final String HRM_SELF_SERVICE_PASS_SLIP = "hrm.ss.passSlip";
+    public static final String HRM_SELF_SERVICE_TIME_CORRECTION = "hrm.ss.timeCorrection";
     private static final Set<String> SUPPORTED_FEATURES = Set.of(PRIMEHR_COMPETENCY,
             PRIMEHR_POSITION_PROFILE, PRIMEHR_ASSESSMENT_ADMINISTRATION, PRIMEHR_COMPETENCY_ASSESSMENT,
             PRIMEHR_ASSESSMENT_VALIDATION, PRIMEHR_PERSON_PROFILE, PRIMEHR_GAP_CONFIGURATION,
@@ -60,7 +68,10 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
             PRIMEHR_RSP_PROCESS_ANALYTICS,
             HRM_APPOINTMENT_INTAKE, HRM_ONBOARDING_CONFIGURATION, HRM_ONBOARDING,
             HRM_APPOINTMENT_REPORT, HRM_ONBOARDING_REPORT, HRM_APPOINTMENT_DOCUMENTS,
-            HRM_EMPLOYMENT_RECORD);
+            HRM_EMPLOYMENT_RECORD, HRM_SELF_SERVICE_BEGINNING_BALANCE,
+            HRM_SELF_SERVICE_LEAVE_APPLICATION, HRM_SELF_SERVICE_OVERTIME_REQUEST,
+            HRM_SELF_SERVICE_COC, HRM_SELF_SERVICE_CTO, HRM_SELF_SERVICE_OFFICIAL_ENGAGEMENT,
+            HRM_SELF_SERVICE_PASS_SLIP, HRM_SELF_SERVICE_TIME_CORRECTION);
     private static final String INSTALL_ADMIN_EMPLOYEE_NO = "admin";
 
     private final PermissionRulesetRepository repository;

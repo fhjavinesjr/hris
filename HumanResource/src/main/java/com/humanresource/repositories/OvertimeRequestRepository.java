@@ -14,4 +14,6 @@ public interface OvertimeRequestRepository extends JpaRepository<OvertimeRequest
     List<OvertimeRequest> findByStatusOrderByDateFiledDesc(String status);
 
     List<OvertimeRequest> findByEmployeeIdAndStatusOrderByDateFiledDesc(Long employeeId, String status);
+    List<OvertimeRequest> findByGroupRequestIdOrderByOvertimeRequestIdAsc(String groupRequestId);
+    List<OvertimeRequest> findByFiledByEmployeeIdAndSupervisorFiledTrueOrderByDateFiledDesc(Long employeeId);
 }

@@ -3,11 +3,14 @@ package com.humanresource.impl;
 import com.humanresource.dtos.LeaveBalanceDTO;
 import com.humanresource.entitymodels.LeaveApplication;
 import com.humanresource.entitymodels.LeaveBeginningBalance;
+import com.humanresource.entitymodels.LeaveInformation;
+import com.humanresource.entitymodels.Employee;
 import com.humanresource.entitymodels.LeaveMonetization;
 import com.humanresource.repositories.LeaveApplicationRepository;
 import com.humanresource.repositories.LeaveBeginningBalanceRepository;
 import com.humanresource.repositories.LeaveInformationRepository;
 import com.humanresource.repositories.LeaveMonetizationRepository;
+import com.humanresource.repositories.EmployeeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,8 +18,10 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -26,13 +31,17 @@ class LeaveBalanceImplTest {
     private LeaveApplicationRepository leaveApplicationRepository;
     private LeaveMonetizationRepository leaveMonetizationRepository;
     private LeaveBalanceImpl service;
+    private LeaveInformationRepository leaveInformationRepository;
+    private LeaveBeginningBalanceRepository beginningBalanceRepository;
+    private EmployeeRepository employeeRepository;
 
     @BeforeEach
     void setUp() {
-        LeaveInformationRepository leaveInformationRepository = mock(LeaveInformationRepository.class);
-        LeaveBeginningBalanceRepository beginningBalanceRepository = mock(LeaveBeginningBalanceRepository.class);
+        leaveInformationRepository = mock(LeaveInformationRepository.class);
+        beginningBalanceRepository = mock(LeaveBeginningBalanceRepository.class);
         leaveApplicationRepository = mock(LeaveApplicationRepository.class);
         leaveMonetizationRepository = mock(LeaveMonetizationRepository.class);
+        employeeRepository = mock(EmployeeRepository.class);
 
         when(leaveInformationRepository
                 .findTopByEmployeeIdAndCutoffEndDateBeforeOrderByCutoffEndDateDesc(
@@ -54,8 +63,61 @@ class LeaveBalanceImplTest {
                 leaveInformationRepository,
                 beginningBalanceRepository,
                 leaveApplicationRepository,
-                leaveMonetizationRepository
+                leaveMonetizationRepository,
+                employeeRepository
         );
+    }
+
+    @Test
+    void bulkBalanceReturnsPostedBalanceAsOfDateByEmployeeNumber() {
+        LocalDate asOfDate = LocalDate.of(2026, 6, 30);
+        Employee employee = new Employee();
+        employee.setEmployeeId(34L);
+        employee.setEmployeeNo("202600006");
+
+        LeaveInformation posted = new LeaveInformation();
+        posted.setEmployeeId(34L);
+        posted.setVacationLeaveBalance(35.0);
+        posted.setSickLeaveBalance(39.0);
+
+        when(employeeRepository.findAllById(any())).thenReturn(List.of(employee));
+        when(leaveInformationRepository.findLatestPostedBalancesAsOf(asOfDate))
+                .thenReturn(List.of(posted));
+        when(beginningBalanceRepository
+                .findByLeaveTypeIgnoreCaseAndAsOfDateLessThanEqual("Vacation Leave", asOfDate))
+                .thenReturn(Collections.emptyList());
+
+        Map<String, Double> balances = service.getPostedBalancesAsOf("VL", asOfDate);
+
+        assertEquals(35.0, balances.get("202600006"));
+    }
+
+    @Test
+    void bulkBalanceFallsBackToBeginningBalanceWhenNoPeriodIsPosted() {
+        LocalDate asOfDate = LocalDate.of(2026, 6, 30);
+        Employee employee = new Employee();
+        employee.setEmployeeId(34L);
+        employee.setEmployeeNo("202600006");
+        LeaveBeginningBalance beginning = beginningBalance("Sick Leave", 39.0);
+        beginning.setEmployeeId(34L);
+        beginning.setAsOfDate(asOfDate);
+
+        when(employeeRepository.findAllById(any())).thenReturn(List.of(employee));
+        when(leaveInformationRepository.findLatestPostedBalancesAsOf(asOfDate))
+                .thenReturn(Collections.emptyList());
+        when(beginningBalanceRepository
+                .findByLeaveTypeIgnoreCaseAndAsOfDateLessThanEqual("Sick Leave", asOfDate))
+                .thenReturn(List.of(beginning));
+
+        Map<String, Double> balances = service.getPostedBalancesAsOf("SL", asOfDate);
+
+        assertEquals(39.0, balances.get("202600006"));
+    }
+
+    @Test
+    void bulkBalanceRejectsUnsupportedLeaveType() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.getPostedBalancesAsOf("FL", LocalDate.of(2026, 6, 30)));
     }
 
     @Test

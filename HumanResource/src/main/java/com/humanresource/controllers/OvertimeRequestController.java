@@ -2,12 +2,16 @@ package com.humanresource.controllers;
 
 import com.hris.common.dtos.MetadataResponse;
 import com.humanresource.dtos.OvertimeRequestDTO;
+import com.humanresource.dtos.StaffOvertimeRequestDTO;
+import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.services.OvertimeRequestService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -17,9 +21,12 @@ import java.util.Map;
 public class OvertimeRequestController {
 
     private final OvertimeRequestService overtimeRequestService;
+    private final EmployeeRepository employeeRepository;
 
-    public OvertimeRequestController(OvertimeRequestService overtimeRequestService) {
+    public OvertimeRequestController(OvertimeRequestService overtimeRequestService,
+                                     EmployeeRepository employeeRepository) {
         this.overtimeRequestService = overtimeRequestService;
+        this.employeeRepository = employeeRepository;
     }
 
     @PostMapping("/overtime-request/create")
@@ -30,6 +37,17 @@ public class OvertimeRequestController {
                     .body(new MetadataResponse("Failed to create overtime request"));
         }
         return ResponseEntity.ok(new MetadataResponse(created.getOvertimeRequestId(), "Overtime request filed successfully"));
+    }
+
+    @PostMapping("/overtime-request/staff/create")
+    public ResponseEntity<MetadataResponse> createStaffRequest(
+            Authentication authentication,
+            @RequestHeader("Authorization") String token,
+            @RequestBody StaffOvertimeRequestDTO dto) throws Exception {
+        OvertimeRequestDTO created = overtimeRequestService.createStaffRequest(
+                dto, authenticatedEmployeeId(authentication), token);
+        return ResponseEntity.ok(new MetadataResponse(
+                created.getOvertimeRequestId(), "Staff Overtime request filed successfully"));
     }
 
     /**
@@ -54,6 +72,23 @@ public class OvertimeRequestController {
     @GetMapping("/overtime-request/get-all/{employeeId}")
     public ResponseEntity<List<OvertimeRequestDTO>> getAllByEmployeeId(@PathVariable Long employeeId) throws Exception {
         return ResponseEntity.ok(overtimeRequestService.getAllByEmployeeId(employeeId));
+    }
+
+    @GetMapping("/overtime-request/staff/filed-by-me")
+    public ResponseEntity<List<OvertimeRequestDTO>> getStaffRequestsFiledByMe(
+            Authentication authentication) throws Exception {
+        return ResponseEntity.ok(overtimeRequestService.getStaffRequestsFiledBy(
+                authenticatedEmployeeId(authentication)));
+    }
+
+    @PutMapping("/overtime-request/report-discrepancy/{id}")
+    public ResponseEntity<MetadataResponse> reportDiscrepancy(
+            @PathVariable Long id,
+            Authentication authentication,
+            @RequestBody Map<String, Object> body) throws Exception {
+        String remarks = body.get("remarks") == null ? "" : body.get("remarks").toString();
+        overtimeRequestService.reportDiscrepancy(id, authenticatedEmployeeId(authentication), remarks);
+        return ResponseEntity.ok(new MetadataResponse(id, "Staff Overtime discrepancy reported"));
     }
 
     @GetMapping("/overtime-request/get-pending")
@@ -165,5 +200,15 @@ public class OvertimeRequestController {
         response.setContentType(MediaType.APPLICATION_PDF_VALUE);
         response.setHeader("Content-Disposition", "attachment; filename=\"OvertimeAuthorization_" + id + ".pdf\"");
         overtimeRequestService.generateOvertimeAuthorization(id, response.getOutputStream());
+    }
+
+    private Long authenticatedEmployeeId(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated employee is required.");
+        }
+        return employeeRepository.findByEmployeeNoIgnoreCase(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "Authenticated employee record was not found."))
+                .getEmployeeId();
     }
 }

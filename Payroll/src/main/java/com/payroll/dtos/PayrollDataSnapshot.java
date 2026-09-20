@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Immutable snapshot of ALL data needed to compute payroll for every employee
@@ -49,6 +50,13 @@ public class PayrollDataSnapshot {
      * key: employeeNo  →  Sick Leave balance as of start of this period.
      */
     private Map<String, Double> slBalanceMap = Collections.emptyMap();
+
+    /**
+     * Employees whose VL/SL values came from HRM's dashboard calculation because
+     * the posted historical balance contract was unavailable. These values are
+     * already closing/current balances and must not be accrued or deducted again.
+     */
+    private Set<String> dashboardLeaveBalanceEmployees = Collections.emptySet();
 
     // ── Calendar (from Administrative service) ────────────────────────────────
     /**
@@ -299,6 +307,10 @@ public class PayrollDataSnapshot {
     public void setVlBalanceMap(Map<String, Double> vlBalanceMap) { this.vlBalanceMap = vlBalanceMap; }
     public Map<String, Double> getSlBalanceMap() { return slBalanceMap; }
     public void setSlBalanceMap(Map<String, Double> slBalanceMap) { this.slBalanceMap = slBalanceMap; }
+    public Set<String> getDashboardLeaveBalanceEmployees() { return dashboardLeaveBalanceEmployees; }
+    public void setDashboardLeaveBalanceEmployees(Set<String> dashboardLeaveBalanceEmployees) {
+        this.dashboardLeaveBalanceEmployees = dashboardLeaveBalanceEmployees;
+    }
     public Map<LocalDate, HolidayDTO> getHolidayMap() { return holidayMap; }
     public void setHolidayMap(Map<LocalDate, HolidayDTO> holidayMap) { this.holidayMap = holidayMap; }
     public Map<String, List<AllowanceDTO>> getAllowancesMap() { return allowancesMap; }

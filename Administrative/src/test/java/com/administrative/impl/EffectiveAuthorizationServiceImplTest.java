@@ -339,6 +339,32 @@ class EffectiveAuthorizationServiceImplTest {
     }
 
     @Test
+    void hrSelfServiceFeatureKeysResolveTheirConfiguredCrudPermissions() {
+        PermissionRuleset ruleset = new PermissionRuleset("HR Self Service", false,
+                "{\"hrm.ss.beginBalance\":{\"canAccess\":true,\"canAdd\":true}," +
+                        "\"hrm.ss.leaveApp\":{\"canAccess\":true,\"canEdit\":true}," +
+                        "\"hrm.ss.overtimeReq\":{\"canAccess\":true,\"canDelete\":true}," +
+                        "\"hrm.ss.coc\":{\"canAccess\":true,\"canAdd\":true}," +
+                        "\"hrm.ss.cto\":{\"canAccess\":true,\"canEdit\":true}," +
+                        "\"hrm.ss.officialEngag\":{\"canAccess\":true,\"canDelete\":true}," +
+                        "\"hrm.ss.passSlip\":{\"canAccess\":true,\"canAdd\":true,\"canEdit\":true}," +
+                        "\"hrm.ss.timeCorrection\":{\"canAccess\":true,\"canDelete\":true}}" );
+        when(repository.findByPermissionNameIgnoreCase("HR Self Service")).thenReturn(Optional.of(ruleset));
+
+        assertThat(service.resolve("202600006", "HR Self Service", "hrm.ss.beginBalance").canAdd()).isTrue();
+        assertThat(service.resolve("202600006", "HR Self Service", "hrm.ss.leaveApp").canEdit()).isTrue();
+        assertThat(service.resolve("202600006", "HR Self Service", "hrm.ss.overtimeReq").canDelete()).isTrue();
+        assertThat(service.resolve("202600006", "HR Self Service", "hrm.ss.coc").canAdd()).isTrue();
+        assertThat(service.resolve("202600006", "HR Self Service", "hrm.ss.cto").canEdit()).isTrue();
+        assertThat(service.resolve("202600006", "HR Self Service", "hrm.ss.officialEngag").canDelete()).isTrue();
+        var passSlip = service.resolve("202600006", "HR Self Service", "hrm.ss.passSlip");
+        assertThat(passSlip.canAdd()).isTrue();
+        assertThat(passSlip.canEdit()).isTrue();
+        assertThat(passSlip.dataScope()).isEqualTo(PermissionDataScope.NONE);
+        assertThat(service.resolve("202600006", "HR Self Service", "hrm.ss.timeCorrection").canDelete()).isTrue();
+    }
+
+    @Test
     void phaseFiveFReportKeysResolveIndependentlyAndFailClosed() {
         PermissionRuleset ruleset = new PermissionRuleset("RSP Reports", false,
                 "{\"primehr.rsp-comparative-report\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}," +

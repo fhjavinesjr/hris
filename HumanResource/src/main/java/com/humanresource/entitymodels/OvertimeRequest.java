@@ -30,6 +30,18 @@ public class OvertimeRequest implements Serializable {
     @Column(name = "employeeId", nullable = false)
     private Long employeeId;
 
+    @Column(name = "groupRequestId", length = 36)
+    private String groupRequestId;
+
+    @Column(name = "filedByEmployeeId")
+    private Long filedByEmployeeId;
+
+    @Column(name = "businessUnitId")
+    private Long businessUnitId;
+
+    @Column(name = "supervisorFiled")
+    private Boolean supervisorFiled = false;
+
     @NotNull(message = "dateFiled is mandatory")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Column(name = "dateFiled", nullable = false)
@@ -83,6 +95,15 @@ public class OvertimeRequest implements Serializable {
     @Column(name = "purpose", length = 500)
     private String purpose;
 
+    @Column(name = "expectedOutput", length = 500)
+    private String expectedOutput;
+
+    @Column(name = "discrepancyRemarks", length = 500)
+    private String discrepancyRemarks;
+
+    @Column(name = "discrepancyReportedAt")
+    private LocalDateTime discrepancyReportedAt;
+
     /** Status: Pending, Approved, Disapproved */
     @NotNull(message = "status is mandatory")
     @Column(name = "status", length = 50, nullable = false)
@@ -122,6 +143,14 @@ public class OvertimeRequest implements Serializable {
 
     public Long getEmployeeId() { return employeeId; }
     public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+    public String getGroupRequestId() { return groupRequestId; }
+    public void setGroupRequestId(String groupRequestId) { this.groupRequestId = groupRequestId; }
+    public Long getFiledByEmployeeId() { return filedByEmployeeId; }
+    public void setFiledByEmployeeId(Long filedByEmployeeId) { this.filedByEmployeeId = filedByEmployeeId; }
+    public Long getBusinessUnitId() { return businessUnitId; }
+    public void setBusinessUnitId(Long businessUnitId) { this.businessUnitId = businessUnitId; }
+    public Boolean getSupervisorFiled() { return supervisorFiled; }
+    public void setSupervisorFiled(Boolean supervisorFiled) { this.supervisorFiled = supervisorFiled; }
 
     public LocalDate getDateFiled() { return dateFiled; }
     public void setDateFiled(LocalDate dateFiled) { this.dateFiled = dateFiled; }
@@ -137,6 +166,12 @@ public class OvertimeRequest implements Serializable {
 
     public String getPurpose() { return purpose; }
     public void setPurpose(String purpose) { this.purpose = purpose; }
+    public String getExpectedOutput() { return expectedOutput; }
+    public void setExpectedOutput(String expectedOutput) { this.expectedOutput = expectedOutput; }
+    public String getDiscrepancyRemarks() { return discrepancyRemarks; }
+    public void setDiscrepancyRemarks(String discrepancyRemarks) { this.discrepancyRemarks = discrepancyRemarks; }
+    public LocalDateTime getDiscrepancyReportedAt() { return discrepancyReportedAt; }
+    public void setDiscrepancyReportedAt(LocalDateTime discrepancyReportedAt) { this.discrepancyReportedAt = discrepancyReportedAt; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

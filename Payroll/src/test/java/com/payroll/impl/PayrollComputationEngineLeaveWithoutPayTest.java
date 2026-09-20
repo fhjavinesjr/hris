@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -89,6 +90,50 @@ class PayrollComputationEngineLeaveWithoutPayTest {
         assertEquals(60, result.getUndertimeMinutes());
         assertEquals(124.8, result.getUndertimeValue());
         assertEquals(875.2, result.getActualBasic());
+    }
+
+    @Test
+    void openingLeaveBalancesProduceAuthoritativeClosingBalances() {
+        LocalDate date = LocalDate.of(2026, 7, 7);
+        EmployeePayrollInfoDTO employee = employee();
+        DtrDailySummaryDTO dtr = passSlipDay(date, false);
+        dtr.setPresent(true);
+        dtr.setLateMinutes(60);
+        dtr.setUndertimeMinutes(60);
+
+        PayrollDataSnapshot snapshot = new PayrollDataSnapshot();
+        snapshot.setDtrMap(Map.of(employee.getEmployeeNo(), List.of(dtr)));
+        snapshot.setVlBalanceMap(Map.of(employee.getEmployeeNo(), 35.0));
+        snapshot.setSlBalanceMap(Map.of(employee.getEmployeeNo(), 39.0));
+        snapshot.setEarnedLeavePerPeriod(1.042);
+
+        PayrollDetail result = new PayrollComputationEngine().compute(employee, request(date), snapshot);
+
+        assertEquals(0.25, result.getVlDeductedDays());
+        assertEquals(35.792, result.getVlBalance(), 0.0001);
+        assertEquals(40.042, result.getSlBalance(), 0.0001);
+    }
+
+    @Test
+    void dashboardFallbackBalancesAreNotAppliedTwice() {
+        LocalDate date = LocalDate.of(2026, 7, 7);
+        EmployeePayrollInfoDTO employee = employee();
+        DtrDailySummaryDTO dtr = passSlipDay(date, false);
+        dtr.setPresent(true);
+        dtr.setLateMinutes(60);
+        dtr.setUndertimeMinutes(60);
+
+        PayrollDataSnapshot snapshot = new PayrollDataSnapshot();
+        snapshot.setDtrMap(Map.of(employee.getEmployeeNo(), List.of(dtr)));
+        snapshot.setVlBalanceMap(Map.of(employee.getEmployeeNo(), 35.792));
+        snapshot.setSlBalanceMap(Map.of(employee.getEmployeeNo(), 40.042));
+        snapshot.setDashboardLeaveBalanceEmployees(Set.of(employee.getEmployeeNo()));
+        snapshot.setEarnedLeavePerPeriod(1.042);
+
+        PayrollDetail result = new PayrollComputationEngine().compute(employee, request(date), snapshot);
+
+        assertEquals(35.792, result.getVlBalance(), 0.0001);
+        assertEquals(40.042, result.getSlBalance(), 0.0001);
     }
 
     private EmployeePayrollInfoDTO employee() {

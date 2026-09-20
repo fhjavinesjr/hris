@@ -1,12 +1,15 @@
 package com.humanresource.impl;
 
 import com.humanresource.dtos.OvertimeRequestDTO;
+import com.humanresource.dtos.StaffOvertimeRequestDTO;
+import com.humanresource.dtos.StaffOvertimeParticipantDTO;
 import com.humanresource.entitymodels.OvertimeRequest;
 import com.humanresource.repositories.OvertimeRequestRepository;
 import com.humanresource.entitymodels.ReportHeaderSettings;
 import com.humanresource.repositories.ReportHeaderSettingsRepository;
 import com.humanresource.reports.JasperReportRegistry;
 import com.humanresource.services.OvertimeRequestService;
+import com.humanresource.integration.administrative.StaffOvertimeAuthorizationClient;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -29,6 +32,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,19 +43,26 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
     private final OvertimeRequestRepository overtimeRequestRepository;
     private final ReportHeaderSettingsRepository reportHeaderSettingsRepository;
     private final DataSource dataSource;
+    private final StaffOvertimeAuthorizationClient staffAuthorizationClient;
 
     public OvertimeRequestImpl(OvertimeRequestRepository overtimeRequestRepository,
                                ReportHeaderSettingsRepository reportHeaderSettingsRepository,
-                               DataSource dataSource) {
+                               DataSource dataSource,
+                               StaffOvertimeAuthorizationClient staffAuthorizationClient) {
         this.overtimeRequestRepository = overtimeRequestRepository;
         this.reportHeaderSettingsRepository = reportHeaderSettingsRepository;
         this.dataSource = dataSource;
+        this.staffAuthorizationClient = staffAuthorizationClient;
     }
 
     private OvertimeRequestDTO toDTO(OvertimeRequest e) {
         OvertimeRequestDTO dto = new OvertimeRequestDTO();
         dto.setOvertimeRequestId(e.getOvertimeRequestId());
         dto.setEmployeeId(e.getEmployeeId());
+        dto.setGroupRequestId(e.getGroupRequestId());
+        dto.setFiledByEmployeeId(e.getFiledByEmployeeId());
+        dto.setBusinessUnitId(e.getBusinessUnitId());
+        dto.setSupervisorFiled(e.getSupervisorFiled());
         dto.setDateFiled(e.getDateFiled());
         dto.setDateTimeFrom(e.getDateTimeFrom());
         dto.setDateTimeTo(e.getDateTimeTo());
@@ -63,6 +75,9 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
         dto.setBreakMinutes(e.getBreakMinutes());
         dto.setNetAuthorizedHours(e.getNetAuthorizedHours());
         dto.setPurpose(e.getPurpose());
+        dto.setExpectedOutput(e.getExpectedOutput());
+        dto.setDiscrepancyRemarks(e.getDiscrepancyRemarks());
+        dto.setDiscrepancyReportedAt(e.getDiscrepancyReportedAt());
         dto.setStatus(e.getStatus());
         dto.setApprovedById(e.getApprovedById());
         dto.setApprovedAt(e.getApprovedAt());
@@ -117,6 +132,8 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
 
             OvertimeRequest entity = new OvertimeRequest();
             entity.setEmployeeId(dto.getEmployeeId());
+            entity.setFiledByEmployeeId(dto.getEmployeeId());
+            entity.setSupervisorFiled(false);
             entity.setDateFiled(dto.getDateFiled() != null ? dto.getDateFiled() : dto.getDateTimeFrom().toLocalDate());
             entity.setDateTimeFrom(dto.getDateTimeFrom());
             entity.setDateTimeTo(dto.getDateTimeTo());
@@ -130,6 +147,7 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
             entity.setBreakMinutes(breakMinutes);
             entity.setNetAuthorizedHours(netAuthorizedHours);
             entity.setPurpose(dto.getPurpose());
+            entity.setExpectedOutput(dto.getExpectedOutput());
             entity.setStatus(emergencyOverride && dto.getStatus() != null ? dto.getStatus() : "Pending");
             entity.setApprovedById(emergencyOverride ? dto.getApprovedById() : null);
             entity.setApprovedAt(emergencyOverride && dto.getApprovedById() != null ? LocalDateTime.now() : null);
@@ -148,6 +166,79 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
             log.error("Error creating OvertimeRequest for employeeId {}: ", dto.getEmployeeId(), ex);
             return null;
         }
+    }
+
+    @Transactional
+    @Override
+    public OvertimeRequestDTO createStaffRequest(StaffOvertimeRequestDTO dto,
+                                                 Long filedByEmployeeId,
+                                                 String bearerToken) throws Exception {
+        if (dto == null || dto.getBusinessUnitId() == null
+                || dto.getDateTimeFrom() == null || dto.getDateTimeTo() == null) {
+            throw new IllegalArgumentException("Business Unit and inclusive overtime dates are required.");
+        }
+        if (dto.getParticipants() == null || dto.getParticipants().isEmpty()) {
+            throw new IllegalArgumentException("Select at least one staff member.");
+        }
+        if (dto.getExpectedOutput() == null || dto.getExpectedOutput().isBlank()) {
+            throw new IllegalArgumentException("Expected output is required for Staff Overtime.");
+        }
+        var unit = staffAuthorizationClient.requireAuthorizedUnit(
+                bearerToken, dto.getBusinessUnitId(),
+                dto.getDateTimeFrom().toLocalDate(), dto.getDateTimeTo().toLocalDate());
+        List<Long> participantIds = dto.getParticipants().stream()
+                .map(StaffOvertimeParticipantDTO::getEmployeeId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        if (participantIds.isEmpty()) throw new IllegalArgumentException("Select at least one staff member.");
+        if (participantIds.contains(filedByEmployeeId)) {
+            throw new IllegalArgumentException("Use My Requests when filing your own overtime.");
+        }
+        if (!unit.personnelEmployeeIds().containsAll(participantIds)) {
+            throw new IllegalArgumentException("Every selected employee must be designated in the selected Business Unit.");
+        }
+
+        String groupId = UUID.randomUUID().toString();
+        OvertimeRequestDTO first = null;
+        Map<Long, Integer> breakMinutesByEmployee = dto.getParticipants().stream()
+                .filter(participant -> participant.getEmployeeId() != null)
+                .collect(Collectors.toMap(
+                        StaffOvertimeParticipantDTO::getEmployeeId,
+                        participant -> participant.getBreakMinutes() == null ? 0 : participant.getBreakMinutes(),
+                        (firstValue, ignoredDuplicate) -> firstValue,
+                        LinkedHashMap::new));
+        for (Long participantId : participantIds) {
+            OvertimeRequestDTO row = new OvertimeRequestDTO();
+            row.setEmployeeId(participantId);
+            row.setDateFiled(dto.getDateFiled());
+            row.setDateTimeFrom(dto.getDateTimeFrom());
+            row.setDateTimeTo(dto.getDateTimeTo());
+            row.setWorkType(dto.getWorkType());
+            row.setDutyShiftCode(dto.getDutyShiftCode());
+            row.setAuthorityReference(dto.getAuthorityReference());
+            row.setEmergencyPostFiling(dto.getEmergencyPostFiling());
+            row.setEmergencyJustification(dto.getEmergencyJustification());
+            row.setBreakMinutes(breakMinutesByEmployee.get(participantId));
+            row.setPurpose(dto.getPurpose());
+            row.setExpectedOutput(dto.getExpectedOutput());
+            OvertimeRequestDTO created = createInternal(row, false);
+            if (created == null) throw new IllegalStateException("Unable to create a Staff Overtime participant record.");
+            OvertimeRequest entity = overtimeRequestRepository.findById(created.getOvertimeRequestId())
+                    .orElseThrow();
+            entity.setGroupRequestId(groupId);
+            entity.setFiledByEmployeeId(filedByEmployeeId);
+            entity.setBusinessUnitId(dto.getBusinessUnitId());
+            entity.setSupervisorFiled(true);
+            entity.setExpectedOutput(dto.getExpectedOutput().trim());
+            entity.setRecommendationStatus("Recommended");
+            entity.setRecommendedById(filedByEmployeeId);
+            entity.setRecommendationRemarks("Filed by the effective Head/OIC for staff approval.");
+            entity = overtimeRequestRepository.save(entity);
+            if (first == null) first = toDTO(entity);
+        }
+        if (first != null) first.setParticipantEmployeeIds(participantIds);
+        return first;
     }
 
     private int validateManualBreakMinutes(Integer requestedBreakMinutes, long totalMinutes) {
@@ -175,14 +266,61 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
 
     @Override
     public List<OvertimeRequestDTO> getAll() throws Exception {
-        return overtimeRequestRepository.findAll()
-                .stream().map(this::toDTO).collect(Collectors.toList());
+        List<OvertimeRequest> records = overtimeRequestRepository.findAll();
+        Map<String, List<Long>> participantsByGroup = records.stream()
+                .filter(record -> record.getGroupRequestId() != null)
+                .collect(Collectors.groupingBy(
+                        OvertimeRequest::getGroupRequestId,
+                        Collectors.mapping(OvertimeRequest::getEmployeeId, Collectors.toList())));
+        return records.stream().map(record -> {
+            OvertimeRequestDTO dto = toDTO(record);
+            if (record.getGroupRequestId() != null) {
+                dto.setParticipantEmployeeIds(participantsByGroup.get(record.getGroupRequestId()));
+                String discrepancies = records.stream()
+                        .filter(candidate -> record.getGroupRequestId().equals(candidate.getGroupRequestId()))
+                        .filter(candidate -> candidate.getDiscrepancyRemarks() != null && !candidate.getDiscrepancyRemarks().isBlank())
+                        .map(candidate -> "Employee #" + candidate.getEmployeeId() + ": " + candidate.getDiscrepancyRemarks())
+                        .collect(Collectors.joining(" | "));
+                dto.setGroupDiscrepancySummary(discrepancies.isBlank() ? null : discrepancies);
+            }
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     @Override
     public List<OvertimeRequestDTO> getAllByEmployeeId(Long employeeId) throws Exception {
         return overtimeRequestRepository.findByEmployeeIdOrderByDateFiledDesc(employeeId)
                 .stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OvertimeRequestDTO> getStaffRequestsFiledBy(Long employeeId) throws Exception {
+        Map<String, List<OvertimeRequest>> groups = overtimeRequestRepository
+                .findByFiledByEmployeeIdAndSupervisorFiledTrueOrderByDateFiledDesc(employeeId)
+                .stream().collect(Collectors.groupingBy(
+                        OvertimeRequest::getGroupRequestId, LinkedHashMap::new, Collectors.toList()));
+        return groups.values().stream().map(rows -> {
+            OvertimeRequestDTO result = toDTO(rows.get(0));
+            result.setParticipantEmployeeIds(rows.stream().map(OvertimeRequest::getEmployeeId).toList());
+            return result;
+        }).toList();
+    }
+
+    @Transactional
+    @Override
+    public OvertimeRequestDTO reportDiscrepancy(Long overtimeRequestId, Long employeeId, String remarks) {
+        OvertimeRequest record = overtimeRequestRepository.findById(overtimeRequestId)
+                .orElseThrow(() -> new IllegalArgumentException("Staff Overtime assignment was not found."));
+        if (!Boolean.TRUE.equals(record.getSupervisorFiled()) || !record.getEmployeeId().equals(employeeId)) {
+            throw new IllegalArgumentException("Only the assigned employee may report a discrepancy for Staff Overtime.");
+        }
+        if (remarks == null || remarks.isBlank()) {
+            throw new IllegalArgumentException("Describe the incorrect date, time, or assignment.");
+        }
+        record.setDiscrepancyRemarks(remarks.trim());
+        record.setDiscrepancyReportedAt(LocalDateTime.now());
+        record.setUpdatedAt(LocalDateTime.now());
+        return toDTO(overtimeRequestRepository.save(record));
     }
 
     @Override
@@ -215,6 +353,9 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
                                         String dutyShiftCode, Integer requestedBreakMinutes) throws Exception {
         OvertimeRequest entity = overtimeRequestRepository.findById(overtimeRequestId)
                 .orElseThrow(() -> new IllegalArgumentException("Overtime request not found."));
+        if (Boolean.TRUE.equals(entity.getSupervisorFiled())) {
+            throw new IllegalStateException("A supervisor-filed request already carries the Head/OIC recommendation.");
+        }
         if (!"Pending".equalsIgnoreCase(entity.getStatus())) {
             throw new IllegalStateException("Only pending overtime requests may be recommended.");
         }
@@ -241,22 +382,28 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
     private OvertimeRequestDTO updateStatus(Long id, String newStatus, Long approvedById, String remarks) {
         OvertimeRequest entity = overtimeRequestRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Overtime request not found."));
-        if (!"Recommended".equalsIgnoreCase(entity.getRecommendationStatus())) {
-            throw new IllegalStateException("The IS recommendation must be completed before the final decision.");
-        }
-        entity.setDutyShiftCode(validateDutyShiftCode(entity.getWorkType(), entity.getDutyShiftCode()));
-        if (!"Pending".equalsIgnoreCase(entity.getStatus())) {
-            throw new IllegalStateException("A final decision has already been recorded for this overtime request.");
-        }
         if (approvedById == null) {
             throw new IllegalArgumentException("The final approving officer is required.");
         }
-        entity.setStatus(newStatus);
-        entity.setApprovedById(approvedById);
-        entity.setApprovedAt(LocalDateTime.now());
-        entity.setApprovalRemarks(remarks);
-        entity.setUpdatedAt(LocalDateTime.now());
-        return toDTO(overtimeRequestRepository.save(entity));
+        List<OvertimeRequest> rows = entity.getGroupRequestId() == null
+                ? List.of(entity)
+                : overtimeRequestRepository.findByGroupRequestIdOrderByOvertimeRequestIdAsc(entity.getGroupRequestId());
+        LocalDateTime decidedAt = LocalDateTime.now();
+        for (OvertimeRequest row : rows) {
+            if (!"Recommended".equalsIgnoreCase(row.getRecommendationStatus())) {
+                throw new IllegalStateException("The IS recommendation must be completed before the final decision.");
+            }
+            row.setDutyShiftCode(validateDutyShiftCode(row.getWorkType(), row.getDutyShiftCode()));
+            if (!"Pending".equalsIgnoreCase(row.getStatus())) {
+                throw new IllegalStateException("A final decision has already been recorded for this overtime request.");
+            }
+            row.setStatus(newStatus);
+            row.setApprovedById(approvedById);
+            row.setApprovedAt(decidedAt);
+            row.setApprovalRemarks(remarks);
+            row.setUpdatedAt(decidedAt);
+        }
+        return toDTO(overtimeRequestRepository.saveAll(rows).get(0));
     }
 
     @Transactional
@@ -266,6 +413,9 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
             Optional<OvertimeRequest> optional = overtimeRequestRepository.findById(overtimeRequestId);
             if (optional.isEmpty()) return null;
             OvertimeRequest entity = optional.get();
+            if (Boolean.TRUE.equals(entity.getSupervisorFiled())) {
+                throw new IllegalStateException("Supervisor-filed Staff Overtime is a group request and cannot be edited as an individual employee record.");
+            }
 
             if (!"Pending".equalsIgnoreCase(entity.getStatus())
                     || "Recommended".equalsIgnoreCase(entity.getRecommendationStatus())) {
@@ -334,6 +484,9 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
             Optional<OvertimeRequest> optional = overtimeRequestRepository.findById(overtimeRequestId);
             if (optional.isEmpty()) return null;
             OvertimeRequest entity = optional.get();
+            if (Boolean.TRUE.equals(entity.getSupervisorFiled())) {
+                throw new IllegalStateException("Supervisor-filed Staff Overtime is a group request and cannot be edited as an individual employee record.");
+            }
 
             if (dto.getDateTimeFrom() != null) entity.setDateTimeFrom(dto.getDateTimeFrom());
             if (dto.getDateTimeTo() != null) entity.setDateTimeTo(dto.getDateTimeTo());
@@ -405,7 +558,11 @@ public class OvertimeRequestImpl implements OvertimeRequestService {
     @Transactional
     @Override
     public Boolean administrativeDelete(Long overtimeRequestId) throws Exception {
-        if (!overtimeRequestRepository.existsById(overtimeRequestId)) return false;
+        Optional<OvertimeRequest> record = overtimeRequestRepository.findById(overtimeRequestId);
+        if (record.isEmpty()) return false;
+        if (Boolean.TRUE.equals(record.get().getSupervisorFiled())) {
+            throw new IllegalStateException("Supervisor-filed Staff Overtime is a group request and cannot be deleted as an individual employee record.");
+        }
         overtimeRequestRepository.deleteById(overtimeRequestId);
         return true;
     }

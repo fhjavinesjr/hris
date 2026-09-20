@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface ManagePersonnelRepository extends JpaRepository<ManagePersonnel, Long> {
     List<ManagePersonnel> findByEmployeeIdOrderById(Long employeeId);
+    List<ManagePersonnel> findByBusinessUnitIdOrderById(Long businessUnitId);
 }

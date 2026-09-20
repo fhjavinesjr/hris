@@ -3,7 +3,11 @@ package com.humanresource.controllers;
 import com.humanresource.dtos.LeaveBalanceDTO;
 import com.humanresource.services.LeaveBalanceService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/leave-balance")
@@ -36,6 +40,24 @@ public class LeaveBalanceController {
             return ResponseEntity.ok(balance);
         } catch (Exception ex) {
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Payroll opening-balance contract. The date is normally the day before
+     * the payroll cutoff so the payroll engine does not double-apply the
+     * current period's earnings and leave usage.
+     */
+    @GetMapping("/bulk")
+    public ResponseEntity<Map<String, Double>> getPostedBalancesAsOf(
+            @RequestParam String leaveType,
+            @RequestParam("asOf")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOfDate) {
+        try {
+            return ResponseEntity.ok(
+                    leaveBalanceService.getPostedBalancesAsOf(leaveType, asOfDate));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
         }
     }
 }

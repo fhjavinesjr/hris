@@ -1352,17 +1352,13 @@ public class AdmsDtrProcessingServiceImpl implements AdmsDtrProcessingService {
                 toDate
         );
 
-        addApprovedSingleDateRequests(
-                dates,
-                "Approved Pass Slip",
-                "SELECT passSlipDate AS request_date FROM pass_slip "
-                        + "WHERE CAST(employeeId AS VARCHAR(100)) = ? "
-                        + "AND LOWER(LTRIM(RTRIM(status))) = 'approved' "
-                        + "AND passSlipDate BETWEEN ? AND ?",
-                employeeId,
-                sqlFrom,
-                sqlTo
-        );
+        // Pass Slips must coexist with the employee's actual DTR. Personal
+        // slips are charged from the covered attendance interval, while
+        // partial Official slips excuse only a matching shift boundary. If a
+        // Pass Slip were added to this suppression map, clicking Search would
+        // physically delete the biometric/manual segments needed for both
+        // computations. Full-shift Official slips are also handled as an
+        // overlay and must not destroy the underlying audit record.
 
         addApprovedSingleDateRequests(
                 dates,

@@ -1,6 +1,7 @@
 package com.humanresource.services;
 
 import com.humanresource.dtos.OvertimeRequestDTO;
+import com.humanresource.dtos.StaffOvertimeRequestDTO;
 
 import java.io.OutputStream;
 import java.util.List;
@@ -11,9 +12,16 @@ public interface OvertimeRequestService {
 
     OvertimeRequestDTO createEmergencyOverride(OvertimeRequestDTO dto) throws Exception;
 
+    OvertimeRequestDTO createStaffRequest(StaffOvertimeRequestDTO dto, Long filedByEmployeeId,
+                                          String bearerToken) throws Exception;
+
     List<OvertimeRequestDTO> getAll() throws Exception;
 
     List<OvertimeRequestDTO> getAllByEmployeeId(Long employeeId) throws Exception;
+
+    List<OvertimeRequestDTO> getStaffRequestsFiledBy(Long employeeId) throws Exception;
+
+    OvertimeRequestDTO reportDiscrepancy(Long overtimeRequestId, Long employeeId, String remarks) throws Exception;
 
     List<OvertimeRequestDTO> getPendingAll() throws Exception;
 

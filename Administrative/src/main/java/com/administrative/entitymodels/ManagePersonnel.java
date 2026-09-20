@@ -2,6 +2,8 @@ package com.administrative.entitymodels;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "manage_personnel")
 public class ManagePersonnel {
@@ -22,6 +24,12 @@ public class ManagePersonnel {
     private boolean coApprover;
     private String otherStatus;
     private String base;
+
+    @Column(name = "oicEffectiveFrom")
+    private LocalDate oicEffectiveFrom;
+
+    @Column(name = "oicEffectiveTo")
+    private LocalDate oicEffectiveTo;
 
     // Getters and setters
     public Long getId() { return id; }
@@ -47,4 +55,10 @@ public class ManagePersonnel {
 
     public String getBase() { return base; }
     public void setBase(String base) { this.base = base; }
+
+    public LocalDate getOicEffectiveFrom() { return oicEffectiveFrom; }
+    public void setOicEffectiveFrom(LocalDate oicEffectiveFrom) { this.oicEffectiveFrom = oicEffectiveFrom; }
+
+    public LocalDate getOicEffectiveTo() { return oicEffectiveTo; }
+    public void setOicEffectiveTo(LocalDate oicEffectiveTo) { this.oicEffectiveTo = oicEffectiveTo; }
 }
