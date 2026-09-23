@@ -5,8 +5,11 @@ import com.hris.common.utilities.JwtUtil;
 import com.hris.common.utilities.UseUtils;
 import com.humanresource.dtos.EmployeeDTO;
 import com.humanresource.dtos.EmployeePayrollInfoResponse;
+import com.humanresource.dtos.EmployeeSecurityStatusDTO;
 import com.humanresource.entitymodels.Employee;
+import com.humanresource.entitymodels.PersonalData;
 import com.humanresource.repositories.EmployeeRepository;
+import com.humanresource.repositories.PersonalDataRepository;
 import com.humanresource.services.EmployeeService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,12 +45,18 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final JdbcTemplate jdbc;
 
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, PasswordEncoder passwordEncoder, JwtUtil jwtUtil, JdbcTemplate jdbc) {
+    private final PersonalDataRepository personalDataRepository;
+
+    private static final DateTimeFormatter DEFAULT_PASSWORD_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, PasswordEncoder passwordEncoder,
+                               JwtUtil jwtUtil, JdbcTemplate jdbc, PersonalDataRepository personalDataRepository) {
         this.employeeRepository = employeeRepository;
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.jdbc = jdbc;
+        this.personalDataRepository = personalDataRepository;
     }
 
     @Transactional
@@ -74,14 +84,64 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Transactional
     public String loginEmployee(String employeeNo, String employeePassword) {
         Employee employee = employeeRepository.findByEmployeeNo(employeeNo)
                 .orElseThrow(() -> new RuntimeException("Employee No not found"));
+        initializeDefaultPasswordIfMissing(employee, employeePassword);
         if (passwordEncoder.matches(employeePassword, employee.getEmployeePassword())) {
             return jwtUtil.generateToken(employee.getEmployeeNo(), employee.getRole());
         }
 
         throw new RuntimeException("Invalid credentials");
+    }
+
+    @Override
+    public EmployeeSecurityStatusDTO getSecurityStatus(String employeeNo) {
+        Employee employee = employeeRepository.findByEmployeeNo(employeeNo)
+                .orElseThrow(() -> new RuntimeException("Employee No not found"));
+        PersonalData personalData = personalDataRepository.findByEmployeeId(employee.getEmployeeId());
+        boolean usingDefault = personalData != null
+                && personalData.getDob() != null
+                && employee.getEmployeePassword() != null
+                && passwordEncoder.matches(formatDefaultPassword(personalData), employee.getEmployeePassword());
+        String currentRole = normalizeAssignedRole(employee.getRole());
+        return new EmployeeSecurityStatusDTO(usingDefault, currentRole != null, currentRole);
+    }
+
+    private String normalizeAssignedRole(String role) {
+        if (role == null || role.isBlank()) {
+            return null;
+        }
+        String normalized = role.trim();
+        if ("null".equalsIgnoreCase(normalized) || "undefined".equalsIgnoreCase(normalized)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(normalized) > 0 ? normalized : null;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private void initializeDefaultPasswordIfMissing(Employee employee, String suppliedPassword) {
+        if (employee.getEmployeePassword() != null && !employee.getEmployeePassword().isBlank()) {
+            return;
+        }
+        PersonalData personalData = personalDataRepository.findByEmployeeId(employee.getEmployeeId());
+        if (personalData == null || personalData.getDob() == null) {
+            throw new RuntimeException("Password is not configured and no birth date is available");
+        }
+        String defaultPassword = formatDefaultPassword(personalData);
+        if (!defaultPassword.equals(suppliedPassword)) {
+            throw new RuntimeException("Invalid credentials");
+        }
+        employee.setEmployeePassword(passwordEncoder.encode(defaultPassword));
+        employeeRepository.save(employee);
+    }
+
+    private String formatDefaultPassword(PersonalData personalData) {
+        return personalData.getDob().format(DEFAULT_PASSWORD_FORMAT);
     }
 
     @Transactional

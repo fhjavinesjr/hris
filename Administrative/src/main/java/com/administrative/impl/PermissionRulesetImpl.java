@@ -5,18 +5,22 @@ import com.administrative.entitymodels.PermissionRuleset;
 import com.administrative.repositories.PermissionRulesetRepository;
 import com.administrative.services.PermissionRulesetService;
 import jakarta.transaction.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class PermissionRulesetImpl implements PermissionRulesetService {
 
     private final PermissionRulesetRepository repository;
+    private final JdbcTemplate jdbcTemplate;
 
-    public PermissionRulesetImpl(PermissionRulesetRepository repository) {
+    public PermissionRulesetImpl(PermissionRulesetRepository repository, JdbcTemplate jdbcTemplate) {
         this.repository = repository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -60,6 +64,52 @@ public class PermissionRulesetImpl implements PermissionRulesetService {
             throw new IllegalArgumentException("Permission ruleset not found: " + id);
         }
         repository.deleteById(id);
+    }
+
+    @Override
+    public Optional<PermissionRulesetDTO> resolveByRole(String role) {
+        if (role == null || role.isBlank()) {
+            return Optional.empty();
+        }
+
+        String normalizedRole = role.trim().replaceFirst("(?i)^ROLE_", "");
+        if (normalizedRole.isBlank()
+                || "null".equalsIgnoreCase(normalizedRole)
+                || "undefined".equalsIgnoreCase(normalizedRole)) {
+            return Optional.empty();
+        }
+        try {
+            return repository.findById(Long.valueOf(normalizedRole)).map(this::toDTO);
+        } catch (NumberFormatException ignored) {
+            return repository.findByPermissionNameIgnoreCase(normalizedRole).map(this::toDTO);
+        }
+    }
+
+    @Override
+    public Optional<PermissionRulesetDTO> resolveForEmployee(String employeeNo) {
+        if (employeeNo == null || employeeNo.isBlank()) {
+            return Optional.empty();
+        }
+
+        List<String> roles = jdbcTemplate.query(
+                "SELECT userRole FROM employee WHERE LOWER(employeeNo) = LOWER(?)",
+                (resultSet, rowNumber) -> resultSet.getString(1),
+                employeeNo.trim());
+        return roles.stream()
+                .filter(this::isCurrentPermissionId)
+                .findFirst()
+                .flatMap(this::resolveByRole);
+    }
+
+    private boolean isCurrentPermissionId(String role) {
+        if (role == null || !role.trim().matches("\\d+")) {
+            return false;
+        }
+        try {
+            return Long.parseLong(role.trim()) > 0;
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
     }
 
     private PermissionRulesetDTO toDTO(PermissionRuleset entity) {

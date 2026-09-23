@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hris.common.utilities.JwtUtil;
 import com.humanresource.dtos.EmployeeDTO;
 import com.humanresource.entitymodels.Employee;
+import com.humanresource.entitymodels.PersonalData;
 import com.humanresource.repositories.EmployeeRepository;
+import com.humanresource.repositories.PersonalDataRepository;
 import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,25 +20,35 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
 
 class EmployeeServiceImplTest {
 
     private EmployeeRepository employeeRepository;
+    private PersonalDataRepository personalDataRepository;
+    private PasswordEncoder passwordEncoder;
+    private JwtUtil jwtUtil;
     private EmployeeServiceImpl service;
 
     @BeforeEach
     void setUp() {
         employeeRepository = mock(EmployeeRepository.class);
+        personalDataRepository = mock(PersonalDataRepository.class);
+        passwordEncoder = mock(PasswordEncoder.class);
+        jwtUtil = mock(JwtUtil.class);
         service = new EmployeeServiceImpl(
                 employeeRepository,
                 new ObjectMapper(),
-                mock(PasswordEncoder.class),
-                mock(JwtUtil.class),
-                mock(JdbcTemplate.class)
+                passwordEncoder,
+                jwtUtil,
+                mock(JdbcTemplate.class),
+                personalDataRepository
         );
     }
 
@@ -76,6 +88,87 @@ class EmployeeServiceImplTest {
                 () -> service.updateEmployee(7L, Map.of("employeeNo", "   ")));
 
         assertEquals(400, exception.getStatusCode().value());
+    }
+
+    @Test
+    void loginInitializesBlankPasswordFromBirthDate() {
+        Employee employee = employee(7L, "EMP-007");
+        employee.setEmployeePassword(null);
+        PersonalData personalData = mock(PersonalData.class);
+        when(personalData.getDob()).thenReturn(LocalDateTime.of(1979, 12, 25, 0, 0));
+        when(employeeRepository.findByEmployeeNo("EMP-007")).thenReturn(Optional.of(employee));
+        when(personalDataRepository.findByEmployeeId(7L)).thenReturn(personalData);
+        when(passwordEncoder.encode("12/25/1979")).thenReturn("encoded-default");
+        when(passwordEncoder.matches("12/25/1979", "encoded-default")).thenReturn(true);
+        when(jwtUtil.generateToken("EMP-007", "2")).thenReturn("token");
+
+        assertEquals("token", service.loginEmployee("EMP-007", "12/25/1979"));
+
+        assertEquals("encoded-default", employee.getEmployeePassword());
+        verify(employeeRepository).save(employee);
+    }
+
+    @Test
+    void securityStatusDetectsDefaultPasswordWithoutChangingIt() {
+        Employee employee = employee(7L, "EMP-007");
+        PersonalData personalData = mock(PersonalData.class);
+        when(personalData.getDob()).thenReturn(LocalDateTime.of(1979, 12, 25, 0, 0));
+        when(employeeRepository.findByEmployeeNo("EMP-007")).thenReturn(Optional.of(employee));
+        when(personalDataRepository.findByEmployeeId(7L)).thenReturn(personalData);
+        when(passwordEncoder.matches("12/25/1979", "encoded-password")).thenReturn(true);
+
+        assertTrue(service.getSecurityStatus("EMP-007").usingDefaultPassword());
+        assertTrue(service.getSecurityStatus("EMP-007").roleAssigned());
+        assertEquals("2", service.getSecurityStatus("EMP-007").role());
+        verify(employeeRepository, never()).save(employee);
+    }
+
+    @Test
+    void securityStatusDoesNotFlagCustomPassword() {
+        Employee employee = employee(7L, "EMP-007");
+        PersonalData personalData = mock(PersonalData.class);
+        when(personalData.getDob()).thenReturn(LocalDateTime.of(1979, 12, 25, 0, 0));
+        when(employeeRepository.findByEmployeeNo("EMP-007")).thenReturn(Optional.of(employee));
+        when(personalDataRepository.findByEmployeeId(7L)).thenReturn(personalData);
+        when(passwordEncoder.matches("12/25/1979", "encoded-password")).thenReturn(false);
+
+        assertFalse(service.getSecurityStatus("EMP-007").usingDefaultPassword());
+    }
+
+    @Test
+    void securityStatusReportsAnUnassignedBlankRole() {
+        Employee employee = employee(7L, "EMP-007");
+        employee.setRole("  ");
+        PersonalData personalData = mock(PersonalData.class);
+        when(personalData.getDob()).thenReturn(LocalDateTime.of(1979, 12, 25, 0, 0));
+        when(employeeRepository.findByEmployeeNo("EMP-007")).thenReturn(Optional.of(employee));
+        when(personalDataRepository.findByEmployeeId(7L)).thenReturn(personalData);
+
+        assertFalse(service.getSecurityStatus("EMP-007").roleAssigned());
+    }
+
+    @Test
+    void securityStatusReportsLegacyNullTextAsUnassigned() {
+        Employee employee = employee(7L, "EMP-007");
+        employee.setRole(" null ");
+        when(employeeRepository.findByEmployeeNo("EMP-007")).thenReturn(Optional.of(employee));
+
+        var status = service.getSecurityStatus("EMP-007");
+
+        assertFalse(status.roleAssigned());
+        assertEquals(null, status.role());
+    }
+
+    @Test
+    void securityStatusReportsLegacyRoleNameAsUnassigned() {
+        Employee employee = employee(7L, "EMP-007");
+        employee.setRole("ADMIN");
+        when(employeeRepository.findByEmployeeNo("EMP-007")).thenReturn(Optional.of(employee));
+
+        var status = service.getSecurityStatus("EMP-007");
+
+        assertFalse(status.roleAssigned());
+        assertEquals(null, status.role());
     }
 
     private static Employee employee(Long id, String employeeNo) {

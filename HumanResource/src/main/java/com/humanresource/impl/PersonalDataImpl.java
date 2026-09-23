@@ -6,12 +6,16 @@ import com.humanresource.dtos.PersonalDataDTO;
 import com.humanresource.entitymodels.Employee;
 import com.humanresource.entitymodels.PersonalData;
 import com.humanresource.repositories.PersonalDataRepository;
+import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.services.PersonalDataService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -21,10 +25,16 @@ public class PersonalDataImpl implements PersonalDataService {
     private static final Logger log = LoggerFactory.getLogger(PersonalDataImpl.class);
     private final PersonalDataRepository personalDataRepository;
     private final ObjectMapper objectMapper;
+    private final EmployeeRepository employeeRepository;
+    private final PasswordEncoder passwordEncoder;
+    private static final DateTimeFormatter DEFAULT_PASSWORD_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yyyy");
 
-    public PersonalDataImpl(PersonalDataRepository personalDataRepository, ObjectMapper objectMapper) {
+    public PersonalDataImpl(PersonalDataRepository personalDataRepository, ObjectMapper objectMapper,
+                            EmployeeRepository employeeRepository, PasswordEncoder passwordEncoder) {
         this.personalDataRepository = personalDataRepository;
         this.objectMapper = objectMapper;
+        this.employeeRepository = employeeRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -111,6 +121,7 @@ public class PersonalDataImpl implements PersonalDataService {
             );
 
             personalDataRepository.save(personalData);
+            initializePasswordIfMissing(personalData);
             return personalDataDTO;
         } catch(Exception e) {
             log.info("Error creating personal data: {}", e.getMessage());
@@ -222,6 +233,12 @@ public class PersonalDataImpl implements PersonalDataService {
         try {
             PersonalData personalDataExisting = getPersonalDataEntityByEmployeeId(employeeId);
             if(personalDataExisting != null) {
+                LocalDateTime previousDob = personalDataExisting.getDob();
+                Employee employee = employeeRepository.findById(employeeId).orElse(null);
+                boolean wasUsingDefaultPassword = employee != null
+                        && previousDob != null
+                        && employee.getEmployeePassword() != null
+                        && passwordEncoder.matches(formatDefaultPassword(previousDob), employee.getEmployeePassword());
                 objectMapper.updateValue(personalDataExisting, updates);
 
                 // Explicitly set q42 from the map to ensure it is never silently dropped
@@ -235,6 +252,13 @@ public class PersonalDataImpl implements PersonalDataService {
                 }
 
                 personalDataRepository.save(personalDataExisting);
+                if (employee != null && personalDataExisting.getDob() != null) {
+                    if (employee.getEmployeePassword() == null || employee.getEmployeePassword().isBlank()
+                            || (wasUsingDefaultPassword && !personalDataExisting.getDob().equals(previousDob))) {
+                        employee.setEmployeePassword(passwordEncoder.encode(formatDefaultPassword(personalDataExisting.getDob())));
+                        employeeRepository.save(employee);
+                    }
+                }
                 return true;
             }
 
@@ -248,5 +272,19 @@ public class PersonalDataImpl implements PersonalDataService {
     @Override
     public String deletePersonalData(String employeeId) {
         return "";
+    }
+
+    private void initializePasswordIfMissing(PersonalData personalData) {
+        if (personalData.getDob() == null) return;
+        employeeRepository.findById(personalData.getEmployeeId()).ifPresent(employee -> {
+            if (employee.getEmployeePassword() == null || employee.getEmployeePassword().isBlank()) {
+                employee.setEmployeePassword(passwordEncoder.encode(formatDefaultPassword(personalData.getDob())));
+                employeeRepository.save(employee);
+            }
+        });
+    }
+
+    private String formatDefaultPassword(LocalDateTime dob) {
+        return dob.format(DEFAULT_PASSWORD_FORMAT);
     }
 }

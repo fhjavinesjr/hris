@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -55,7 +56,10 @@ public class JwtFilter extends OncePerRequestFilter {
                 log.info("Decoded JWT - Username: {}, Role: {}", employeeNo, role);
 
                 if(employeeNo != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(employeeNo, null, List.of(new SimpleGrantedAuthority(role)));
+                    List<GrantedAuthority> authorities = role == null || role.isBlank()
+                            ? List.of()
+                            : List.of(new SimpleGrantedAuthority(role));
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(employeeNo, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
                     log.info("Authentication SUCCESSFUL set for user: {}", employeeNo);

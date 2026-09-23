@@ -2,6 +2,7 @@ package com.humanresource.services;
 
 import com.humanresource.dtos.EmployeeDTO;
 import com.humanresource.dtos.EmployeePayrollInfoResponse;
+import com.humanresource.dtos.EmployeeSecurityStatusDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,8 @@ public interface EmployeeService {
     void installAuth() throws Exception;
 
     String loginEmployee(String employeeNo, String employeePassword);
+
+    EmployeeSecurityStatusDTO getSecurityStatus(String employeeNo);
 
     EmployeeDTO createEmployee(EmployeeDTO employeeDTO) throws Exception;
 

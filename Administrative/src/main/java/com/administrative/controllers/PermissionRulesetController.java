@@ -4,6 +4,7 @@ import com.administrative.dtos.PermissionRulesetDTO;
 import com.administrative.services.PermissionRulesetService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,17 @@ public class PermissionRulesetController {
     @GetMapping("/get-all")
     public ResponseEntity<List<PermissionRulesetDTO>> getAll() {
         return ResponseEntity.ok(service.getAll());
+    }
+
+    @GetMapping("/current")
+    public ResponseEntity<PermissionRulesetDTO> getCurrent(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return service.resolveForEmployee(authentication.getName())
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping("/create")

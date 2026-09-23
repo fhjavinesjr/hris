@@ -15,6 +15,17 @@ public interface OvertimeRequestService {
     OvertimeRequestDTO createStaffRequest(StaffOvertimeRequestDTO dto, Long filedByEmployeeId,
                                           String bearerToken) throws Exception;
 
+    OvertimeRequestDTO updateStaffRequest(String groupRequestId, StaffOvertimeRequestDTO dto,
+                                          Long filedByEmployeeId, String bearerToken) throws Exception;
+
+    Boolean deleteStaffRequest(String groupRequestId, Long filedByEmployeeId,
+                               String bearerToken) throws Exception;
+
+    OvertimeRequestDTO administrativeUpdateStaffRequest(String groupRequestId,
+                                                         OvertimeRequestDTO dto) throws Exception;
+
+    Boolean administrativeDeleteStaffRequest(String groupRequestId) throws Exception;
+
     List<OvertimeRequestDTO> getAll() throws Exception;
 
     List<OvertimeRequestDTO> getAllByEmployeeId(Long employeeId) throws Exception;
@@ -28,12 +39,15 @@ public interface OvertimeRequestService {
     /** Returns only Approved OT requests for an employee — used by COC filing to populate dropdown. */
     List<OvertimeRequestDTO> getApprovedByEmployeeId(Long employeeId) throws Exception;
 
-    OvertimeRequestDTO approve(Long overtimeRequestId, Long approvedById, String remarks) throws Exception;
+    OvertimeRequestDTO approve(Long overtimeRequestId, Long approvedById, String remarks,
+                               String bearerToken) throws Exception;
 
-    OvertimeRequestDTO disapprove(Long overtimeRequestId, Long approvedById, String remarks) throws Exception;
+    OvertimeRequestDTO disapprove(Long overtimeRequestId, Long approvedById, String remarks,
+                                  String bearerToken) throws Exception;
 
     OvertimeRequestDTO recommend(Long overtimeRequestId, Long recommendedById, String remarks,
-                                 String dutyShiftCode, Integer breakMinutes) throws Exception;
+                                 String dutyShiftCode, Integer breakMinutes,
+                                 String bearerToken) throws Exception;
 
     OvertimeRequestDTO update(Long overtimeRequestId, OvertimeRequestDTO dto) throws Exception;
 

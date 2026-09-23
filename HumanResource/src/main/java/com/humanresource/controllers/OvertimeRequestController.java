@@ -5,6 +5,7 @@ import com.humanresource.dtos.OvertimeRequestDTO;
 import com.humanresource.dtos.StaffOvertimeRequestDTO;
 import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.services.OvertimeRequestService;
+import com.humanresource.onboarding.HrmPermissionGuard;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
@@ -22,11 +23,15 @@ public class OvertimeRequestController {
 
     private final OvertimeRequestService overtimeRequestService;
     private final EmployeeRepository employeeRepository;
+    private final HrmPermissionGuard permissionGuard;
+    private static final String HRM_OVERTIME_PERMISSION = "hrm.ss.overtimeReq";
 
     public OvertimeRequestController(OvertimeRequestService overtimeRequestService,
-                                     EmployeeRepository employeeRepository) {
+                                     EmployeeRepository employeeRepository,
+                                     HrmPermissionGuard permissionGuard) {
         this.overtimeRequestService = overtimeRequestService;
         this.employeeRepository = employeeRepository;
+        this.permissionGuard = permissionGuard;
     }
 
     @PostMapping("/overtime-request/create")
@@ -37,6 +42,52 @@ public class OvertimeRequestController {
                     .body(new MetadataResponse("Failed to create overtime request"));
         }
         return ResponseEntity.ok(new MetadataResponse(created.getOvertimeRequestId(), "Overtime request filed successfully"));
+    }
+
+    @PutMapping("/overtime-request/staff/{groupRequestId}")
+    public ResponseEntity<MetadataResponse> updateStaffRequest(
+            @PathVariable String groupRequestId,
+            Authentication authentication,
+            @RequestHeader("Authorization") String token,
+            @RequestBody StaffOvertimeRequestDTO dto) throws Exception {
+        OvertimeRequestDTO updated = overtimeRequestService.updateStaffRequest(
+                groupRequestId, dto, authenticatedEmployeeId(authentication), token);
+        return ResponseEntity.ok(new MetadataResponse(
+                updated.getOvertimeRequestId(), "Staff Overtime request updated successfully"));
+    }
+
+    @DeleteMapping("/overtime-request/staff/{groupRequestId}")
+    public ResponseEntity<MetadataResponse> deleteStaffRequest(
+            @PathVariable String groupRequestId,
+            Authentication authentication,
+            @RequestHeader("Authorization") String token) throws Exception {
+        if (!overtimeRequestService.deleteStaffRequest(groupRequestId,
+                authenticatedEmployeeId(authentication), token)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(new MetadataResponse("Staff Overtime request deleted successfully"));
+    }
+
+    @PutMapping("/overtime-request/staff/hrm-update/{groupRequestId}")
+    public ResponseEntity<MetadataResponse> administrativeUpdateStaffRequest(
+            @PathVariable String groupRequestId,
+            @RequestHeader("Authorization") String token,
+            @RequestBody OvertimeRequestDTO dto) throws Exception {
+        permissionGuard.requireAction(token, HRM_OVERTIME_PERMISSION, HrmPermissionGuard.Action.EDIT);
+        OvertimeRequestDTO updated = overtimeRequestService.administrativeUpdateStaffRequest(groupRequestId, dto);
+        return ResponseEntity.ok(new MetadataResponse(
+                updated.getOvertimeRequestId(), "Staff Overtime group administratively updated successfully"));
+    }
+
+    @DeleteMapping("/overtime-request/staff/hrm-delete/{groupRequestId}")
+    public ResponseEntity<MetadataResponse> administrativeDeleteStaffRequest(
+            @PathVariable String groupRequestId,
+            @RequestHeader("Authorization") String token) throws Exception {
+        permissionGuard.requireAction(token, HRM_OVERTIME_PERMISSION, HrmPermissionGuard.Action.DELETE);
+        if (!overtimeRequestService.administrativeDeleteStaffRequest(groupRequestId)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(new MetadataResponse("Staff Overtime group administratively deleted successfully"));
     }
 
     @PostMapping("/overtime-request/staff/create")
@@ -104,10 +155,12 @@ public class OvertimeRequestController {
 
     @PutMapping("/overtime-request/approve/{id}")
     public ResponseEntity<MetadataResponse> approve(@PathVariable Long id,
+                                                    Authentication authentication,
+                                                    @RequestHeader("Authorization") String token,
                                                     @RequestBody Map<String, Object> body) throws Exception {
-        Long approvedById = body.get("approvedById") != null ? Long.valueOf(body.get("approvedById").toString()) : null;
+        Long approvedById = authenticatedEmployeeId(authentication);
         String remarks = body.get("remarks") != null ? body.get("remarks").toString() : "";
-        OvertimeRequestDTO result = overtimeRequestService.approve(id, approvedById, remarks);
+        OvertimeRequestDTO result = overtimeRequestService.approve(id, approvedById, remarks, token);
         if (result == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MetadataResponse("Failed to approve overtime request"));
@@ -117,10 +170,12 @@ public class OvertimeRequestController {
 
     @PutMapping("/overtime-request/disapprove/{id}")
     public ResponseEntity<MetadataResponse> disapprove(@PathVariable Long id,
+                                                       Authentication authentication,
+                                                       @RequestHeader("Authorization") String token,
                                                        @RequestBody Map<String, Object> body) throws Exception {
-        Long approvedById = body.get("approvedById") != null ? Long.valueOf(body.get("approvedById").toString()) : null;
+        Long approvedById = authenticatedEmployeeId(authentication);
         String remarks = body.get("remarks") != null ? body.get("remarks").toString() : "";
-        OvertimeRequestDTO result = overtimeRequestService.disapprove(id, approvedById, remarks);
+        OvertimeRequestDTO result = overtimeRequestService.disapprove(id, approvedById, remarks, token);
         if (result == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MetadataResponse("Failed to disapprove overtime request"));
@@ -130,12 +185,15 @@ public class OvertimeRequestController {
 
     @PutMapping("/overtime-request/recommend/{id}")
     public ResponseEntity<MetadataResponse> recommend(@PathVariable Long id,
+                                                      Authentication authentication,
+                                                      @RequestHeader("Authorization") String token,
                                                       @RequestBody Map<String, Object> body) throws Exception {
-        Long recommendedById = body.get("recommendedById") != null ? Long.valueOf(body.get("recommendedById").toString()) : null;
+        Long recommendedById = authenticatedEmployeeId(authentication);
         String remarks = body.get("remarks") != null ? body.get("remarks").toString() : "";
         String dutyShiftCode = body.get("dutyShiftCode") != null ? body.get("dutyShiftCode").toString() : null;
         Integer breakMinutes = body.get("breakMinutes") != null ? Integer.valueOf(body.get("breakMinutes").toString()) : null;
-        OvertimeRequestDTO result = overtimeRequestService.recommend(id, recommendedById, remarks, dutyShiftCode, breakMinutes);
+        OvertimeRequestDTO result = overtimeRequestService.recommend(
+                id, recommendedById, remarks, dutyShiftCode, breakMinutes, token);
         if (result == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MetadataResponse("Failed to recommend overtime request"));
