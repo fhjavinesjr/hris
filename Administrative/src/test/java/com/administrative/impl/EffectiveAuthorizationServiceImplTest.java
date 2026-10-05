@@ -59,7 +59,7 @@ class EffectiveAuthorizationServiceImplTest {
     }
 
     @Test
-    void roleOneUsesMatchingRulesetBeforeLegacyAdministratorFallback() {
+    void roleOneRemainsAdministratorEvenWhenPermissionRecordOneExists() {
         PermissionRuleset userRuleset = new PermissionRuleset("USER", false,
                 "{\"primehr.competency\":{\"canAccess\":false}}");
         userRuleset.setPermissionId(1L);
@@ -67,8 +67,10 @@ class EffectiveAuthorizationServiceImplTest {
 
         var permission = service.resolve("001", "ROLE_1", "primehr.competency");
 
-        assertThat(permission.administrator()).isFalse();
-        assertThat(permission.canAccess()).isFalse();
+        assertThat(permission.administrator()).isTrue();
+        assertThat(permission.canAccess()).isTrue();
+        assertThat(permission.canApprove()).isTrue();
+        assertThat(permission.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
     }
 
     @Test

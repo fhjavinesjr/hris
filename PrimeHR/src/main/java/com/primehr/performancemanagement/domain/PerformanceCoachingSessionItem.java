@@ -1,0 +1,4 @@
+package com.primehr.performancemanagement.domain;
+import com.primehr.rsp.domain.RspAuditedEntity;import jakarta.persistence.*;
+@Entity@Table(name="spms_coaching_session_item",uniqueConstraints=@UniqueConstraint(name="uk_spms_coaching_session_item",columnNames={"agency_id","coaching_session_id","commitment_item_id"}))
+public class PerformanceCoachingSessionItem extends RspAuditedEntity{@Column(name="coaching_session_id",nullable=false,length=36)private String coachingSessionId;@Column(name="commitment_item_id",nullable=false,length=36)private String commitmentItemId;protected PerformanceCoachingSessionItem(){}public PerformanceCoachingSessionItem(String a,String s,String i){super(a);coachingSessionId=requiredText(s,"coachingSessionId");commitmentItemId=requiredText(i,"commitmentItemId");}public String getCoachingSessionId(){return coachingSessionId;}public String getCommitmentItemId(){return commitmentItemId;}}

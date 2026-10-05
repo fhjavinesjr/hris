@@ -37,6 +37,8 @@ public class JasperReportRegistry {
             "reports/pds_c4_references_sub.jasper",
             "reports/permitSlip.jrxml",
             "reports/personnel_action.jrxml"
+            ,"reports/saln/saln_main.jrxml"
+            ,"reports/saln/saln_additional_sheet.jrxml"
     );
 
     private static final Map<String, byte[]> RESOURCE_BYTES = new ConcurrentHashMap<>();

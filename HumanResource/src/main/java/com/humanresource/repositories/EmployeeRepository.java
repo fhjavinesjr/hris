@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.time.LocalDateTime;
+import java.util.List;
 import com.humanresource.integration.primehr.AssessmentSubjectRow;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,11 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     Optional<Employee> findByEmployeeNo(String employeeNo);
     Optional<Employee> findByEmployeeNoIgnoreCase(String employeeNo);
+    @Query("select distinct e from Employee e join EmployeeAppointment a on a.employeeId=e.employeeId " +
+            "where a.assumptionToDutyDate <= :asOf " +
+            "and not exists (select s.separationId from Separation s where s.employeeId=e.employeeId and s.separationDate <= :asOf) " +
+            "order by e.lastname,e.firstname,e.employeeNo")
+    List<Employee> findSalnEligibleEmployees(@Param("asOf") LocalDateTime asOf);
     boolean existsByBiometricNo(String biometricNo);
     boolean existsByEmailIgnoreCase(String email);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
