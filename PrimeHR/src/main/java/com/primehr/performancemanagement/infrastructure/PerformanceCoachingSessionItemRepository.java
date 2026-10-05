@@ -1,0 +1,2 @@
+package com.primehr.performancemanagement.infrastructure;import com.primehr.performancemanagement.domain.PerformanceCoachingSessionItem;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface PerformanceCoachingSessionItemRepository extends JpaRepository<PerformanceCoachingSessionItem,String>{List<PerformanceCoachingSessionItem>findByAgencyIdAndCoachingSessionId(String agency,String sessionId);}

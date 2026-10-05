@@ -1,0 +1,2 @@
+package com.primehr.performancemanagement.infrastructure;import com.primehr.performancemanagement.domain.PerformanceMidCycleReview;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface PerformanceMidCycleReviewRepository extends JpaRepository<PerformanceMidCycleReview,String>{Optional<PerformanceMidCycleReview>findByIdAndAgencyId(String id,String agency);Optional<PerformanceMidCycleReview>findByAgencyIdAndMonitoringCaseId(String agency,String caseId);}
