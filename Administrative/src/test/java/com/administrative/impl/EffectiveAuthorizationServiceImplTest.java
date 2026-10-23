@@ -401,4 +401,38 @@ class EffectiveAuthorizationServiceImplTest {
         assertThat(documents.canEdit()).isFalse();
         assertThat(documents.canFinalize()).isTrue();
     }
+
+    @Test
+    void phaseSixERatingWorkflowKeysResolveIndependentActionsAndScopes() {
+        PermissionRuleset ruleset = new PermissionRuleset("Performance Rating Team", false,
+                "{\"primehr.performance-rating\":{\"canAccess\":true,\"canAdd\":true," +
+                        "\"canSubmit\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.performance-calibration\":{\"canAccess\":true,\"canApprove\":true," +
+                        "\"canFinalize\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.performance-appeal\":{\"canAccess\":true,\"canEdit\":true," +
+                        "\"dataScope\":\"OWN_RECORDS\"}," +
+                        "\"primehr.performance-intervention\":{\"canAccess\":false,\"canFinalize\":true," +
+                        "\"dataScope\":\"AGENCY_WIDE\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("Performance Rating Team"))
+                .thenReturn(Optional.of(ruleset));
+
+        var rating = service.resolve("001", "Performance Rating Team", "primehr.performance-rating");
+        assertThat(rating.canAdd()).isTrue();
+        assertThat(rating.canSubmit()).isTrue();
+        assertThat(rating.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+
+        var calibration = service.resolve("001", "Performance Rating Team", "primehr.performance-calibration");
+        assertThat(calibration.canApprove()).isTrue();
+        assertThat(calibration.canFinalize()).isTrue();
+        assertThat(calibration.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+
+        var appeal = service.resolve("001", "Performance Rating Team", "primehr.performance-appeal");
+        assertThat(appeal.canEdit()).isTrue();
+        assertThat(appeal.dataScope()).isEqualTo(PermissionDataScope.OWN_RECORDS);
+
+        var intervention = service.resolve("001", "Performance Rating Team", "primehr.performance-intervention");
+        assertThat(intervention.canAccess()).isFalse();
+        assertThat(intervention.canFinalize()).isFalse();
+        assertThat(intervention.dataScope()).isEqualTo(PermissionDataScope.NONE);
+    }
 }

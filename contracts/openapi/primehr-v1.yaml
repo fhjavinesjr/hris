@@ -1191,6 +1191,8 @@ paths:
     post: {operationId: submitPerformanceRatingAssessment, responses: {'200': {description: Immutable submitted assessment; supervisor submission requires policy-mandated self-assessment}}}
   /performance-management/rating-cases/{caseId}/calibration:
     post: {operationId: openPerformanceCalibration, responses: {'201': {description: Policy-gated calibration with effective PMT roster and conflict snapshot}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/calibrations:
+    get: {operationId: listPerformanceCalibrations, responses: {'200': {description: Calibration cases restricted to the authenticated actor's snapshotted PMT participation}}}
   /performance-management/calibrations/{calibrationId}:
     get: {operationId: getPerformanceCalibration, responses: {'200': {description: Authorized PMT calibration case}}}
   /performance-management/calibrations/{calibrationId}/proposal:
@@ -1201,6 +1203,8 @@ paths:
     post: {operationId: finalizePerformanceRating, responses: {'200': {description: Immutable final rating from the authorized supervisor or calibrated result}}}
   /performance-management/final-ratings:
     get: {operationId: listPerformanceFinalRatings, responses: {'200': {description: Scope-filtered immutable final-rating revisions and receipt status}}}
+  /performance-management/final-ratings/mine:
+    get: {operationId: listOwnPerformanceFinalRatings, responses: {'200': {description: Authenticated employee immutable final-rating revisions and receipt status only}}}
   /performance-management/final-ratings/{finalRatingId}/acknowledgment:
     post: {operationId: acknowledgePerformanceFinalRating, responses: {'200': {description: Employee receipt acknowledgment without implying agreement}}}
   /performance-management/final-ratings/{finalRatingId}/close-without-acknowledgment:
@@ -1209,6 +1213,8 @@ paths:
     post: {operationId: createPerformanceRatingAppeal, responses: {'201': {description: Owner-filed draft appeal against an exact final-rating revision}}}
   /performance-management/appeals:
     get: {operationId: listPerformanceRatingAppeals, responses: {'200': {description: Scope-filtered rating appeals}}}
+  /performance-management/appeals/mine:
+    get: {operationId: listOwnPerformanceRatingAppeals, responses: {'200': {description: Authenticated employee rating appeals only}}}
   /performance-management/appeals/{appealId}:
     put: {operationId: editPerformanceRatingAppeal, responses: {'200': {description: Owner-edited draft appeal}, '409': {$ref: '#/components/responses/Conflict'}}}
   /performance-management/appeals/{appealId}/submit:
@@ -1224,6 +1230,8 @@ paths:
     post: {operationId: createPerformanceInterventionRule, responses: {'201': {description: Immutable exact-band intervention rule}}}
   /performance-management/interventions:
     get: {operationId: listPerformanceInterventions, responses: {'200': {description: Scope-filtered alerts and improvement plans}}}
+  /performance-management/interventions/mine:
+    get: {operationId: listOwnPerformanceInterventions, responses: {'200': {description: Authenticated employee alerts and improvement plans only, with PMT-private notes omitted}}}
   /performance-management/interventions/{interventionId}/issue:
     post: {operationId: issuePerformanceIntervention, responses: {'200': {description: Non-disciplinary plan with support, accountability, and dates}}}
   /performance-management/interventions/{interventionId}/acknowledge:

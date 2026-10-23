@@ -453,10 +453,15 @@ The recurring phase gate is:
 | Phase 6E.3 database/provider gates | Passed with live-provider limitation disclosed | paired PostgreSQL/SQL Server V35 migrations, structural parity, populated V34-to-V35 upgrade, and PostgreSQL-compatible V1-to-V35 Flyway/Hibernate validation passed; no live PostgreSQL or SQL Server endpoints were configured |
 | Phase 6E.3 verification | Passed | focused domain/security/OpenAPI/migration gates and complete clean PrimeHR test/package regression passed 330/330 with zero failures, errors, or skips |
 | Phase 6E.3 boundary | Passed | no permission seed, frontend interface, Playwright workflow, Jasper/analytics report, downstream feed, CoreHR mutation, disciplinary effect, or Phase 6F behavior introduced |
+| Phase 6E.4 Administrative controls | Passed | exact performance-rating, calibration, appeal, and intervention permission rows plus complete Phase 6 effective-authorization key recognition delivered |
+| Phase 6E.4 PrimeHR interfaces | Passed | permission-aware rating/source/history, PMT calibration/finalization, appeal, exact-band intervention-rule, and PIP lifecycle workspaces delivered without client-side scoring |
+| Phase 6E.4 Employee Portal interface | Passed | authenticated-own self-assessment, final-rating acknowledgment, appeal/evidence, and employee-visible intervention/PIP views use forced mine endpoints and no employee selector |
+| Phase 6E.4 verification | Passed with isolated-worktree disclosure | Administrative 67 and PrimeHR 330 backend tests passed; focused authorization 22/22; all frontend type-check/build/package gates passed; PrimeHR/Portal full lint and Administrative changed-file lint passed while unrelated legacy Administrative lint debt remains; focused packaged-frontend Playwright passed 2/2; webpack was used because Turbopack rejects the external dependency junctions used only by isolated worktrees |
+| Phase 6E final boundary | Passed | no report/analytics, downstream competency/L&D/R&R/RSP feed, CoreHR mutation, disciplinary/payroll/timekeeping/appointment effect, notification, or Phase 6F behavior introduced |
 
 ### Next recommended action
 
-Review `PHASE_6E_3_ACKNOWLEDGMENT_APPEAL_INTERVENTION_REVIEW.md` and explicitly approve Phase 6E.4 before implementing Administrative permission controls, PrimeHR/Employee Portal interfaces, and Playwright acceptance. Stop before Phase 6F reporting and downstream feeds.
+Review `PHASE_6E_4_CONTROLS_INTERFACES_ACCEPTANCE_REVIEW.md`. Phase 6E is complete. The next possible unit is Phase 6F reporting and downstream feeds, which requires a fresh discovery/scope review and explicit approval before implementation.
 
 ## Rollback
 

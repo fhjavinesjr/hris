@@ -39,6 +39,22 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String PRIMEHR_RSP_EVIDENCE_INDEX_REPORT = "primehr.rsp-evidence-index-report";
     public static final String PRIMEHR_RSP_REGISTER_REPORT = "primehr.rsp-register-report";
     public static final String PRIMEHR_RSP_PROCESS_ANALYTICS = "primehr.rsp-process-analytics";
+    public static final String PRIMEHR_PERFORMANCE_POLICY = "primehr.performance-policy";
+    public static final String PRIMEHR_PERFORMANCE_CYCLE = "primehr.performance-cycle";
+    public static final String PRIMEHR_PERFORMANCE_PMT = "primehr.performance-pmt";
+    public static final String PRIMEHR_PERFORMANCE_RATING_SCALE = "primehr.performance-rating-scale";
+    public static final String PRIMEHR_PERFORMANCE_SUCCESS_INDICATOR = "primehr.performance-success-indicator";
+    public static final String PRIMEHR_PERFORMANCE_TEMPLATE = "primehr.performance-template";
+    public static final String PRIMEHR_PERFORMANCE_OBJECTIVE = "primehr.performance-objective";
+    public static final String PRIMEHR_PERFORMANCE_PLAN_ASSIGNMENT = "primehr.performance-plan-assignment";
+    public static final String PRIMEHR_OFFICE_PERFORMANCE_COMMITMENT = "primehr.office-performance-commitment";
+    public static final String PRIMEHR_INDIVIDUAL_PERFORMANCE_COMMITMENT = "primehr.individual-performance-commitment";
+    public static final String PRIMEHR_PERFORMANCE_MONITORING = "primehr.performance-monitoring";
+    public static final String PRIMEHR_PERFORMANCE_COACHING = "primehr.performance-coaching";
+    public static final String PRIMEHR_PERFORMANCE_RATING = "primehr.performance-rating";
+    public static final String PRIMEHR_PERFORMANCE_CALIBRATION = "primehr.performance-calibration";
+    public static final String PRIMEHR_PERFORMANCE_APPEAL = "primehr.performance-appeal";
+    public static final String PRIMEHR_PERFORMANCE_INTERVENTION = "primehr.performance-intervention";
     public static final String HRM_APPOINTMENT_INTAKE = "hrm.appointment-intake";
     public static final String HRM_ONBOARDING_CONFIGURATION = "hrm.onboarding-configuration";
     public static final String HRM_ONBOARDING = "hrm.onboarding";
@@ -70,7 +86,15 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
             PRIMEHR_RSP_SELECTION_DECISION, PRIMEHR_RSP_APPOINTMENT_HANDOFF,
             PRIMEHR_RSP_COMPARATIVE_REPORT, PRIMEHR_RSP_SELECTION_REPORT,
             PRIMEHR_RSP_EVIDENCE_INDEX_REPORT, PRIMEHR_RSP_REGISTER_REPORT,
-            PRIMEHR_RSP_PROCESS_ANALYTICS,
+            PRIMEHR_RSP_PROCESS_ANALYTICS, PRIMEHR_PERFORMANCE_POLICY,
+            PRIMEHR_PERFORMANCE_CYCLE, PRIMEHR_PERFORMANCE_PMT,
+            PRIMEHR_PERFORMANCE_RATING_SCALE, PRIMEHR_PERFORMANCE_SUCCESS_INDICATOR,
+            PRIMEHR_PERFORMANCE_TEMPLATE, PRIMEHR_PERFORMANCE_OBJECTIVE,
+            PRIMEHR_PERFORMANCE_PLAN_ASSIGNMENT, PRIMEHR_OFFICE_PERFORMANCE_COMMITMENT,
+            PRIMEHR_INDIVIDUAL_PERFORMANCE_COMMITMENT, PRIMEHR_PERFORMANCE_MONITORING,
+            PRIMEHR_PERFORMANCE_COACHING, PRIMEHR_PERFORMANCE_RATING,
+            PRIMEHR_PERFORMANCE_CALIBRATION, PRIMEHR_PERFORMANCE_APPEAL,
+            PRIMEHR_PERFORMANCE_INTERVENTION,
             HRM_APPOINTMENT_INTAKE, HRM_ONBOARDING_CONFIGURATION, HRM_ONBOARDING,
             HRM_APPOINTMENT_REPORT, HRM_ONBOARDING_REPORT, HRM_APPOINTMENT_DOCUMENTS,
             HRM_EMPLOYMENT_RECORD, HRM_SELF_SERVICE_BEGINNING_BALANCE,
