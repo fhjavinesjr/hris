@@ -3,10 +3,15 @@ package com.humanresource.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hris.common.utilities.JwtUtil;
 import com.humanresource.dtos.EmployeeDTO;
+import com.humanresource.dtos.EmployeeAnnualizationIdentityDTO;
 import com.humanresource.entitymodels.Employee;
+import com.humanresource.entitymodels.EmployeeAppointment;
 import com.humanresource.entitymodels.PersonalData;
+import com.humanresource.entitymodels.Separation;
+import com.humanresource.repositories.EmployeeAppointmentRepository;
 import com.humanresource.repositories.EmployeeRepository;
 import com.humanresource.repositories.PersonalDataRepository;
+import com.humanresource.repositories.SeparationRepository;
 import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,6 +41,8 @@ class EmployeeServiceImplTest {
     private PersonalDataRepository personalDataRepository;
     private PasswordEncoder passwordEncoder;
     private JwtUtil jwtUtil;
+    private EmployeeAppointmentRepository employeeAppointmentRepository;
+    private SeparationRepository separationRepository;
     private EmployeeServiceImpl service;
 
     @BeforeEach
@@ -42,14 +51,69 @@ class EmployeeServiceImplTest {
         personalDataRepository = mock(PersonalDataRepository.class);
         passwordEncoder = mock(PasswordEncoder.class);
         jwtUtil = mock(JwtUtil.class);
+        employeeAppointmentRepository = mock(EmployeeAppointmentRepository.class);
+        separationRepository = mock(SeparationRepository.class);
         service = new EmployeeServiceImpl(
                 employeeRepository,
                 new ObjectMapper(),
                 passwordEncoder,
                 jwtUtil,
                 mock(JdbcTemplate.class),
-                personalDataRepository
+                personalDataRepository,
+                employeeAppointmentRepository,
+                separationRepository
         );
+    }
+
+    @Test
+    void annualizationIdentityUsesPersonalDataAndActiveAppointment() {
+        Employee employee = employee(7L, "EMP-007");
+        PersonalData personalData = mock(PersonalData.class);
+        when(personalData.getEmployeeId()).thenReturn(7L);
+        when(personalData.getTinNo()).thenReturn("000-000-007");
+        when(personalData.getRdoCode()).thenReturn("123");
+        when(personalData.getPermAddress()).thenReturn("Permanent Address");
+        when(personalData.getPermZip()).thenReturn("1000");
+        when(personalData.getResAddress()).thenReturn("Residential Address");
+        when(personalData.getResZip()).thenReturn("1001");
+        when(personalData.getDob()).thenReturn(LocalDateTime.of(1990, 5, 10, 0, 0));
+        when(personalData.getTelNo()).thenReturn("");
+        when(personalData.getMobileNo()).thenReturn("09171234567");
+        when(personalData.getSurname()).thenReturn("Employee");
+        when(personalData.getFirstname()).thenReturn("Test");
+        when(personalData.getMiddlename()).thenReturn("Middle");
+        when(personalData.getExtname()).thenReturn("Jr.");
+        when(personalData.getCitizenship()).thenReturn("Filipino");
+        EmployeeAppointment appointment = new EmployeeAppointment();
+        appointment.setEmployeeId(7L);
+        appointment.setJobPositionId(12);
+        appointment.setNatureOfAppointmentId(4);
+        appointment.setAssumptionToDutyDate(LocalDateTime.of(2025, 1, 1, 0, 0));
+        Separation separation = new Separation();
+        separation.setEmployeeId(7L);
+        separation.setSeparationDate(LocalDateTime.of(2026, 9, 30, 0, 0));
+        when(employeeRepository.findAll()).thenReturn(List.of(employee));
+        when(personalDataRepository.findAll()).thenReturn(List.of(personalData));
+        when(employeeAppointmentRepository.findAll())
+                .thenReturn(List.of(appointment));
+        when(separationRepository.findAll()).thenReturn(List.of(separation));
+
+        EmployeeAnnualizationIdentityDTO result =
+                service.getAnnualizationIdentities(2026).get(0);
+
+        assertEquals("Permanent Address", result.address());
+        assertEquals("Residential Address", result.localAddress());
+        assertEquals(LocalDate.of(1990, 5, 10), result.birthDate());
+        assertEquals("09171234567", result.contactNo());
+        assertEquals(12L, result.jobPositionId());
+        assertEquals("Employee", result.lastName());
+        assertEquals("Test", result.firstName());
+        assertEquals("Middle", result.middleName());
+        assertEquals("Jr.", result.extensionName());
+        assertEquals("Filipino", result.nationality());
+        assertEquals(4L, result.natureOfAppointmentId());
+        assertEquals(LocalDate.of(2026, 1, 1), result.employmentFrom());
+        assertEquals(LocalDate.of(2026, 9, 30), result.employmentTo());
     }
 
     @Test

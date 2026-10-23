@@ -1,0 +1,14 @@
+IF COL_LENGTH('settings', 'birBranchCode') IS NULL
+    ALTER TABLE settings ADD birBranchCode VARCHAR(4) NULL;
+
+UPDATE natureofappointment
+SET birEmploymentStatusCode = CASE
+    WHEN UPPER(LTRIM(RTRIM(nature))) LIKE '%PERMANENT%' OR UPPER(LTRIM(RTRIM(nature))) LIKE '%REGULAR%' THEN 'R'
+    WHEN UPPER(LTRIM(RTRIM(nature))) LIKE '%CASUAL%' THEN 'C'
+    WHEN UPPER(LTRIM(RTRIM(nature))) LIKE '%CONTRACTUAL%' OR UPPER(LTRIM(RTRIM(nature))) LIKE '%PROJECT%' THEN 'CP'
+    WHEN UPPER(LTRIM(RTRIM(nature))) LIKE '%SEASONAL%' THEN 'S'
+    WHEN UPPER(LTRIM(RTRIM(nature))) LIKE '%PROBATION%' THEN 'P'
+    WHEN UPPER(LTRIM(RTRIM(nature))) LIKE '%APPRENTICE%' OR UPPER(LTRIM(RTRIM(nature))) LIKE '%LEARNER%' THEN 'AL'
+    ELSE birEmploymentStatusCode
+END
+WHERE birEmploymentStatusCode IS NULL;

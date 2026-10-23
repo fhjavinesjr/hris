@@ -19,6 +19,9 @@ public class NatureOfSeparation implements Serializable {
     @Column(name = "nature", length = 100, unique = true, nullable = false)
     private String nature;
 
+    @Column(name = "birSeparationReasonCode", length = 2)
+    private String birSeparationReasonCode;
+
     public NatureOfSeparation() {
 
     }
@@ -52,4 +55,7 @@ public class NatureOfSeparation implements Serializable {
     public void setNature(String nature) {
         this.nature = nature;
     }
+
+    public String getBirSeparationReasonCode() { return birSeparationReasonCode; }
+    public void setBirSeparationReasonCode(String value) { birSeparationReasonCode = value; }
 }

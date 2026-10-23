@@ -1,0 +1,107 @@
+<jasperReport name="monthly_report_attendance" language="java" pageWidth="1190" pageHeight="842" orientation="Landscape" columnWidth="1130" leftMargin="30" rightMargin="30" topMargin="24" bottomMargin="24" uuid="f9cd6c28-72bd-4f91-9ec3-fd9196946a1f">
+    <parameter name="runId" class="java.lang.String"/>
+    <parameter name="monthLabel" class="java.lang.String"/>
+    <parameter name="agency" class="java.lang.String"/>
+    <parameter name="area" class="java.lang.String"/>
+    <parameter name="businessUnit" class="java.lang.String"/>
+    <parameter name="reviewNotice" class="java.lang.String"/>
+    <parameter name="preparedBy" class="java.lang.String"/>
+    <parameter name="preparedPosition" class="java.lang.String"/>
+    <parameter name="certifiedBy" class="java.lang.String"/>
+    <parameter name="certifiedPosition" class="java.lang.String"/>
+    <parameter name="verifiedBy" class="java.lang.String"/>
+    <parameter name="verifiedPosition" class="java.lang.String"/>
+    <query language="SQL"><![CDATA[
+        SELECT employee_id, employee_no, employee_name, business_unit_id, business_unit, work_date,
+               attendance_status, leave_type, work_minutes, late_minutes,
+               undertime_minutes, overtime_minutes, absent_minutes,
+               overtime_approved, remarks
+        FROM mra_print_day
+        WHERE run_id = $P{runId}
+        ORDER BY business_unit, business_unit_id, employee_name, employee_id, work_date
+    ]]></query>
+    <field name="employee_id" class="java.lang.Long"/>
+    <field name="employee_no" class="java.lang.String"/>
+    <field name="employee_name" class="java.lang.String"/>
+    <field name="business_unit_id" class="java.lang.Long"/>
+    <field name="business_unit" class="java.lang.String"/>
+    <field name="work_date" class="java.sql.Date"/>
+    <field name="attendance_status" class="java.lang.String"/>
+    <field name="leave_type" class="java.lang.String"/>
+    <field name="work_minutes" class="java.lang.Integer"/>
+    <field name="late_minutes" class="java.lang.Integer"/>
+    <field name="undertime_minutes" class="java.lang.Integer"/>
+    <field name="overtime_minutes" class="java.lang.Integer"/>
+    <field name="absent_minutes" class="java.lang.Integer"/>
+    <field name="overtime_approved" class="java.lang.Integer"/>
+    <field name="remarks" class="java.lang.String"/>
+    <variable name="employeeLate" resetType="Group" resetGroup="employeeGroup" calculation="Sum" class="java.lang.Integer"><expression><![CDATA[$F{late_minutes}]]></expression></variable>
+    <variable name="employeeUndertime" resetType="Group" resetGroup="employeeGroup" calculation="Sum" class="java.lang.Integer"><expression><![CDATA[$F{undertime_minutes}]]></expression></variable>
+    <variable name="employeeOvertime" resetType="Group" resetGroup="employeeGroup" calculation="Sum" class="java.lang.Integer"><expression><![CDATA[$F{overtime_minutes}]]></expression></variable>
+    <variable name="presentDays" resetType="Group" resetGroup="employeeGroup" calculation="Sum" class="java.lang.Integer"><expression><![CDATA["PRESENT".equals($F{attendance_status}) ? 1 : 0]]></expression></variable>
+    <variable name="leaveDays" resetType="Group" resetGroup="employeeGroup" calculation="Sum" class="java.lang.Integer"><expression><![CDATA["LEAVE".equals($F{attendance_status}) ? 1 : 0]]></expression></variable>
+    <variable name="awolDays" resetType="Group" resetGroup="employeeGroup" calculation="Sum" class="java.lang.Integer"><expression><![CDATA["AWOL".equals($F{attendance_status}) ? 1 : 0]]></expression></variable>
+    <variable name="absenceReviewDays" resetType="Group" resetGroup="employeeGroup" calculation="Sum" class="java.lang.Integer"><expression><![CDATA[$F{attendance_status} != null && $F{attendance_status}.contains("REVIEW") && $F{absent_minutes} != null && $F{absent_minutes}.intValue() > 0 ? 1 : 0]]></expression></variable>
+    <variable name="reviewDays" resetType="Group" resetGroup="employeeGroup" calculation="Sum" class="java.lang.Integer"><expression><![CDATA[$F{attendance_status} != null && $F{attendance_status}.contains("REVIEW") ? 1 : 0]]></expression></variable>
+    <group name="employeeGroup" reprintHeaderOnEachPage="true" keepTogether="true">
+        <expression><![CDATA[String.valueOf($F{business_unit_id}) + "|" + String.valueOf($F{employee_id})]]></expression>
+        <groupHeader><band height="32">
+            <element kind="textField" mode="Opaque" x="0" y="2" width="1130" height="27" backcolor="#E8EEF5" fontName="Arial" fontSize="10" bold="true" vTextAlign="Middle">
+                <expression><![CDATA[$F{employee_name} + "  (" + $F{employee_no} + ")  |  " + $F{business_unit}]]></expression>
+                <box><pen lineWidth="0.5"/></box>
+            </element>
+        </band></groupHeader>
+        <groupFooter><band height="39">
+            <element kind="textField" x="0" y="0" width="1130" height="18" fontName="Arial" fontSize="8" bold="true"><expression><![CDATA["DAYS  Present: " + $V{presentDays} + "  |  Approved leave: " + $V{leaveDays} + "  |  AWOL: " + $V{awolDays} + "  |  Absence for review: " + $V{absenceReviewDays} + "  |  REVIEW REQUIRED: " + $V{reviewDays}]]></expression></element>
+            <element kind="textField" x="0" y="18" width="445" height="18" fontName="Arial" fontSize="8" bold="true"><expression><![CDATA["MONTH TOTALS (minutes)"]]></expression></element>
+            <element kind="textField" x="445" y="18" width="70" height="18" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><expression><![CDATA[$V{employeeLate}]]></expression></element>
+            <element kind="textField" x="515" y="18" width="70" height="18" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><expression><![CDATA[$V{employeeUndertime}]]></expression></element>
+            <element kind="textField" x="585" y="18" width="70" height="18" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><expression><![CDATA[$V{employeeOvertime}]]></expression></element>
+        </band></groupFooter>
+    </group>
+    <pageHeader height="111">
+        <element kind="staticText" x="0" y="0" width="1130" height="15" fontName="Arial" fontSize="9" hTextAlign="Center"><text><![CDATA[Republic of the Philippines]]></text></element>
+        <element kind="textField" x="0" y="16" width="1130" height="19" fontName="Arial" fontSize="11" bold="true" hTextAlign="Center"><expression><![CDATA[$P{agency}]]></expression></element>
+        <element kind="staticText" x="0" y="37" width="1130" height="24" fontName="Arial" fontSize="15" bold="true" hTextAlign="Center"><text><![CDATA[MONTHLY REPORT OF ATTENDANCE]]></text></element>
+        <element kind="textField" x="0" y="64" width="1130" height="17" fontName="Arial" fontSize="9" hTextAlign="Center"><expression><![CDATA[$P{monthLabel} + "  |  Area: " + $P{area} + "  |  Business Unit: " + $P{businessUnit}]]></expression></element>
+        <element kind="textField" x="0" y="86" width="1130" height="20" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center" forecolor="#A61B1B"><expression><![CDATA[$P{reviewNotice} + " Minutes are actual minutes, not day equivalents."]]></expression></element>
+    </pageHeader>
+    <columnHeader height="25">
+        <element kind="staticText" mode="Opaque" x="0" y="0" width="75" height="24" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><text><![CDATA[Date]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="75" y="0" width="145" height="24" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><text><![CDATA[Attendance]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="220" y="0" width="135" height="24" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><text><![CDATA[Approved leave / type]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="355" y="0" width="90" height="24" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><text><![CDATA[Worked min]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="445" y="0" width="70" height="24" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><text><![CDATA[Late min]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="515" y="0" width="70" height="24" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><text><![CDATA[UT min]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="585" y="0" width="70" height="24" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><text><![CDATA[OT min]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="655" y="0" width="70" height="24" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><text><![CDATA[Abs min]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="725" y="0" width="405" height="24" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true" hTextAlign="Center"><text><![CDATA[Remarks / DTR evidence]]></text><box><pen lineWidth="0.5"/></box></element>
+    </columnHeader>
+    <detail><band height="15" splitType="Stretch">
+        <element kind="textField" x="0" y="0" width="75" height="14" fontName="Arial" fontSize="8" pattern="MMM dd, yyyy"><expression><![CDATA[$F{work_date}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="75" y="0" width="145" height="14" fontName="Arial" fontSize="8"><expression><![CDATA[$F{attendance_status}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="220" y="0" width="135" height="14" fontName="Arial" fontSize="8"><expression><![CDATA[$F{leave_type}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="355" y="0" width="90" height="14" fontName="Arial" fontSize="8" hTextAlign="Center"><expression><![CDATA[$F{work_minutes}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="445" y="0" width="70" height="14" fontName="Arial" fontSize="8" hTextAlign="Center"><expression><![CDATA[$F{late_minutes}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="515" y="0" width="70" height="14" fontName="Arial" fontSize="8" hTextAlign="Center"><expression><![CDATA[$F{undertime_minutes}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="585" y="0" width="70" height="14" fontName="Arial" fontSize="8" hTextAlign="Center"><expression><![CDATA[$F{overtime_minutes}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="655" y="0" width="70" height="14" fontName="Arial" fontSize="8" hTextAlign="Center"><expression><![CDATA[$F{absent_minutes}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="725" y="0" width="405" height="14" fontName="Arial" fontSize="8" textAdjust="StretchHeight"><expression><![CDATA[($F{remarks} == null ? "" : $F{remarks}) + ($F{overtime_approved} != null && $F{overtime_approved}.intValue() == 1 ? "  [OT approved]" : "")]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+    </band></detail>
+    <summary height="90">
+        <element kind="staticText" x="0" y="0" width="1130" height="18" fontName="Arial" fontSize="8" hTextAlign="Center"><text><![CDATA[CSC DTR UNDERTIME combines late and distinct undertime; MRA shows them separately. Verify review rows and historical Area/Business Unit transfers before signing.]]></text></element>
+        <element kind="staticText" x="25" y="24" width="260" height="14" fontName="Arial" fontSize="8"><text><![CDATA[Prepared by:]]></text></element>
+        <element kind="staticText" x="435" y="24" width="260" height="14" fontName="Arial" fontSize="8"><text><![CDATA[Certified by:]]></text></element>
+        <element kind="staticText" x="850" y="24" width="260" height="14" fontName="Arial" fontSize="8"><text><![CDATA[Verified by:]]></text></element>
+        <element kind="line" x="25" y="45" width="260" height="1"/>
+        <element kind="line" x="435" y="45" width="260" height="1"/>
+        <element kind="line" x="850" y="45" width="260" height="1"/>
+        <element kind="textField" x="25" y="49" width="260" height="17" fontName="Arial" fontSize="9" bold="true"><expression><![CDATA[$P{preparedBy}]]></expression></element>
+        <element kind="textField" x="435" y="49" width="260" height="17" fontName="Arial" fontSize="9" bold="true"><expression><![CDATA[$P{certifiedBy}]]></expression></element>
+        <element kind="textField" x="850" y="49" width="260" height="17" fontName="Arial" fontSize="9" bold="true"><expression><![CDATA[$P{verifiedBy}]]></expression></element>
+        <element kind="textField" x="25" y="67" width="260" height="16" fontName="Arial" fontSize="8"><expression><![CDATA[$P{preparedPosition}]]></expression></element>
+        <element kind="textField" x="435" y="67" width="260" height="16" fontName="Arial" fontSize="8"><expression><![CDATA[$P{certifiedPosition}]]></expression></element>
+        <element kind="textField" x="850" y="67" width="260" height="16" fontName="Arial" fontSize="8"><expression><![CDATA[$P{verifiedPosition}]]></expression></element>
+    </summary>
+    <pageFooter height="19"><element kind="textField" x="1040" y="0" width="90" height="15" fontName="Arial" fontSize="8" hTextAlign="Right"><expression><![CDATA["Page " + $V{PAGE_NUMBER}]]></expression></element></pageFooter>
+</jasperReport>

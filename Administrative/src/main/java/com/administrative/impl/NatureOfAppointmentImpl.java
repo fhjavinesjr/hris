@@ -4,7 +4,6 @@ import com.administrative.dtos.NatureOfAppointmentDTO;
 import com.administrative.entitymodels.NatureOfAppointment;
 import com.administrative.repositories.NatureOfAppointmentRepository;
 import com.administrative.services.NatureOfAppointmentService;
-import com.administrative.services.NatureOfAppointmentService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,11 +11,15 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class NatureOfAppointmentImpl implements NatureOfAppointmentService {
 
     private static final Logger log = LoggerFactory.getLogger(NatureOfAppointmentImpl.class);
+    private static final Set<String> BIR_EMPLOYMENT_STATUS_CODES =
+            Set.of("R", "C", "CP", "S", "P", "AL");
     private final NatureOfAppointmentRepository natureOfAppointmentRepository;
 
     public NatureOfAppointmentImpl(NatureOfAppointmentRepository natureOfAppointmentRepository) {
@@ -29,7 +32,11 @@ public class NatureOfAppointmentImpl implements NatureOfAppointmentService {
         try {
             NatureOfAppointment natureOfAppointment = new NatureOfAppointment(natureOfAppointmentDTO.getNatureOfAppointmentId(), natureOfAppointmentDTO.getCode(), natureOfAppointmentDTO.getNature());
             natureOfAppointment.setIsContractual(Boolean.TRUE.equals(natureOfAppointmentDTO.getIsContractual()));
+            String birStatus = normalizeBirEmploymentStatusCode(
+                    natureOfAppointmentDTO.getBirEmploymentStatusCode());
+            natureOfAppointment.setBirEmploymentStatusCode(birStatus);
             natureOfAppointmentRepository.save(natureOfAppointment);
+            natureOfAppointmentDTO.setBirEmploymentStatusCode(birStatus);
 
             return natureOfAppointmentDTO;
         } catch(Exception e) {
@@ -49,6 +56,8 @@ public class NatureOfAppointmentImpl implements NatureOfAppointmentService {
             natureOfAppointmentDTO.setCode(natureOfAppointment.getCode());
             natureOfAppointmentDTO.setNature(natureOfAppointment.getNature());
             natureOfAppointmentDTO.setIsContractual(Boolean.TRUE.equals(natureOfAppointment.getIsContractual()));
+            natureOfAppointmentDTO.setBirEmploymentStatusCode(
+                    natureOfAppointment.getBirEmploymentStatusCode());
 
             natureOfAppointmenDTOList.add(natureOfAppointmentDTO);
         }
@@ -70,8 +79,12 @@ public class NatureOfAppointmentImpl implements NatureOfAppointmentService {
                 natureOfAppointment.setCode(natureOfAppointmentDTO.getCode());
                 natureOfAppointment.setNature(natureOfAppointmentDTO.getNature());
                 natureOfAppointment.setIsContractual(Boolean.TRUE.equals(natureOfAppointmentDTO.getIsContractual()));
+                String birStatus = normalizeBirEmploymentStatusCode(
+                        natureOfAppointmentDTO.getBirEmploymentStatusCode());
+                natureOfAppointment.setBirEmploymentStatusCode(birStatus);
 
                 natureOfAppointmentRepository.save(natureOfAppointment);
+                natureOfAppointmentDTO.setBirEmploymentStatusCode(birStatus);
 
                 return natureOfAppointmentDTO;
             }
@@ -94,5 +107,14 @@ public class NatureOfAppointmentImpl implements NatureOfAppointmentService {
         }
 
         return false;
+    }
+
+    private String normalizeBirEmploymentStatusCode(String value) {
+        if (value == null || value.isBlank()) return null;
+        String normalized = value.trim().toUpperCase(Locale.ROOT);
+        if (!BIR_EMPLOYMENT_STATUS_CODES.contains(normalized)) {
+            throw new IllegalArgumentException("Unsupported BIR employment status code: " + value);
+        }
+        return normalized;
     }
 }

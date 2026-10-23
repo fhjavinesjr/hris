@@ -46,6 +46,7 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String HRM_ONBOARDING_REPORT = "hrm.onboarding-report";
     public static final String HRM_APPOINTMENT_DOCUMENTS = "hrm.appointment-documents";
     public static final String HRM_EMPLOYMENT_RECORD = "hrm.employmentRecord";
+    public static final String HRM_LEAVE_SUMMARY_REPORT = "hrm.reports.leaveSummary";
     public static final String HRM_SELF_SERVICE_BEGINNING_BALANCE = "hrm.ss.beginBalance";
     public static final String HRM_SELF_SERVICE_LEAVE_APPLICATION = "hrm.ss.leaveApp";
     public static final String HRM_SELF_SERVICE_OVERTIME_REQUEST = "hrm.ss.overtimeReq";
@@ -54,6 +55,8 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String HRM_SELF_SERVICE_OFFICIAL_ENGAGEMENT = "hrm.ss.officialEngag";
     public static final String HRM_SELF_SERVICE_PASS_SLIP = "hrm.ss.passSlip";
     public static final String HRM_SELF_SERVICE_TIME_CORRECTION = "hrm.ss.timeCorrection";
+    public static final String PAYROLL_ANNUALIZATION = "payroll.annualization";
+    public static final String ADMIN_EARNING_TYPES = "admin.earningTypes";
     public static final String HRM_SALN_REVIEW = "hrm.saln.review";
     public static final String HRM_SALN_HISTORICAL = "hrm.saln.historical";
     public static final String HRM_SALN_AUDIT = "hrm.saln.audit";
@@ -73,12 +76,14 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
             PRIMEHR_RSP_PROCESS_ANALYTICS,
             HRM_APPOINTMENT_INTAKE, HRM_ONBOARDING_CONFIGURATION, HRM_ONBOARDING,
             HRM_APPOINTMENT_REPORT, HRM_ONBOARDING_REPORT, HRM_APPOINTMENT_DOCUMENTS,
-            HRM_EMPLOYMENT_RECORD, HRM_SELF_SERVICE_BEGINNING_BALANCE,
+            HRM_EMPLOYMENT_RECORD, HRM_LEAVE_SUMMARY_REPORT, HRM_SELF_SERVICE_BEGINNING_BALANCE,
             HRM_SELF_SERVICE_LEAVE_APPLICATION, HRM_SELF_SERVICE_OVERTIME_REQUEST,
             HRM_SELF_SERVICE_COC, HRM_SELF_SERVICE_CTO, HRM_SELF_SERVICE_OFFICIAL_ENGAGEMENT,
             HRM_SELF_SERVICE_PASS_SLIP, HRM_SELF_SERVICE_TIME_CORRECTION,
+            PAYROLL_ANNUALIZATION, ADMIN_EARNING_TYPES,
             HRM_SALN_REVIEW, HRM_SALN_HISTORICAL, HRM_SALN_AUDIT, HRM_SALN_REQUIREMENTS,
             EMPLOYEE_PORTAL_SALN);
+
     private static final String INSTALL_ADMIN_EMPLOYEE_NO = "admin";
 
     private final PermissionRulesetRepository repository;
@@ -102,9 +107,6 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
         Optional<PermissionRuleset> resolved = resolveRuleset(role);
         if (resolved.isEmpty()) return EffectiveFeaturePermissionResponse.denied(featureKey);
         PermissionRuleset ruleset = resolved.get();
-        if (Boolean.TRUE.equals(ruleset.getIsAdministrator())) {
-            return EffectiveFeaturePermissionResponse.administrator(featureKey);
-        }
         try {
             JsonNode permission = objectMapper.readTree(ruleset.getPermissionData()).path(featureKey);
             boolean canAccess = permission.path("canAccess").asBoolean(false);

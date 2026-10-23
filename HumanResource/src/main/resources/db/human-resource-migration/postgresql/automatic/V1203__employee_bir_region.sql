@@ -1,0 +1,2 @@
+ALTER TABLE personaldata ADD COLUMN IF NOT EXISTS birRegionCode VARCHAR(4);
+ALTER TABLE personaldata ADD COLUMN IF NOT EXISTS birBranchCode VARCHAR(4);

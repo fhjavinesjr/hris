@@ -450,7 +450,7 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         CompletableFuture<Map<String, DeductionTypeMeta>> deductionMetaFuture =
                 CompletableFuture.supplyAsync(() -> fetchDeductionTypeMeta(headers), computeExecutor);
 
-        // Earning type meta: keyed by name + ID -> EarningTypeMeta (flags + display name)
+        // Earning type meta: keyed by legacy name, accounting code and ID.
         CompletableFuture<Map<String, EarningTypeMeta>> earningMetaFuture =
                 CompletableFuture.supplyAsync(() -> fetchEarningTypeMeta(headers), computeExecutor);
 
@@ -501,6 +501,12 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
         // Enrich allowances with proper flags + names from Administrative
         // (replaces fragile string-contains guessing in EarningAllowanceImpl)
         Map<String, EarningTypeMeta> earningMeta = earningMetaFuture.join();
+        EarningTypeMeta basicMeta = generatedEarningMeta(earningMeta, "BASIC", true);
+        EarningTypeMeta hazardMeta = generatedEarningMeta(earningMeta, "HAZARD", false);
+        if (basicMeta != null) snap.setBasicEarningTaxSettings(
+                new PayrollDataSnapshot.GeneratedEarningTaxSettings(basicMeta.taxable, basicMeta.bir2316ItemNo));
+        if (hazardMeta != null) snap.setHazardEarningTaxSettings(
+                new PayrollDataSnapshot.GeneratedEarningTaxSettings(hazardMeta.taxable, hazardMeta.bir2316ItemNo));
         List<AllowanceDTO> rawAllowances = allowanceFuture.join();
         for (AllowanceDTO a : rawAllowances) {
             EarningTypeMeta etm = earningMeta.get(a.getAllowanceName());
@@ -512,6 +518,7 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
                 a.setIsSubsistence(etm.subsistence);
                 a.setIsLaundry(etm.laundry);
                 a.setIsTaxable(etm.taxable);
+                a.setBir2316ItemNo(etm.bir2316ItemNo);
             }
         }
         snap.setAllowancesMap(rawAllowances.stream()
@@ -563,7 +570,22 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
             }
         }
         snap.setEntryDeductionsMap(enrichedDeductions);
-        snap.setIncomeEntriesMap(incomeFuture.join());
+        Map<String, List<PayrollDataSnapshot.IncomeEntryDTO>> incomes = incomeFuture.join();
+        for (List<PayrollDataSnapshot.IncomeEntryDTO> employeeIncomes : incomes.values()) {
+            for (PayrollDataSnapshot.IncomeEntryDTO income : employeeIncomes) {
+                EarningTypeMeta meta = earningMeta.get(income.getEarningType());
+                if (meta != null) {
+                    income.setBir2316ItemNo(meta.bir2316ItemNo);
+                    // Carry the configured accounting code into finalized payroll so
+                    // Annualization can resolve the Earning Type without its display name.
+                    if (meta.accountingCode != null && !meta.accountingCode.isBlank()) {
+                        income.setEarningType(meta.accountingCode);
+                    }
+                    income.setEarningTypeName(meta.name);
+                }
+            }
+        }
+        snap.setIncomeEntriesMap(incomes);
 
         // Load previous payroll balances from this module's own DB
         snap.setPreviousBalanceMap(loadPreviousBalances(snap.getEmployeeMap().keySet(), req));
@@ -774,14 +796,32 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
     private static final class EarningTypeMeta {
         final String name;
         final String accountingCode;
-        final boolean pera, hazardPay, subsistence, laundry, taxable;
+        final boolean basic, pera, hazardPay, subsistence, laundry, taxable;
+        final String bir2316ItemNo;
         EarningTypeMeta(String n, String c,
-                        boolean pera, boolean hazardPay, boolean subsistence,
-                        boolean laundry, boolean taxable) {
+                        boolean basic, boolean pera, boolean hazardPay, boolean subsistence,
+                        boolean laundry, boolean taxable, String bir2316ItemNo) {
             this.name = n; this.accountingCode = c;
+            this.basic = basic;
             this.pera = pera; this.hazardPay = hazardPay;
             this.subsistence = subsistence; this.laundry = laundry; this.taxable = taxable;
+            this.bir2316ItemNo = bir2316ItemNo;
         }
+    }
+
+    private EarningTypeMeta generatedEarningMeta(Map<String, EarningTypeMeta> meta,
+            String systemCode, boolean basic) {
+        List<EarningTypeMeta> byCode = meta.values().stream().distinct()
+                .filter(value -> value.accountingCode != null
+                        && systemCode.equalsIgnoreCase(value.accountingCode.trim()))
+                .toList();
+        if (byCode.size() == 1) return byCode.get(0);
+        List<EarningTypeMeta> candidates = meta.values().stream().distinct()
+                .filter(value -> basic ? value.basic : value.hazardPay).toList();
+        if (candidates.size() == 1) return candidates.get(0);
+        log.warn("Payroll-generated {} earning has {} matching Administrative Earning Types; BIR classification requires review",
+                systemCode, candidates.size());
+        return null;
     }
 
     private Map<String, EarningTypeMeta> fetchEarningTypeMeta(HttpHeaders h) {
@@ -797,13 +837,20 @@ public class PayrollBatchServiceImpl implements PayrollBatchService {
                     String code = (String) item.get("accountingCode");
                     EarningTypeMeta m = new EarningTypeMeta(
                             name, code,
+                            Boolean.TRUE.equals(item.get("basic")),
                             Boolean.TRUE.equals(item.get("pera")),
                             Boolean.TRUE.equals(item.get("hazardPay")),
                             Boolean.TRUE.equals(item.get("subsistence")),
                             Boolean.TRUE.equals(item.get("laundry")),
-                            Boolean.TRUE.equals(item.get("taxable")));
-                    // Double-index: old records store the name, new records store the ID
+                            Boolean.TRUE.equals(item.get("taxable")),
+                            item.get("bir2316ItemNo") == null
+                                    ? null : item.get("bir2316ItemNo").toString());
+                    // Legacy records may store a name; current records can use ID or accounting code.
                     if (name != null) meta.put(name, m);
+                    if (code != null) {
+                        meta.put(code, m);
+                        meta.put(code.trim().toUpperCase(Locale.ROOT), m);
+                    }
                     Object idObj = item.get("earningTypeId");
                     if (idObj != null) meta.put(String.valueOf(idObj), m);
                 }

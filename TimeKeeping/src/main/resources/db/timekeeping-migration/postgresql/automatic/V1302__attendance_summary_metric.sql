@@ -1,0 +1,2 @@
+ALTER TABLE mra_print_day
+    ADD COLUMN IF NOT EXISTS metric_minutes INTEGER NOT NULL DEFAULT 0;

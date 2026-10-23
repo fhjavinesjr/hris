@@ -600,9 +600,11 @@ public final class DtrReportDataLoader {
         boolean dayOff = schedule != null && schedule.dayOff();
 
         int absentMinutes;
-        if (daily != null && "ABSENT".equalsIgnoreCase(nullToEmpty(daily.status()))) {
+        if (daily != null && ("ABSENT".equalsIgnoreCase(nullToEmpty(daily.status()))
+                || "AWOL".equalsIgnoreCase(nullToEmpty(daily.status())))) {
             absentMinutes = 480;
         } else if (daily == null
+                && schedule != null
                 && !dayOff
                 && leave == null
                 && officialEngagement == null
@@ -631,7 +633,7 @@ public final class DtrReportDataLoader {
                     ? passSlipRemark(passSlip)
                     : "ABSENT / " + passSlipRemark(passSlip);
         } else if (daily == null) {
-            remarks = "ABSENT";
+            remarks = schedule == null ? "NO SCHEDULE / NO DTR - REVIEW" : "ABSENT";
         } else {
             remarks = nullToEmpty(daily.status());
         }
