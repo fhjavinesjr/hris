@@ -1,0 +1,50 @@
+package com.payroll.dtos;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+public record AnnualizationEmployeeDTO(
+        String employeeNo,
+        String employeeName,
+        String department,
+        Integer taxYear,
+        BigDecimal presentGrossCompensation,
+        BigDecimal presentNonTaxableCompensation,
+        BigDecimal presentTaxableCompensation,
+        BigDecimal presentTaxWithheld,
+        BigDecimal previousGrossCompensation,
+        BigDecimal previousNonTaxableCompensation,
+        BigDecimal previousTaxableCompensation,
+        BigDecimal previousTaxWithheld,
+        BigDecimal grossCompensation,
+        BigDecimal nonTaxableCompensation,
+        BigDecimal taxableCompensation,
+        BigDecimal gsisContribution,
+        BigDecimal philHealthContribution,
+        BigDecimal pagIbigContribution,
+        BigDecimal taxWithheld,
+        BigDecimal annualTaxDue,
+        BigDecimal peraTaxCredit,
+        PeraTaxCreditDTO peraTaxCreditSource,
+        BigDecimal adjustmentAmount,
+        String adjustmentType,
+        String status,
+        String reviewMessage,
+        Integer snapshotVersion,
+        LocalDateTime finalizedAt,
+        String finalizedBy,
+        Boolean substitutedFilingQualified,
+        String substitutedFilingReason,
+        LocalDateTime substitutedFilingReviewedAt,
+        String substitutedFilingReviewedBy,
+        Long adjustmentHeaderId,
+        String adjustmentSalaryPeriodKey,
+        LocalDateTime adjustmentAppliedAt,
+        String adjustmentAppliedBy,
+        List<PreviousEmployerTaxDataDTO> previousEmployers,
+        List<AnnualizationPeriodDTO> periods,
+        Bir2316CompensationItemsDTO bir2316Items,
+        AnnualizationTaxIdentityDTO taxIdentity,
+        AnnualizationReadinessDTO readiness) {
+}

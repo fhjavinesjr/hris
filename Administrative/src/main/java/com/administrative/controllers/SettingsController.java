@@ -1,6 +1,8 @@
 package com.administrative.controllers;
 
 import com.administrative.dtos.SettingsDTO;
+import com.administrative.dtos.AnnualizationEmployerIdentityDTO;
+import com.administrative.repositories.SettingsRepository;
 import com.administrative.services.SettingsService;
 import com.hris.common.dtos.MetadataResponse;
 import org.springframework.http.HttpStatus;
@@ -14,9 +16,20 @@ import java.util.List;
 public class SettingsController {
 
     private final SettingsService settingsService;
+    private final SettingsRepository settingsRepository;
 
-    public SettingsController(SettingsService settingsService) {
+    public SettingsController(SettingsService settingsService, SettingsRepository settingsRepository) {
         this.settingsService = settingsService;
+        this.settingsRepository = settingsRepository;
+    }
+
+    @GetMapping("/settings/annualization-identity")
+    public ResponseEntity<AnnualizationEmployerIdentityDTO> getAnnualizationIdentity() {
+        return settingsRepository.findFirstByOrderBySettingsIdDesc()
+                .map(settings -> ResponseEntity.ok(new AnnualizationEmployerIdentityDTO(
+                        settings.getCompanyName(), settings.getTinNo(), settings.getBirBranchCode(), settings.getRdoCode(),
+                        settings.getAddress(), settings.getZipCode())))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/settings/create")

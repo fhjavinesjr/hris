@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS personaldata
+    ADD COLUMN IF NOT EXISTS "rdoCode" VARCHAR(10);

@@ -24,6 +24,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 /**
  * Implements payroll adjustment logic.
@@ -117,6 +118,11 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
     @Override
     @Transactional
     public PayrollAdjustmentDTO saveAdjustment(PayrollAdjustmentDTO dto, String authHeader) {
+        return saveAdjustment(dto, authHeader, false);
+    }
+
+    private PayrollAdjustmentDTO saveAdjustment(PayrollAdjustmentDTO dto, String authHeader,
+            boolean replaceAnnualizationLine) {
         // ── Period lock guard ────────────────────────────────────────────────
         if (lockService.isPeriodLocked(dto.getSalaryPeriodKey())) {
             throw new IllegalStateException(
@@ -140,6 +146,9 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
         int nextVersion = 1;
         if (existingOpt.isPresent()) {
             PayrollAdjustmentHeader old = existingOpt.get();
+            if ("POSTED".equalsIgnoreCase(old.getStatus())) {
+                throw new IllegalStateException("A posted adjustment cannot be replaced.");
+            }
             nextVersion = old.getVersion() + 1;
             old.setStatus("SUPERSEDED");
             old.setUpdatedAt(LocalDateTime.now());
@@ -168,11 +177,19 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
 
         int idx = 0;
         List<PayrollAdjustmentLineDTO> inputLines = dto.getLines() != null ? dto.getLines() : Collections.emptyList();
+        PayrollAdjustmentLine protectedAnnualizationLine = existingOpt.stream()
+                .flatMap(existing -> existing.getLines().stream())
+                .filter(line -> "WTX_ANNUALIZATION".equalsIgnoreCase(line.getCode()))
+                .findFirst().orElse(null);
 
         // Only process non-auto-computed lines (auto lines are recomputed fresh each save)
         List<PayrollAdjustmentLineDTO> manualLines = inputLines.stream()
                 .filter(l -> !Boolean.TRUE.equals(l.getIsAutoComputed()))
+                .filter(l -> replaceAnnualizationLine || protectedAnnualizationLine == null
+                        || !"WTX_ANNUALIZATION".equalsIgnoreCase(l.getCode()))
                 .collect(Collectors.toList());
+
+        resolveEarningClassifications(manualLines, original, httpHeaders);
 
         for (PayrollAdjustmentLineDTO lineDTO : manualLines) {
             PayrollAdjustmentLine line = toEntity(lineDTO, header, idx++);
@@ -188,6 +205,12 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
                 // Rebase the original taxable so subsequent taxable earnings layer correctly
                 original = rebaseOriginal(original, lineDTO.getAmount(), cascades);
             }
+        }
+
+        if (protectedAnnualizationLine != null && !replaceAnnualizationLine) {
+            PayrollAdjustmentLineDTO protectedLine = toLineDTO(protectedAnnualizationLine);
+            protectedLine.setId(null);
+            header.getLines().add(toEntity(protectedLine, header, idx));
         }
 
         PayrollAdjustmentHeader saved = headerRepo.save(header);
@@ -215,6 +238,19 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
         if (!"PENDING".equalsIgnoreCase(header.getStatus())) {
             throw new IllegalStateException("Only PENDING adjustments can be posted.");
         }
+        List<String> unclassifiedEarnings = header.getLines().stream()
+                .filter(line -> "EARNING".equalsIgnoreCase(line.getType()))
+                .filter(line -> line.getBir2316ItemNo() == null
+                        || line.getBir2316ItemNo().isBlank())
+                .map(line -> line.getName() == null ? line.getCode() : line.getName())
+                .distinct()
+                .toList();
+        if (!unclassifiedEarnings.isEmpty()) {
+            throw new IllegalStateException(
+                    "BIR 2316 classification is missing for "
+                            + String.join(", ", unclassifiedEarnings)
+                            + ". Classify the Earning Type, then edit and save this adjustment before posting.");
+        }
 
         header.setStatus("POSTED");
         header.setPostedAt(LocalDateTime.now());
@@ -236,6 +272,13 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
                 .filter(h -> h.getLines().stream().anyMatch(l -> lineId.equals(l.getId())))
                 .findFirst()
                 .ifPresent(header -> {
+                    boolean annualizationLine = header.getLines().stream()
+                            .anyMatch(line -> lineId.equals(line.getId())
+                                    && "WTX_ANNUALIZATION".equalsIgnoreCase(line.getCode()));
+                    if (annualizationLine) {
+                        throw new IllegalStateException(
+                                "Annualization withholding lines cannot be removed from Payroll Adjustment.");
+                    }
                     // Remove the target line and any auto-computed lines associated with it
                     header.getLines().removeIf(l -> lineId.equals(l.getId()));
                     if (header.getLines().isEmpty()) {
@@ -276,6 +319,55 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
     @Override
     public long getPendingCountForPeriod(String salaryPeriodKey) {
         return headerRepo.countBySalaryPeriodKeyAndStatus(salaryPeriodKey, "PENDING");
+    }
+
+    @Override
+    @Transactional
+    public PayrollAdjustmentDTO createAnnualizationAdjustment(
+            String employeeNo, String employeeName, String salaryPeriodKey,
+            BigDecimal adjustmentAmount, int taxYear, int snapshotVersion,
+            String createdBy, String authHeader) {
+        if (adjustmentAmount == null || adjustmentAmount.signum() == 0) {
+            throw new IllegalArgumentException("This annualization has no payroll adjustment to apply.");
+        }
+
+        PayrollAdjustmentDTO target = new PayrollAdjustmentDTO();
+        target.setEmployeeNo(employeeNo);
+        target.setEmployeeName(employeeName);
+        target.setSalaryPeriodKey(salaryPeriodKey);
+        target.setStatus("PENDING");
+        target.setCreatedBy(createdBy);
+
+        List<PayrollAdjustmentLineDTO> lines = new ArrayList<>();
+        Optional<PayrollAdjustmentDTO> existing = findAdjustment(employeeNo, salaryPeriodKey);
+        if (existing.isPresent()) {
+            PayrollAdjustmentDTO current = existing.get();
+            if ("POSTED".equalsIgnoreCase(current.getStatus())) {
+                throw new IllegalStateException(
+                        "The selected salary period already has a posted adjustment for this employee. " +
+                        "Choose another open computed period.");
+            }
+            target.setAuthorityNo(current.getAuthorityNo());
+            target.setReason(current.getReason());
+            if (current.getLines() != null) {
+                current.getLines().stream()
+                        .filter(line -> !Boolean.TRUE.equals(line.getIsAutoComputed()))
+                        .filter(line -> !"WTX_ANNUALIZATION".equalsIgnoreCase(line.getCode()))
+                        .forEach(lines::add);
+            }
+        }
+
+        String reference = snapshotVersion > 0
+                ? "Annualization TY " + taxYear + " v" + snapshotVersion
+                : "Separation final-pay annualization TY " + taxYear;
+        target.setAuthorityNo(appendReference(target.getAuthorityNo(), reference, 200));
+        target.setReason(appendReference(target.getReason(),
+                "Withholding-tax reconciliation from " + reference, 500));
+        lines.add(new PayrollAdjustmentLineDTO(
+                "DEDUCTION", "WTX_ANNUALIZATION", "Annual withholding tax adjustment",
+                adjustmentAmount.doubleValue(), null, false));
+        target.setLines(lines);
+        return saveAdjustment(target, authHeader, true);
     }
 
     @Override
@@ -507,6 +599,13 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
         return Math.round(value * 100.0) / 100.0;
     }
 
+    private String appendReference(String current, String addition, int maxLength) {
+        String combined = current == null || current.isBlank()
+                ? addition
+                : current.trim() + "; " + addition;
+        return combined.length() <= maxLength ? combined : combined.substring(0, maxLength);
+    }
+
     private HttpHeaders buildAuthHeaders(String authHeader) {
         HttpHeaders h = new HttpHeaders();
         if (authHeader != null && !authHeader.isBlank()) {
@@ -554,6 +653,7 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
         dto.setName(l.getName());
         dto.setAmount(l.getAmount());
         dto.setIsTaxable(l.getIsTaxable());
+        dto.setBir2316ItemNo(l.getBir2316ItemNo());
         dto.setIsAutoComputed(l.getIsAutoComputed());
         return dto;
     }
@@ -568,10 +668,109 @@ public class PayrollAdjustmentServiceImpl implements PayrollAdjustmentService {
         entity.setName(dto.getName());
         entity.setAmount(dto.getAmount() != null ? dto.getAmount() : 0.0);
         entity.setIsTaxable(dto.getIsTaxable());
+        entity.setBir2316ItemNo("EARNING".equalsIgnoreCase(dto.getType())
+                ? normalizeBirItem(dto.getBir2316ItemNo()) : null);
         entity.setIsAutoComputed(Boolean.TRUE.equals(dto.getIsAutoComputed()));
         entity.setIndexNo(indexNo);
         return entity;
     }
+
+    private void resolveEarningClassifications(
+            List<PayrollAdjustmentLineDTO> lines,
+            PayrollDetail original,
+            HttpHeaders headers) {
+        Map<String, EarningClassification> sources = new HashMap<>();
+        for (var earning : original.getEarnings()) {
+            EarningClassification source = new EarningClassification(
+                    Boolean.TRUE.equals(earning.getIsTaxable()),
+                    normalizeBirItem(earning.getBir2316ItemNo()));
+            putClassification(sources, earning.getEarningCode(), source);
+            putClassification(sources, earning.getEarningName(), source);
+        }
+
+        List<PayrollAdjustmentLineDTO> unresolved = lines.stream()
+                .filter(line -> "EARNING".equalsIgnoreCase(line.getType()))
+                .filter(line -> findClassification(sources, line) == null)
+                .toList();
+        if (!unresolved.isEmpty()) {
+            loadConfiguredEarningClassifications(headers).forEach(
+                    (key, value) -> sources.putIfAbsent(key, value));
+        }
+
+        for (PayrollAdjustmentLineDTO line : lines) {
+            if (!"EARNING".equalsIgnoreCase(line.getType())) {
+                line.setBir2316ItemNo(null);
+                continue;
+            }
+            EarningClassification source = findClassification(sources, line);
+            if (source == null) {
+                throw new IllegalArgumentException(
+                        "Earning adjustment '" + line.getName()
+                                + "' must use an existing payroll earning or configured Earning Type.");
+            }
+            line.setIsTaxable(source.taxable());
+            line.setBir2316ItemNo(source.bir2316ItemNo());
+        }
+    }
+
+    private Map<String, EarningClassification> loadConfiguredEarningClassifications(
+            HttpHeaders headers) {
+        try {
+            ResponseEntity<List<EarningTypeDefinition>> response = restTemplate.exchange(
+                    currentAdministrativeUrl() + "/api/earningType/get-all",
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    new ParameterizedTypeReference<List<EarningTypeDefinition>>() {});
+            Map<String, EarningClassification> values = new HashMap<>();
+            if (response.getBody() == null) return values;
+            for (EarningTypeDefinition definition : response.getBody()) {
+                EarningClassification source = new EarningClassification(
+                        Boolean.TRUE.equals(definition.taxable()),
+                        normalizeBirItem(definition.bir2316ItemNo()));
+                putClassification(values, definition.accountingCode(), source);
+                putClassification(values, definition.name(), source);
+            }
+            return values;
+        } catch (Exception ex) {
+            log.warn("PayrollAdjustment: Failed to load earning classifications: {}", ex.getMessage());
+            throw new IllegalStateException(
+                    "Earning classifications are unavailable. Please try saving the adjustment again.");
+        }
+    }
+
+    private EarningClassification findClassification(
+            Map<String, EarningClassification> sources,
+            PayrollAdjustmentLineDTO line) {
+        EarningClassification byCode = sources.get(normalizeClassificationKey(line.getCode()));
+        return byCode != null ? byCode : sources.get(normalizeClassificationKey(line.getName()));
+    }
+
+    private void putClassification(
+            Map<String, EarningClassification> target,
+            String key,
+            EarningClassification value) {
+        String normalized = normalizeClassificationKey(key);
+        if (normalized != null) target.putIfAbsent(normalized, value);
+    }
+
+    private String normalizeClassificationKey(String value) {
+        return value == null || value.isBlank()
+                ? null : value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeBirItem(String value) {
+        return value == null || value.isBlank()
+                ? null : value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private record EarningClassification(boolean taxable, String bir2316ItemNo) {}
+
+    record EarningTypeDefinition(
+            Long earningTypeId,
+            String accountingCode,
+            String name,
+            Boolean taxable,
+            String bir2316ItemNo) {}
 
     private String currentAdministrativeUrl() {
         return systemConfigResolver.resolveApiUrl(

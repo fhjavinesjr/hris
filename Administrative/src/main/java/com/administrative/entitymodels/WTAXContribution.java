@@ -16,6 +16,10 @@ public class WTAXContribution implements Serializable {
     @Column(name = "salaryType")
     private String salaryType;
 
+    /** Required for Annual brackets; null for regular payroll-period tables. */
+    @Column(name = "taxYear")
+    private Integer taxYear;
+
     /** Minimum taxable income for this bracket (inclusive). e.g. "10417.00" */
     @Column(name = "incomeFrom")
     private String incomeFrom;
@@ -40,7 +44,7 @@ public class WTAXContribution implements Serializable {
     }
 
     public WTAXContribution(Long wTaxContributionId, String salaryType, String incomeFrom, String incomeTo,
-                             String fixedAmount, String percentageOverBase, String taxAmount) {
+                             String fixedAmount, String percentageOverBase, String taxAmount, Integer taxYear) {
         this.wTaxContributionId = wTaxContributionId;
         this.salaryType = salaryType;
         this.incomeFrom = incomeFrom;
@@ -48,6 +52,7 @@ public class WTAXContribution implements Serializable {
         this.fixedAmount = fixedAmount;
         this.percentageOverBase = percentageOverBase;
         this.taxAmount = taxAmount;
+        this.taxYear = taxYear;
     }
 
     public Long getwTaxContributionId() {
@@ -65,6 +70,9 @@ public class WTAXContribution implements Serializable {
     public void setSalaryType(String salaryType) {
         this.salaryType = salaryType;
     }
+
+    public Integer getTaxYear() { return taxYear; }
+    public void setTaxYear(Integer taxYear) { this.taxYear = taxYear; }
 
     public String getIncomeFrom() { return incomeFrom; }
     public void setIncomeFrom(String incomeFrom) { this.incomeFrom = incomeFrom; }

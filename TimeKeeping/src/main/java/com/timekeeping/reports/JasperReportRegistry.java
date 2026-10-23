@@ -16,7 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class JasperReportRegistry {
     private static final List<String> REQUIRED_TEMPLATES = List.of(
             "reports/dtrNew.jrxml",
-            "reports/works_schedule.jrxml"
+            "reports/works_schedule.jrxml",
+            "reports/monthly_report_attendance.jrxml",
+            "reports/attendance_summary.jrxml",
+            "reports/incomplete_dtr_review.jrxml"
     );
     private static final Map<String, byte[]> RESOURCE_BYTES = new ConcurrentHashMap<>();
     private static final Map<String, JasperReport> COMPILED_REPORTS = new ConcurrentHashMap<>();

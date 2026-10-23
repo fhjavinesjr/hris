@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ReportDataLoaderTest {
 
     @Test
-    void dtrRowsPreserveOvernightCorrectionPassSlipRestDayLeaveAndAbsentBehavior() {
+    void dtrRowsPreserveOvernightCorrectionPassSlipRestDayLeaveAndUnknownDayBehavior() {
         JdbcTemplate jdbc = inMemoryJdbc("dtr-report");
         createDtrSchema(jdbc);
 
@@ -105,7 +105,8 @@ class ReportDataLoaderTest {
 
         assertThat(onlyRow(rows, "2026-07-05").getRemarks()).isEqualTo("REST DAY");
         assertThat(onlyRow(rows, "2026-07-06").getRemarks()).isEqualTo("Vacation Leave");
-        assertThat(onlyRow(rows, "2026-07-07").getAbsentMin()).isEqualTo(480);
+        assertThat(onlyRow(rows, "2026-07-07").getAbsentMin()).isZero();
+        assertThat(onlyRow(rows, "2026-07-07").getRemarks()).isEqualTo("NO SCHEDULE / NO DTR - REVIEW");
     }
 
     @Test
@@ -243,7 +244,7 @@ class ReportDataLoaderTest {
         return new JdbcTemplate(dataSource);
     }
 
-    private static void createDtrSchema(JdbcTemplate jdbc) {
+    static void createDtrSchema(JdbcTemplate jdbc) {
         jdbc.execute("CREATE TABLE employee (employeeId BIGINT PRIMARY KEY, employeeNo VARCHAR(100), firstname VARCHAR(100), lastname VARCHAR(100))");
         jdbc.execute("CREATE TABLE personaldata (employeeId BIGINT, firstname VARCHAR(100), middlename VARCHAR(100), surname VARCHAR(100))");
         jdbc.execute("CREATE TABLE dtr_daily (dtr_daily_id BIGINT PRIMARY KEY, employee_id VARCHAR(100), work_date DATE, total_work_minutes INT, total_late_minutes INT, total_undertime_minutes INT, total_overtime_minutes INT, attendance_status VARCHAR(50))");

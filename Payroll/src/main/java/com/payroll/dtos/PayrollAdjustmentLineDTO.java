@@ -17,6 +17,7 @@ public class PayrollAdjustmentLineDTO {
     private String name;           // display name
     private Double amount;
     private Boolean isTaxable;     // only meaningful for EARNING type
+    private String bir2316ItemNo;  // authoritative snapshot for EARNING type
     private Boolean isAutoComputed; // true = system-generated cascade line
 
     public PayrollAdjustmentLineDTO() {}
@@ -44,6 +45,8 @@ public class PayrollAdjustmentLineDTO {
     public void setAmount(Double amount) { this.amount = amount; }
     public Boolean getIsTaxable() { return isTaxable; }
     public void setIsTaxable(Boolean isTaxable) { this.isTaxable = isTaxable; }
+    public String getBir2316ItemNo() { return bir2316ItemNo; }
+    public void setBir2316ItemNo(String bir2316ItemNo) { this.bir2316ItemNo = bir2316ItemNo; }
     public Boolean getIsAutoComputed() { return isAutoComputed; }
     public void setIsAutoComputed(Boolean isAutoComputed) { this.isAutoComputed = isAutoComputed; }
 }

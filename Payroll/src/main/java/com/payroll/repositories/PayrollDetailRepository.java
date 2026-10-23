@@ -1,6 +1,7 @@
 package com.payroll.repositories;
 
 import com.payroll.entitymodels.PayrollDetail;
+import com.payroll.entitymodels.PayrollStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +19,24 @@ public interface PayrollDetailRepository extends JpaRepository<PayrollDetail, Lo
     Optional<PayrollDetail> findByEmployeeNoAndSalaryPeriodKey(String employeeNo, String salaryPeriodKey);
 
     List<PayrollDetail> findBySalaryPeriodKey(String salaryPeriodKey);
+
+    List<PayrollDetail> findByEmployeeNoIgnoreCaseAndSalaryDateBetweenOrderBySalaryDateDesc(
+            String employeeNo, LocalDate fromDate, LocalDate toDate);
+
+    @Query("""
+            SELECT pd FROM PayrollDetail pd
+            WHERE pd.salaryDate BETWEEN :fromDate AND :toDate
+              AND pd.status <> :cancelledStatus
+              AND EXISTS (
+                  SELECT pl.salaryPeriodKey FROM PayrollPeriodLock pl
+                  WHERE pl.salaryPeriodKey = pd.salaryPeriodKey
+              )
+            ORDER BY pd.employeeNo, pd.salaryDate, pd.salaryPeriodKey
+            """)
+    List<PayrollDetail> findFinalizedForAnnualization(
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate,
+            @Param("cancelledStatus") PayrollStatus cancelledStatus);
 
     /** Delete child earnings before deleting parent (FK constraint). */
     @Modifying

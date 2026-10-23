@@ -745,13 +745,43 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "            WHERE ws2.employeeId = d.employee_id " +
                 "            AND CAST(ws2.wsDateTime AS DATE) = d.work_date " +
                 "        ) " +
+                "), CompletedManual AS ( " +
+                "    SELECT dtr_daily_id FROM dtr_segment " +
+                "    WHERE UPPER(source_type) = 'MANUAL' " +
+                "        AND time_out IS NOT NULL AND work_minutes > 0 " +
+                "    GROUP BY dtr_daily_id " +
+                "), PlannedShifts AS ( " +
+                "    SELECT employeeId, CAST(wsDateTime AS DATE) AS workDate, COUNT(*) AS shiftCount " +
+                "    FROM work_schedule " +
+                "    WHERE LOWER(CAST(isDayOff AS VARCHAR(5))) " +
+                "        NOT IN ('1', 'true', 't', 'yes', 'y') " +
+                "    GROUP BY employeeId, CAST(wsDateTime AS DATE) " +
+                "), SegmentLate AS ( " +
+                "    SELECT d.employee_id, d.work_date, " +
+                "        SUM(CASE WHEN UPPER(s.source_type) = 'ADMS' " +
+                "            AND s.time_out IS NULL AND COALESCE(s.work_minutes, 0) = 0 " +
+                "            AND completed.dtr_daily_id IS NOT NULL " +
+                "            AND planned.shiftCount = 1 " +
+                "            THEN 0 ELSE COALESCE(s.late_minutes, 0) END) AS lateMinutes " +
+                "    FROM dtr_daily d " +
+                "    INNER JOIN dtr_segment s ON s.dtr_daily_id = d.dtr_daily_id " +
+                "    LEFT JOIN CompletedManual completed ON completed.dtr_daily_id = d.dtr_daily_id " +
+                "    LEFT JOIN PlannedShifts planned " +
+                "        ON planned.employeeId = d.employee_id AND planned.workDate = d.work_date " +
+                "    WHERE d.work_date BETWEEN ? AND ? " +
+                "        AND completed.dtr_daily_id IS NOT NULL AND planned.shiftCount = 1 " +
+                "        AND EXISTS (SELECT 1 FROM dtr_segment pending " +
+                "            WHERE pending.dtr_daily_id = d.dtr_daily_id " +
+                "            AND UPPER(pending.source_type) = 'ADMS' " +
+                "            AND pending.time_out IS NULL AND COALESCE(pending.work_minutes, 0) = 0) " +
+                "    GROUP BY d.employee_id, d.work_date " +
                 ") " +
                 "SELECT " +
                 "    ad.employeeNo, " +
                 "    ad.dtrDate, " +
                 "    ad.status, " +
                 "    ad.workMinutes, " +
-                "    ad.lateMinutes, " +
+                "    COALESCE(segmentLate.lateMinutes, ad.lateMinutes) AS lateMinutes, " +
                 "    ad.undertimeMinutes, " +
                 "    ad.overtimeMinutes, " +
                 "    ad.isRestDay, " +
@@ -768,6 +798,9 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                 "    CASE WHEN cto.ctoId IS NOT NULL THEN 1 ELSE 0 END AS hasApprovedCto, " +
                 "    CASE WHEN ld.learningAndDevelopmentId IS NOT NULL THEN 1 ELSE 0 END AS hasTraining " +
                 "FROM AllDates ad " +
+                "LEFT JOIN SegmentLate segmentLate " +
+                "    ON segmentLate.employee_id = ad.employeeId " +
+                "    AND segmentLate.work_date = ad.dtrDate " +
                 "LEFT JOIN official_engagement_application ob " +
                 "    ON ob.employeeId = ad.employeeId " +
                 "    AND ob.status = 'Approved' " +
@@ -801,6 +834,8 @@ public class DTRDailyServiceImpl implements DTRDailyService {
                     java.sql.Date.valueOf(from), 
                     java.sql.Date.valueOf(to),
                     java.sql.Date.valueOf(from), 
+                    java.sql.Date.valueOf(to),
+                    java.sql.Date.valueOf(from),
                     java.sql.Date.valueOf(to)
                 },
                 (rs, rowNum) -> {

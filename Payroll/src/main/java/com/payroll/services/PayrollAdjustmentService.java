@@ -4,6 +4,7 @@ import com.payroll.dtos.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.math.BigDecimal;
 
 public interface PayrollAdjustmentService {
 
@@ -60,4 +61,9 @@ public interface PayrollAdjustmentService {
      * Returns how many active headers are still PENDING for a salary period.
      */
     long getPendingCountForPeriod(String salaryPeriodKey);
+
+    PayrollAdjustmentDTO createAnnualizationAdjustment(
+            String employeeNo, String employeeName, String salaryPeriodKey,
+            BigDecimal adjustmentAmount, int taxYear, int snapshotVersion,
+            String createdBy, String authHeader);
 }

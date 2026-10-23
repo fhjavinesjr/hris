@@ -25,6 +25,7 @@ public class SettingsImpl implements SettingsService {
     @Transactional
     @Override
     public SettingsDTO createSettings(SettingsDTO settingsDTO) throws Exception {
+        validateZipCode(settingsDTO.getZipCode());
         try {
             Settings settings = new Settings(settingsDTO.getSettingsId(), settingsDTO.getSystemStartDate(), settingsDTO.getCompanyName()
                 ,settingsDTO.getShortName(), settingsDTO.getCity(), settingsDTO.getAddress()
@@ -32,6 +33,8 @@ public class SettingsImpl implements SettingsService {
                 ,settingsDTO.getEmailAddress(), settingsDTO.getTinNo(), settingsDTO.getPagIbigNo()
                 ,settingsDTO.getPhilHealthNo(), settingsDTO.getHospitalAgency(), settingsDTO.getLeftHeaderLogo()
                 ,settingsDTO.getMainLogo(), settingsDTO.getRightHeaderLogo());
+            settings.setRdoCode(settingsDTO.getRdoCode());
+            settings.setBirBranchCode(settingsDTO.getBirBranchCode());
             settingsRepository.save(settings);
 
             return settingsDTO;
@@ -59,6 +62,8 @@ public class SettingsImpl implements SettingsService {
             settingsDTO.setTelMobileNo(settings.getTelMobileNo());
             settingsDTO.setEmailAddress(settings.getEmailAddress());
             settingsDTO.setTinNo(settings.getTinNo());
+            settingsDTO.setRdoCode(settings.getRdoCode());
+            settingsDTO.setBirBranchCode(settings.getBirBranchCode());
             settingsDTO.setPagIbigNo(settings.getPagIbigNo());
             settingsDTO.setPhilHealthNo(settings.getPhilHealthNo());
             settingsDTO.setHospitalAgency(settings.getHospitalAgency());
@@ -80,6 +85,7 @@ public class SettingsImpl implements SettingsService {
     @Transactional
     @Override
     public SettingsDTO updateSettings(Long settingsId, SettingsDTO settingsDTO) throws Exception {
+        validateZipCode(settingsDTO.getZipCode());
         try {
             Settings settings = settingsRepository.findById(settingsId).orElseThrow(() -> new RuntimeException("Settings not found"));
             if(settings != null) {
@@ -93,6 +99,8 @@ public class SettingsImpl implements SettingsService {
                 settings.setTelMobileNo(settingsDTO.getTelMobileNo());
                 settings.setEmailAddress(settingsDTO.getEmailAddress());
                 settings.setTinNo(settingsDTO.getTinNo());
+                settings.setRdoCode(settingsDTO.getRdoCode());
+                settings.setBirBranchCode(settingsDTO.getBirBranchCode());
                 settings.setPagIbigNo(settingsDTO.getPagIbigNo());
                 settings.setPhilHealthNo(settingsDTO.getPhilHealthNo());
                 settings.setHospitalAgency(settingsDTO.getHospitalAgency());
@@ -109,6 +117,12 @@ public class SettingsImpl implements SettingsService {
         }
 
         return null;
+    }
+
+    private void validateZipCode(String zipCode) {
+        if (zipCode == null || !zipCode.trim().matches("[0-9]{4}")) {
+            throw new IllegalArgumentException("ZIP Code must be four digits.");
+        }
     }
 
     @Transactional

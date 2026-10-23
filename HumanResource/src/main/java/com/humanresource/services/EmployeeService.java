@@ -3,6 +3,7 @@ package com.humanresource.services;
 import com.humanresource.dtos.EmployeeDTO;
 import com.humanresource.dtos.EmployeePayrollInfoResponse;
 import com.humanresource.dtos.EmployeeSecurityStatusDTO;
+import com.humanresource.dtos.EmployeeAnnualizationIdentityDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,8 @@ public interface EmployeeService {
     EmployeeDTO getEmployeeDisplayById(Long employeeId) throws Exception;
 
     List<EmployeeDTO> getAllEmployeeNoAndName() throws Exception;
+
+    List<EmployeeAnnualizationIdentityDTO> getAnnualizationIdentities(int taxYear);
 
     EmployeeDTO updateEmployeePassword(Long employeeId, Map<String, Object> updates) throws Exception;
 

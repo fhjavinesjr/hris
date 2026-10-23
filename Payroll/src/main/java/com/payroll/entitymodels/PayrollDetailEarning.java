@@ -34,6 +34,9 @@ public class PayrollDetailEarning implements Serializable {
     /** Whether this earning is included in the taxable income computation. */
     private Boolean isTaxable = true;
 
+    @Column(length = 4)
+    private String bir2316ItemNo;
+
     /** Sort order for payslip display. */
     private Integer indexNo = 0;
 
@@ -61,6 +64,8 @@ public class PayrollDetailEarning implements Serializable {
     public void setAmount(Double amount) { this.amount = amount; }
     public Boolean getIsTaxable() { return isTaxable; }
     public void setIsTaxable(Boolean isTaxable) { this.isTaxable = isTaxable; }
+    public String getBir2316ItemNo() { return bir2316ItemNo; }
+    public void setBir2316ItemNo(String bir2316ItemNo) { this.bir2316ItemNo = bir2316ItemNo; }
     public Integer getIndexNo() { return indexNo; }
     public void setIndexNo(Integer indexNo) { this.indexNo = indexNo; }
 }

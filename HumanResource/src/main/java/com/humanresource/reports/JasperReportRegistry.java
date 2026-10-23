@@ -21,6 +21,7 @@ public class JasperReportRegistry {
             "reports/csc_assumption_to_duty_2025.jrxml",
             "reports/csc_oath_of_office_2025.jrxml",
             "reports/leave_card.jrxml",
+            "reports/approved_leave_summary.jrxml",
             "reports/leave_form_2020.jrxml",
             "reports/onboarding_completion_record.jrxml",
             "reports/OvertimeAuthorization.jrxml",

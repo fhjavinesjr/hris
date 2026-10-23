@@ -47,15 +47,29 @@ class EffectiveAuthorizationServiceImplTest {
     }
 
     @Test
-    void establishedAdministratorsRemainUnrestricted() {
+    void onlyBuiltInSuperAdminIsUnrestricted() {
         PermissionRuleset administratorRuleset = new PermissionRuleset("Agency Administrator", true, "{}");
         when(repository.findByPermissionNameIgnoreCase("Agency Administrator"))
                 .thenReturn(Optional.of(administratorRuleset));
 
         assertThat(service.resolve("admin", "99", "primehr.competency").administrator()).isTrue();
-        assertThat(service.resolve("001", "ROLE_1", "primehr.competency").administrator()).isTrue();
-        assertThat(service.resolve("001", "Agency Administrator", "primehr.competency").administrator()).isTrue();
-        assertThat(service.resolve("001", "Agency Administrator", "primehr.competency").canPublish()).isTrue();
+        assertThat(service.resolve("001", "ROLE_1", "primehr.competency").administrator()).isFalse();
+        assertThat(service.resolve("001", "Agency Administrator", "primehr.competency").administrator()).isFalse();
+        assertThat(service.resolve("001", "Agency Administrator", "primehr.competency").canPublish()).isFalse();
+    }
+
+    @Test
+    void leaveSummaryIsSupportedAndAgencyAdministratorNeedsExplicitPermission() {
+        PermissionRuleset ruleset = new PermissionRuleset("Agency Administrator", true,
+                "{\"hrm.reports.leaveSummary\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Agency Administrator"))
+                .thenReturn(Optional.of(ruleset));
+
+        var allowed = service.resolve("001", "Agency Administrator", "hrm.reports.leaveSummary");
+        assertThat(allowed.administrator()).isFalse();
+        assertThat(allowed.canAccess()).isTrue();
+        assertThat(allowed.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+        assertThat(service.resolve("admin", "99", "hrm.reports.leaveSummary").administrator()).isTrue();
     }
 
     @Test
@@ -398,5 +412,22 @@ class EffectiveAuthorizationServiceImplTest {
         assertThat(documents.canAdd()).isTrue();
         assertThat(documents.canEdit()).isFalse();
         assertThat(documents.canFinalize()).isTrue();
+    }
+
+    @Test
+    void payrollAnnualizationUsesItsConfiguredPermissions() {
+        PermissionRuleset ruleset = new PermissionRuleset("Payroll Officer", false,
+                "{\"payroll.annualization\":{\"canAccess\":true,\"canAdd\":true,"
+                        + "\"canEdit\":true,\"canDelete\":false,\"canFinalize\":true}}" );
+        when(repository.findByPermissionNameIgnoreCase("Payroll Officer"))
+                .thenReturn(Optional.of(ruleset));
+
+        var permission = service.resolve("001", "Payroll Officer", "payroll.annualization");
+
+        assertThat(permission.canAccess()).isTrue();
+        assertThat(permission.canAdd()).isTrue();
+        assertThat(permission.canEdit()).isTrue();
+        assertThat(permission.canDelete()).isFalse();
+        assertThat(permission.canFinalize()).isTrue();
     }
 }

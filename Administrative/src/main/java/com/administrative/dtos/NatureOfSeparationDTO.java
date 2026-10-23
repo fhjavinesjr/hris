@@ -7,6 +7,7 @@ public class NatureOfSeparationDTO implements Serializable {
     private Long natureOfSeparationId;
     private String code;
     private String nature;
+    private String birSeparationReasonCode;
 
     public NatureOfSeparationDTO() {
 
@@ -41,4 +42,7 @@ public class NatureOfSeparationDTO implements Serializable {
     public void setNature(String nature) {
         this.nature = nature;
     }
+
+    public String getBirSeparationReasonCode() { return birSeparationReasonCode; }
+    public void setBirSeparationReasonCode(String value) { birSeparationReasonCode = value; }
 }

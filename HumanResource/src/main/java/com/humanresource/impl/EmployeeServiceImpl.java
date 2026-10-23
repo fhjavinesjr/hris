@@ -9,7 +9,10 @@ import com.humanresource.dtos.EmployeeSecurityStatusDTO;
 import com.humanresource.entitymodels.Employee;
 import com.humanresource.entitymodels.PersonalData;
 import com.humanresource.repositories.EmployeeRepository;
+import com.humanresource.repositories.EmployeeAppointmentRepository;
 import com.humanresource.repositories.PersonalDataRepository;
+import com.humanresource.repositories.SeparationRepository;
+import com.humanresource.dtos.EmployeeAnnualizationIdentityDTO;
 import com.humanresource.services.EmployeeService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -21,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
@@ -47,16 +52,23 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final PersonalDataRepository personalDataRepository;
 
+    private final EmployeeAppointmentRepository employeeAppointmentRepository;
+    private final SeparationRepository separationRepository;
+
     private static final DateTimeFormatter DEFAULT_PASSWORD_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yyyy");
 
     public EmployeeServiceImpl(EmployeeRepository employeeRepository, ObjectMapper objectMapper, PasswordEncoder passwordEncoder,
-                               JwtUtil jwtUtil, JdbcTemplate jdbc, PersonalDataRepository personalDataRepository) {
+                               JwtUtil jwtUtil, JdbcTemplate jdbc, PersonalDataRepository personalDataRepository,
+                               EmployeeAppointmentRepository employeeAppointmentRepository,
+                               SeparationRepository separationRepository) {
         this.employeeRepository = employeeRepository;
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.jdbc = jdbc;
         this.personalDataRepository = personalDataRepository;
+        this.employeeAppointmentRepository = employeeAppointmentRepository;
+        this.separationRepository = separationRepository;
     }
 
     @Transactional
@@ -249,6 +261,93 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
 
         return employeeDisplays;
+    }
+
+    @Override
+    public List<EmployeeAnnualizationIdentityDTO> getAnnualizationIdentities(int taxYear) {
+        if (taxYear < 1900 || taxYear > 9999) {
+            throw new IllegalArgumentException("A valid four-digit tax year is required.");
+        }
+        LocalDate yearStart = LocalDate.of(taxYear, 1, 1);
+        LocalDate yearEnd = LocalDate.of(taxYear, 12, 31);
+        Map<Long, com.humanresource.entitymodels.PersonalData> personalDataByEmployee =
+                personalDataRepository.findAll().stream().collect(
+                        java.util.stream.Collectors.toMap(
+                                com.humanresource.entitymodels.PersonalData::getEmployeeId,
+                                value -> value,
+                                (first, ignored) -> first));
+        Map<Long, List<com.humanresource.entitymodels.EmployeeAppointment>> appointmentsByEmployee =
+                employeeAppointmentRepository.findAll().stream().collect(
+                        java.util.stream.Collectors.groupingBy(
+                                com.humanresource.entitymodels.EmployeeAppointment::getEmployeeId));
+        Map<Long, List<com.humanresource.entitymodels.Separation>> separationsByEmployee =
+                separationRepository.findAll().stream().collect(
+                        java.util.stream.Collectors.groupingBy(
+                                com.humanresource.entitymodels.Separation::getEmployeeId));
+        return employeeRepository.findAll().stream().map(employee -> {
+            var personalData = personalDataByEmployee.get(employee.getEmployeeId());
+            List<com.humanresource.entitymodels.EmployeeAppointment> appointments =
+                    appointmentsByEmployee.getOrDefault(employee.getEmployeeId(), List.of());
+            LocalDate firstAssumption = appointments.stream()
+                    .map(com.humanresource.entitymodels.EmployeeAppointment::getAssumptionToDutyDate)
+                    .filter(Objects::nonNull)
+                    .map(LocalDateTime::toLocalDate)
+                    .filter(date -> !date.isAfter(yearEnd))
+                    .min(LocalDate::compareTo)
+                    .orElse(null);
+            LocalDate employmentFrom = firstAssumption == null ? null
+                    : firstAssumption.isBefore(yearStart) ? yearStart : firstAssumption;
+            var effectiveSeparation = separationsByEmployee
+                    .getOrDefault(employee.getEmployeeId(), List.of()).stream()
+                    .filter(value -> value.getSeparationDate() != null)
+                    .filter(value -> !value.getSeparationDate().toLocalDate().isBefore(yearStart)
+                            && !value.getSeparationDate().toLocalDate().isAfter(yearEnd))
+                    .min(java.util.Comparator.comparing(
+                            com.humanresource.entitymodels.Separation::getSeparationDate))
+                    .orElse(null);
+            LocalDate employmentTo = effectiveSeparation == null
+                    ? firstAssumption == null ? null : yearEnd
+                    : effectiveSeparation.getSeparationDate().toLocalDate();
+            var effectiveAppointment = appointments.stream()
+                    .filter(value -> value.getAssumptionToDutyDate() != null)
+                    .filter(value -> employmentTo != null
+                            && !value.getAssumptionToDutyDate().toLocalDate().isAfter(employmentTo))
+                    .max(java.util.Comparator.comparing(
+                            com.humanresource.entitymodels.EmployeeAppointment::getAssumptionToDutyDate))
+                    .orElse(null);
+            return new EmployeeAnnualizationIdentityDTO(
+                    employee.getEmployeeNo(),
+                    personalData == null ? null : personalData.getTinNo(),
+                    personalData == null ? null : personalData.getRdoCode(),
+                    personalData == null ? null : personalData.getBirBranchCode(),
+                    personalData == null ? null : personalData.getBirRegionCode(),
+                    personalData == null ? null
+                            : firstNonBlank(personalData.getPermAddress(), personalData.getResAddress()),
+                    personalData == null ? null
+                            : firstNonBlank(personalData.getPermZip(), personalData.getResZip()),
+                    personalData == null ? null : personalData.getResAddress(),
+                    personalData == null ? null : personalData.getResZip(),
+                    personalData == null || personalData.getDob() == null
+                            ? null : personalData.getDob().toLocalDate(),
+                    personalData == null ? null
+                            : firstNonBlank(personalData.getTelNo(), personalData.getMobileNo()),
+                    effectiveAppointment == null || effectiveAppointment.getJobPositionId() == null
+                            ? null : effectiveAppointment.getJobPositionId().longValue(),
+                    personalData == null ? null : personalData.getSurname(),
+                    personalData == null ? null : personalData.getFirstname(),
+                    personalData == null ? null : personalData.getMiddlename(),
+                    personalData == null ? null : personalData.getExtname(),
+                    personalData == null ? null : personalData.getCitizenship(),
+                    effectiveAppointment == null || effectiveAppointment.getNatureOfAppointmentId() == null
+                            ? null : effectiveAppointment.getNatureOfAppointmentId().longValue(),
+                    effectiveSeparation == null ? null : effectiveSeparation.getNatureOfSeparationId(),
+                    employmentFrom,
+                    employmentTo);
+        }).toList();
+    }
+
+    private String firstNonBlank(String preferred, String fallback) {
+        return preferred != null && !preferred.isBlank() ? preferred : fallback;
     }
 
     @Override

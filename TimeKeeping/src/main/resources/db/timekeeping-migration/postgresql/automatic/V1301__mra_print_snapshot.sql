@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS mra_print_day (
+    run_id VARCHAR(36) NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL,
+    employee_id BIGINT NOT NULL,
+    employee_no VARCHAR(100) NOT NULL,
+    employee_name VARCHAR(255) NOT NULL,
+    business_unit_id BIGINT NOT NULL,
+    business_unit VARCHAR(255) NOT NULL,
+    work_date DATE NOT NULL,
+    attendance_status VARCHAR(100) NOT NULL,
+    leave_type VARCHAR(100),
+    work_minutes INTEGER NOT NULL,
+    late_minutes INTEGER NOT NULL,
+    undertime_minutes INTEGER NOT NULL,
+    overtime_minutes INTEGER NOT NULL,
+    absent_minutes INTEGER NOT NULL,
+    overtime_approved INTEGER NOT NULL,
+    remarks VARCHAR(1000),
+    PRIMARY KEY (run_id, employee_id, business_unit_id, work_date)
+);

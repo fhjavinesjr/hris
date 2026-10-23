@@ -44,6 +44,9 @@ public class PersonalDataDTO implements Serializable {
     private String philhealthNo;
     private String sssNo;
     private String tinNo;
+    private String rdoCode;
+    private String birRegionCode;
+    private String birBranchCode;
     private String agencyEmpNo;
     private String citizenship;
     private String resAddress;
@@ -345,6 +348,22 @@ public class PersonalDataDTO implements Serializable {
     public void setTinNo(String tinNo) {
         this.tinNo = tinNo;
     }
+
+    public String getRdoCode() {
+        return rdoCode;
+    }
+
+    public void setRdoCode(String rdoCode) {
+        this.rdoCode = rdoCode;
+    }
+
+    public String getBirRegionCode() { return birRegionCode; }
+
+    public void setBirRegionCode(String birRegionCode) { this.birRegionCode = birRegionCode; }
+
+    public String getBirBranchCode() { return birBranchCode; }
+
+    public void setBirBranchCode(String birBranchCode) { this.birBranchCode = birBranchCode; }
 
     public String getAgencyEmpNo() {
         return agencyEmpNo;
