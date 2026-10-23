@@ -1,0 +1,15 @@
+package com.primehr.performancemanagement.api;
+import com.primehr.performancemanagement.domain.PerformanceRatingAssessment;import jakarta.validation.Valid;import jakarta.validation.constraints.*;import java.math.BigDecimal;import java.time.*;import java.util.*;
+public final class PerformanceRatingDtos{private PerformanceRatingDtos(){}
+ public record OpenCaseInput(@NotNull Long monitoringRecordVersion,@NotBlank@Size(max=100)String idempotencyKey,boolean overrideWindow,@Size(max=2000)String reason){}
+ public record DimensionActualInput(@NotBlank String dimensionId,BigDecimal actualValue,String manualBandId,@Size(max=2000)String narrative){}
+ public record ItemActualInput(@NotBlank String commitmentItemId,@NotEmpty List<@Valid DimensionActualInput>dimensions){}
+ public record AssessmentInput(Long recordVersion,@NotNull PerformanceRatingAssessment.Type type,@Size(max=4000)String summary,@NotEmpty List<@Valid ItemActualInput>items,@NotBlank@Size(max=100)String idempotencyKey){}
+ public record AssessmentEdit(@NotNull Long recordVersion,@Size(max=4000)String summary,@NotEmpty List<@Valid ItemActualInput>items){}
+ public record AssessmentAction(@NotNull Long recordVersion,@NotBlank@Size(max=100)String idempotencyKey,@Size(max=2000)String reason,boolean overrideWindow){}
+ public record SourceItemResponse(String id,String commitmentItemId,String commitmentSectionId,String indicatorVersionId,String monitoringUpdateId,String itemLabel,String sectionCode,BigDecimal sectionWeight,BigDecimal itemWeight,LocalDate reportingDate,String accomplishmentNarrative,BigDecimal accomplishedValue,String evidenceFingerprint,int displayOrder){}
+ public record DimensionResultResponse(String id,String dimensionId,String dimensionCode,String dimensionType,BigDecimal actualValue,String manualBandId,String matchedLevelId,String matchedBandId,BigDecimal numericScore,BigDecimal dimensionWeight,BigDecimal weightedContribution,String narrative){}
+ public record ItemResultResponse(String id,String sourceItemId,BigDecimal rawScore,BigDecimal roundedScore,BigDecimal weightedContribution,List<DimensionResultResponse>dimensions){}
+ public record AssessmentResponse(String id,String rootAssessmentId,int revisionNo,String supersedesId,String type,String authorEmployeeNo,String summary,BigDecimal rawScore,BigDecimal roundedScore,String ratingBandId,String ratingLabel,String formulaVersion,String calculationFingerprint,String status,String submittedBy,Instant submittedAt,long recordVersion,List<ItemResultResponse>items){}
+ public record CaseResponse(String id,String monitoringCaseId,String commitmentVersionId,String cycleId,String policyVersionId,String templateVersionId,String ratingScaleVersionId,String formType,Long ownerEmployeeId,String ownerEmployeeNo,String ownerName,Long businessUnitId,String supervisorEmployeeNo,int accomplishmentRevision,boolean requiresSelfAssessment,String routeFingerprint,String commitmentFingerprint,String sourceFingerprint,String status,String openedBy,Instant openedAt,long recordVersion,List<SourceItemResponse>sourceItems,List<AssessmentResponse>assessments){}
+}

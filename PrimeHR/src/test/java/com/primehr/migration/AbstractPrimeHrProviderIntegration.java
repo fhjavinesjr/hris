@@ -94,6 +94,12 @@ abstract class AbstractPrimeHrProviderIntegration {
             "spms_objective", "spms_objective_version", "spms_plan_assignment", "spms_plan_assignment_objective",
             "spms_commitment", "spms_commitment_version", "spms_commitment_section", "spms_commitment_item", "spms_commitment_cascade",
             "spms_commitment_route", "spms_commitment_route_step", "spms_commitment_action",
+            "spms_monitoring_case", "spms_monitoring_update", "spms_monitoring_feedback", "spms_monitoring_evidence", "spms_monitoring_action",
+            "spms_coaching_session", "spms_coaching_session_item", "spms_coaching_action_item", "spms_mid_cycle_review",
+            "spms_rating_case", "spms_rating_source_item", "spms_rating_assessment", "spms_rating_item_result", "spms_rating_dimension_result", "spms_rating_action",
+            "spms_calibration_case", "spms_calibration_participant", "spms_calibration_decision", "spms_final_rating",
+            "spms_rating_acknowledgment", "spms_rating_appeal", "spms_rating_appeal_evidence",
+            "spms_intervention_rule", "spms_performance_intervention", "spms_intervention_checkpoint",
             "flyway_schema_history");
     private static final Set<String> EXPECTED_INDEXES = Set.of(
             "ix_prime_category_agency_active", "ix_prime_scale_agency_active",
@@ -165,6 +171,11 @@ abstract class AbstractPrimeHrProviderIntegration {
     private static final Set<String> PHASE_6C_1_INDEXES = Set.of("ix_spms_objective_status","ix_spms_objective_parent","ix_spms_assignment_cycle","ix_spms_assignment_owner","ix_spms_assignment_objective");
     private static final Set<String> PHASE_6C_2_INDEXES = Set.of("ix_spms_commitment_assignment","ix_spms_commitment_status","ix_spms_commitment_owner","ix_spms_commitment_section","ix_spms_commitment_item","ix_spms_cascade_upstream","ix_spms_cascade_downstream");
     private static final Set<String> PHASE_6C_3_INDEXES = Set.of("ix_spms_commitment_route_current","ix_spms_commitment_route_actor","ix_spms_commitment_action_history");
+    private static final Set<String> PHASE_6D_1_INDEXES = Set.of("ix_spms_monitoring_owner","ix_spms_monitoring_supervisor","ix_spms_monitoring_update_case","ix_spms_monitoring_evidence_case","ix_spms_monitoring_action_history");
+    private static final Set<String> PHASE_6D_2_INDEXES = Set.of("ix_spms_coaching_case","ix_spms_coaching_action_case","ix_spms_coaching_action_accountable","ix_spms_mid_cycle_case");
+    private static final Set<String> PHASE_6E_1_INDEXES = Set.of("ix_spms_rating_case_owner","ix_spms_rating_case_supervisor","ix_spms_rating_assessment_case","ix_spms_rating_action_case");
+    private static final Set<String> PHASE_6E_2_INDEXES = Set.of("ix_spms_calibration_status","ix_spms_final_rating_case");
+    private static final Set<String> PHASE_6E_3_INDEXES = Set.of("ix_spms_appeal_status","ix_spms_intervention_status");
 
     @Autowired private Flyway flyway;
     @Autowired private DataSource dataSource;
@@ -178,9 +189,9 @@ abstract class AbstractPrimeHrProviderIntegration {
     @Value("${spring.flyway.default-schema}") private String databaseSchema;
 
     @Test
-    void flywayV1ThroughV30CreatesTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
+    void flywayV1ThroughV35CreatesTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
         assertThat(flyway.info().current()).isNotNull();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("30");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("35");
 
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
@@ -206,6 +217,11 @@ abstract class AbstractPrimeHrProviderIntegration {
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_6C_1_INDEXES);
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_6C_2_INDEXES);
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_6C_3_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6D_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6D_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6E_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6E_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6E_3_INDEXES);
 
             assertThat(importedKeyCount(metadata, connection, "prime_proficiency_level")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "prime_competency")).isGreaterThanOrEqualTo(2);

@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: ISOFT PRIME-HRM API
-  version: 6.8.0-phase-6c.3
-  description: Governed Performance Management objectives, assignments, immutable commitment composition, exact-version cascading, route snapshots, and auditable commitment approval lifecycles. Accomplishments, ratings, calibration, coaching, reports, and Phase 6C UI remain excluded.
+  version: 6.12.0-phase-6e.2
+  description: Governed Performance Management planning, monitoring, coaching, deterministic rating, PMT calibration, and immutable finalization. Acknowledgment, appeals, PIP, and rating reports remain excluded.
 servers:
   - url: /api/primehr/v1
 security:
@@ -1111,6 +1111,129 @@ paths:
     post: {operationId: voidPerformanceCommitment, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentWorkflowCommand'}}}}, responses: {'200': {description: Exceptionally voided without deleting history}, '409': {$ref: '#/components/responses/Conflict'}}}
   /performance-management/commitments/{versionId}/route-rebase:
     post: {operationId: rebasePerformanceCommitmentRoute, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceCommitmentWorkflowCommand'}}}}, responses: {'200': {description: Rebased before the first route decision}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/commitments/{versionId}/monitoring-case:
+    post: {operationId: openPerformanceMonitoringCase, responses: {'201': {description: Idempotent monitoring case for an approved exact commitment version}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/monitoring-cases:
+    get: {operationId: listPerformanceMonitoringCases, responses: {'200': {description: Scope-filtered monitoring cases}}}
+  /performance-management/monitoring-cases/mine:
+    get: {operationId: listOwnPerformanceMonitoringCases, responses: {'200': {description: Authenticated employee monitoring cases only}}}
+  /performance-management/monitoring-cases/{caseId}:
+    get: {operationId: getPerformanceMonitoringCase, responses: {'200': {description: Exact authorized monitoring case and immutable history}}}
+  /performance-management/monitoring-cases/{caseId}/updates:
+    post: {operationId: createPerformanceMonitoringUpdate, responses: {'201': {description: Employee-owned monitoring update draft}}}
+  /performance-management/monitoring-updates/{updateId}:
+    put: {operationId: editPerformanceMonitoringUpdate, responses: {'200': {description: Editable draft or returned monitoring update}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/monitoring-updates/{updateId}/submit:
+    post: {operationId: submitPerformanceMonitoringUpdate, responses: {'200': {description: Immutable submitted monitoring update revision}}}
+  /performance-management/monitoring-updates/{updateId}/accept:
+    post: {operationId: acceptPerformanceMonitoringUpdate, responses: {'200': {description: Accepted by the assigned supervisor}}}
+  /performance-management/monitoring-updates/{updateId}/return:
+    post: {operationId: returnPerformanceMonitoringUpdate, responses: {'200': {description: Returned by the assigned supervisor with feedback}}}
+  /performance-management/monitoring-updates/{updateId}/corrections:
+    post: {operationId: correctPerformanceMonitoringUpdate, responses: {'201': {description: Successor revision preserving submitted history}}}
+  /performance-management/monitoring-updates/{updateId}/evidence:
+    post: {operationId: uploadPerformanceMonitoringEvidence, responses: {'201': {description: Secured evidence metadata and content stored}}}
+  /performance-management/monitoring-evidence/{evidenceId}/content:
+    get: {operationId: downloadPerformanceMonitoringEvidence, responses: {'200': {description: Authorized no-store evidence content}}}
+  /performance-management/monitoring-evidence/{evidenceId}/void:
+    post: {operationId: voidPerformanceMonitoringEvidence, responses: {'200': {description: Evidence voided without physical history deletion}}}
+  /performance-management/monitoring-cases/{caseId}/accomplishments/submit:
+    post: {operationId: submitPerformanceAccomplishments, responses: {'200': {description: Accomplishment set frozen for later rating workflow}}}
+  /performance-management/monitoring-cases/{caseId}/accomplishments/return:
+    post: {operationId: returnPerformanceAccomplishments, responses: {'200': {description: Accomplishment set returned by assigned supervisor}}}
+  /performance-management/monitoring-cases/{caseId}/coaching-sessions:
+    get: {operationId: listPerformanceCoachingSessions, responses: {'200': {description: Authorized coaching history with private notes filtered by viewer}}}
+    post: {operationId: createPerformanceCoachingSession, responses: {'201': {description: Assigned-supervisor coaching draft}}}
+  /performance-management/coaching-sessions/{sessionId}:
+    put: {operationId: editPerformanceCoachingSession, responses: {'200': {description: Assigned-supervisor draft update}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/coaching-sessions/{sessionId}/issue:
+    post: {operationId: issuePerformanceCoachingSession, responses: {'200': {description: Immutable employee-visible coaching revision issued}}}
+  /performance-management/coaching-sessions/{sessionId}/acknowledge:
+    post: {operationId: acknowledgePerformanceCoachingSession, responses: {'200': {description: Receipt acknowledged without implying agreement}}}
+  /performance-management/coaching-sessions/{sessionId}/corrections:
+    post: {operationId: correctPerformanceCoachingSession, responses: {'201': {description: Successor revision preserving coaching history}}}
+  /performance-management/coaching-sessions/{sessionId}/void:
+    post: {operationId: voidPerformanceCoachingSession, responses: {'200': {description: Session voided with reason without physical deletion}}}
+  /performance-management/coaching-sessions/{sessionId}/action-items:
+    post: {operationId: createPerformanceCoachingActionItem, responses: {'201': {description: Accountable coaching follow-through item}}}
+  /performance-management/coaching-action-items/{actionItemId}:
+    put: {operationId: updatePerformanceCoachingActionItem, responses: {'200': {description: Accountable actor progress or completion update}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/coaching-action-items/{actionItemId}/verify:
+    post: {operationId: verifyPerformanceCoachingActionItem, responses: {'200': {description: Assigned-supervisor completion verification}}}
+  /performance-management/coaching-action-items/{actionItemId}/reopen:
+    post: {operationId: reopenPerformanceCoachingActionItem, responses: {'200': {description: Assigned-supervisor reasoned reopen}}}
+  /performance-management/monitoring-cases/{caseId}/mid-cycle-review:
+    get: {operationId: getPerformanceMidCycleReview, responses: {'200': {description: Authorized policy-gated mid-cycle review}}}
+    post: {operationId: createPerformanceMidCycleReview, responses: {'201': {description: Snapshot of monitoring readiness, issues, actions, and evidence}}}
+  /performance-management/mid-cycle-reviews/{reviewId}:
+    put: {operationId: editPerformanceMidCycleReview, responses: {'200': {description: Assigned-supervisor draft update}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/mid-cycle-reviews/{reviewId}/submit:
+    post: {operationId: submitPerformanceMidCycleReview, responses: {'200': {description: Mid-cycle review submitted for employee acknowledgment}}}
+  /performance-management/mid-cycle-reviews/{reviewId}/acknowledge:
+    post: {operationId: acknowledgePerformanceMidCycleReview, responses: {'200': {description: Employee acknowledgment with optional narrative}}}
+  /performance-management/mid-cycle-reviews/{reviewId}/close-without-acknowledgment:
+    post: {operationId: closePerformanceMidCycleReviewWithoutAcknowledgment, responses: {'200': {description: Agency-authorized reasoned closure without acknowledgment}}}
+  /performance-management/monitoring-cases/{caseId}/rating-case:
+    post: {operationId: openPerformanceRatingCase, responses: {'201': {description: Idempotent immutable rating-source snapshot opened by the assigned supervisor}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/rating-cases:
+    get: {operationId: listPerformanceRatingCases, responses: {'200': {description: Scope-filtered rating cases}}}
+  /performance-management/rating-cases/mine:
+    get: {operationId: listOwnPerformanceRatingCases, responses: {'200': {description: Authenticated employee rating cases only}}}
+  /performance-management/rating-cases/{caseId}:
+    get: {operationId: getPerformanceRatingCase, responses: {'200': {description: Authorized rating case with source snapshot and viewer-filtered assessments}}}
+  /performance-management/rating-cases/{caseId}/assessments:
+    post: {operationId: createPerformanceRatingAssessment, responses: {'201': {description: Deterministically calculated self or assigned-supervisor draft}}}
+  /performance-management/rating-assessments/{assessmentId}:
+    put: {operationId: editPerformanceRatingAssessment, responses: {'200': {description: Recalculated author-owned draft}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/rating-assessments/{assessmentId}/corrections:
+    post: {operationId: correctPerformanceRatingAssessment, responses: {'201': {description: Recalculated successor preserving submitted assessment history}}}
+  /performance-management/rating-assessments/{assessmentId}/submit:
+    post: {operationId: submitPerformanceRatingAssessment, responses: {'200': {description: Immutable submitted assessment; supervisor submission requires policy-mandated self-assessment}}}
+  /performance-management/rating-cases/{caseId}/calibration:
+    post: {operationId: openPerformanceCalibration, responses: {'201': {description: Policy-gated calibration with effective PMT roster and conflict snapshot}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/calibrations/{calibrationId}:
+    get: {operationId: getPerformanceCalibration, responses: {'200': {description: Authorized PMT calibration case}}}
+  /performance-management/calibrations/{calibrationId}/proposal:
+    post: {operationId: submitPerformanceCalibrationProposal, responses: {'200': {description: Item and dimension specific proposal recalculated by the server}}}
+  /performance-management/calibrations/{calibrationId}/decisions:
+    post: {operationId: decidePerformanceCalibration, responses: {'200': {description: Non-conflicted PMT decision with quorum evidence}}}
+  /performance-management/rating-cases/{caseId}/finalize:
+    post: {operationId: finalizePerformanceRating, responses: {'200': {description: Immutable final rating from the authorized supervisor or calibrated result}}}
+  /performance-management/final-ratings:
+    get: {operationId: listPerformanceFinalRatings, responses: {'200': {description: Scope-filtered immutable final-rating revisions and receipt status}}}
+  /performance-management/final-ratings/{finalRatingId}/acknowledgment:
+    post: {operationId: acknowledgePerformanceFinalRating, responses: {'200': {description: Employee receipt acknowledgment without implying agreement}}}
+  /performance-management/final-ratings/{finalRatingId}/close-without-acknowledgment:
+    post: {operationId: closePerformanceFinalRatingWithoutAcknowledgment, responses: {'200': {description: Agency-wide PMT-controlled reasoned closure}}}
+  /performance-management/final-ratings/{finalRatingId}/appeals:
+    post: {operationId: createPerformanceRatingAppeal, responses: {'201': {description: Owner-filed draft appeal against an exact final-rating revision}}}
+  /performance-management/appeals:
+    get: {operationId: listPerformanceRatingAppeals, responses: {'200': {description: Scope-filtered rating appeals}}}
+  /performance-management/appeals/{appealId}:
+    put: {operationId: editPerformanceRatingAppeal, responses: {'200': {description: Owner-edited draft appeal}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/appeals/{appealId}/submit:
+    post: {operationId: submitPerformanceRatingAppeal, responses: {'200': {description: Policy and APPEAL_DUE controlled submission}}}
+  /performance-management/appeals/{appealId}/decision:
+    post: {operationId: decidePerformanceRatingAppeal, responses: {'200': {description: Non-conflicted PMT outcome; MODIFIED creates a recalculated successor rating}}}
+  /performance-management/appeals/{appealId}/evidence:
+    post: {operationId: uploadPerformanceRatingAppealEvidence, responses: {'201': {description: Secured draft appeal evidence}}}
+  /performance-management/appeals/{appealId}/evidence/{evidenceId}/content:
+    get: {operationId: downloadPerformanceRatingAppealEvidence, responses: {'200': {description: Authorized no-store evidence stream}}}
+  /performance-management/intervention-rules:
+    get: {operationId: listPerformanceInterventionRules, responses: {'200': {description: Exact policy, scale, and band intervention rules}}}
+    post: {operationId: createPerformanceInterventionRule, responses: {'201': {description: Immutable exact-band intervention rule}}}
+  /performance-management/interventions:
+    get: {operationId: listPerformanceInterventions, responses: {'200': {description: Scope-filtered alerts and improvement plans}}}
+  /performance-management/interventions/{interventionId}/issue:
+    post: {operationId: issuePerformanceIntervention, responses: {'200': {description: Non-disciplinary plan with support, accountability, and dates}}}
+  /performance-management/interventions/{interventionId}/acknowledge:
+    post: {operationId: acknowledgePerformanceIntervention, responses: {'200': {description: Subject employee receipt acknowledgment}}}
+  /performance-management/interventions/{interventionId}/{transition}:
+    post: {operationId: transitionPerformanceIntervention, responses: {'200': {description: Controlled start, completion, or closure}}}
+  /performance-management/interventions/{interventionId}/checkpoints:
+    post: {operationId: createPerformanceInterventionCheckpoint, responses: {'201': {description: Dated improvement-plan checkpoint}}}
+  /performance-management/interventions/{interventionId}/checkpoints/{checkpointId}/complete:
+    post: {operationId: completePerformanceInterventionCheckpoint, responses: {'200': {description: Audited checkpoint completion with separated employee-visible and PMT-private notes}}}
 components:
   securitySchemes:
     bearerAuth:

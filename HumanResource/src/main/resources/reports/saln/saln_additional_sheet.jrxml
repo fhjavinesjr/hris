@@ -1,0 +1,13 @@
+<!-- CSC 2025 SALN continuation sheet. AS-1 is for the declarant; AS-2 is for spouse/children. -->
+<jasperReport name="saln_additional_sheet_2025" language="java" pageWidth="612" pageHeight="1008" columnWidth="564" leftMargin="24" rightMargin="24" topMargin="20" bottomMargin="20" uuid="8d92d253-c4b3-4212-9e76-cc0c0fb61001">
+  <parameter name="formCode" class="java.lang.String"/><parameter name="declarant" class="java.lang.String"/><parameter name="ownerHeading" class="java.lang.String"/><parameter name="continuationNo" class="java.lang.Integer"/><parameter name="rows" class="java.lang.String"/><parameter name="footer" class="java.lang.String"/>
+  <title height="940" splitType="Prevent">
+    <element kind="staticText" uuid="8d92d253-c4b3-4212-9e76-cc0c0fb61002" x="0" y="0" width="564" height="16" fontName="DejaVu Sans" fontSize="7"><text><![CDATA[2025 SALN Form - Per CSC Resolution No. 2500632]]></text></element>
+    <element kind="textField" uuid="8d92d253-c4b3-4212-9e76-cc0c0fb61003" x="0" y="24" width="564" height="24" fontName="DejaVu Sans" fontSize="12" bold="true" hTextAlign="Center"><expression><![CDATA[$P{formCode}+" ADDITIONAL SHEET"]]></expression></element>
+    <element kind="textField" uuid="8d92d253-c4b3-4212-9e76-cc0c0fb61004" x="0" y="52" width="564" height="42" fontName="DejaVu Sans" fontSize="8"><expression><![CDATA["DECLARANT: "+$P{declarant}+"\nCOVERAGE: "+$P{ownerHeading}+"   CONTINUATION "+$P{continuationNo}]]></expression><box><pen lineWidth="0.6"/></box></element>
+    <element kind="staticText" uuid="8d92d253-c4b3-4212-9e76-cc0c0fb61005" x="0" y="104" width="564" height="20" fontName="DejaVu Sans" fontSize="8" bold="true" mode="Opaque" backcolor="#D9E8F0"><text><![CDATA[CONTINUATION OF ASSETS, LIABILITIES, AND BUSINESS INTERESTS]]></text></element>
+    <element kind="textField" uuid="8d92d253-c4b3-4212-9e76-cc0c0fb61006" x="0" y="124" width="564" height="690" fontName="DejaVu Sans Mono" fontSize="6" textAdjust="ScaleFont"><expression><![CDATA[$P{rows}]]></expression><box><pen lineWidth="0.5"/></box></element>
+    <element kind="staticText" uuid="8d92d253-c4b3-4212-9e76-cc0c0fb61007" x="0" y="840" width="330" height="20" fontName="DejaVu Sans" fontSize="7"><text><![CDATA[Signature/Initial of Declarant: __________________________]]></text></element>
+    <element kind="textField" uuid="8d92d253-c4b3-4212-9e76-cc0c0fb61008" x="0" y="916" width="564" height="14" fontName="DejaVu Sans" fontSize="6" hTextAlign="Center"><expression><![CDATA[$P{footer}+" | "+$P{formCode}+" continuation "+$P{continuationNo}]]></expression></element>
+  </title>
+</jasperReport>

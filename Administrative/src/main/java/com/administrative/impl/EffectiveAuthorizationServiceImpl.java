@@ -57,6 +57,11 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String HRM_SELF_SERVICE_TIME_CORRECTION = "hrm.ss.timeCorrection";
     public static final String PAYROLL_ANNUALIZATION = "payroll.annualization";
     public static final String ADMIN_EARNING_TYPES = "admin.earningTypes";
+    public static final String HRM_SALN_REVIEW = "hrm.saln.review";
+    public static final String HRM_SALN_HISTORICAL = "hrm.saln.historical";
+    public static final String HRM_SALN_AUDIT = "hrm.saln.audit";
+    public static final String HRM_SALN_REQUIREMENTS = "hrm.saln.requirements";
+    public static final String EMPLOYEE_PORTAL_SALN = "ep.saln";
     private static final Set<String> SUPPORTED_FEATURES = Set.of(PRIMEHR_COMPETENCY,
             PRIMEHR_POSITION_PROFILE, PRIMEHR_ASSESSMENT_ADMINISTRATION, PRIMEHR_COMPETENCY_ASSESSMENT,
             PRIMEHR_ASSESSMENT_VALIDATION, PRIMEHR_PERSON_PROFILE, PRIMEHR_GAP_CONFIGURATION,
@@ -75,7 +80,10 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
             HRM_SELF_SERVICE_LEAVE_APPLICATION, HRM_SELF_SERVICE_OVERTIME_REQUEST,
             HRM_SELF_SERVICE_COC, HRM_SELF_SERVICE_CTO, HRM_SELF_SERVICE_OFFICIAL_ENGAGEMENT,
             HRM_SELF_SERVICE_PASS_SLIP, HRM_SELF_SERVICE_TIME_CORRECTION,
-            PAYROLL_ANNUALIZATION, ADMIN_EARNING_TYPES);
+            PAYROLL_ANNUALIZATION, ADMIN_EARNING_TYPES,
+            HRM_SALN_REVIEW, HRM_SALN_HISTORICAL, HRM_SALN_AUDIT, HRM_SALN_REQUIREMENTS,
+            EMPLOYEE_PORTAL_SALN);
+
     private static final String INSTALL_ADMIN_EMPLOYEE_NO = "admin";
 
     private final PermissionRulesetRepository repository;
@@ -91,7 +99,9 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
         if (!SUPPORTED_FEATURES.contains(featureKey)) {
             throw new IllegalArgumentException("Unsupported feature key");
         }
-        if (employeeNo != null && INSTALL_ADMIN_EMPLOYEE_NO.equalsIgnoreCase(employeeNo.trim())) {
+        String normalizedRole = role == null ? null : role.trim().replaceFirst("(?i)^ROLE_", "");
+        if ((employeeNo != null && INSTALL_ADMIN_EMPLOYEE_NO.equalsIgnoreCase(employeeNo.trim()))
+                || "1".equals(normalizedRole)) {
             return EffectiveFeaturePermissionResponse.administrator(featureKey);
         }
         Optional<PermissionRuleset> resolved = resolveRuleset(role);

@@ -1,6 +1,6 @@
 # ISOFT PRIME-HRM User Guide
 
-This guide covers the delivered standalone PRIME-HRM functions through Phase 5A: competency administration, Position and Person Competency Profiles, assessments, competency gaps and manual L&D referrals, and vacancy/recruitment planning through controlled vacancy-notice publication. Applicant intake and later RSP stages are not yet implemented.
+This guide covers the delivered standalone PRIME-HRM functions through Phase 6E.3: competency management, RSP, SPMS planning/monitoring/coaching, deterministic self/supervisor ratings, PMT calibration, immutable finalization, acknowledgment, appeal, and intervention/PIP backend controls. Phase 6E rating interfaces and later reporting are not yet implemented.
 
 ## 1. Access and sign-in
 
@@ -417,6 +417,76 @@ Create and publish the effective SPMS policy first. Then create a cycle tied to 
 For PMT governance, enter the mandate/effectivity and an employee-number roster using only the controlled roles shown by the screen. Activation requires exactly one effective chairperson and verifies active employment through the authenticated HRM contract. If HRM is unavailable, no activation change is saved. Active rosters are immutable and deactivation preserves their history.
 
 Phase 6A does not include performance templates, KRA/KPI definitions, OPCR/DPCR/IPCR commitments, monitoring, ratings, calibration, coaching, appeals, or reports. Those later capabilities remain approval-gated.
+
+### Phase 6C performance planning and approval
+
+Administrative permission rules separately control **Strategic Objectives**, **Plan Assignments**, **Office Performance Commitments**, and **Individual Performance Commitments**. Access is required before any action. Add, Edit, Publish, Submit, Approve, and Finalize remain independent; data scope restricts office work to assigned/agency records and IPCR work to own/assigned/agency records.
+
+Use **Strategic Objectives** to create agency, area, or business-unit objectives against exact published policy and indicator versions. Check readiness before publishing. Published versions are immutable; create a successor revision instead of overwriting history.
+
+Use **Plan Assignments** to bind an open cycle, published template, published objectives, authoritative subject, routing business unit, and owner. Review the displayed organization, participant, and route fingerprints before activation.
+
+Use **Office Commitments** or **Individual Commitments** to generate a draft from an active assignment, complete targets and dates, configure valid cascade relationships, check readiness, and submit. Editing is available only for draft, amendment-draft, or returned records. Approval actions follow the stored route in order; the inbox shows only tasks assigned to the signed-in actor. Reload after a stale-write message rather than repeating an old decision.
+
+Employees use **Employee Portal → Employee Self Service → My Performance Commitments** for their own IPCR records. The server derives ownership from the authenticated account; the page does not accept an employee number or ID. Employees may edit and submit only when their exact permission actions and lifecycle state permit it.
+
+Phase 6C does not include accomplishments, monitoring, coaching, ratings, calibration, appeals, or reports. Those remain Phase 6D and require separate approval.
+
+### Phase 6D.1 performance monitoring backend
+
+An approved commitment with a completed approval route can open one monitoring case. The case keeps the exact commitment, policy, cycle, owner, organization, and approval-route fingerprints used when monitoring began. Opening the same commitment again is idempotent and does not create a duplicate case.
+
+Employees record progress and actual accomplishments against an exact commitment item. Drafts may be edited, while submission freezes that revision. A returned update is corrected through a linked successor revision so the submitted history is preserved. The configured operational supervisor may accept an update or return it with visible feedback.
+
+Evidence uploads use secured storage, generated object keys, checksums, MIME and size checks, and per-request download authorization. Storage locations are not returned to the browser. Evidence can be voided with a reason; workflow evidence is not physically deleted.
+
+Final accomplishment submission checks every required commitment item and its evidence requirement. It freezes the accomplishment set for the later rating phase; a supervisor may return it for correction before rating begins. Progress percentages remain informational and do not calculate a rating.
+
+Authorized supervisors and PMT users operate these records from **PrimeHR → Monitoring Inbox**. Employees use **Employee Portal → Employee Self Service → My Performance Monitoring**. The inbox and portal controls appear only when both the exact permission action and current lifecycle permit the operation.
+
+### Phase 6D.2 coaching and mid-cycle backend
+
+The assigned supervisor from the immutable commitment route creates a coaching session against the monitoring case and may link exact commitment items. Employee-visible guidance is stored separately from restricted supervisor notes. Issuing a session freezes that revision; a correction creates a linked successor rather than replacing history.
+
+The employee can acknowledge receipt and add a response. Acknowledgment confirms receipt only and does not imply agreement or remove later review or appeal rights.
+
+Coaching action items identify the accountable employee, due date, progress, completion, and supervisor verification. The accountable employee updates their own item. The assigned supervisor verifies completion or reopens it with a reason. Action items do not automatically create a disciplinary case, PIP, L&D referral, rating, or promotion record.
+
+A mid-cycle review is available only when the exact published policy version requires it and the configured `MID_CYCLE_REVIEW` milestone is current. Its snapshot records monitoring-update count, open action count, and missing required evidence count. The supervisor submits the review and the employee acknowledges receipt. Closing without acknowledgment requires a reason, agency-wide permission, and effective PMT membership. An amendment recommendation points users to the existing formal Phase 6C amendment workflow and never changes a target directly.
+
+Administrative manages `primehr.performance-monitoring` and `primehr.performance-coaching` separately. Access, Add, Edit, Submit, and Approve are independent, and data scope is limited to Own Records, Assigned Records, or Agency Wide. A hidden menu is not authorization; the server also verifies ownership, the immutable supervisor route, PMT process role where required, record state, and record version.
+
+### Phase 6D.3 interface operation
+
+In **Monitoring Inbox**, select a permitted case to review its approved commitment-item snapshot and progress history. Use the lifecycle buttons to accept or return submitted updates, return final accomplishments, issue or void coaching, verify or reopen completed action items, and submit or close a mid-cycle review. A stale-write response means another user changed the record; reload before deciding again.
+
+In **My Performance Monitoring**, employees can work only on the case returned for their authenticated account. Create or revise drafts, submit progress, attach allowed evidence, correct returned work through a successor revision, and submit final accomplishments when required items and evidence are ready. Employees can see only employee-visible coaching text, may acknowledge receipt with a response, maintain their own assigned action items, and acknowledge a submitted mid-cycle review. There is no employee selector.
+
+Monitoring percentages and accomplishments are informational inputs only. These screens do not calculate, approve, or publish a rating and do not create calibration, appeal, PIP, L&D, R&R, or promotion records. Those remain outside Phase 6D.
+
+### Phase 6E.1 rating foundation backend
+
+After the employee submits a complete accomplishment set, the exact assigned supervisor may open one rating case for that accomplishment revision during the configured `RATING_DUE` window. Opening snapshots the approved commitment, selected latest submitted/accepted item updates, evidence checksums, exact indicator/rubric versions, section/item weights, rating scale, policy, route, and organization fingerprints. The monitoring case becomes `READY_FOR_RATING`; later definition changes cannot alter the snapshot.
+
+When the exact policy requires self-assessment, the employee may create and submit only their own `SELF` assessment. The stored supervisor may create and submit only the `SUPERVISOR` assessment, and supervisor submission is blocked until the required self-assessment is submitted. Drafts remain private to their author. A submitted correction creates a successor revision and preserves the original.
+
+Users provide only a numeric actual for threshold rubrics or an exact permitted band for manual rubrics. The backend maps each dimension to exactly one rubric level, applies dimension, item, and section weights, rounds with the immutable rating-scale rule, and resolves exactly one overall band. Calculated scores, statuses, formula version, and fingerprints are server-owned. Phase 6E.1 does not expose a frontend yet and does not calibrate or publish a final rating.
+
+### Phase 6E.2 PMT calibration and finalization backend
+
+When the exact published policy requires calibration, an authorized effective PMT member opens a calibration case against the submitted supervisor assessment. The case snapshots the effective PMT roster and its revision. The rating subject, assigned supervisor, secretariat, technical-support, and non-voting members remain visible for traceability but cannot vote.
+
+Calibration proposals change exact item/dimension actuals and require a rationale. They cannot type an overall score: the backend reruns the Phase 6E.1 calculation and preserves the original self/supervisor assessments beside the calibrated proposal. A strict majority of eligible, non-conflicted, independent voters approves or rejects the proposal; an otherwise eligible proposal author is excluded from that electorate. Every decision advances the optimistic record version, and retries with the same idempotency key return the existing result.
+
+Finalization is allowed only in the configured `FINALIZATION_DUE` window and by an effective, non-conflicted voting PMT member with the exact Finalize permission. The proposal author cannot finalize their own calibrated result. Policies that do not require calibration use the submitted supervisor assessment directly. The resulting rating is immutable and retains its calculation fingerprint, exact source assessment, calibration lineage where applicable, finalizer, and time. Phase 6E.2 has no frontend yet and does not acknowledge, appeal, create an intervention/PIP, or feed other modules.
+
+### Phase 6E.3 acknowledgment, appeal, and intervention backend
+
+An employee may acknowledge receipt of their exact latest final-rating revision during the configured `ACKNOWLEDGMENT_DUE` window. Acknowledgment records receipt only and does not mean agreement. Closing without employee acknowledgment requires a reason, agency-wide Finalize authority, and an effective PMT member.
+
+The authenticated employee may create and submit an appeal only for their own latest final rating during `APPEAL_DUE`. Evidence is stored securely and downloaded only after authorization. An effective, voting, non-conflicted PMT member with agency-wide approval authority decides the appeal; the subject and assigned supervisor cannot decide it. A modified decision reruns the authoritative server calculation and creates a linked successor final-rating revision without overwriting the original.
+
+Intervention rules bind exact policy, scale, and rating-band versions to `NONE`, `ALERT`, `PIP_RECOMMENDED`, or `PIP_REQUIRED`. Finalization and modified appeals evaluate that mapping idempotently. PIP records objectives, support, accountable employee, dates, checkpoints, employee receipt, completion, and closure. Employee views receive employee-visible feedback but not restricted PMT notes. These backend operations do not create discipline, change CoreHR, or feed payroll, timekeeping, recruitment, L&D, R&R, or reporting.
 
 ### Phase 5E operational readiness
 
