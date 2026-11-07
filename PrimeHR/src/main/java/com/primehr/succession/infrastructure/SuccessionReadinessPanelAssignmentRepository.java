@@ -1,0 +1,2 @@
+package com.primehr.succession.infrastructure;import com.primehr.succession.domain.SuccessionReadinessPanelAssignment;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface SuccessionReadinessPanelAssignmentRepository extends JpaRepository<SuccessionReadinessPanelAssignment,String>{Optional<SuccessionReadinessPanelAssignment>findByIdAndAgencyIdAndAssessmentId(String id,String agency,String assessment);List<SuccessionReadinessPanelAssignment>findByAgencyIdAndAssessmentIdOrderByMemberRole(String agency,String assessment);}

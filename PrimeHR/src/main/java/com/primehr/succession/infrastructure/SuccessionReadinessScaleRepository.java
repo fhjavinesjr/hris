@@ -1,0 +1,2 @@
+package com.primehr.succession.infrastructure; import com.primehr.succession.domain.SuccessionReadinessScale; import org.springframework.data.jpa.repository.JpaRepository; import java.util.Optional;
+public interface SuccessionReadinessScaleRepository extends JpaRepository<SuccessionReadinessScale,String>{boolean existsByAgencyIdAndNormalizedCode(String agencyId,String code);Optional<SuccessionReadinessScale> findByIdAndAgencyId(String id,String agencyId);}

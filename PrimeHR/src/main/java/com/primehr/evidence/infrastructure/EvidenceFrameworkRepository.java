@@ -1,0 +1,2 @@
+package com.primehr.evidence.infrastructure;import com.primehr.evidence.domain.EvidenceFramework;import org.springframework.data.jpa.repository.JpaRepository;import java.util.Optional;
+public interface EvidenceFrameworkRepository extends JpaRepository<EvidenceFramework,String>{boolean existsByAgencyIdAndNormalizedCode(String agency,String code);Optional<EvidenceFramework>findByIdAndAgencyId(String id,String agency);}

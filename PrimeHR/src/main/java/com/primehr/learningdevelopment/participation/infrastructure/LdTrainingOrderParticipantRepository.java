@@ -1,0 +1,2 @@
+package com.primehr.learningdevelopment.participation.infrastructure;import com.primehr.learningdevelopment.participation.domain.*;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface LdTrainingOrderParticipantRepository extends JpaRepository<LdTrainingOrderParticipant,String>{List<LdTrainingOrderParticipant>findByAgencyIdAndTrainingOrderIdOrderByDisplayOrderAsc(String agency,String order);Optional<LdTrainingOrderParticipant>findByAgencyIdAndEnrollmentId(String agency,String enrollmentId);}

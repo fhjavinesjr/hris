@@ -1,0 +1,7 @@
+package com.primehr.succession.domain; import jakarta.persistence.*;
+@Entity @Table(name="succession_career_family_version",uniqueConstraints=@UniqueConstraint(name="uk_succ_family_version",columnNames={"agency_id","family_id","definition_version"}))
+public class SuccessionCareerFamilyVersion extends SuccessionVersionedDefinition {
+ @Column(name="family_id",nullable=false,length=36) private String familyId; @Column(name="legal_basis",nullable=false,length=2000) private String legalBasis; @Column(name="pathway_guidance",nullable=false,length=4000) private String pathwayGuidance; @Column(name="links_revision",nullable=false) private int linksRevision;
+ protected SuccessionCareerFamilyVersion(){} public SuccessionCareerFamilyVersion(String agencyId,String familyId,int version,String supersedes,String title,String description,String legalBasis,String guidance){super(agencyId,version,supersedes,title,description);this.familyId=requiredText(familyId,"familyId");apply(legalBasis,guidance);} public void update(String title,String description,String legalBasis,String guidance){changeDefinition(title,description);apply(legalBasis,guidance);} public void linksChanged(){requireDraft();linksRevision++;} private void apply(String basis,String guidance){legalBasis=requiredText(basis,"legalBasis");pathwayGuidance=requiredText(guidance,"pathwayGuidance");}
+ public String getFamilyId(){return familyId;} public String getLegalBasis(){return legalBasis;} public String getPathwayGuidance(){return pathwayGuidance;} public int getLinksRevision(){return linksRevision;}
+}

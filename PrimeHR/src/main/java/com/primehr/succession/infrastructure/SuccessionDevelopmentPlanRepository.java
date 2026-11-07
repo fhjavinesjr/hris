@@ -1,0 +1,2 @@
+package com.primehr.succession.infrastructure;import com.primehr.succession.domain.SuccessionDevelopmentPlan;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface SuccessionDevelopmentPlanRepository extends JpaRepository<SuccessionDevelopmentPlan,String>{Optional<SuccessionDevelopmentPlan>findByIdAndAgencyId(String id,String agency);Optional<SuccessionDevelopmentPlan>findByAgencyIdAndPoolDecisionId(String agency,String decision);List<SuccessionDevelopmentPlan>findByAgencyIdOrderByCreatedAtDesc(String agency);}

@@ -1,0 +1,16 @@
+package com.primehr.succession.api;
+import com.primehr.succession.domain.*;import jakarta.validation.Valid;import jakarta.validation.constraints.*;import java.time.*;import java.util.List;
+public final class SuccessionReadinessDtos{private SuccessionReadinessDtos(){}
+ public record InitializeInput(@NotNull Long candidateRecordVersion){}
+ public record ConflictInput(@NotNull Long assignmentRecordVersion,@NotBlank @Size(max=2000)String reason){}
+ public record ReplacementInput(@NotNull Long recusedRecordVersion,@NotBlank String replacementAssignmentId){}
+ public record FindingInput(@NotBlank @Size(max=80)String criterionCode,@NotBlank @Size(max=200)String criterionLabel,@NotNull SuccessionReadinessCriterionFinding.Outcome outcome,@NotBlank @Size(max=4000)String rationale,@NotBlank @Size(max=500)String sourceReference,boolean employeeVisible,@Min(1)int displayOrder){}
+ public record FindingsInput(@NotNull Long assessmentRecordVersion,@NotEmpty List<@Valid FindingInput>findings){}
+ public record RecommendationInput(@NotNull Long recordVersion,@NotBlank String readinessLevelId,boolean recommendPoolMembership,@NotBlank @Size(max=4000)String narrative){}
+ public record DecisionInput(@NotNull Long recordVersion,@NotBlank String readinessLevelId,@NotNull SuccessionPoolDecision.Outcome outcome,@NotBlank @Size(max=4000)String employeeVisibleReason,@NotBlank @Size(max=4000)String restrictedRationale){}
+ public record GapItemResponse(String id,String competencyCode,String competencyName,int competencyDefinitionVersion,String requiredLevelCode,String requiredLevelLabel,Integer attainedLevelOrder,String attainedLevelCode,String attainedLevelLabel,Integer gap,String classification,String notAssessedReason,String requirementClassification,String criticalityCode,int displayOrder){}
+ public record AssignmentResponse(String id,long recordVersion,String employeeNo,String displayName,String memberRole,boolean votingMember,String status,boolean conflictDeclared,String conflictSource,String conflictReason,String replacementAssignmentId){}
+ public record FindingResponse(String id,String criterionCode,String criterionLabel,String outcome,String rationale,String sourceReference,boolean employeeVisible,int displayOrder){}
+ public record DecisionResponse(String id,String outcome,String readinessLevelCode,String readinessLevelLabel,String employeeVisibleReason,String restrictedRationale,String decidedBy,Instant decidedAt,LocalDate effectiveFrom,LocalDate expiresOn){}
+ public record AssessmentResponse(String id,long recordVersion,String candidateId,String cycleId,String employeeNo,String employeeName,String targetPositionName,String status,String readinessScaleVersionId,int readinessScaleDefinitionVersion,String positionProfileId,int positionProfileVersion,long positionProfileRevision,String personProfileId,int personProfileVersion,Instant gapCalculatedAt,int belowCount,int meetsCount,int exceedsCount,int notAssessedCount,String recommendedLevelCode,String recommendedLevelLabel,Boolean poolRecommended,String recommendationNarrative,String recommendedBy,Instant recommendedAt,String finalizedBy,Instant finalizedAt,List<GapItemResponse>gapItems,List<AssignmentResponse>assignments,List<FindingResponse>findings,DecisionResponse decision){}
+}

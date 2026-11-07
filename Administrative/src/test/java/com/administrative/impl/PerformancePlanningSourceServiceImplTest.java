@@ -95,4 +95,35 @@ class PerformancePlanningSourceServiceImplTest {
                         error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
         verify(units, times(1)).findById(any());
     }
+
+    @Test
+    void exposesConfiguredLearningDevelopmentPlanRoute() {
+        Areas area = new Areas(4L, "Medical Services", null);
+        BusinessUnits unit = new BusinessUnits(8L, "WARD", "Ward Services", area);
+        EmployeeRequest request = new EmployeeRequest(7L, "LEARNING_INDIVIDUAL_DEVELOPMENT_PLAN", "IDP", 2);
+        ApprovalWorkflow first = step(31L, 1, 12L);
+        ApprovalWorkflow second = step(32L, 2, 13L);
+        when(units.findById(8L)).thenReturn(Optional.of(unit));
+        when(requests.findByCodeIgnoreCase("LEARNING_INDIVIDUAL_DEVELOPMENT_PLAN"))
+                .thenReturn(Optional.of(request));
+        when(workflows.findByBusinessUnitIdAndEmployeeRequestIdOrderByApprovalLevelAscApprovalWorkflowIdAsc(8L, 7L))
+                .thenReturn(List.of(first, second));
+
+        var route = service.approvalRoute(8L, "learning_individual_development_plan");
+
+        assertThat(route.requestCode()).isEqualTo("LEARNING_INDIVIDUAL_DEVELOPMENT_PLAN");
+        assertThat(route.steps()).extracting(step -> step.level()).containsExactly(1, 2);
+        assertThat(route.sourceFingerprint()).hasSize(64);
+    }
+
+    private ApprovalWorkflow step(long id, int level, long employeeId) {
+        ApprovalWorkflow step = new ApprovalWorkflow();
+        step.setApprovalWorkflowId(id);
+        step.setApprovalLevel(level);
+        step.setEmployeeId(employeeId);
+        step.setAreaId(4L);
+        step.setBusinessUnitId(8L);
+        step.setEmployeeRequestId(7L);
+        return step;
+    }
 }

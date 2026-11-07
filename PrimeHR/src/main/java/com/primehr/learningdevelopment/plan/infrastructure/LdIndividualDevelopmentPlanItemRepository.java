@@ -1,0 +1,3 @@
+package com.primehr.learningdevelopment.plan.infrastructure;
+import com.primehr.learningdevelopment.plan.domain.LdIndividualDevelopmentPlanItem;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface LdIndividualDevelopmentPlanItemRepository extends JpaRepository<LdIndividualDevelopmentPlanItem,String>{List<LdIndividualDevelopmentPlanItem>findByAgencyIdAndPlanIdOrderByDisplayOrderAsc(String agency,String plan);Optional<LdIndividualDevelopmentPlanItem>findByIdAndAgencyId(String id,String agency);Optional<LdIndividualDevelopmentPlanItem>findByIdAndAgencyIdAndPlanId(String id,String agency,String plan);boolean existsByAgencyIdAndPlanIdAndLearningNeedId(String agency,String plan,String need);}

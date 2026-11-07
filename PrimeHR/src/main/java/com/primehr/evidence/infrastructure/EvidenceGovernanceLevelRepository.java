@@ -1,0 +1,2 @@
+package com.primehr.evidence.infrastructure;import com.primehr.evidence.domain.EvidenceGovernanceLevel;import org.springframework.data.jpa.repository.JpaRepository;import java.util.List;
+public interface EvidenceGovernanceLevelRepository extends JpaRepository<EvidenceGovernanceLevel,String>{List<EvidenceGovernanceLevel>findByAgencyIdAndFrameworkVersionIdOrderByDisplayOrder(String agency,String framework);void deleteByAgencyIdAndFrameworkVersionId(String agency,String framework);}

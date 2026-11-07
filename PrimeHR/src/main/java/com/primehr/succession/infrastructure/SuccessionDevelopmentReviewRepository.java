@@ -1,0 +1,2 @@
+package com.primehr.succession.infrastructure;import com.primehr.succession.domain.SuccessionDevelopmentReview;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface SuccessionDevelopmentReviewRepository extends JpaRepository<SuccessionDevelopmentReview,String>{List<SuccessionDevelopmentReview>findByAgencyIdAndPlanIdOrderByReviewSequence(String agency,String plan);long countByAgencyIdAndPlanId(String agency,String plan);}

@@ -1,0 +1,33 @@
+{
+  "manifestVersion": 1,
+  "provider": "POSTGRESQL_OR_SQLSERVER",
+  "environment": "ISOLATED_RESTORE_DRILL",
+  "backup": {
+    "createdAtUtc": "YYYY-MM-DDTHH:MM:SSZ",
+    "applicationVersion": "REQUIRED",
+    "flywayVersion": "56",
+    "encryptedLocationReference": "NON_SECRET_REFERENCE_ONLY",
+    "byteSize": 0,
+    "sha256": "REQUIRED"
+  },
+  "restore": {
+    "startedAtUtc": "YYYY-MM-DDTHH:MM:SSZ",
+    "completedAtUtc": "YYYY-MM-DDTHH:MM:SSZ",
+    "targetIdentifier": "NON_SECRET_ISOLATED_TARGET",
+    "schemaValidationPassed": false,
+    "databaseIntegrityCheckPassed": false,
+    "foreignKeyCheckPassed": false,
+    "authenticatedReadPassed": false,
+    "storageMetadataCheckPassed": false,
+    "contentWasNotExposedByStorageCheck": true
+  },
+  "rowCountEvidence": [],
+  "latestRecordEvidence": {
+    "auditEventAtUtc": null,
+    "reconciliationRunAtUtc": null
+  },
+  "operator": "REQUIRED",
+  "reviewer": "REQUIRED",
+  "accepted": false,
+  "notes": ""
+}

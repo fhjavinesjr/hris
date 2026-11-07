@@ -14,6 +14,8 @@ import com.primehr.integration.administrative.AuthorizationDependencyException;
 import com.primehr.integration.administrative.PositionTargetDependencyException;
 import com.primehr.integration.administrative.OrganizationDirectoryDependencyException;
 import com.primehr.integration.humanresource.HumanResourceDependencyException;
+import com.primehr.integration.support.ExternalDependencyException;
+import com.primehr.shared.web.CorrelationContext;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -116,6 +118,14 @@ public class PrimeHrExceptionHandler {
         return error(HttpStatus.SERVICE_UNAVAILABLE, "HUMAN_RESOURCE_SERVICE_UNAVAILABLE", request, List.of());
     }
 
+    @ExceptionHandler(ExternalDependencyException.class)
+    public ResponseEntity<ApiErrorResponse> externalDependencyUnavailable(
+            ExternalDependencyException exception, HttpServletRequest request) {
+        log.warn("{} dependency unavailable for {} (downstream status: {})",
+                exception.dependency(), request.getRequestURI(), exception.downstreamStatus());
+        return error(HttpStatus.SERVICE_UNAVAILABLE, exception.code(), request, List.of());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> unexpected(Exception exception, HttpServletRequest request) {
         log.error("Unexpected PrimeHR request failure at {}", request.getRequestURI(), exception);
@@ -125,6 +135,7 @@ public class PrimeHrExceptionHandler {
     private static ResponseEntity<ApiErrorResponse> error(HttpStatus status, String message,
                                                            HttpServletRequest request, List<String> details) {
         return ResponseEntity.status(status).body(new ApiErrorResponse(
-                Instant.now(), status.value(), message, request.getRequestURI(), details));
+                Instant.now(), status.value(), message, request.getRequestURI(),
+                CorrelationContext.currentOrGenerate(), details));
     }
 }

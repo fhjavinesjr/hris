@@ -1,0 +1,2 @@
+package com.primehr.succession.infrastructure;import com.primehr.succession.domain.SuccessionPoolMembershipEvent;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface SuccessionPoolMembershipEventRepository extends JpaRepository<SuccessionPoolMembershipEvent,String>{List<SuccessionPoolMembershipEvent>findByAgencyIdAndPoolDecisionIdOrderByEventSequence(String agency,String decision);Optional<SuccessionPoolMembershipEvent>findFirstByAgencyIdAndPoolDecisionIdOrderByEventSequenceDesc(String agency,String decision);}

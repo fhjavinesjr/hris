@@ -1,0 +1,3 @@
+package com.primehr.succession.infrastructure;
+import com.primehr.succession.domain.SuccessionRspReferralPacket;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface SuccessionRspReferralPacketRepository extends JpaRepository<SuccessionRspReferralPacket,String>{Optional<SuccessionRspReferralPacket>findByIdAndAgencyId(String id,String agency);List<SuccessionRspReferralPacket>findByAgencyIdOrderByCreatedAtDesc(String agency);boolean existsByAgencyIdAndBenchEntryIdAndStatusIn(String agency,String bench,Collection<SuccessionRspReferralPacket.Status>statuses);}

@@ -1,11 +1,30 @@
 openapi: 3.0.3
 info:
   title: ISOFT HRIS Administrative to PrimeHR Integration API
-  version: 1.1.0-phase-6c.1
+  version: 1.2.0-phase-6f.2
   description: Authenticated read-only projections of authoritative Administrative organization, personnel membership, and approval-route sources. Existing master CRUD contracts are unchanged.
 security:
   - bearerAuth: []
 paths:
+  /api/integration/v1/primehr/report-sources/branding:
+    get:
+      operationId: getPrimeHrReportBrandingSource
+      responses:
+        '200': {description: Current authoritative agency branding metadata and fingerprint}
+        '401': {description: Missing or invalid employee JWT}
+        '409': {description: Required agency settings are incomplete}
+  /api/integration/v1/primehr/report-sources/positions/{plantillaId}:
+    get:
+      operationId: getPrimeHrReportPositionSource
+      parameters:
+        - name: plantillaId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200': {description: Exact Plantilla and Job Position report metadata with source fingerprint}
+        '401': {description: Missing or invalid employee JWT}
+        '409': {description: Required Plantilla or Job Position source is unavailable}
   /api/integration/v1/primehr/performance/organization-targets:
     get: {operationId: listPrimeHrPerformanceOrganizations, responses: {'200': {description: Paged Area or Business Unit targets}, '403': {description: Agency-wide feature access required}}}
   /api/integration/v1/primehr/performance/organization-targets/{type}/{id}:

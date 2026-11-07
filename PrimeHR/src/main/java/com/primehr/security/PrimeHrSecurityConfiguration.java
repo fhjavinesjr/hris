@@ -3,6 +3,7 @@ package com.primehr.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.primehr.config.PrimeHrProperties;
 import com.primehr.shared.api.ApiErrorResponse;
+import com.primehr.shared.web.CorrelationContext;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -45,14 +46,24 @@ public class PrimeHrSecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/info").authenticated()
                         .requestMatchers("/api/primehr/public/v1/**").permitAll()
                         .requestMatchers("/api/primehr/applicant/v1/**").hasAuthority(ApplicantJwtAuthenticationFilter.APPLICANT)
+                        .requestMatchers(HttpMethod.GET, "/api/primehr/integration/v1/**").authenticated()
+                        .requestMatchers("/api/primehr/v1/notifications/me/**").authenticated()
+                        .requestMatchers("/api/primehr/v1/notifications/me").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/primehr/v1/admin/**").denyAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/primehr/v1/admin/**").denyAll()
                         .requestMatchers("/api/primehr/v1/admin/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/primehr/v1/competency-gaps/**",
                                 "/api/primehr/v1/ld-referrals/**", "/api/primehr/v1/rsp/**",
-                                "/api/primehr/v1/committees/**", "/api/primehr/v1/performance-management/**").authenticated()
+                                "/api/primehr/v1/committees/**", "/api/primehr/v1/performance-management/**",
+                                "/api/primehr/v1/learning-development/**",
+                                "/api/primehr/v1/rewards-recognition/**",
+                                "/api/primehr/v1/succession/**",
+                                "/api/primehr/v1/evidence/**",
+                                "/api/primehr/v1/evidence-assessments/**",
+                                "/api/primehr/v1/evidence-readiness/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/primehr/v1/**")
                         .hasAuthority(PrimeHrAuthorities.COMPETENCY_READ)
                         .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/assessments/**").authenticated()
@@ -65,6 +76,15 @@ public class PrimeHrSecurityConfiguration {
                         .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/rsp/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/primehr/v1/performance-management/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/performance-management/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/primehr/v1/learning-development/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/learning-development/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/primehr/v1/rewards-recognition/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/rewards-recognition/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/primehr/v1/rewards-recognition/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/primehr/v1/succession/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/succession/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/primehr/v1/evidence/**", "/api/primehr/v1/evidence-assessments/**", "/api/primehr/v1/evidence-readiness/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/evidence/**", "/api/primehr/v1/evidence-assessments/**", "/api/primehr/v1/evidence-readiness/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/primehr/v1/committees/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/primehr/v1/committees/**").authenticated()
                         .anyRequest().denyAll())
@@ -87,7 +107,7 @@ public class PrimeHrSecurityConfiguration {
         cors.setAllowedOrigins(properties.cors().allowedOrigins());
         cors.setAllowedOriginPatterns(properties.cors().allowedOriginPatterns());
         cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Correlation-Id"));
+        cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key", "X-Correlation-Id"));
         cors.setExposedHeaders(List.of("X-Correlation-Id"));
         cors.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -117,6 +137,7 @@ public class PrimeHrSecurityConfiguration {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getOutputStream(),
-                new ApiErrorResponse(Instant.now(), status, message, path, List.of()));
+                new ApiErrorResponse(Instant.now(), status, message, path,
+                        CorrelationContext.currentOrGenerate(), List.of()));
     }
 }

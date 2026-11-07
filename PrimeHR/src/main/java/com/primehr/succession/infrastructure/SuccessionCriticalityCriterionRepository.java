@@ -1,0 +1,3 @@
+package com.primehr.succession.infrastructure;
+import com.primehr.succession.domain.SuccessionCriticalityCriterion; import org.springframework.data.jpa.repository.JpaRepository; import java.util.List;
+public interface SuccessionCriticalityCriterionRepository extends JpaRepository<SuccessionCriticalityCriterion,String>{List<SuccessionCriticalityCriterion> findByAgencyIdAndFrameworkVersionIdOrderByDisplayOrder(String agencyId,String frameworkVersionId);void deleteByAgencyIdAndFrameworkVersionId(String agencyId,String frameworkVersionId);}

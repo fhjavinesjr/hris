@@ -1,0 +1,2 @@
+package com.primehr.learningdevelopment.participation.infrastructure;import com.primehr.learningdevelopment.participation.domain.*;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface LdNominationRouteStepRepository extends JpaRepository<LdNominationRouteStep,String>{List<LdNominationRouteStep>findByAgencyIdAndRouteIdOrderByLevelAsc(String agency,String route);Optional<LdNominationRouteStep>findByAgencyIdAndRouteIdAndLevel(String agency,String route,int level);}

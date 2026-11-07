@@ -1,0 +1,2 @@
+package com.primehr.evidence.application;import com.primehr.evidence.domain.EvidenceArtifact.SourceType;import java.time.Instant;
+public interface EvidenceLiveSourceVerifier{record Request(SourceType type,String sourceId,long sourceVersion,String sourceFingerprint,Instant sourceChangedAt){}record Snapshot(SourceType type,String sourceId,long sourceVersion,String sourceFingerprint,String sourceLabel,Instant sourceChangedAt){}Snapshot verify(String agency,Request request,String token,String actor,String correlation);}

@@ -1,6 +1,88 @@
-# ISOFT PRIME-HRM User Guide
+# ISOFT PRIME-HRM User Guide — Phases 1–12
 
-This guide covers the delivered standalone PRIME-HRM functions through Phase 6E.3: competency management, RSP, SPMS planning/monitoring/coaching, deterministic self/supervisor ratings, PMT calibration, immutable finalization, acknowledgment, appeal, and intervention/PIP backend controls. Phase 6E rating interfaces and later reporting are not yet implemented.
+**Document purpose:** Detailed operating handbook for employees, supervisors, HR/PrimeHR staff,
+committee members, approvers, administrators, and deployment/support personnel.
+
+**Coverage:** Completed PRIME-HRM Phases 1–12.
+
+**Product:** ISOFT HRIS — PRIME-HRM.
+
+**Document status:** Operational guide based on the verified Phase 1–12 implementation.
+
+**Last updated:** 7 November 2026.
+
+This guide explains how to perform work in PRIME-HRM, not merely what the menus contain. It covers
+competency management, position and person profiles, competency gaps, recruitment and selection,
+performance management, learning and development, rewards and recognition, career and succession
+planning, the Evidence Center, operational controls, and authenticated notifications.
+
+PRIME-HRM is part of ISOFT HRIS, but it remains a separately governed decision-support and workflow
+layer. It reads authoritative employee, appointment, position, Plantilla, organization, and
+permission data from CoreHR services. It does not silently rewrite CoreHR, Payroll, or Timekeeping
+records. Where an approved workflow must hand information to another module, the handoff remains
+explicit, traceable, permission-controlled, and subject to the receiving module's validation.
+
+## How to use this guide
+
+1. Start with **Access and sign-in** and **Permissions and responsibilities**.
+2. Use the phase map below to identify the business process you need.
+3. Follow the numbered procedure for your role. Do not skip readiness, source-freshness, conflict,
+   or approval checks.
+4. Read the lifecycle notes before changing a record. Published, approved, finalized, or historical
+   records are usually immutable; corrections normally create a successor instead of overwriting
+   history.
+5. Use **Common messages** and the final troubleshooting checklist when an action is unavailable.
+
+### Phase and capability map
+
+| Phase | Business capability | Main users | Primary result |
+|---|---|---|---|
+| 1 | Competency foundation | Competency administrators | Published categories, scales, levels, competencies, and indicators |
+| 2 | Position Competency Profiles | Profile authors and approvers | Effective Job Position/Plantilla competency requirements |
+| 3 | Assessments and Person Competency Profiles | Employees, assessors, validators | Immutable human-validated employee competency profile |
+| 4 | Competency gaps and L&D referral | HR/PrimeHR analysts | Explainable gap result and controlled referral input |
+| 5 | Recruitment, Selection, and Placement (RSP) | HR recruitment staff, HRMPSB, applicants | Vacancy-to-selection workflow and controlled HR appointment handoff |
+| 6 | Strategic Performance Management System (SPMS) | Employees, supervisors, PMT, HR/PrimeHR staff | OPCR/DPCR/IPCR planning, monitoring, rating, appeal, intervention, and reports |
+| 7 | Learning and Development (L&D) | Employees, supervisors, L&D staff | Needs, IDPs, plans, offerings, participation, completion, evaluation, and reports |
+| 8 | Rewards and Recognition (PRAISE) | Employees, PRAISE committee, HR staff | Governed nominations, decisions, awards, fulfillment, and reports |
+| 9 | Career and Succession Planning | Employees, succession committee, HR staff | Career paths, readiness, development, continuity, and controlled RSP referrals |
+| 10 | Evidence Center and readiness analytics | Framework owners, validators, action owners | Versioned evidence framework, assessments, corrective actions, and privacy-controlled analytics |
+| 11 | Integration and operational hardening | System administrators and support staff | Secure deployment, traceability, reconciliation, retention, legal holds, and recovery controls |
+| 12 | Action inbox and notifications | All authenticated users | Authenticated-own notifications, safe target routing, and bounded reminders |
+
+### Roles used throughout the guide
+
+| Role | Typical responsibility | Important limitation |
+|---|---|---|
+| Employee | Complete own assessments, commitments, learning, acknowledgments, nominations, and assigned actions | Cannot select another employee or approve own work unless an explicitly authorized exception exists |
+| Supervisor/owner | Prepare or review assigned office/employee work and provide coaching or ratings | Authority comes from the stored assignment/route, not merely a job title |
+| Author/processor | Create drafts and submit operational records | Submission does not imply approval |
+| Approver/validator | Independently return, approve, validate, or finalize assigned work | Must satisfy permission, route, data scope, lifecycle, and conflict rules |
+| Committee/PMT member | Perform frozen-roster deliberation, calibration, evaluation, or decision work | Membership alone does not bypass conflict, voting eligibility, or feature permission |
+| PRIME-HRM administrator | Maintain governed definitions and administer authorized exceptions | Administrator override requires an explicit reason and is audited |
+| Technical operator | Deploy, monitor, reconcile, retain, and support the service | Operations controls do not permit editing business outcomes or purging records |
+
+### Rules that apply to every module
+
+- **Access is not authority to act.** Add, Edit, Delete, Submit, Approve, Publish, Finalize, Assess,
+  Validate, and data scope are enforced independently where applicable.
+- **The backend is authoritative.** A visible button does not grant permission, and a hidden button
+  is not the only security control.
+- **Identity comes from authentication.** Employee Portal pages derive the employee from the signed-in
+  account and do not trust an employee number supplied by the browser.
+- **Drafts are working records.** Submitted records are normally locked while awaiting action.
+- **Approved history is preserved.** Published, active, finalized, or completed records are normally
+  corrected through a successor, revision, reconsideration, or formally authorized reversal.
+- **Reasons matter.** Return, rejection, override, cancellation, revocation, and closure actions
+  require meaningful reasons when prompted.
+- **Reload after a conflict.** A stale `recordVersion`, source fingerprint, or HTTP 409 means another
+  user or source changed the record. Reload and review; do not repeatedly submit stale information.
+- **Source freshness matters.** If Administrative or HRM data changed, review the current position,
+  Plantilla, organization, appointment, employee, or qualification source before proceeding.
+- **Reports follow lifecycle.** A print action appears only when the source record and the user's
+  report/underlying workflow permissions allow it.
+- **Privacy is intentional.** Employee views omit restricted committee narratives, other employees'
+  data, confidential evidence, and small-cohort analytics.
 
 ## 1. Access and sign-in
 
@@ -37,7 +119,7 @@ Recommended role separation:
 - profile approver: independently returns or approves submissions;
 - system administrator: configures permissions and uses override only for an authorized exception.
 
-## 3. Competency foundation
+## 3. Competency foundation (Phase 1)
 
 Position Profiles can use only published, effective competency definitions and their exact published proficiency levels.
 
@@ -53,7 +135,7 @@ Use **Proficiency Scales** to define an agency scale and its levels. A level con
 
 Use **Competencies** to create a definition linked to a published category and scale. Add behavioral indicators for the applicable levels. Publish after validation. Published definitions are immutable; use **New version** for revisions.
 
-## 4. Position Competency Profiles
+## 4. Position Competency Profiles (Phase 2)
 
 Open **Position Profiles** to search, create, review, compare, and resolve profiles.
 
@@ -160,7 +242,7 @@ Audit History records create, update, submit, return, approve, publish, archive,
 
 If two users edit the same draft, the first valid save wins. A stale second save is rejected with an expected/current record-version message, the stale editor closes, and current server data reloads. Reopen the record and consciously reapply changes; do not bypass the conflict.
 
-## 10. Assessment administration
+## 10. Assessment administration (Phase 3)
 
 Open **Assessment Administration** to prepare cycles and tools. This page requires agency-wide assessment-administration access.
 
@@ -210,7 +292,52 @@ Open **Person Profiles** to view validated official results.
 
 The badge **VALIDATED OFFICIAL PROFILE** distinguishes official human-validated results from self or assessor contributions. Official versions cannot be edited or deleted. A later validated assessment creates a successor and closes the earlier open period when applicable.
 
-## 14. Qualification Standards
+## 14. Competency gap analysis and controlled L&D referral (Phase 4)
+
+Open **Competency Gaps** after an employee has a current active appointment, an effective Position
+Competency Profile, and at least one validated Person Competency Profile. The calculation is
+transparent and uses the exact historical source versions selected by the server.
+
+### Generate or review a gap analysis
+
+1. Confirm the employee's current HRM appointment and effective Job Position/Plantilla assignment.
+2. Confirm that an ACTIVE Position Competency Profile resolves for the analysis date. A Plantilla
+   profile takes precedence; otherwise the Job Position profile is used.
+3. Confirm that the employee has a validated Person Competency Profile effective on the date.
+4. Open **Competency Gaps**, select or enter the permitted employee, and choose the analysis date.
+5. Select **Generate Analysis**. Repeated generation with the same employee and source versions is
+   idempotent and returns the existing analysis rather than duplicating it.
+6. Review every row:
+   - `MEETS` means the attained ordered level equals the required level;
+   - `ABOVE` means the attained level is higher than required;
+   - `BELOW` means the required level is higher than attained;
+   - `NOT_ASSESSED` means compatible validated evidence was not available. It is never treated as
+     level zero.
+7. Review the displayed formula, priority, explanation, source versions, appointment fingerprint,
+   and generation time. Print the gap PDF only when the exact report permission and record scope
+   allow it.
+
+### Maintain development-priority rules
+
+Agency-wide authorized staff may maintain versioned priority schemes. Define how gap magnitude,
+mandatory/desirable classification, criticality, and not-assessed conditions map to a development
+priority. Publish only after review. A later rule change creates a successor; it does not recalculate
+or overwrite an earlier immutable analysis.
+
+### Prepare a manual L&D referral
+
+1. Open an immutable gap analysis and select **Create L&D Referral**.
+2. Select only actionable `BELOW` or `NOT_ASSESSED` rows.
+3. Add the permitted referral remarks and save the draft.
+4. Remove an item only while the referral remains a draft.
+5. Review that at least one active actionable item remains, then select **Submit Referral**.
+
+`REFERRED` means the competency-gap recommendation is ready for L&D intake. It is not an approved
+IDP, training request, budget authorization, nomination, enrollment, or completion. Phase 7 staff
+must still review and disposition the need through the governed L&D workflow. The same immutable gap
+item cannot be claimed by multiple active draft/referred records.
+
+## 15. Qualification Standards (Phase 5 RSP foundation)
 
 Qualification Standards are maintained in **Administrative > Qualification Standards** and belong to the authoritative Job Position master.
 
@@ -221,7 +348,7 @@ Qualification Standards are maintained in **Administrative > Qualification Stand
 
 The PrimeHR vacancy workflow will not treat manually retyped requirements as authoritative. It resolves the effective published Qualification Standard and snapshots its exact ID, version, content, fingerprint, and fetch time.
 
-## 15. Recruitment planning and vacancy publication
+## 16. Recruitment planning and vacancy publication
 
 Open **Recruitment Planning** in PRIME-HRM. The initial workflow requires `AGENCY_WIDE` data scope because authoritative office-assignment responsibility is not yet available.
 
@@ -260,7 +387,7 @@ Publication: DRAFT/RETURNED -> SUBMITTED -> APPROVED -> PUBLISHED -> CLOSED
 
 Cancellation and return actions require the applicable permission and reason. Material transitions recheck authoritative source freshness. A `409` message means source data or the record version changed; reload and review current facts before retrying.
 
-## 16. Careers and applicant self-service
+## 17. Careers and applicant self-service
 
 Careers is a separate public/applicant surface at `/careers`. It does not use an employee account, Employee Portal token, or PrimeHR staff session.
 
@@ -301,7 +428,7 @@ Replacement creates a new document version. It does not alter the file evidence 
 
 Only an open `PUBLISHED` vacancy accepts an application. A duplicate active application, stale record version, incomplete profile/declaration, missing required document, expired window, or changed vacancy returns a validation/conflict message and does not create a second accepted submission.
 
-## 17. Applicant intake for authorized staff
+## 18. Applicant intake for authorized staff
 
 Administrative permission rules use **PRIME-HRM > Applicant Intake**:
 
@@ -325,7 +452,7 @@ Before enabling applicant uploads outside a local QA environment:
 
 The application fails closed when applicant/storage functionality is enabled without required secure storage or token configuration.
 
-## 18. Screening policies and application screening
+## 19. Screening policies and application screening
 
 Administrative permission rules use two independent PRIME-HRM rows:
 
@@ -356,7 +483,7 @@ An administrator override is an exceptional action requiring administrator autho
 
 Careers displays only applicant-safe status and communication. It never exposes findings, internal explanations, policy instructions, staff identities, or audit data. `QUALIFIED`/`NOT QUALIFIED` is a screening result, not selection, appointment, or onboarding.
 
-## 19. Phase 5D evaluation operations
+## 20. Examination, interview, HRMPSB, selection, and appointment handoff
 
 Configure **Evaluation Policy**, **HRMPSB Governance**, and **Candidate Evaluation** independently in Administrative. Access does not imply action authority. Published policies and committees are immutable; create effective successors for future changes.
 
@@ -366,7 +493,64 @@ Generate comparative evaluation only after all mandatory validated inputs and mi
 
 Careers exposes only the applicant's progress and approved schedule details. Never disclose scores, rankings, panel identities/ratings, conflicts, reference notes, minutes, evidence, or recommendations through applicant communication.
 
-## 20. Common messages
+### Configure the evaluation foundation
+
+1. Create a draft **Evaluation Policy** that defines stages, criteria, weights, maximum and passing
+   scores, evidence requirements, minimum raters, rounding, and tie treatment.
+2. Validate that stage and criterion weights are complete. Publish the policy with its effectivity.
+3. Create the HRMPSB committee/roster with the correct effective members and controlled roles.
+4. Publish the roster. Use a successor for future membership changes; never rewrite the frozen
+   roster used by an existing proceeding.
+
+### Conduct candidate evaluation
+
+1. Admit only applications with a finalized qualified screening result.
+2. Open the proceeding and confirm the frozen vacancy, publication, qualification, policy, committee,
+   application, and screening snapshots.
+3. Schedule each required examination, interview, or other stage. Publish only applicant-safe
+   schedule details to Careers.
+4. Record attendance. Assign only eligible, non-conflicted evaluators.
+5. Record examination results and submit them for independent validation when the stage requires it.
+6. Each panel member records and submits their own ratings. A member cannot edit another member's
+   rating or view confidential peer work before the lifecycle permits it.
+7. Record lawful reference-check facts separately from applicant-safe communication.
+8. When every mandatory validated input and minimum-rater rule is satisfied, generate the comparative
+   evaluation. Review stage totals, exclusions, ties, and the deterministic calculation fingerprint.
+9. Record eligible HRMPSB attendance, verify quorum, conduct deliberation, and finalize the committee
+   recommendation with its required reason/minutes reference.
+
+### Selection and offer
+
+The HRMPSB recommendation is advisory. An authorized appointing/selection workflow must make the
+selection decision independently. Record the selected candidate, lawful reason, source version,
+offer events, acceptance/decline/expiry outcome, and any controlled successor action. Do not mark a
+candidate appointed merely because they ranked first or received an HRMPSB recommendation.
+
+### Controlled HRM appointment handoff and onboarding
+
+1. Submit only a finalized selection with an accepted offer and complete required evidence.
+2. PrimeHR sends an idempotent handoff to HRM. Repeating the same key returns the existing receipt;
+   it must not create duplicate employee or appointment rows.
+3. HRM explicitly links an existing employee or validates unique employee and biometric numbers for
+   a new employee. Applicant passwords and applicant-profile data are not copied as a PDS.
+4. HRM re-resolves authoritative Plantilla, Job Position, Business Unit, Nature of Appointment,
+   Salary Schedule, and qualification sources before appointment creation.
+5. Complete onboarding checklist items and independently verify required evidence.
+6. Create/finalize Personnel Action, Oath, Assumption, and onboarding-completion documents only when
+   their source lifecycle permits it. A finalized legal document is immutable; correction creates a
+   linked successor.
+7. For a new employee, issue the configured one-time account activation invitation. Existing
+   employees retain their current credentials.
+
+### RSP reports and privacy
+
+Use **RSP Reports** for finalized Comparative Evaluation, Selection and Appointment Process Record,
+Confidential Evidence Index, paginated RSP Register, and process analytics. Use HRM's Appointment and
+Onboarding reports for Personnel Action, completed onboarding, and finalized Oath/Assumption outputs.
+The general register intentionally excludes candidate identity. The Evidence Index exposes metadata,
+not private file bytes, paths, storage keys, credentials, or download tokens.
+
+## 21. Common messages
 
 - **Access denied**: ask an administrator to review the exact feature/action permissions, then sign in again through the portal.
 - **Incomplete**: supply effective-from and at least one active, valid requirement.
@@ -400,7 +584,7 @@ Careers exposes only the applicant's progress and approved schedule details. Nev
 - **Minimum raters/results not complete**: complete all mandatory submitted/validated inputs; missing results are not zero.
 - **Quorum is not met**: record eligible attendance before beginning or finalizing deliberation.
 
-## 21. Operational controls
+## 22. Phase 6–12 detailed operating procedures
 
 ### Phase 6A performance foundation
 
@@ -416,7 +600,48 @@ Create and publish the effective SPMS policy first. Then create a cycle tied to 
 
 For PMT governance, enter the mandate/effectivity and an employee-number roster using only the controlled roles shown by the screen. Activation requires exactly one effective chairperson and verifies active employment through the authenticated HRM contract. If HRM is unavailable, no activation change is saved. Active rosters are immutable and deactivation preserves their history.
 
-Phase 6A does not include performance templates, KRA/KPI definitions, OPCR/DPCR/IPCR commitments, monitoring, ratings, calibration, coaching, appeals, or reports. Those later capabilities remain approval-gated.
+Complete these foundation records before using the definition, planning, monitoring, rating, and
+reporting procedures below.
+
+### Phase 6B performance definitions and templates
+
+Administrative independently controls **Performance Rating Scales**, **Success Indicators**, and
+**Performance Templates**. These are versioned definitions; published versions are immutable.
+
+#### Create a rating scale
+
+1. Open **Performance Rating Scales** and create a draft code, title, description, rounding rule,
+   effectivity, and legal/policy basis.
+2. Add ordered rating bands with non-overlapping score boundaries and labels.
+3. Preview representative scores and confirm every permitted result maps to exactly one band.
+4. Check readiness and publish. Use a successor for future changes.
+
+#### Create success indicators
+
+1. Open **Success Indicators** and create the indicator definition.
+2. Choose the measure type and direction and define quality, efficiency, timeliness, or other
+   permitted dimensions.
+3. Configure exact thresholds/bands, weights, evidence expectation, calculation guidance, and
+   effectivity.
+4. Preview boundary values. Ensure there are no gaps, overlaps, or ambiguous mappings.
+5. Publish only when complete; later corrections use a successor.
+
+#### Create OPCR, DPCR, or IPCR templates
+
+1. Open **Performance Templates** and create a draft for `OPCR`, `DPCR`, `IPCR`, or an authorized
+   custom form.
+2. Bind the exact published policy and rating-scale versions.
+3. Add ordered sections such as Strategic, Core, Support, or Other.
+4. Set section weights to total 100%.
+5. Add published success indicators to each section, configure item weights, required flags, label
+   overrides, and evidence overrides. Confirm each section's items form a complete weight structure.
+6. Select **Check publication readiness** and resolve every error.
+7. Use **Preview template score** with representative values to verify the formula and rating band.
+8. Publish with effectivity and an approval reason. Use **Create revision** for future changes or
+   retire an obsolete version with a reason.
+
+The system stores the exact policy, scale, indicator, and template versions in downstream
+commitments. Publishing a new definition does not recalculate historical commitments or ratings.
 
 ### Phase 6C performance planning and approval
 
@@ -430,9 +655,11 @@ Use **Office Commitments** or **Individual Commitments** to generate a draft fro
 
 Employees use **Employee Portal → Employee Self Service → My Performance Commitments** for their own IPCR records. The server derives ownership from the authenticated account; the page does not accept an employee number or ID. Employees may edit and submit only when their exact permission actions and lifecycle state permit it.
 
-Phase 6C does not include accomplishments, monitoring, coaching, ratings, calibration, appeals, or reports. Those remain Phase 6D and require separate approval.
+After a commitment is approved, continue with the Phase 6D monitoring/coaching and Phase 6E
+rating/calibration procedures below. Planning approval alone does not create an accomplishment or
+final rating.
 
-### Phase 6D.1 performance monitoring backend
+### Phase 6D.1 performance monitoring
 
 An approved commitment with a completed approval route can open one monitoring case. The case keeps the exact commitment, policy, cycle, owner, organization, and approval-route fingerprints used when monitoring began. Opening the same commitment again is idempotent and does not create a duplicate case.
 
@@ -444,7 +671,7 @@ Final accomplishment submission checks every required commitment item and its ev
 
 Authorized supervisors and PMT users operate these records from **PrimeHR → Monitoring Inbox**. Employees use **Employee Portal → Employee Self Service → My Performance Monitoring**. The inbox and portal controls appear only when both the exact permission action and current lifecycle permit the operation.
 
-### Phase 6D.2 coaching and mid-cycle backend
+### Phase 6D.2 coaching and mid-cycle review
 
 The assigned supervisor from the immutable commitment route creates a coaching session against the monitoring case and may link exact commitment items. Employee-visible guidance is stored separately from restricted supervisor notes. Issuing a session freezes that revision; a correction creates a linked successor rather than replacing history.
 
@@ -456,7 +683,7 @@ A mid-cycle review is available only when the exact published policy version req
 
 Administrative manages `primehr.performance-monitoring` and `primehr.performance-coaching` separately. Access, Add, Edit, Submit, and Approve are independent, and data scope is limited to Own Records, Assigned Records, or Agency Wide. A hidden menu is not authorization; the server also verifies ownership, the immutable supervisor route, PMT process role where required, record state, and record version.
 
-### Phase 6D.3 interface operation
+### Phase 6D.3 employee and supervisor operation
 
 In **Monitoring Inbox**, select a permitted case to review its approved commitment-item snapshot and progress history. Use the lifecycle buttons to accept or return submitted updates, return final accomplishments, issue or void coaching, verify or reopen completed action items, and submit or close a mid-cycle review. A stale-write response means another user changed the record; reload before deciding again.
 
@@ -464,31 +691,65 @@ In **My Performance Monitoring**, employees can work only on the case returned f
 
 Monitoring percentages and accomplishments are informational inputs only. These screens do not calculate, approve, or publish a rating and do not create calibration, appeal, PIP, L&D, R&R, or promotion records. Those remain outside Phase 6D.
 
-### Phase 6E.1 rating foundation backend
+### Phase 6E.1 employee and supervisor ratings
 
 After the employee submits a complete accomplishment set, the exact assigned supervisor may open one rating case for that accomplishment revision during the configured `RATING_DUE` window. Opening snapshots the approved commitment, selected latest submitted/accepted item updates, evidence checksums, exact indicator/rubric versions, section/item weights, rating scale, policy, route, and organization fingerprints. The monitoring case becomes `READY_FOR_RATING`; later definition changes cannot alter the snapshot.
 
 When the exact policy requires self-assessment, the employee may create and submit only their own `SELF` assessment. The stored supervisor may create and submit only the `SUPERVISOR` assessment, and supervisor submission is blocked until the required self-assessment is submitted. Drafts remain private to their author. A submitted correction creates a successor revision and preserves the original.
 
-Users provide only a numeric actual for threshold rubrics or an exact permitted band for manual rubrics. The backend maps each dimension to exactly one rubric level, applies dimension, item, and section weights, rounds with the immutable rating-scale rule, and resolves exactly one overall band. Calculated scores, statuses, formula version, and fingerprints are server-owned. Phase 6E.1 does not expose a frontend yet and does not calibrate or publish a final rating.
+Users provide only a numeric actual for threshold rubrics or an exact permitted band for manual rubrics. The backend maps each dimension to exactly one rubric level, applies dimension, item, and section weights, rounds with the immutable rating-scale rule, and resolves exactly one overall band. Calculated scores, statuses, formula version, and fingerprints are server-owned.
 
-### Phase 6E.2 PMT calibration and finalization backend
+Employees complete required self-assessment from **Employee Portal → My Performance Ratings**.
+Supervisors open **Performance Ratings**, select the assigned rating case, review the immutable source
+snapshot, enter only permitted actuals/bands and remarks, then submit. Neither user types the overall
+score or final band.
+
+### Phase 6E.2 PMT calibration and finalization
 
 When the exact published policy requires calibration, an authorized effective PMT member opens a calibration case against the submitted supervisor assessment. The case snapshots the effective PMT roster and its revision. The rating subject, assigned supervisor, secretariat, technical-support, and non-voting members remain visible for traceability but cannot vote.
 
 Calibration proposals change exact item/dimension actuals and require a rationale. They cannot type an overall score: the backend reruns the Phase 6E.1 calculation and preserves the original self/supervisor assessments beside the calibrated proposal. A strict majority of eligible, non-conflicted, independent voters approves or rejects the proposal; an otherwise eligible proposal author is excluded from that electorate. Every decision advances the optimistic record version, and retries with the same idempotency key return the existing result.
 
-Finalization is allowed only in the configured `FINALIZATION_DUE` window and by an effective, non-conflicted voting PMT member with the exact Finalize permission. The proposal author cannot finalize their own calibrated result. Policies that do not require calibration use the submitted supervisor assessment directly. The resulting rating is immutable and retains its calculation fingerprint, exact source assessment, calibration lineage where applicable, finalizer, and time. Phase 6E.2 has no frontend yet and does not acknowledge, appeal, create an intervention/PIP, or feed other modules.
+Finalization is allowed only in the configured `FINALIZATION_DUE` window and by an effective, non-conflicted voting PMT member with the exact Finalize permission. The proposal author cannot finalize their own calibrated result. Policies that do not require calibration use the submitted supervisor assessment directly. The resulting rating is immutable and retains its calculation fingerprint, exact source assessment, calibration lineage where applicable, finalizer, and time.
 
-### Phase 6E.3 acknowledgment, appeal, and intervention backend
+Authorized PMT members perform this work in **Performance Calibration**. Review original self and
+supervisor assessments beside the proposal, record independent votes, verify majority/quorum and
+conflicts, then use the lifecycle-eligible finalization action. The interface never accepts a typed
+overall score.
+
+### Phase 6E.3 acknowledgment, appeal, and intervention
 
 An employee may acknowledge receipt of their exact latest final-rating revision during the configured `ACKNOWLEDGMENT_DUE` window. Acknowledgment records receipt only and does not mean agreement. Closing without employee acknowledgment requires a reason, agency-wide Finalize authority, and an effective PMT member.
 
 The authenticated employee may create and submit an appeal only for their own latest final rating during `APPEAL_DUE`. Evidence is stored securely and downloaded only after authorization. An effective, voting, non-conflicted PMT member with agency-wide approval authority decides the appeal; the subject and assigned supervisor cannot decide it. A modified decision reruns the authoritative server calculation and creates a linked successor final-rating revision without overwriting the original.
 
-Intervention rules bind exact policy, scale, and rating-band versions to `NONE`, `ALERT`, `PIP_RECOMMENDED`, or `PIP_REQUIRED`. Finalization and modified appeals evaluate that mapping idempotently. PIP records objectives, support, accountable employee, dates, checkpoints, employee receipt, completion, and closure. Employee views receive employee-visible feedback but not restricted PMT notes. These backend operations do not create discipline, change CoreHR, or feed payroll, timekeeping, recruitment, L&D, R&R, or reporting.
+Intervention rules bind exact policy, scale, and rating-band versions to `NONE`, `ALERT`, `PIP_RECOMMENDED`, or `PIP_REQUIRED`. Finalization and modified appeals evaluate that mapping idempotently. PIP records objectives, support, accountable employee, dates, checkpoints, employee receipt, completion, and closure. Employee views receive employee-visible feedback but not restricted PMT notes.
 
-### Phase 5E operational readiness
+Employees acknowledge, appeal, upload permitted appeal evidence, and review employee-visible PIP
+details in **My Performance Ratings**. Authorized PMT staff use **Performance Appeals** and
+**Performance Interventions** for assigned decisions and lifecycle work. These workflows do not
+create discipline, change CoreHR, or feed Payroll, Timekeeping, recruitment, L&D, R&R, or promotion.
+
+### Phase 6F performance reports
+
+Administrative manages five independent reporting permissions: **Performance Planning and Rating
+Forms**, **Performance Monitoring and Development Reports**, **Performance Register Report**,
+**Performance Aggregate Analytics**, and **Performance Outcome Feed**. Grant only the required data
+scope and have the user sign in again after changing a ruleset. Register, analytics, and the outcome
+feed require Agency Wide scope at the backend.
+
+Authorized staff use **PrimeHR → Performance Reports** to generate lifecycle-eligible planning,
+rating, monitoring, coaching, development-plan, and intervention PDFs. The same workspace provides
+the paginated final-rating register and privacy-threshold aggregate analytics when their exact
+permissions allow them. A hidden card or menu is not authorization; the server also checks the
+underlying workflow permission, record scope, ownership or assignment, and source lifecycle.
+
+Employees use **Employee Portal → Employee Self Service → My Performance Reports**. The page lists
+only records returned by authenticated `/mine` endpoints, never accepts an employee number, and
+opens only reports owned by that account. Unauthorized direct URLs redirect to Dashboard. The
+performance-outcome feed is an API-only read contract and is not shown in either frontend.
+
+### Cross-module operational readiness reminders
 
 - Phase 5E.1-5E.4 workflows and UI are available only through their exact authorization boundaries.
 - Publish one effective onboarding template before PrimeHR submits a selected candidate handoff. Receipt and case creation fail together when no effective template exists.
@@ -505,3 +766,667 @@ Intervention rules bind exact policy, scale, and rating-band versions to `NONE`,
 - Review audit history before approval.
 - Back up and migrate through reviewed provider-specific Flyway migrations; do not manually edit an applied migration.
 - Validate the application against SQL Server and PostgreSQL before deploying a provider switch.
+
+### Phase 7 — Learning and Development operation
+
+Administrative exposes separate permission rows for L&D Governance, Needs, Individual Development
+Plans, Office/Agency Plans, Programs/Offerings, Nominations, Delivery/Completion,
+Evaluation/Follow-through, Formal Reports, Aggregate Analytics, and the API-only Completion Feed.
+Grant only the required action and data scope, then have the user sign in again.
+
+Authorized staff use the seven **PrimeHR → L&D** workspaces to review in-scope records and perform
+only lifecycle actions assigned to them. Approved and published source versions are immutable.
+Returned work is corrected through the workflow; stale record-version messages require a reload
+before retrying. Aggregate effectiveness is available only in **L&D Reports** to a user with the
+independent Agency Wide analytics permission.
+
+Employees use **Employee Portal → Employee Self Service → My Learning**. The server derives the
+employee from the authenticated account and the page has no employee selector. Employees see only
+their own needs, IDPs, nominations, schedules, completion records, evaluation tasks, and learning
+action plans. IDP printing is enabled only for an approved plan, while completion/evaluation
+packets require a completed record.
+
+The generated IDP, Training Order, completion packet, and evaluation summary are authoritative
+agency operational reports based on immutable source records. They are not represented as a
+prescribed CSC form unless the agency separately approves a matching branded layout. L&D completion
+does not automatically write PDS training history, change competencies, close a performance
+intervention, grant a reward, or create a promotion/succession decision.
+
+#### 7.1 Configure governance and catalog records
+
+1. Open **L&D Governance & Catalog**.
+2. Create the governing policy version, learning intervention/catalog entries, evaluation framework,
+   provider/resource-person records, and required effectivity information.
+3. Review classification, delivery mode, evidence, evaluation, and follow-through requirements.
+4. Publish the approved version. Published definitions are immutable; use an effective successor
+   for later changes.
+
+Do this before processing needs or planning offerings. A draft or expired definition cannot serve as
+an authoritative source for a new approved downstream record.
+
+#### 7.2 Record and disposition a learning need
+
+1. Open **L&D Needs & IDPs** and select the employee within your permitted data scope.
+2. Create a need from an authorized source such as a competency-gap referral, performance finding,
+   succession-development requirement, or supported manual assessment.
+3. Preserve the source reference and explain the learning/development requirement. Do not turn an
+   unverified recommendation directly into an enrollment.
+4. Review and disposition the need. Return incomplete work with a reason, or accept it for IDP
+   development according to the configured process.
+
+#### 7.3 Prepare and approve an Individual Development Plan
+
+1. Create the IDP against the employee and accepted needs.
+2. Add development items with objective, activity/intervention, target competency or outcome,
+   support/resources, accountable parties, planned dates, and success/follow-through measures.
+3. Save the draft and review it with the employee and supervisor.
+4. Submit the plan. The configured route follows `DRAFT → SUBMITTED → RECOMMENDED → APPROVED`, with
+   supported return/resubmission and cancellation.
+5. The recommender verifies relevance and support; the final approver verifies authority, feasibility,
+   and source integrity.
+6. Print the IDP only after it reaches **APPROVED**.
+
+An approved IDP does not itself reserve funding, nominate the employee, confirm a seat, or prove
+completion.
+
+#### 7.4 Consolidate office and agency plans
+
+1. Open **L&D Plans & Programs**.
+2. Create an office plan from approved needs/IDPs and authoritative organizational scope.
+3. Consolidate supported office demand into the agency plan without exposing restricted personal
+   narrative.
+4. Submit, approve, and publish the plan. Plan lifecycle is
+   `DRAFT → SUBMITTED → APPROVED → PUBLISHED`.
+5. Create a program design only from a published plan. Define objectives, audience, learning methods,
+   provider/resource requirements, evaluation design, and expected outputs.
+6. Submit and approve the program design.
+7. Create scheduled offerings with venue/mode, dates, capacity, resource persons, and delivery
+   details. Submit, approve, then publish the offering. A published offering may be explicitly
+   cancelled with a reason; it is not edited in place.
+
+#### 7.5 Nominate, approve, enroll, and issue a Training Order
+
+1. Open **L&D Nominations** and choose a published offering.
+2. Nominate an employee from an approved need/IDP or another permitted source.
+3. Verify eligibility, schedule, capacity, funding/authority reference, and absence of a duplicate
+   active nomination.
+4. Submit through the configured approval route.
+5. On approval, confirm enrollment. Use substitution or cancellation only through the controlled
+   lifecycle, retaining the original participant history and reason.
+6. Generate the Training Order only from the approved authoritative source. Review subject, schedule,
+   participants, resource/support roles, dress/attendance instructions, and agency details before
+   printing.
+
+#### 7.6 Record delivery, attendance, output, and completion
+
+1. Open **L&D Delivery** for the scheduled offering.
+2. Record session delivery and participant attendance using the approved roster.
+3. Record required outputs/evidence references. Do not mark a participant complete solely because
+   they were enrolled.
+4. Prepare the completion record. Lifecycle is
+   `DRAFT → FOR_VERIFICATION → COMPLETED` or `NOT_COMPLETED`.
+5. An independent authorized verifier confirms attendance, outputs, and completion requirements.
+   Terminal results are retained as history.
+
+#### 7.7 Evaluate effectiveness and follow through
+
+1. Open **L&D Evaluation** and complete the assigned immediate or delayed evaluation task.
+2. Record authorized evaluation results and supporting remarks/evidence.
+3. Submit the task for the required review/approval.
+4. Create and monitor a Learning Application/Action Plan where transfer of learning is required.
+5. Supervisors verify follow-through outcomes; incomplete or unsupported claims are returned rather
+   than counted as successful transfer.
+
+#### 7.8 Employee Portal: My Learning
+
+Employees open **Employee Self Service → My Learning** to view only their own needs, approved IDPs,
+nominations, schedules, completion records, assigned evaluation tasks, and action plans. The page has
+no employee selector. Employees should review schedule changes, complete assigned evaluation/action
+work, and use print actions only when the underlying record is eligible.
+
+#### 7.9 L&D reports and analytics
+
+Use **L&D Reports** for approved IDP, approved Training Order, completed participant packet, and
+completed evaluation/follow-through summary. Aggregate effectiveness requires a separate Agency
+Wide analytics permission. Groups below the configured privacy cohort are suppressed. The
+completion feed is read-only and API-only; it is not a user-facing page and does not write a PDS.
+
+### Phase 8 — Rewards and Recognition (PRAISE) operation
+
+Administrative exposes separate permission rows for PRAISE Governance, Committee, Cycle,
+Nomination, Eligibility, Evaluation, Award, Fulfillment, Reports, and Aggregate Analytics. Grant
+only the needed action and data scope, then have the user sign in again. Aggregate analytics always
+requires the independent Agency Wide analytics permission.
+
+Authorized staff use the six **PrimeHR -> PRAISE** workspaces for governance; committee and cycles;
+nominations; eligibility and evaluation; awards and fulfillment; and reports and analytics. Menu
+visibility does not grant authority: the backend also validates action, data scope, nomination
+ownership or frozen committee assignment, lifecycle, conflicts, and record version. Reload before
+retrying a stale-write response.
+
+Employees use **Employee Portal -> Employee Self Service -> My Nominations & Recognitions**. The
+server derives identity from the authenticated account and the page has no employee selector.
+Employees see only permitted nominations and publication-safe recognition results. Withdrawal is
+available only for an eligible own nomination, while PDF actions appear only when the underlying
+record and report permission allow them.
+
+PRAISE operational PDFs use immutable source data and SQL-free bean-driven Jasper input. The
+generic ISOFT nomination, evaluation, award/citation-source, and annual-register layouts are not
+represented as prescribed CSC/HAP forms. Use an agency-approved template when the current PRAISE or
+Honor Awards Program cycle requires one. Aggregate metrics are suppressed below the configured
+minimum cohort and never rank employees or infer protected characteristics. Rewards records do not
+post Payroll, change an appointment or salary, grant promotion, or create a succession decision.
+
+#### 8.1 Establish PRAISE governance
+
+1. Open **PRAISE Governance**.
+2. Create the policy/program version, legal basis, effectivity, categories, eligibility rules,
+   evaluation framework, decision rules, evidence requirements, and fulfillment expectations.
+3. Review the configuration for the intended award cycle, then publish it.
+4. Create an effective successor for later policy changes. Existing nominations and awards continue
+   to reference their exact frozen version.
+
+#### 8.2 Configure committee and award cycle
+
+1. Open **PRAISE Committee & Cycles**.
+2. Create the committee roster and controlled roles. Confirm active employment and conflict rules.
+3. Activate/publish the roster with effectivity.
+4. Create the award cycle, bind the exact governance/category versions, nomination window,
+   evaluation period, and expected decision dates.
+5. Open the cycle only after the roster, categories, evidence rules, and dates are complete.
+
+#### 8.3 Prepare and submit a nomination
+
+1. Open **PRAISE Nominations** or, for an employee-authorized pathway, **My Nominations &
+   Recognitions** in Employee Portal.
+2. Choose the open cycle/category and eligible nominee type.
+3. Enter the nomination narrative and accomplishment facts. Attach/reference only permitted evidence.
+4. Review declarations, consent/authority, deadlines, and category-specific completeness.
+5. Submit the nomination. It becomes locked for normal editing.
+6. Withdraw only an eligible own nomination while the lifecycle allows it; the reason and history
+   are retained.
+
+Submission is not an award. The system must still determine eligibility, conduct independent
+evaluation, record the committee recommendation, and issue a final authorized decision.
+
+#### 8.4 Eligibility, conflicts, evaluation, and decision
+
+1. Open **PRAISE Eligibility & Evaluation** and initialize/review the case.
+2. Validate nominee, category, cycle, evidence, and policy source versions.
+3. Record eligibility findings. An ineligible result requires the configured reason and explanation.
+4. Declare committee conflicts or recusals. Replace an ineligible/conflicted assignee through the
+   controlled workflow; never share another evaluator's account.
+5. Each assigned evaluator records and submits their own scores/findings against the frozen criteria.
+6. Generate the supported recommendation only after required evaluations are complete.
+7. The independent authorized decision maker/committee records the final decision with the required
+   reason. Reconsideration follows the controlled successor/review path and does not overwrite the
+   original decision.
+
+#### 8.5 Confer award and record fulfillment
+
+1. Open **PRAISE Awards & Fulfillment** after an approved decision.
+2. Confer the award, preserving the exact nominee, cycle, category, decision, citation source, and
+   authority.
+3. Record incentive authorization separately from fulfillment. An award record does not itself post
+   a Payroll transaction.
+4. Record fulfillment evidence such as ceremony, certificate/citation, non-cash incentive, or other
+   approved delivery facts.
+5. Use successor correction or revocation only with the authorized action and reason; retain the
+   original award history.
+6. For external Honor Awards Program processing, record only the packet event lifecycle:
+   `PREPARED → ENDORSED → SUBMITTED → ACKNOWLEDGED/RETURNED`, or `WITHDRAWN`. PRIME-HRM does not claim
+   to perform CSC adjudication.
+
+#### 8.6 Employee Portal and reports
+
+Employees use **My Nominations & Recognitions** to view only permitted own nominations and
+publication-safe recognition results. Internal eligibility notes, evaluator identities/scores,
+committee deliberation, and other nominees are not exposed.
+
+Use **PRAISE Reports** for lifecycle-eligible nomination, evaluation, award/citation-source, and
+annual-register outputs. Confirm whether the agency requires a cycle-specific official HAP form;
+the generic ISOFT PDF is an operational record, not automatically a prescribed CSC form. Aggregate
+analytics is independently permissioned, suppresses small cohorts, and must not be used as an
+employee leaderboard.
+
+### Phase 9 — Career and Succession Planning operation
+
+Administrative exposes separate permission entries for Succession Governance, Succession Committee,
+Career Paths, Critical Positions, Candidate Pools, Readiness, Development, Continuity, Reports, and
+Aggregate Analytics. Grant only the required actions and data scope, then have the user sign in again.
+Aggregate analytics requires its independent Agency Wide permission.
+
+Authorized staff use the seven **PrimeHR -> Succession** workspaces for governance; career paths and
+critical positions; candidate pools; readiness; development and membership lineage; continuity and
+controlled RSP referrals; and reports and analytics. Menu visibility does not grant authority. The
+backend also checks the exact action, Own/Assigned/Agency scope, frozen committee or panel role,
+conflict status, lifecycle, source freshness, and record version.
+
+Employees use **Employee Portal -> Employee Self Service -> My Career and Development**. Identity is
+derived from the authenticated account, and the page has no employee selector. Employees see only
+their candidate-safe notice and findings, expressly employee-visible readiness outcome/reason, and
+their own development milestones, reviews and membership history. Internal panel narrative,
+restricted deliberation, named confidential bench coverage and other employees' records are not
+shown. Eligible own readiness and development PDFs may be printed from that page.
+
+Succession PDFs are ISOFT operational records, not appointment, promotion, or prescribed merit-
+selection forms. Coverage analytics suppress cohorts below the configured privacy minimum and do
+not rank employees. A succession pool decision or RSP referral never automatically creates an RSP
+application, shortlist, selection, appointment, promotion, salary change, or Payroll transaction.
+
+#### 9.1 Configure governance and committee
+
+1. Open **Succession Governance**.
+2. Define the policy, readiness model, confidentiality rules, review periods, and permitted decision
+   outcomes. Publish the effective version.
+3. Create and activate the succession committee/panel roster with controlled roles and effectivity.
+4. Use successors for later policy or roster changes. Cases preserve the exact frozen versions used.
+
+#### 9.2 Define career paths and critical positions
+
+1. Open **Career Paths & Critical Positions**.
+2. Create career-path nodes and transitions using authoritative position references. Describe lawful
+   readiness/development prerequisites without promising automatic promotion.
+3. Create a critical-position assessment with business-continuity rationale, impact, vacancy/retirement
+   considerations, and supporting evidence.
+4. Submit it for independent review. The lifecycle is
+   `DRAFT → SUBMITTED → APPROVED` or `REJECTED`; an approved record may later be retired.
+5. Do not edit an approved critical-position decision in place.
+
+#### 9.3 Open a succession cycle and candidate pool
+
+1. Open **Succession Cycles & Candidate Pools**.
+2. Create a cycle using the exact governance, committee, career-path, and critical-position sources.
+3. Define the target position, intake window, eligibility/source basis, and confidential handling.
+4. Admit a candidate only through an authorized source and preserve candidate consent/notice where
+   required. Intake is not a promotion or selection.
+5. Freeze the pool/assignment information required for independent readiness assessment.
+
+#### 9.4 Assess readiness and decide pool membership
+
+1. Open **Succession Readiness** and initialize the candidate's case.
+2. Review authoritative current appointment, target position profile, person profile, competency gap,
+   evidence, and frozen panel facts.
+3. Record conflicts/recusals and assign eligible replacements through the controlled workflow.
+4. Each assigned assessor records their own findings. Restricted narrative remains panel-confidential;
+   explicitly employee-visible findings/reasons are stored separately.
+5. Complete the required review and final readiness decision. Never infer a decision solely from a
+   numeric score or competency gap.
+6. Record pool membership through the approved decision, preserving start/end and successor lineage.
+   A pool membership is development/continuity planning data, not a guarantee of appointment.
+
+#### 9.5 Create and monitor a succession development plan
+
+1. Open **Succession Development**.
+2. Create the plan against the candidate, target position, readiness result, and current pool
+   membership.
+3. Add milestones, actions, accountable persons, target dates, evidence expectations, and employee-
+   visible guidance.
+4. Submit/approve according to the configured lifecycle.
+5. Record milestone progress and review outcomes. Preserve membership history and plan successors;
+   do not erase a previous readiness or pool decision.
+
+#### 9.6 Maintain continuity coverage and controlled RSP referral
+
+1. Open **Succession Continuity & RSP Referrals**.
+2. Create the continuity plan for an approved critical position.
+3. Record confidential bench coverage from eligible finalized membership/readiness sources. Do not
+   publish named bench members in aggregate reports.
+4. Review, approve/finalize, and periodically reassess the plan against current sources.
+5. Where authorized, prepare a controlled RSP referral from an eligible succession source. The
+   referral is an input only; RSP must still apply vacancy, qualification, screening, merit-selection,
+   conflict, and appointment rules.
+
+#### 9.7 Employee Portal and reports
+
+Employees use **My Career and Development** to view their candidate-safe notice, expressly
+employee-visible readiness outcome/reason, own development milestones/reviews, and own membership
+history. They cannot see restricted panel narrative, confidential bench coverage, or other
+employees' records.
+
+Use **Succession Reports** for readiness, development, continuity, controlled RSP referral, and
+coverage register outputs. Aggregate coverage includes only finalized sources and suppresses cohorts
+below the configured privacy minimum. It must not be used to rank employees or bypass merit selection.
+
+### Phase 10 — PRIME-ESG Evidence Center operation
+
+Administrative exposes separate permission entries for Evidence Framework, Assessment, Validation,
+Corrective Actions, Reports, and Aggregate Analytics. Framework administration and analytics require
+Agency Wide scope. Assessment, validation, action, and report access may use Assigned Records or
+Agency Wide scope according to the exact permission. Have the user sign in again after changing a
+ruleset.
+
+Authorized staff use four **PrimeHR -> Evidence** workspaces. Framework Registry displays exact
+definition versions and permits publication only with publish authority. Evidence Assessments shows
+the user's assigned or agency-visible cases and permits only lifecycle-valid submission. Validation
+and Actions supports reasoned return/finalization and human readiness sign-off. Reports and Analytics
+shows missing/expiring evidence, overdue actions, and privacy-controlled cross-module aggregates.
+
+Reload before retrying a stale record-version response. A readiness correction must supersede the
+latest immutable snapshot. Evidence and analytics permissions never bypass the underlying source
+module's permission, confidentiality, freshness, or cohort suppression. Suppressed cells remain
+omitted rather than displaying derivable complementary totals.
+
+All Evidence Center calculations, snapshots, and PDFs are internal decision-support records. They
+are not an official CSC PRIME-ESG assessment, validation, certification, accreditation, award,
+score, or Governance Level. The phase does not expose evidence work in Employee Portal and does not
+rank employees, submit externally, or change CoreHR, Timekeeping, or Payroll records.
+
+#### 10.1 Configure the evidence framework
+
+1. Open **Evidence Framework**.
+2. Create the framework/version and define domains, indicators/requirements, evidence types,
+   validity/expiry rules, scoring or readiness semantics, and corrective-action expectations.
+3. Link only approved source-module definitions and record their exact versions.
+4. Run readiness/completeness checks and publish the framework with the required reason/effectivity.
+5. Use a successor for future changes. Existing assessments retain their frozen framework.
+
+#### 10.2 Conduct an evidence assessment
+
+1. Open **Evidence Assessments**.
+2. Create or open an assigned case using the permitted organization/source scope.
+3. Review the exact framework and source snapshots before recording findings.
+4. For each requirement, record evidence metadata, validity, sufficiency, expiry, and authorized
+   narrative. Do not store credentials, arbitrary HTML, or unrestricted source payloads.
+5. Submit the assessment when every required finding is complete. Submitted evidence is reviewed
+   under the frozen source/framework versions.
+
+#### 10.3 Validate, return, finalize, and correct readiness
+
+1. Open **Evidence Validation & Corrective Actions**.
+2. Review the submitted case, source freshness, evidence exceptions, and conflicts.
+3. Return incomplete/unsupported work with a meaningful reason, or finalize the human readiness
+   decision when authorized.
+4. If the decision produces gaps, create corrective actions with an owner, due date, required output,
+   and follow-up status.
+5. The action owner records progress/evidence; the validator verifies closure or reopens it with a
+   reason.
+6. A readiness correction must reference the latest snapshot ID and record version and creates a
+   successor. It never silently edits the finalized snapshot.
+
+#### 10.4 Reports, exceptions, and privacy analytics
+
+Use **Evidence Reports** to review missing/expiring evidence, overdue corrective actions, evidence
+index output, internal assessment output, and privacy-controlled aggregates. Report access does not
+automatically grant access to the underlying source module. Aggregate analytics is separately
+permissioned and applies both minimum-cohort suppression and source-module suppression. Suppressed
+cells remain omitted so complementary totals cannot be used to reconstruct protected data.
+
+There is intentionally no Employee Portal Evidence Center. Notifications may tell an employee that
+protected Evidence work exists, but the user must open the authorized PrimeHR destination and pass
+its permission checks.
+
+### Phase 11 — Deployment, integration, reconciliation, retention, and recovery
+
+#### 11.1 Deployment operation
+
+Deploy PRIME-HRM as a standalone service with its own database. Select exactly one explicit
+production profile: `production-postgresql` for cloud PostgreSQL or `production-sqlserver` for
+on-premise SQL Server. Production startup fails closed when mandatory secrets, agency identity,
+database credentials, CoreHR service URLs, or CORS origins are missing, local, or inconsistent with
+the selected provider. Never point PRIME-HRM at a CoreHR schema.
+
+Use `/actuator/health/liveness` for process health and `/actuator/health/readiness` for traffic
+readiness, including database availability. Both public responses intentionally omit component
+details. `/actuator/info` requires a valid staff token and should show the promoted release version.
+The complete environment-variable inventory, container command, promotion checks, and rollback
+procedure are recorded in
+[PHASE_11A_DEPLOYMENT_CONFIGURATION_SECURITY_REVIEW.md](./PHASE_11A_DEPLOYMENT_CONFIGURATION_SECURITY_REVIEW.md).
+
+#### 11.2 Integration and support operation
+
+Every PRIME-HRM response now includes `X-Correlation-Id`. When reporting an integration or API
+failure, provide that identifier, the time, and the action attempted; do not send the user's token or
+sensitive screen data. JSON errors also expose the same value as `correlationId`.
+
+Administrative and HumanResource lookups use configured connection/read timeouts. PRIME-HRM may
+retry a transient read failure a small bounded number of times, but it never automatically retries
+workflow POST/PUT commands. Appointment handoff retains its idempotency key and dedicated service
+credential; staff browser credentials are not replaced with a generic service identity.
+
+Downstream access denial remains denied. A missing source remains not found, a stale/conflicting
+source remains a conflict, and a dependency outage returns a stable service-unavailable response.
+Wait for the dependency to recover before retrying a command; never work around an outage by
+granting broader permissions. The exact transport and error matrix is recorded in
+[PHASE_11B_INTEGRATION_RELIABILITY_TRACEABILITY_REVIEW.md](./PHASE_11B_INTEGRATION_RELIABILITY_TRACEABILITY_REVIEW.md).
+
+#### 11.3 Operations workspace
+
+Only an agency-wide user with the exact `primehr.operations` permission may open **Operations**.
+Access, Add, Edit, and Delete-style administrative actions remain independent. In this workspace,
+"Delete" does not expose a purge control; legal and retention safety boundaries remain authoritative.
+
+Use the workspace for:
+
+- sanitized application/dependency state;
+- manual read-only reconciliation runs;
+- finding acknowledgment and resolution notes;
+- versioned retention-policy administration;
+- legal-hold administration; and
+- report-only retention eligibility.
+
+The dependency panel deliberately shows only a bounded dependency name, status, HTTP status, and
+duration. It must never display configured URLs, database details, credentials, tokens, employee
+identifiers, filenames, storage keys, or document contents.
+
+#### 11.4 Run and resolve reconciliation
+
+1. Open **Operations** and review dependency readiness. If a required dependency is unavailable,
+   restore it before executing a business command.
+2. Select the permitted reconciliation scope and start a manual run. Scheduled reconciliation is
+   disabled unless explicitly configured by deployment operators.
+3. Review each finding category:
+   - source drift: the immutable snapshot differs from the current authorized source;
+   - missing source: the stored source can no longer be resolved;
+   - dependency unavailable: current comparison could not be completed safely;
+   - object metadata inconsistency: stored document metadata does not match local/S3 object metadata.
+4. Acknowledge the finding with an operational note when investigation begins.
+5. Correct the source problem through its owning module or approved operational process. Reconciliation
+   itself never rewrites the snapshot, opens document content, or mutates CoreHR.
+6. Resolve the finding only after verification. The run, finding, actor, correlation ID, and notes
+   remain auditable.
+
+#### 11.5 Retention policies and legal holds
+
+1. Create a draft retention-policy version for an evidence family that carries retention tags.
+2. Define the lawful basis, periods, effectivity, and review metadata.
+3. Activate the reviewed version. Use a successor for future changes.
+4. Create/release a legal hold only with the exact authority and case/reference information.
+5. Use the eligibility report to identify records for review.
+
+PRIME-HRM provides **report-only eligibility**. It has no deletion or purge endpoint. A retention
+policy or eligibility row is never permission to remove data manually from the database or storage.
+
+#### 11.6 Backup, restore, and release acceptance
+
+Before promotion:
+
+1. back up the PRIME-HRM database and durable document storage;
+2. apply the provider-appropriate reviewed Flyway migrations—PostgreSQL or SQL Server;
+3. run liveness/readiness, protected release info, authenticated permission, workflow, and report
+   smoke checks;
+4. verify Administrative and HRM dependencies and exact deployed frontend runtime configuration;
+5. execute a restore drill in an approved isolated target and complete/sign the restore-verification
+   manifest; and
+6. retain the previous application artifacts for application rollback.
+
+Never perform a destructive migration rollback or delete immutable workflow history to roll back an
+application release. Correct database changes through a reviewed forward migration.
+
+### Phase 12 — Action inbox, notifications, and reminders
+
+Phase 12 provides one authenticated-own notification feed in the PrimeHR management shell and
+Employee Portal. A notification is a safe projection of work; it is never authority to approve,
+submit, edit, or finalize the underlying record.
+
+#### 12.1 Use the notification bell
+
+1. Sign in normally and locate the bell in the application header.
+2. The badge shows the current unread count returned for the authenticated employee.
+3. Select the bell or open **My Notifications**.
+4. Use **All** or **Unread** to filter the feed and **Refresh** to obtain current notices.
+5. Select **Mark read** for one notice or **Mark all read** for the current user's feed.
+6. Dismiss only an informational notice when **Dismiss** is available. An action notice cannot be
+   dismissed as though its underlying work were complete.
+
+Neither interface accepts an employee number or agency from the browser. Administrators do not gain
+a general screen for browsing another employee's personal notification feed.
+
+#### 12.2 Open a notification safely
+
+1. Select **Open** on the notice.
+2. The system marks that notice read for the signed-in employee.
+3. PRIME-HRM revalidates the authoritative target, current assignment, lifecycle, and permission.
+4. If the work still exists and remains assigned/authorized, the application navigates to a
+   controlled destination.
+5. If the work was completed, reassigned, removed, or is no longer authorized, the user remains in
+   the inbox and receives a safe unavailable message.
+
+The browser never follows a URL supplied by notification data. Destinations come from a controlled
+server-side source-type catalogue. This prevents an old or malicious notice from bypassing route and
+workflow security.
+
+#### 12.3 Supported notification sources
+
+The completed Phase 12 catalogue activates:
+
+- Performance commitment action assignments for authorized PrimeHR users;
+- employee-safe Performance commitment destinations in Employee Portal;
+- Evidence assessment/corrective-action assignments in protected PrimeHR; and
+- a portal-safe instruction when Evidence work exists but no Employee Portal Evidence destination
+  is approved.
+
+L&D, PRAISE, Succession, RSP staff work, Operations, applicants, CoreHR leave/overtime/DTR, Payroll,
+payslips, broadcasts, email, SMS, browser/mobile push, and real-time WebSocket/SSE delivery are not
+part of the Phase 12 catalogue. Existing Employee Portal account-setup and overtime-discrepancy
+notices remain separate supported portal behavior.
+
+#### 12.4 Reminder operation
+
+The reminder service reads authoritative active assignments with due dates. It bounds candidates by
+agency, lead window, and maximum batch size; revalidates every source; closes stale actions; and uses
+a deterministic event key so a retry replays instead of creating duplicate notices.
+
+Scheduling is disabled by default. Deployment operators explicitly enable it with
+`PRIMEHR_NOTIFICATION_REMINDERS_ENABLED=true` and configure bounded lead hours, fixed delay, and
+batch size. Reminder metrics expose only `issued`, `replayed`, and `stale` counts—never employee
+numbers, source IDs, routes, titles, messages, or reasons.
+
+#### 12.5 Notification privacy and troubleshooting
+
+- Notifications contain safe typed titles/messages only. They do not store private coaching text,
+  evidence, attachment bytes, arbitrary HTML, authentication tokens, or arbitrary URLs.
+- If the unread count is unavailable, refresh after confirming PrimeHR API health and authentication.
+- If **Open** reports unavailable, return to the owning module/inbox and check whether the task was
+  completed, reassigned, or removed from your permission scope.
+- Marking a notice read does not complete the work. Complete the authoritative workflow action in the
+  destination module.
+- A reminder may be replayed safely; it must not create a second workflow task.
+
+## 23. Lifecycle and status reference
+
+Status names vary by business module, but these meanings are consistent:
+
+| Status concept | Meaning | Normal user action |
+|---|---|---|
+| DRAFT | Working record, not yet formally submitted | Complete, save, check readiness, then submit |
+| RETURNED | Reviewer sent the record back with a reason | Read the reason, correct the draft, resubmit |
+| SUBMITTED | Formally sent to the next assigned actor | Wait for/monitor assigned review; normal editing is locked |
+| RECOMMENDED | Intermediate authority endorsed the record | Await final approval; recommendation is not final approval |
+| APPROVED/AUTHORIZED | Required authority accepted the record | Perform only the allowed next lifecycle step |
+| PUBLISHED/ACTIVE | Version is effective and available as an authoritative source | Do not edit; create a successor/revision for change |
+| FINALIZED/COMPLETED | Workflow result is terminal and auditable | Print/report or use an authorized correction/reconsideration path |
+| REJECTED/DECLINED/DISAPPROVED | Authority did not accept the request | Review reason; create a new/corrected record only when allowed |
+| CANCELLED/WITHDRAWN | Request was intentionally stopped with retained history | Do not reuse as an active source |
+| ARCHIVED/RETIRED | Historical definition/record is no longer active | Retain for audit; use its successor for current work |
+| SUPERSEDED | A later linked version replaced it prospectively | Review lineage; never delete the predecessor |
+
+Never infer a status from button visibility alone. Open record details and audit/lifecycle history,
+especially where `RECOMMENDED` and `APPROVED` are separate route stages.
+
+## 24. Reports and printing guide
+
+Before printing any PRIME-HRM report:
+
+1. confirm the source record is in the required approved/final/completed state;
+2. confirm the signed-in user has both the exact report permission and underlying workflow scope;
+3. review employee, organization, dates, version, authority/signatory, and report parameters;
+4. generate the PDF through the application action so authentication remains in the Authorization
+   header and not in a URL;
+5. inspect the PDF before official use, especially multipage tables, repeated headers, totals,
+   optional images/signatures, blank values, and continuation pages; and
+6. store/distribute the output according to agency privacy and records-management policy.
+
+| Area | Typical outputs | Minimum lifecycle expectation |
+|---|---|---|
+| Competency | Competency Gap Analysis | Immutable generated analysis and authorized scope |
+| RSP | Vacancy Notice, Comparative Evaluation, Selection Record, Evidence Index, registers | Approved/published/finalized source as defined by each report |
+| SPMS | OPCR/DPCR/IPCR, monitoring, coaching, development/PIP, rating and registers | Approved commitment or lifecycle-eligible finalized workflow source |
+| L&D | IDP, Training Order, completion packet, evaluation summary | Approved IDP/order; completed participation/evaluation source |
+| PRAISE | Nomination, evaluation, award/citation, annual register | Lifecycle-eligible nomination/evaluation/final award source |
+| Succession | Readiness, development, continuity, RSP referral, coverage register | Finalized or approved source with privacy restrictions |
+| Evidence | Evidence index/internal assessment and exception reporting | Authorized framework/assessment source and underlying module access |
+
+ISOFT operational reports must not be represented as prescribed CSC/HAP or other official forms
+unless the agency has approved the matching template/version.
+
+## 25. Administrator setup checklist
+
+Before allowing production users into a workflow:
+
+- publish the required policy, scale, definition, template, committee/PMT roster, and effectivity;
+- confirm authoritative Administrative Job Position, Plantilla, organization, permission, and
+  technical settings;
+- confirm authoritative HRM employee, active appointment, and employee-account mapping;
+- assign exact feature actions and data scope—avoid broad Agency Wide access when Own/Assigned is
+  sufficient;
+- require users to sign out and sign in again after permission changes;
+- verify configured CoreHR service URLs, CORS origins, JWT/service credentials, private storage, and
+  runtime configuration without exposing secrets;
+- test one allowed user, one denied user, one returned record, one stale-write conflict, and one
+  lifecycle-eligible PDF;
+- verify small-cohort privacy suppression where analytics is enabled;
+- back up data/storage and verify provider-appropriate migration/recovery procedures; and
+- keep administrator override exceptional, reasoned, and auditable.
+
+## 26. End-user and approver checklist
+
+### Before submitting
+
+- Confirm you are using the correct employee, office, position, Plantilla, cycle, and effective date.
+- Complete every required row, declaration, evidence reference, and reason.
+- Review readiness/source-freshness messages.
+- Save the draft and reopen/review important totals or generated calculations.
+- Submit once and wait for the response; do not create a duplicate because a page is slow.
+
+### Before recommending, approving, validating, or finalizing
+
+- Confirm the task is assigned to you and you have no unresolved conflict.
+- Review the complete record, immutable source versions, earlier decisions, and return history.
+- Verify that `RECOMMENDED` is not being mistaken for final approval.
+- Return unsupported work with a specific, useful reason.
+- Use override only when the authorized exception is genuine and enter the complete reason.
+- Reopen the record after success and confirm status, actor, time, and audit history.
+
+### After approval/finalization
+
+- Perform the next explicit handoff; do not assume another module was automatically updated.
+- Print only lifecycle-eligible reports.
+- Protect confidential employee, applicant, committee, evaluation, and evidence information.
+- Use a successor/correction/reconsideration path when an immutable result must be corrected.
+
+## 27. Support information to provide
+
+When reporting a problem, provide:
+
+- module/page and action attempted;
+- date/time and employee account used, without sharing the password or token;
+- record code/ID and displayed status, if non-sensitive;
+- exact safe error message;
+- `X-Correlation-Id`/`correlationId` from the response when available;
+- whether the problem affects one user or several users; and
+- whether Administrative, HRM, PrimeHR, and the database were healthy.
+
+Do not send screenshots containing full PDS, applicant evidence, payroll information, tokens,
+passwords, restricted committee narrative, or private document locations unless the approved secure
+support process specifically requires and protects them.

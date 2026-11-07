@@ -85,6 +85,20 @@ class CompetencyMigrationParityTest {
     private static final String SQL_SERVER_V34 = "db/migration/sqlserver/V34__spms_calibration_finalization.sql";
     private static final String POSTGRES_V35 = "db/migration/postgresql/V35__spms_acknowledgment_appeal_intervention.sql";
     private static final String SQL_SERVER_V35 = "db/migration/sqlserver/V35__spms_acknowledgment_appeal_intervention.sql";
+    private static final String POSTGRES_V36 = "db/migration/postgresql/V36__spms_report_metadata_snapshot.sql";
+    private static final String SQL_SERVER_V36 = "db/migration/sqlserver/V36__spms_report_metadata_snapshot.sql";
+    private static final String POSTGRES_V37 = "db/migration/postgresql/V37__ld_foundation.sql";
+    private static final String SQL_SERVER_V37 = "db/migration/sqlserver/V37__ld_foundation.sql";
+    private static final String POSTGRES_V38 = "db/migration/postgresql/V38__ld_needs_and_idp.sql";
+    private static final String SQL_SERVER_V38 = "db/migration/sqlserver/V38__ld_needs_and_idp.sql";
+    private static final String POSTGRES_V39 = "db/migration/postgresql/V39__ld_plans_programs_offerings.sql";
+    private static final String SQL_SERVER_V39 = "db/migration/sqlserver/V39__ld_plans_programs_offerings.sql";
+    private static final String POSTGRES_V40 = "db/migration/postgresql/V40__ld_nominations_enrollments_training_orders.sql";
+    private static final String SQL_SERVER_V40 = "db/migration/sqlserver/V40__ld_nominations_enrollments_training_orders.sql";
+    private static final String POSTGRES_V41 = "db/migration/postgresql/V41__ld_attendance_outputs_completion.sql";
+    private static final String SQL_SERVER_V41 = "db/migration/sqlserver/V41__ld_attendance_outputs_completion.sql";
+    private static final String POSTGRES_V42 = "db/migration/postgresql/V42__ld_evaluation_followthrough_feed.sql";
+    private static final String SQL_SERVER_V42 = "db/migration/sqlserver/V42__ld_evaluation_followthrough_feed.sql";
     private static final Set<String> TABLES = Set.of(
             "prime_competency_category", "prime_proficiency_scale", "prime_proficiency_level",
             "prime_competency", "prime_behavioral_indicator");
@@ -104,6 +118,106 @@ class CompetencyMigrationParityTest {
                 "uk_prime_competency_agency_code", "uk_prime_indicator_order")) {
             assertThat(postgres).contains(constraint);
             assertThat(sqlServer).contains(constraint);
+        }
+    }
+
+    @Test
+    void phaseSevenAPointOneMigrationsAreEquivalentPortableAndForwardOnly() throws IOException {
+        String postgres=read(POSTGRES_V37);String sqlServer=read(SQL_SERVER_V37);
+        Set<String> expected=Set.of("ld_governance_policy","ld_governance_policy_version","ld_intervention",
+                "ld_intervention_version","ld_provider","ld_resource_person","ld_evaluation_framework",
+                "ld_evaluation_framework_version","ld_evaluation_level");
+        assertThat(tableNames(postgres)).isEqualTo(expected);assertThat(tableNames(sqlServer)).isEqualTo(expected);
+        for(String migration:Set.of(postgres.toLowerCase(),sqlServer.toLowerCase())){
+            assertThat(migration).contains("uk_ld_policy_code","ix_ld_policy_effective","uk_ld_intervention_code",
+                    "ix_ld_intervention_effective","uk_ld_provider_code","uk_ld_resource_person_code",
+                    "uk_ld_evaluation_framework_code","uk_ld_evaluation_level_type","ix_ld_evaluation_level");
+            assertThat(migration).doesNotContain("insert into","delete from","drop table"," top "," limit ","isnull("," returning ");
+        }
+    }
+
+    @Test
+    void phaseSevenAPointTwoMigrationsAreEquivalentPortableAndForwardOnly() throws IOException {
+        String postgres = read(POSTGRES_V38);
+        String sqlServer = read(SQL_SERVER_V38);
+        Set<String> expected = Set.of("ld_learning_need", "ld_referral_disposition",
+                "ld_individual_plan", "ld_individual_plan_item", "ld_idp_route", "ld_idp_route_step");
+        assertThat(tableNames(postgres)).isEqualTo(expected);
+        assertThat(tableNames(sqlServer)).isEqualTo(expected);
+        for (String migration : Set.of(postgres.toLowerCase(), sqlServer.toLowerCase())) {
+            assertThat(migration).contains("uk_ld_referral_disposition", "uk_ld_idp_series_version",
+                    "uk_ld_idp_item_need", "uk_ld_idp_route_revision", "uk_ld_idp_route_step",
+                    "ix_ld_need_employee", "ix_ld_idp_employee", "ix_ld_idp_item_order",
+                    "ix_ld_idp_route_current", "ix_ld_idp_step_actor");
+            assertThat(migration).doesNotContain("insert into", "delete from", "drop table",
+                    " top ", " limit ", "isnull(", " returning ");
+        }
+    }
+
+    @Test
+    void phaseSevenBMigrationsAreEquivalentPortableAndForwardOnly() throws IOException {
+        String postgres = read(POSTGRES_V39);
+        String sqlServer = read(SQL_SERVER_V39);
+        Set<String> expected = Set.of("ld_consolidated_plan", "ld_consolidated_plan_source",
+                "ld_program", "ld_program_source", "ld_offering", "ld_offering_session",
+                "ld_offering_resource");
+        assertThat(tableNames(postgres)).isEqualTo(expected);
+        assertThat(tableNames(sqlServer)).isEqualTo(expected);
+        for (String migration : Set.of(postgres.toLowerCase(), sqlServer.toLowerCase())) {
+            assertThat(migration).contains("uk_ld_plan_series_version", "uk_ld_plan_source",
+                    "uk_ld_program_series_version", "uk_ld_program_source",
+                    "uk_ld_offering_series_version", "uk_ld_offering_session_order",
+                    "uk_ld_offering_resource", "ix_ld_plan_scope", "ix_ld_program_plan",
+                    "ix_ld_offering_program", "ix_ld_offering_session_time");
+            assertThat(migration).doesNotContain("insert into", "delete from", "drop table",
+                    " top ", " limit ", "isnull(", " returning ");
+        }
+    }
+
+    @Test
+    void phaseSevenCMigrationsAreEquivalentPortableAndForwardOnly() throws IOException {
+        String postgres=read(POSTGRES_V40),sqlServer=read(SQL_SERVER_V40);
+        Set<String> expected=Set.of("ld_nomination","ld_nomination_route","ld_nomination_route_step",
+                "ld_enrollment","ld_training_order_source","ld_training_order_participant");
+        assertThat(tableNames(postgres)).isEqualTo(expected);assertThat(tableNames(sqlServer)).isEqualTo(expected);
+        for(String migration:Set.of(postgres.toLowerCase(),sqlServer.toLowerCase())){
+            assertThat(migration).contains("uk_ld_nomination_offering_employee","uk_ld_nomination_route_revision",
+                    "uk_ld_nomination_route_step","uk_ld_enrollment_nomination","uk_ld_training_order_offering",
+                    "uk_ld_training_order_participant","ix_ld_nomination_step_actor","ix_ld_enrollment_employee",
+                    "ix_ld_training_order_participant_order");
+            assertThat(migration).doesNotContain("insert into","delete from","drop table"," top "," limit ","isnull("," returning ","employeeappointment","manage_personnel");
+        }
+    }
+
+    @Test
+    void phaseSevenDPointOneMigrationsAreEquivalentPortableAndForwardOnly() throws IOException {
+        String postgres = read(POSTGRES_V41);
+        String sqlServer = read(SQL_SERVER_V41);
+        Set<String> expected = Set.of("ld_completion_case", "ld_session_attendance",
+                "ld_completion_output", "ld_completion_evidence");
+        assertThat(tableNames(postgres)).isEqualTo(expected);
+        assertThat(tableNames(sqlServer)).isEqualTo(expected);
+        for (String migration : Set.of(postgres.toLowerCase(), sqlServer.toLowerCase())) {
+            assertThat(migration).contains("uk_ld_completion_enrollment", "uk_ld_attendance_case_session",
+                    "uk_ld_completion_output_code", "ck_ld_completion_status", "ck_ld_attendance_values",
+                    "ck_ld_evidence_values", "ix_ld_completion_employee", "ix_ld_attendance_case",
+                    "ix_ld_output_case", "ix_ld_evidence_case");
+            assertThat(migration).doesNotContain("insert into", "delete from", "drop table",
+                    " top ", " limit ", "isnull(", " returning ", "employeeappointment", "manage_personnel");
+        }
+    }
+
+    @Test
+    void phaseSevenDPointTwoMigrationsAreEquivalentPortableAndForwardOnly() throws IOException {
+        String postgres=read(POSTGRES_V42),sqlServer=read(SQL_SERVER_V42);
+        Set<String> expected=Set.of("ld_evaluation_task","ld_evaluation_result","ld_learning_action_plan");
+        assertThat(tableNames(postgres)).isEqualTo(expected);assertThat(tableNames(sqlServer)).isEqualTo(expected);
+        for(String migration:Set.of(postgres.toLowerCase(),sqlServer.toLowerCase())){
+            assertThat(migration).contains("uk_ld_evaluation_task_level","uk_ld_evaluation_result_revision",
+                    "uk_ld_lap_completion","fk_ld_eval_task_current_result","ix_ld_eval_task_assigned",
+                    "ix_ld_eval_result_task","ix_ld_lap_supervisor");
+            assertThat(migration).doesNotContain("insert into","delete from","drop table"," top "," limit ",
+                    "isnull("," returning ","employeeappointment","manage_personnel");
         }
     }
 
@@ -598,6 +712,7 @@ class CompetencyMigrationParityTest {
     @Test void phase6eRatingMigrationsAreEquivalentPortableAndForwardOnly()throws IOException{String p=read(POSTGRES_V33),s=read(SQL_SERVER_V33);assertThat(tableNames(p)).containsExactlyInAnyOrder("spms_rating_case","spms_rating_source_item","spms_rating_assessment","spms_rating_item_result","spms_rating_dimension_result","spms_rating_action");assertThat(tableNames(s)).isEqualTo(tableNames(p));for(String required:Set.of("uk_spms_rating_case_revision","uk_spms_rating_source_item","uk_spms_rating_assessment_revision","uk_spms_rating_item_result","uk_spms_rating_dimension_result","uk_spms_rating_action_request","ck_spms_rating_case_status","ck_spms_rating_assessment_type","ck_spms_rating_assessment_status","ix_spms_rating_case_owner","ix_spms_rating_case_supervisor")){assertThat(p).contains(required);assertThat(s).contains(required);}assertThat(p.toLowerCase()).doesNotContain("insert into","delete from","drop table"," limit ","::","employeeappointment","manage_personnel");assertThat(s.toLowerCase()).doesNotContain("insert into","delete from","drop table"," top ","isnull(","employeeappointment","manage_personnel");}
     @Test void phase6eCalibrationMigrationsAreEquivalentPortableAndForwardOnly()throws IOException{String p=read(POSTGRES_V34),s=read(SQL_SERVER_V34);assertThat(tableNames(p)).containsExactlyInAnyOrder("spms_calibration_case","spms_calibration_participant","spms_calibration_decision","spms_final_rating");assertThat(tableNames(s)).isEqualTo(tableNames(p));for(String required:Set.of("uk_spms_calibration_rating","uk_spms_calibration_participant","uk_spms_calibration_decision","uk_spms_final_rating_revision","ck_spms_calibration_status","ck_spms_calibration_quorum","ix_spms_calibration_status","ix_spms_final_rating_case")){assertThat(p).contains(required);assertThat(s).contains(required);}assertThat(p.toLowerCase()).doesNotContain("insert into","delete from","drop table"," limit ","::","employeeappointment","manage_personnel");assertThat(s.toLowerCase()).doesNotContain("insert into","delete from","drop table"," top ","isnull(","employeeappointment","manage_personnel");}
     @Test void phase6eAppealInterventionMigrationsAreEquivalentPortableAndForwardOnly()throws IOException{String p=read(POSTGRES_V35),s=read(SQL_SERVER_V35);assertThat(tableNames(p)).containsExactlyInAnyOrder("spms_rating_acknowledgment","spms_rating_appeal","spms_rating_appeal_evidence","spms_intervention_rule","spms_performance_intervention","spms_intervention_checkpoint");assertThat(tableNames(s)).isEqualTo(tableNames(p));for(String required:Set.of("uk_spms_rating_ack_final","uk_spms_appeal_final","uk_spms_intervention_exact_band","uk_spms_intervention_final","uk_spms_checkpoint_due","ix_spms_appeal_status","ix_spms_intervention_status")){assertThat(p).contains(required);assertThat(s).contains(required);}assertThat(p.toLowerCase()).doesNotContain("insert into","delete from","drop table"," limit ","::","employeeappointment","manage_personnel");assertThat(s.toLowerCase()).doesNotContain("insert into","delete from","drop table"," top ","isnull(","employeeappointment","manage_personnel");}
+    @Test void phase6fReportSnapshotMigrationsAreEquivalentPortableAndForwardOnly()throws IOException{String p=read(POSTGRES_V36),s=read(SQL_SERVER_V36);assertThat(tableNames(p)).containsExactly("spms_report_metadata_snapshot");assertThat(tableNames(s)).isEqualTo(tableNames(p));for(String required:Set.of("uk_spms_report_snapshot_source","ck_spms_report_snapshot_kind","ck_spms_report_snapshot_source","ck_spms_report_snapshot_revision","ck_spms_report_snapshot_period","ix_spms_report_snapshot_employee","ix_spms_report_snapshot_source","metadata_fingerprint","branding_fingerprint")){assertThat(p).contains(required);assertThat(s).contains(required);}assertThat(p.toLowerCase()).doesNotContain("insert into","delete from","drop table"," limit ","::","employeeappointment","manage_personnel");assertThat(s.toLowerCase()).doesNotContain("insert into","delete from","drop table"," top ","isnull(","employeeappointment","manage_personnel");}
 
     private static Set<String> tableNames(String sql) {
         Matcher matcher = Pattern.compile(

@@ -100,6 +100,50 @@ abstract class AbstractPrimeHrProviderIntegration {
             "spms_calibration_case", "spms_calibration_participant", "spms_calibration_decision", "spms_final_rating",
             "spms_rating_acknowledgment", "spms_rating_appeal", "spms_rating_appeal_evidence",
             "spms_intervention_rule", "spms_performance_intervention", "spms_intervention_checkpoint",
+            "spms_report_metadata_snapshot",
+            "ld_governance_policy", "ld_governance_policy_version", "ld_intervention",
+            "ld_intervention_version", "ld_provider", "ld_resource_person",
+            "ld_evaluation_framework", "ld_evaluation_framework_version", "ld_evaluation_level",
+            "ld_learning_need", "ld_referral_disposition", "ld_individual_plan",
+            "ld_individual_plan_item", "ld_idp_route", "ld_idp_route_step",
+            "ld_consolidated_plan", "ld_consolidated_plan_source", "ld_program", "ld_program_source",
+            "ld_offering", "ld_offering_session", "ld_offering_resource",
+            "ld_nomination", "ld_nomination_route", "ld_nomination_route_step", "ld_enrollment",
+            "ld_training_order_source", "ld_training_order_participant",
+            "ld_completion_case", "ld_session_attendance", "ld_completion_output", "ld_completion_evidence",
+            "ld_evaluation_task", "ld_evaluation_result", "ld_learning_action_plan",
+            "rr_governance_policy", "rr_governance_policy_version",
+            "rr_award_category", "rr_award_category_version", "rr_award_criterion",
+            "rr_committee_charter", "rr_committee_charter_version", "rr_committee_member",
+            "rr_award_cycle", "rr_nomination", "rr_nomination_member",
+            "rr_nomination_source", "rr_nomination_evidence",
+            "rr_evaluation_case", "rr_eligibility_finding", "rr_evaluator_assignment",
+            "rr_criterion_rating", "rr_decision_event", "rr_decision_issue",
+            "rr_award_record", "rr_incentive_authorization", "rr_fulfillment_event",
+            "rr_hap_endorsement_event",
+            "succession_governance_policy", "succession_governance_policy_version",
+            "succession_readiness_scale", "succession_readiness_scale_version", "succession_readiness_level",
+            "succession_committee_charter", "succession_committee_charter_version",
+            "succession_committee_member", "succession_committee_conflict",
+            "succession_career_family", "succession_career_family_version", "succession_career_path_link",
+            "succession_criticality_framework", "succession_criticality_framework_version",
+            "succession_criticality_criterion", "succession_critical_position_designation",
+            "succession_criticality_finding", "succession_cycle", "succession_continuity_risk_review",
+            "succession_candidate", "succession_eligibility_finding", "succession_candidate_evidence",
+            "succession_readiness_assessment", "succession_readiness_gap_item",
+            "succession_readiness_panel_assignment", "succession_readiness_criterion_finding",
+            "succession_pool_decision", "succession_development_plan", "succession_development_source",
+            "succession_development_milestone", "succession_development_review",
+            "succession_pool_membership_event", "succession_continuity_plan",
+            "succession_bench_coverage_entry", "succession_rsp_referral_packet",
+            "succession_rsp_referral_event",
+            "evidence_framework", "evidence_framework_version", "evidence_pillar",
+            "evidence_governance_level", "evidence_indicator", "evidence_requirement",
+            "evidence_assessment_cycle", "evidence_assessment_case", "evidence_artifact",
+            "evidence_finding", "evidence_gap", "evidence_corrective_action",
+            "evidence_assessment_event", "evidence_readiness_snapshot",
+            "primehr_reconciliation_run", "primehr_reconciliation_finding",
+            "primehr_retention_policy_version", "primehr_legal_hold", "primehr_notification",
             "flyway_schema_history");
     private static final Set<String> EXPECTED_INDEXES = Set.of(
             "ix_prime_category_agency_active", "ix_prime_scale_agency_active",
@@ -176,6 +220,65 @@ abstract class AbstractPrimeHrProviderIntegration {
     private static final Set<String> PHASE_6E_1_INDEXES = Set.of("ix_spms_rating_case_owner","ix_spms_rating_case_supervisor","ix_spms_rating_assessment_case","ix_spms_rating_action_case");
     private static final Set<String> PHASE_6E_2_INDEXES = Set.of("ix_spms_calibration_status","ix_spms_final_rating_case");
     private static final Set<String> PHASE_6E_3_INDEXES = Set.of("ix_spms_appeal_status","ix_spms_intervention_status");
+    private static final Set<String> PHASE_6F_1_INDEXES = Set.of("ix_spms_report_snapshot_employee","ix_spms_report_snapshot_source");
+    private static final Set<String> PHASE_7A_1_INDEXES = Set.of("ix_ld_policy_effective",
+            "ix_ld_intervention_effective", "ix_ld_provider_status", "ix_ld_resource_person_status",
+            "ix_ld_evaluation_effective", "ix_ld_evaluation_level");
+    private static final Set<String> PHASE_7A_2_INDEXES = Set.of("ix_ld_need_employee",
+            "ix_ld_idp_employee", "ix_ld_idp_item_order", "ix_ld_idp_route_current", "ix_ld_idp_step_actor");
+    private static final Set<String> PHASE_7B_INDEXES = Set.of("ix_ld_plan_scope", "ix_ld_plan_accountable",
+            "ix_ld_plan_source_order", "ix_ld_program_plan", "ix_ld_program_accountable",
+            "ix_ld_program_source_order", "ix_ld_offering_program", "ix_ld_offering_status",
+            "ix_ld_offering_session_time", "ix_ld_offering_resource_order");
+    private static final Set<String> PHASE_7C_INDEXES = Set.of("ix_ld_nomination_employee",
+            "ix_ld_nomination_offering_status", "ix_ld_nomination_route_current", "ix_ld_nomination_step_actor",
+            "ix_ld_enrollment_offering", "ix_ld_enrollment_employee", "ix_ld_training_order_approved",
+            "ix_ld_training_order_participant_order");
+    private static final Set<String> PHASE_7D_1_INDEXES = Set.of("ix_ld_completion_employee",
+            "ix_ld_completion_offering", "ix_ld_attendance_case", "ix_ld_output_case",
+            "ix_ld_evidence_case", "ix_ld_evidence_output");
+    private static final Set<String> PHASE_7D_2_INDEXES = Set.of("ix_ld_eval_task_assigned",
+            "ix_ld_eval_task_employee", "ix_ld_eval_result_task", "ix_ld_lap_employee", "ix_ld_lap_supervisor");
+    private static final Set<String> PHASE_8A_1_INDEXES = Set.of("ix_rr_policy_effective",
+            "ix_rr_category_effective", "ix_rr_criterion_category", "ix_rr_charter_effective",
+            "ix_rr_member_charter");
+    private static final Set<String> PHASE_8A_2_INDEXES = Set.of("ix_rr_cycle_window",
+            "ix_rr_nomination_cycle", "ix_rr_nomination_owner", "ix_rr_nomination_member_nomination",
+            "ix_rr_nomination_source_nomination", "ix_rr_nomination_evidence_nomination");
+    private static final Set<String> PHASE_8B_INDEXES = Set.of("ix_rr_eval_status",
+            "ix_rr_assignment_case", "ix_rr_decision_case");
+    private static final Set<String> PHASE_8C_INDEXES = Set.of("ix_rr_award_register",
+            "ix_rr_award_case", "ix_rr_incentive_award", "ix_rr_fulfillment_authorization",
+            "ix_rr_hap_award");
+    private static final Set<String> PHASE_9A_1_INDEXES = Set.of("ix_succ_policy_effective",
+            "ix_succ_scale_effective", "ix_succ_level_scale", "ix_succ_charter_effective",
+            "ix_succ_member_charter", "ix_succ_conflict_charter");
+    private static final Set<String> PHASE_9A_2_INDEXES = Set.of("ix_succ_family_effective",
+            "ix_succ_path_family", "ix_succ_criticality_effective", "ix_succ_criterion_framework",
+            "ix_succ_designation_target", "ix_succ_designation_committee", "ix_succ_finding_designation");
+    private static final Set<String> PHASE_9B_INDEXES = Set.of("ix_succ_cycle_window", "ix_succ_risk_cycle",
+            "ix_succ_candidate_cycle", "ix_succ_candidate_employee", "ix_succ_eligibility_candidate",
+            "ix_succ_evidence_candidate");
+    private static final Set<String> PHASE_9C_1_INDEXES = Set.of("ix_succ_ready_cycle_status",
+            "ix_succ_ready_gap_assessment", "ix_succ_ready_panel_actor",
+            "ix_succ_ready_finding_assessment", "ix_succ_pool_candidate");
+    private static final Set<String> PHASE_9C_2_INDEXES = Set.of("ix_succ_dev_plan_employee",
+            "ix_succ_dev_source_plan", "ix_succ_dev_milestone_plan", "ix_succ_dev_review_plan",
+            "ix_succ_membership_current");
+    private static final Set<String> PHASE_9D_INDEXES = Set.of("ix_succ_continuity_position",
+            "ix_succ_bench_plan", "ix_succ_rsp_referral_status", "ix_succ_rsp_referral_event");
+    private static final Set<String> PHASE_10A_INDEXES = Set.of("ix_evidence_framework_effective",
+            "ix_evidence_pillar_framework", "ix_evidence_level_framework",
+            "ix_evidence_indicator_pillar", "ix_evidence_requirement_indicator");
+    private static final Set<String> PHASE_10B_INDEXES = Set.of("ix_evidence_cycle_period",
+            "ix_evidence_case_assignment", "ix_evidence_artifact_case", "ix_evidence_finding_case",
+            "ix_evidence_gap_case", "ix_evidence_action_owner", "ix_evidence_event_case");
+    private static final Set<String> PHASE_10C_INDEXES = Set.of("ix_evidence_snapshot_case",
+            "ix_evidence_snapshot_signed");
+    private static final Set<String> PHASE_11C_INDEXES = Set.of("ix_reconciliation_run_started",
+            "ix_reconciliation_finding_status", "ix_retention_policy_tag", "ix_legal_hold_subject");
+    private static final Set<String> PHASE_12A_INDEXES = Set.of("ix_notification_recipient_feed",
+            "ix_notification_recipient_unread", "ix_notification_source", "ix_notification_retention");
 
     @Autowired private Flyway flyway;
     @Autowired private DataSource dataSource;
@@ -189,9 +292,9 @@ abstract class AbstractPrimeHrProviderIntegration {
     @Value("${spring.flyway.default-schema}") private String databaseSchema;
 
     @Test
-    void flywayV1ThroughV35CreatesTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
+    void flywayV1ThroughV57CreatesTablesForeignKeysAndIndexesBeforeHibernateValidation() throws Exception {
         assertThat(flyway.info().current()).isNotNull();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("35");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("57");
 
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
@@ -222,6 +325,23 @@ abstract class AbstractPrimeHrProviderIntegration {
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_6E_1_INDEXES);
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_6E_2_INDEXES);
             assertThat(indexNames(metadata, connection)).containsAll(PHASE_6E_3_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_6F_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_7A_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_7A_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_7B_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_7C_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_7D_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_7D_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_8A_1_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_8A_2_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_8B_INDEXES);
+            assertThat(indexNames(metadata, connection)).containsAll(PHASE_8C_INDEXES)
+                    .containsAll(PHASE_9A_1_INDEXES).containsAll(PHASE_9A_2_INDEXES)
+                    .containsAll(PHASE_9B_INDEXES).containsAll(PHASE_9C_1_INDEXES)
+                    .containsAll(PHASE_9C_2_INDEXES).containsAll(PHASE_9D_INDEXES)
+                    .containsAll(PHASE_10A_INDEXES).containsAll(PHASE_10B_INDEXES)
+                    .containsAll(PHASE_10C_INDEXES).containsAll(PHASE_11C_INDEXES)
+                    .containsAll(PHASE_12A_INDEXES);
 
             assertThat(importedKeyCount(metadata, connection, "prime_proficiency_level")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "prime_competency")).isGreaterThanOrEqualTo(2);
@@ -284,6 +404,13 @@ abstract class AbstractPrimeHrProviderIntegration {
             assertThat(importedKeyCount(metadata, connection, "prime_committee_member")).isGreaterThanOrEqualTo(1);
             assertThat(importedKeyCount(metadata, connection, "rsp_evaluation_proceeding")).isGreaterThanOrEqualTo(3);
             assertThat(importedKeyCount(metadata, connection, "rsp_evaluation_candidate")).isGreaterThanOrEqualTo(3);
+            assertThat(importedKeyCount(metadata, connection, "ld_consolidated_plan")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "ld_consolidated_plan_source")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "ld_program")).isGreaterThanOrEqualTo(4);
+            assertThat(importedKeyCount(metadata, connection, "ld_program_source")).isGreaterThanOrEqualTo(2);
+            assertThat(importedKeyCount(metadata, connection, "ld_offering")).isGreaterThanOrEqualTo(4);
+            assertThat(importedKeyCount(metadata, connection, "ld_offering_session")).isGreaterThanOrEqualTo(1);
+            assertThat(importedKeyCount(metadata, connection, "ld_offering_resource")).isGreaterThanOrEqualTo(2);
         }
     }
 

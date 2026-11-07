@@ -1,15 +1,12 @@
 package com.primehr.integration.administrative;
 
-import com.primehr.config.PrimeHrProperties;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-import java.net.http.HttpClient;
-import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,13 +15,9 @@ import java.util.stream.Collectors;
 public class HttpAdministrativeOrganizationScopeClient implements AdministrativeOrganizationScopeClient {
     private final RestClient restClient;
 
-    public HttpAdministrativeOrganizationScopeClient(PrimeHrProperties properties) {
-        var configuration = properties.administrative();
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(configuration.connectTimeoutMillis())).build();
-        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(client);
-        factory.setReadTimeout(Duration.ofMillis(configuration.readTimeoutMillis()));
-        restClient = RestClient.builder().baseUrl(configuration.baseUrl()).requestFactory(factory).build();
+    public HttpAdministrativeOrganizationScopeClient(
+            @Qualifier("administrativeRestClient") RestClient restClient) {
+        this.restClient = restClient;
     }
 
     @Override

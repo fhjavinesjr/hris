@@ -13,7 +13,7 @@ class S3DocumentStorageTest {
     void enabledS3StorageFailsClosedWithoutDurableBucket() {
         var properties = new PrimeHrProperties(null, null, null, null, null, null,
                 new PrimeHrProperties.Storage(true, "s3", "", 100L,
-                        List.of("application/pdf"), "", "ap-southeast-1", ""));
+                        List.of("application/pdf"), "", "ap-southeast-1", ""), null);
 
         assertThatThrownBy(() -> new S3DocumentStorage(properties))
                 .isInstanceOf(IllegalStateException.class)

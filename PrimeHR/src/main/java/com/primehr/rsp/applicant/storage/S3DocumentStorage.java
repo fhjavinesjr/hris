@@ -17,4 +17,5 @@ public class S3DocumentStorage implements DocumentStorage {
     public void put(String key,byte[] content,String media){client.putObject(PutObjectRequest.builder().bucket(bucket).key(key).contentType(media).build(),RequestBody.fromBytes(content));}
     public InputStream get(String key){return client.getObject(GetObjectRequest.builder().bucket(bucket).key(key).build());}
     public void delete(String key){client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());}
+    public StorageObjectMetadata metadata(String key){try{var h=client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build());return new StorageObjectMetadata(true,h.contentLength(),h.contentType());}catch(NoSuchKeyException e){return new StorageObjectMetadata(false,null,null);}catch(S3Exception e){if(e.statusCode()==404)return new StorageObjectMetadata(false,null,null);throw e;}}
 }

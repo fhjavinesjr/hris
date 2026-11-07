@@ -1,0 +1,3 @@
+package com.primehr.rewardsrecognition.infrastructure;
+import com.primehr.rewardsrecognition.domain.RrAwardRecord;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface RrAwardRecordRepository extends JpaRepository<RrAwardRecord,String>{Optional<RrAwardRecord>findByIdAndAgencyId(String id,String agencyId);List<RrAwardRecord>findByAgencyIdOrderByAuthorizedAtDesc(String agencyId);List<RrAwardRecord>findByAgencyIdAndRootAwardIdOrderByRevisionNo(String agencyId,String rootAwardId);Optional<RrAwardRecord>findByAgencyIdAndEvaluationCaseIdAndRecordType(String agencyId,String evaluationCaseId,RrAwardRecord.RecordType type);boolean existsByAgencyIdAndSupersedesAwardId(String agencyId,String supersedesAwardId);}

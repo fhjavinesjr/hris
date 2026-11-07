@@ -6,7 +6,8 @@ import java.util.List;
 
 @ConfigurationProperties(prefix = "primehr")
 public record PrimeHrProperties(Security security, Cors cors, Agency agency, Administrative administrative,
-                                HumanResource humanResource, Applicant applicant, Storage storage) {
+                                HumanResource humanResource, Applicant applicant, Storage storage,
+                                Reconciliation reconciliation) {
 
     public PrimeHrProperties {
         security = security == null ? new Security(null, null) : security;
@@ -16,6 +17,7 @@ public record PrimeHrProperties(Security security, Cors cors, Agency agency, Adm
         humanResource = humanResource == null ? new HumanResource(null, null, null) : humanResource;
         applicant = applicant == null ? new Applicant(null, null, null, null, null, null, null) : applicant;
         storage = storage == null ? new Storage(null, null, null, null, null, null, null, null) : storage;
+        reconciliation = reconciliation == null ? new Reconciliation(null, null, null) : reconciliation;
     }
 
     public record Security(String jwtSecret, List<String> competencyReaderRoles) {
@@ -91,6 +93,14 @@ public record PrimeHrProperties(Security security, Cors cors, Agency agency, Adm
             s3Bucket = s3Bucket == null ? "" : s3Bucket.trim();
             s3Region = s3Region == null || s3Region.isBlank() ? "ap-southeast-1" : s3Region.trim();
             s3Endpoint = s3Endpoint == null ? "" : s3Endpoint.trim();
+        }
+    }
+
+    public record Reconciliation(Boolean schedulingEnabled, Long fixedDelayMillis, String serviceToken) {
+        public Reconciliation {
+            schedulingEnabled = schedulingEnabled != null && schedulingEnabled;
+            fixedDelayMillis = fixedDelayMillis == null ? 86_400_000L : Math.max(60_000L, fixedDelayMillis);
+            serviceToken = serviceToken == null ? "" : serviceToken.trim();
         }
     }
 }

@@ -1,0 +1,3 @@
+package com.primehr.succession.infrastructure;
+import com.primehr.succession.domain.*; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
+public interface SuccessionCriticalityFrameworkVersionRepository extends JpaRepository<SuccessionCriticalityFrameworkVersion,String>{Optional<SuccessionCriticalityFrameworkVersion> findByIdAndAgencyId(String id,String agencyId);List<SuccessionCriticalityFrameworkVersion> findByAgencyIdOrderByCreatedAtDesc(String agencyId);List<SuccessionCriticalityFrameworkVersion> findByAgencyIdAndFrameworkIdOrderByDefinitionVersionDesc(String agencyId,String frameworkId);List<SuccessionCriticalityFrameworkVersion> findByAgencyIdAndStatus(String agencyId,SuccessionDefinitionStatus status);}
