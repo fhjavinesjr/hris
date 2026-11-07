@@ -1,0 +1,50 @@
+<jasperReport name="incomplete_dtr_review" language="java" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="782" leftMargin="30" rightMargin="30" topMargin="24" bottomMargin="24" whenNoDataType="NoDataSection" uuid="39cfbdae-77e7-461a-919c-aa30130af96b">
+    <parameter name="agency" class="java.lang.String"/>
+    <parameter name="area" class="java.lang.String"/>
+    <parameter name="businessUnit" class="java.lang.String"/>
+    <parameter name="rangeLabel" class="java.lang.String"/>
+    <parameter name="preparedBy" class="java.lang.String"/>
+    <parameter name="preparedPosition" class="java.lang.String"/>
+    <parameter name="certifiedBy" class="java.lang.String"/>
+    <parameter name="certifiedPosition" class="java.lang.String"/>
+    <field name="employeeNo" class="java.lang.String"/>
+    <field name="employeeName" class="java.lang.String"/>
+    <field name="businessUnit" class="java.lang.String"/>
+    <field name="workDate" class="java.sql.Date"/>
+    <field name="finding" class="java.lang.String"/>
+    <variable name="findingCount" calculation="Count" class="java.lang.Integer"><expression><![CDATA[$F{finding}]]></expression></variable>
+    <pageHeader height="112">
+        <element kind="staticText" x="0" y="0" width="782" height="14" fontName="Arial" fontSize="8" hTextAlign="Center"><text><![CDATA[Republic of the Philippines]]></text></element>
+        <element kind="textField" x="0" y="15" width="782" height="18" fontName="Arial" fontSize="10" bold="true" hTextAlign="Center"><expression><![CDATA[$P{agency}]]></expression></element>
+        <element kind="staticText" x="0" y="37" width="782" height="23" fontName="Arial" fontSize="14" bold="true" hTextAlign="Center"><text><![CDATA[INCOMPLETE DTR REVIEW REPORT]]></text></element>
+        <element kind="textField" x="0" y="62" width="782" height="18" fontName="Arial" fontSize="8" hTextAlign="Center"><expression><![CDATA[$P{rangeLabel} + "  |  " + $P{area} + "  |  " + $P{businessUnit}]]></expression></element>
+        <element kind="staticText" x="0" y="85" width="782" height="25" fontName="Arial" fontSize="8" hTextAlign="Center"><text><![CDATA[Review findings against schedules, raw punches, leave, corrections, and employee coverage. A finding is not a final absence or disciplinary determination.]]></text></element>
+    </pageHeader>
+    <columnHeader height="22">
+        <element kind="staticText" mode="Opaque" x="0" y="0" width="100" height="21" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Date]]></text></element>
+        <element kind="staticText" mode="Opaque" x="100" y="0" width="105" height="21" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Employee No.]]></text></element>
+        <element kind="staticText" mode="Opaque" x="205" y="0" width="165" height="21" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Employee]]></text></element>
+        <element kind="staticText" mode="Opaque" x="370" y="0" width="130" height="21" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Business Unit]]></text></element>
+        <element kind="staticText" mode="Opaque" x="500" y="0" width="282" height="21" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Review finding]]></text></element>
+    </columnHeader>
+    <detail><band height="27">
+        <element kind="textField" x="0" y="1" width="100" height="24" fontSize="8" pattern="MMM dd, yyyy"><expression><![CDATA[$F{workDate}]]></expression></element>
+        <element kind="textField" x="100" y="1" width="105" height="24" fontSize="8"><expression><![CDATA[$F{employeeNo}]]></expression></element>
+        <element kind="textField" x="205" y="1" width="165" height="24" fontSize="8" textAdjust="StretchHeight"><expression><![CDATA[$F{employeeName}]]></expression></element>
+        <element kind="textField" x="370" y="1" width="130" height="24" fontSize="8" textAdjust="StretchHeight"><expression><![CDATA[$F{businessUnit}]]></expression></element>
+        <element kind="textField" x="500" y="1" width="282" height="24" fontSize="8" textAdjust="StretchHeight"><expression><![CDATA[$F{finding}]]></expression></element>
+    </band></detail>
+    <summary height="94">
+        <element kind="textField" x="0" y="0" width="782" height="18" fontSize="9" bold="true"><expression><![CDATA["TOTAL REVIEW FINDINGS: " + $V{findingCount}]]></expression></element>
+        <element kind="staticText" x="15" y="27" width="300" height="15" fontSize="8"><text><![CDATA[Prepared by:]]></text></element>
+        <element kind="staticText" x="420" y="27" width="300" height="15" fontSize="8"><text><![CDATA[Certified by:]]></text></element>
+        <element kind="line" x="15" y="47" width="290" height="1"/>
+        <element kind="line" x="420" y="47" width="290" height="1"/>
+        <element kind="textField" x="15" y="52" width="290" height="16" fontSize="8" bold="true"><expression><![CDATA[$P{preparedBy}]]></expression></element>
+        <element kind="textField" x="420" y="52" width="290" height="16" fontSize="8" bold="true"><expression><![CDATA[$P{certifiedBy}]]></expression></element>
+        <element kind="textField" x="15" y="69" width="290" height="16" fontSize="8"><expression><![CDATA[$P{preparedPosition}]]></expression></element>
+        <element kind="textField" x="420" y="69" width="290" height="16" fontSize="8"><expression><![CDATA[$P{certifiedPosition}]]></expression></element>
+    </summary>
+    <noData height="90"><element kind="staticText" x="0" y="10" width="782" height="25" fontSize="14" bold="true" hTextAlign="Center"><text><![CDATA[INCOMPLETE DTR REVIEW REPORT]]></text></element><element kind="staticText" x="0" y="48" width="782" height="28" fontSize="10" hTextAlign="Center"><text><![CDATA[No review findings were found for the selected dates and assignment.]]></text></element></noData>
+    <pageFooter height="18"><element kind="textField" x="700" y="0" width="82" height="15" fontSize="8" hTextAlign="Right"><expression><![CDATA["Page " + $V{PAGE_NUMBER}]]></expression></element></pageFooter>
+</jasperReport>

@@ -26,6 +26,9 @@ public class NatureOfAppointment implements Serializable {
     @Column(name = "isContractual", nullable = false)
     private Boolean isContractual = false;
 
+    @Column(name = "birEmploymentStatusCode", length = 2)
+    private String birEmploymentStatusCode;
+
     public NatureOfAppointment() {
 
     }
@@ -67,5 +70,13 @@ public class NatureOfAppointment implements Serializable {
 
     public void setIsContractual(Boolean isContractual) {
         this.isContractual = isContractual;
+    }
+
+    public String getBirEmploymentStatusCode() {
+        return birEmploymentStatusCode;
+    }
+
+    public void setBirEmploymentStatusCode(String birEmploymentStatusCode) {
+        this.birEmploymentStatusCode = birEmploymentStatusCode;
     }
 }

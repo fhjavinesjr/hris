@@ -24,6 +24,8 @@ public class EarningTypeDTO implements Serializable {
     private Boolean pera;
     private Boolean subsistence;
     private Boolean specialPayroll;
+    private String bir2316ItemNo;
+    private String benefitTaxProfileCode;
 
     public EarningTypeDTO() {
     }
@@ -87,4 +89,9 @@ public class EarningTypeDTO implements Serializable {
 
     public Boolean getSpecialPayroll() { return specialPayroll; }
     public void setSpecialPayroll(Boolean specialPayroll) { this.specialPayroll = specialPayroll; }
+
+    public String getBir2316ItemNo() { return bir2316ItemNo; }
+    public void setBir2316ItemNo(String bir2316ItemNo) { this.bir2316ItemNo = bir2316ItemNo; }
+    public String getBenefitTaxProfileCode() { return benefitTaxProfileCode; }
+    public void setBenefitTaxProfileCode(String v) { benefitTaxProfileCode = v; }
 }

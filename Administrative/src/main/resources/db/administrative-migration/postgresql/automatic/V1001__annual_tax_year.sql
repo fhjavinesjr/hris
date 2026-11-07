@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS wtaxcontribution
+    ADD COLUMN IF NOT EXISTS taxYear INTEGER NULL;

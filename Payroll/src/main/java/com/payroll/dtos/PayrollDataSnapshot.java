@@ -72,6 +72,11 @@ public class PayrollDataSnapshot {
      */
     private Map<String, List<AllowanceDTO>> allowancesMap = Collections.emptyMap();
 
+    /** Saved Administrative classification for payroll-generated earnings. */
+    public record GeneratedEarningTaxSettings(Boolean taxable, String bir2316ItemNo) {}
+    private GeneratedEarningTaxSettings basicEarningTaxSettings;
+    private GeneratedEarningTaxSettings hazardEarningTaxSettings;
+
     // ── Previous payroll details ──────────────────────────────────────────────
     /**
      * key: employeeNo  →  leave balances carried from previous payroll period.
@@ -271,6 +276,7 @@ public class PayrollDataSnapshot {
         private String earningTypeName;
         private Double amount;
         private Boolean isTaxable;
+        private String bir2316ItemNo;
 
         public String getEarningType() { return earningType; }
         public void setEarningType(String earningType) { this.earningType = earningType; }
@@ -280,6 +286,8 @@ public class PayrollDataSnapshot {
         public void setAmount(Double amount) { this.amount = amount; }
         public Boolean getIsTaxable() { return isTaxable; }
         public void setIsTaxable(Boolean isTaxable) { this.isTaxable = isTaxable; }
+        public String getBir2316ItemNo() { return bir2316ItemNo; }
+        public void setBir2316ItemNo(String bir2316ItemNo) { this.bir2316ItemNo = bir2316ItemNo; }
     }
 
     /**
@@ -315,6 +323,10 @@ public class PayrollDataSnapshot {
     public void setHolidayMap(Map<LocalDate, HolidayDTO> holidayMap) { this.holidayMap = holidayMap; }
     public Map<String, List<AllowanceDTO>> getAllowancesMap() { return allowancesMap; }
     public void setAllowancesMap(Map<String, List<AllowanceDTO>> allowancesMap) { this.allowancesMap = allowancesMap; }
+    public GeneratedEarningTaxSettings getBasicEarningTaxSettings() { return basicEarningTaxSettings; }
+    public void setBasicEarningTaxSettings(GeneratedEarningTaxSettings value) { basicEarningTaxSettings = value; }
+    public GeneratedEarningTaxSettings getHazardEarningTaxSettings() { return hazardEarningTaxSettings; }
+    public void setHazardEarningTaxSettings(GeneratedEarningTaxSettings value) { hazardEarningTaxSettings = value; }
     public Map<String, PreviousPeriodBalanceDTO> getPreviousBalanceMap() { return previousBalanceMap; }
     public void setPreviousBalanceMap(Map<String, PreviousPeriodBalanceDTO> previousBalanceMap) { this.previousBalanceMap = previousBalanceMap; }
     public Double getPagibigMandatoryAmount() { return pagibigMandatoryAmount; }

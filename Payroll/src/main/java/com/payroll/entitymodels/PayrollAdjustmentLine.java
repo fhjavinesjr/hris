@@ -58,6 +58,10 @@ public class PayrollAdjustmentLine implements Serializable {
      */
     private Boolean isTaxable;
 
+    /** BIR Form 2316 item copied from the authoritative earning source when saved. */
+    @Column(length = 4)
+    private String bir2316ItemNo;
+
     /**
      * true  → line was auto-computed by the cascade engine (GSIS/PHIC/WTX deltas).
      * false → line was manually entered by the officer.
@@ -86,6 +90,8 @@ public class PayrollAdjustmentLine implements Serializable {
     public void setAmount(Double amount) { this.amount = amount; }
     public Boolean getIsTaxable() { return isTaxable; }
     public void setIsTaxable(Boolean isTaxable) { this.isTaxable = isTaxable; }
+    public String getBir2316ItemNo() { return bir2316ItemNo; }
+    public void setBir2316ItemNo(String bir2316ItemNo) { this.bir2316ItemNo = bir2316ItemNo; }
     public Boolean getIsAutoComputed() { return isAutoComputed; }
     public void setIsAutoComputed(Boolean isAutoComputed) { this.isAutoComputed = isAutoComputed; }
     public Integer getIndexNo() { return indexNo; }

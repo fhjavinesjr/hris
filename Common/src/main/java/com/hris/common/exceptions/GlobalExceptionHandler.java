@@ -10,6 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Locale;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -17,6 +18,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<String> handleDuplicateKeyException(DataIntegrityViolationException ex) {
         String errorMessage = ex.getMessage();
+        if (errorMessage != null && (errorMessage.toLowerCase(Locale.ROOT).contains("would be truncated")
+                || errorMessage.toLowerCase(Locale.ROOT).contains("value too long"))) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("A value exceeds a database field's allowed length. Check the entered text and try again.");
+        }
 
         //can use this code for specific error prompt message
         if(errorMessage.contains("duplicate")) {

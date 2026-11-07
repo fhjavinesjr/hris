@@ -3,6 +3,7 @@ package com.humanresource.controllers;
 import com.humanresource.dtos.EmployeeDTO;
 import com.humanresource.dtos.EmployeePayrollInfoResponse;
 import com.humanresource.dtos.EmployeeSecurityStatusDTO;
+import com.humanresource.dtos.EmployeeAnnualizationIdentityDTO;
 import com.humanresource.services.EmployeeService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api")
@@ -80,6 +82,13 @@ public class EmployeeController {
     @GetMapping("/employees/basicInfo")
     public ResponseEntity<List<EmployeeDTO>> getAllEmployeeNoAndName() throws Exception {
         return ResponseEntity.ok(employeeService.getAllEmployeeNoAndName());
+    }
+
+    @GetMapping("/employees/annualization-identities")
+    public ResponseEntity<List<EmployeeAnnualizationIdentityDTO>> getAnnualizationIdentities(
+            @RequestParam(required = false) Integer year) {
+        int requestedYear = year == null ? LocalDate.now().getYear() : year;
+        return ResponseEntity.ok(employeeService.getAnnualizationIdentities(requestedYear));
     }
 
     @PutMapping("/employee/password/update/{employeeId}")

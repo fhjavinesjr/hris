@@ -124,16 +124,8 @@ public class SsoServiceImpl implements SsoService {
         }
 
         Optional<PermissionRuleset> resolvedRuleset = resolveRuleset(employeeRole);
-        if (resolvedRuleset.isEmpty()
-                && "1".equals(employeeRole == null ? "" : employeeRole.trim().replaceFirst("(?i)^ROLE_", ""))) {
-            return null;
-        }
-
         PermissionRuleset ruleset = resolvedRuleset.orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.FORBIDDEN, "No permission ruleset is assigned to this account"));
-        if (Boolean.TRUE.equals(ruleset.getIsAdministrator())) {
-            return ruleset;
-        }
 
         try {
             JsonNode moduleAccess = objectMapper.readTree(ruleset.getPortalModuleAccess());

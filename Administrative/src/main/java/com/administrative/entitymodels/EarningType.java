@@ -70,6 +70,12 @@ public class EarningType implements Serializable {
     @Column(name = "specialPayroll")
     private Boolean specialPayroll;
 
+    @Column(name = "bir2316ItemNo", length = 4)
+    private String bir2316ItemNo;
+
+    @Column(name = "benefitTaxProfileCode", length = 50)
+    private String benefitTaxProfileCode;
+
     public EarningType() {
     }
 
@@ -132,4 +138,9 @@ public class EarningType implements Serializable {
 
     public Boolean getSpecialPayroll() { return specialPayroll; }
     public void setSpecialPayroll(Boolean specialPayroll) { this.specialPayroll = specialPayroll; }
+
+    public String getBir2316ItemNo() { return bir2316ItemNo; }
+    public void setBir2316ItemNo(String bir2316ItemNo) { this.bir2316ItemNo = bir2316ItemNo; }
+    public String getBenefitTaxProfileCode() { return benefitTaxProfileCode; }
+    public void setBenefitTaxProfileCode(String v) { benefitTaxProfileCode = v; }
 }

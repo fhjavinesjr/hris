@@ -31,6 +31,10 @@ public class SettingsDTO implements Serializable {
 
     private String tinNo;
 
+    private String rdoCode;
+
+    private String birBranchCode;
+
     private String pagIbigNo;
 
     private String philHealthNo;
@@ -160,6 +164,18 @@ public class SettingsDTO implements Serializable {
     public void setTinNo(String tinNo) {
         this.tinNo = tinNo;
     }
+
+    public String getRdoCode() {
+        return rdoCode;
+    }
+
+    public void setRdoCode(String rdoCode) {
+        this.rdoCode = rdoCode;
+    }
+
+    public String getBirBranchCode() { return birBranchCode; }
+
+    public void setBirBranchCode(String birBranchCode) { this.birBranchCode = birBranchCode; }
 
     public String getPagIbigNo() {
         return pagIbigNo;

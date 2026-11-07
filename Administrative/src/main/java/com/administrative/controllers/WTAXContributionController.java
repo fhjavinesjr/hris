@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api")
@@ -24,6 +25,7 @@ public class WTAXContributionController {
 
     @PostMapping("/wTAXContribution/create")
     public ResponseEntity<MetadataResponse> createWTAXContribution(@RequestBody WTAXContributionDTO wTAXContributionDTO) throws Exception {
+        validateTaxYear(wTAXContributionDTO);
         wTAXContributionDTO = wTAXContributionService.createWTAXContribution(wTAXContributionDTO);
         if(wTAXContributionDTO == null) {
             return ResponseEntity
@@ -42,6 +44,7 @@ public class WTAXContributionController {
 
     @PutMapping("/wTAXContribution/update/{wTAXContributionId}")
     public ResponseEntity<MetadataResponse> updateWTAXContribution(@PathVariable("wTAXContributionId") Long wTAXContributionId, @RequestBody WTAXContributionDTO wTAXContributionDTO) throws Exception {
+        validateTaxYear(wTAXContributionDTO);
         wTAXContributionDTO = wTAXContributionService.updateWTAXContribution(wTAXContributionId, wTAXContributionDTO);
         if(wTAXContributionDTO == null) {
             return ResponseEntity
@@ -77,6 +80,7 @@ public class WTAXContributionController {
         Map<String, List<Map<String, Object>>> result = new LinkedHashMap<>();
 
         for (WTAXContributionDTO dto : all) {
+            if ("Annual".equalsIgnoreCase(dto.getSalaryType())) continue;
             String salaryType = dto.getSalaryType() != null ? dto.getSalaryType() : "UNKNOWN";
 
             double baseTax = 0.0;
@@ -105,6 +109,54 @@ public class WTAXContributionController {
         }
 
         return ResponseEntity.ok(result);
+    }
+
+    /** Annual brackets are isolated by tax year so historical reconciliation stays reproducible. */
+    @GetMapping("/wh-tax/annual-brackets")
+    public ResponseEntity<List<Map<String, Object>>> getAnnualTaxBrackets(
+            @RequestParam Integer year) throws Exception {
+        if (year < 1900 || year > 9999) {
+            throw new IllegalArgumentException("A valid four-digit tax year is required.");
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (WTAXContributionDTO dto : wTAXContributionService.getAllWTAXContribution()) {
+            if (!"Annual".equalsIgnoreCase(dto.getSalaryType()) || !year.equals(dto.getTaxYear())) {
+                continue;
+            }
+            Map<String, Object> bracket = new LinkedHashMap<>();
+            bracket.put("incomeFrom", decimal(dto.getIncomeFrom(), BigDecimal.ZERO));
+            bracket.put("incomeTo", decimal(dto.getIncomeTo(), null));
+            bracket.put("baseTax", decimal(dto.getFixedAmount(), BigDecimal.ZERO));
+            BigDecimal rate = decimal(dto.getPercentageOverBase(), BigDecimal.ZERO);
+            if (rate.compareTo(BigDecimal.ONE) > 0) {
+                rate = rate.movePointLeft(2);
+            }
+            bracket.put("excessRate", rate);
+            result.add(bracket);
+        }
+        result.sort((left, right) -> ((BigDecimal) left.get("incomeFrom"))
+                .compareTo((BigDecimal) right.get("incomeFrom")));
+        return ResponseEntity.ok(result);
+    }
+
+    private BigDecimal decimal(String value, BigDecimal fallback) {
+        if (value == null || value.isBlank()) return fallback;
+        try {
+            return new BigDecimal(value.replace(",", "").trim());
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
+    }
+
+    private void validateTaxYear(WTAXContributionDTO dto) {
+        if ("Annual".equalsIgnoreCase(dto.getSalaryType())) {
+            if (dto.getTaxYear() == null || dto.getTaxYear() < 1900 || dto.getTaxYear() > 9999) {
+                throw new IllegalArgumentException("A valid tax year is required for Annual brackets.");
+            }
+        } else {
+            dto.setTaxYear(null);
+        }
     }
 
 }

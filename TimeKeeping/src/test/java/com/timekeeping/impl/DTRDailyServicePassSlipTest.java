@@ -23,6 +23,40 @@ class DTRDailyServicePassSlipTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"PostgreSQL", "MSSQLServer"})
+    void bulkSummaryExcludesUnfinishedBiometricLateWhenManualCoversOnlyShift(String mode) {
+        DriverManagerDataSource dataSource = dataSource(mode);
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        createSchema(jdbc);
+        jdbc.update("INSERT INTO employee (employeeId, employeeNo) VALUES (?, ?)", 1L, "001");
+        jdbc.update("INSERT INTO time_shift (tsCode, timeIn, breakOut, breakIn, timeOut) VALUES (?, ?, ?, ?, ?)",
+                "DAY", Time.valueOf("08:00:00"), Time.valueOf("12:00:00"),
+                Time.valueOf("13:00:00"), Time.valueOf("17:00:00"));
+        insertWorkDay(jdbc, 1L, "2026-09-10");
+        jdbc.update("INSERT INTO dtr_daily VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                1L, "1", Date.valueOf("2026-09-10"), "IN PROGRESS", 480, 908, 0, 0);
+        jdbc.update("INSERT INTO dtr_segment VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                1L, 1L, "ADMS", Time.valueOf("23:08:57"), null, 0, 908, 0, 0);
+        jdbc.update("INSERT INTO dtr_segment VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                2L, 1L, "MANUAL", Time.valueOf("08:00:00"), Time.valueOf("17:00:00"),
+                480, 0, 0, 0);
+        DTRDailyServiceImpl service = new DTRDailyServiceImpl(
+                mock(DTRDailyRepository.class), mock(DTRSegmentRepository.class),
+                mock(WorkScheduleRepository.class), jdbc, dataSource);
+
+        assertThat(row(service.getBulkDtrSummary(LocalDate.of(2026, 9, 10),
+                LocalDate.of(2026, 9, 10)), LocalDate.of(2026, 9, 10)).get("lateMinutes"))
+                .isEqualTo(0);
+
+        // A second plotted shift could legitimately own the unfinished ADMS segment.
+        jdbc.update("INSERT INTO work_schedule VALUES (?, ?, ?, ?, ?)",
+                2L, "1", "DAY", false, Timestamp.valueOf("2026-09-10 18:00:00"));
+        assertThat(row(service.getBulkDtrSummary(LocalDate.of(2026, 9, 10),
+                LocalDate.of(2026, 9, 10)), LocalDate.of(2026, 9, 10)).get("lateMinutes"))
+                .isEqualTo(908);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PostgreSQL", "MSSQLServer"})
     void bulkSummaryChargesPersonalMinutesAndOnlyFlagsFullDayOfficial(String mode) {
         DriverManagerDataSource dataSource = dataSource(mode);
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
@@ -85,6 +119,7 @@ class DTRDailyServicePassSlipTest {
         jdbc.execute("CREATE TABLE work_schedule (wsId BIGINT PRIMARY KEY, employeeId VARCHAR(100), tsCode VARCHAR(100), isDayOff BOOLEAN, wsDateTime TIMESTAMP)");
         jdbc.execute("CREATE TABLE time_shift (tsCode VARCHAR(100), timeIn TIME, breakOut TIME, breakIn TIME, timeOut TIME)");
         jdbc.execute("CREATE TABLE dtr_daily (dtr_daily_id BIGINT PRIMARY KEY, employee_id VARCHAR(100), work_date DATE, attendance_status VARCHAR(50), total_work_minutes INT, total_late_minutes INT, total_undertime_minutes INT, total_overtime_minutes INT)");
+        jdbc.execute("CREATE TABLE dtr_segment (dtr_segment_id BIGINT PRIMARY KEY, dtr_daily_id BIGINT, source_type VARCHAR(30), time_in TIME, time_out TIME, work_minutes INT, late_minutes INT, undertime_minutes INT, overtime_minutes INT)");
         jdbc.execute("CREATE TABLE official_engagement_application (officialEngagementApplicationId BIGINT, employeeId BIGINT, status VARCHAR(50), startDate DATE, endDate DATE)");
         jdbc.execute("CREATE TABLE overtime_request (overtimeRequestId BIGINT, employeeId BIGINT, status VARCHAR(50), dateTimeFrom TIMESTAMP)");
         jdbc.execute("CREATE TABLE pass_slip (passSlipId BIGINT, employeeId BIGINT, passSlipDate DATE, purpose VARCHAR(50), departureTime TIME, arrivalTime TIME, status VARCHAR(50))");

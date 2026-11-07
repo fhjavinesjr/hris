@@ -1,0 +1,47 @@
+<jasperReport name="approved_leave_summary" language="java" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="782" leftMargin="30" rightMargin="30" topMargin="24" bottomMargin="24" whenNoDataType="NoDataSection" uuid="72851eae-3295-47ec-87c1-54e9c5c92fa9">
+    <parameter name="agency" class="java.lang.String"/>
+    <parameter name="area" class="java.lang.String"/>
+    <parameter name="businessUnit" class="java.lang.String"/>
+    <parameter name="rangeLabel" class="java.lang.String"/>
+    <parameter name="leaveTypeLabel" class="java.lang.String"/>
+    <parameter name="payLabel" class="java.lang.String"/>
+    <field name="employeeNo" class="java.lang.String"/>
+    <field name="employeeName" class="java.lang.String"/>
+    <field name="businessUnit" class="java.lang.String"/>
+    <field name="leaveType" class="java.lang.String"/>
+    <field name="startDate" class="java.sql.Date"/>
+    <field name="endDate" class="java.sql.Date"/>
+    <field name="approvedDays" class="java.lang.Double"/>
+    <field name="payTreatment" class="java.lang.String"/>
+    <variable name="filingCount" calculation="Count" class="java.lang.Integer"><expression><![CDATA[$F{employeeNo}]]></expression></variable>
+    <pageHeader height="116">
+        <element kind="staticText" x="0" y="0" width="782" height="14" fontName="Arial" fontSize="8" hTextAlign="Center"><text><![CDATA[Republic of the Philippines]]></text></element>
+        <element kind="textField" x="0" y="15" width="782" height="18" fontName="Arial" fontSize="10" bold="true" hTextAlign="Center"><expression><![CDATA[$P{agency}]]></expression></element>
+        <element kind="staticText" x="0" y="38" width="782" height="22" fontName="Arial" fontSize="14" bold="true" hTextAlign="Center"><text><![CDATA[APPROVED LEAVE SUMMARY]]></text></element>
+        <element kind="textField" x="0" y="64" width="782" height="18" fontName="Arial" fontSize="8" hTextAlign="Center"><expression><![CDATA[$P{rangeLabel} + "  |  " + $P{area} + "  |  " + $P{businessUnit}]]></expression></element>
+        <element kind="textField" x="0" y="84" width="782" height="18" fontName="Arial" fontSize="8" hTextAlign="Center"><expression><![CDATA[$P{leaveTypeLabel} + "  |  " + $P{payLabel}]]></expression></element>
+    </pageHeader>
+    <columnHeader height="23">
+        <element kind="staticText" mode="Opaque" x="0" y="0" width="86" height="22" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Employee No.]]></text></element>
+        <element kind="staticText" mode="Opaque" x="86" y="0" width="139" height="22" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Employee]]></text></element>
+        <element kind="staticText" mode="Opaque" x="225" y="0" width="120" height="22" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Business Unit]]></text></element>
+        <element kind="staticText" mode="Opaque" x="345" y="0" width="125" height="22" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Leave type]]></text></element>
+        <element kind="staticText" mode="Opaque" x="470" y="0" width="96" height="22" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[From]]></text></element>
+        <element kind="staticText" mode="Opaque" x="566" y="0" width="96" height="22" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[To]]></text></element>
+        <element kind="staticText" mode="Opaque" x="662" y="0" width="50" height="22" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Days]]></text></element>
+        <element kind="staticText" mode="Opaque" x="712" y="0" width="70" height="22" backcolor="#E8EEF5" fontSize="8" bold="true"><text><![CDATA[Pay]]></text></element>
+    </columnHeader>
+    <detail><band height="28">
+        <element kind="textField" x="0" y="1" width="86" height="25" fontSize="8"><expression><![CDATA[$F{employeeNo}]]></expression></element>
+        <element kind="textField" x="86" y="1" width="139" height="25" fontSize="8" textAdjust="StretchHeight"><expression><![CDATA[$F{employeeName}]]></expression></element>
+        <element kind="textField" x="225" y="1" width="120" height="25" fontSize="8" textAdjust="StretchHeight"><expression><![CDATA[$F{businessUnit}]]></expression></element>
+        <element kind="textField" x="345" y="1" width="125" height="25" fontSize="8" textAdjust="StretchHeight"><expression><![CDATA[$F{leaveType}]]></expression></element>
+        <element kind="textField" x="470" y="1" width="96" height="25" fontSize="8" pattern="MMM dd, yyyy"><expression><![CDATA[$F{startDate}]]></expression></element>
+        <element kind="textField" x="566" y="1" width="96" height="25" fontSize="8" pattern="MMM dd, yyyy"><expression><![CDATA[$F{endDate}]]></expression></element>
+        <element kind="textField" x="662" y="1" width="50" height="25" fontSize="8" pattern="0.##"><expression><![CDATA[$F{approvedDays}]]></expression></element>
+        <element kind="textField" x="712" y="1" width="70" height="25" fontSize="8"><expression><![CDATA[$F{payTreatment}]]></expression></element>
+    </band></detail>
+    <summary height="67"><element kind="textField" x="0" y="0" width="782" height="18" fontSize="9" bold="true"><expression><![CDATA["APPROVED FILINGS: " + $V{filingCount}]]></expression></element><element kind="staticText" x="0" y="26" width="782" height="38" fontSize="8"><text><![CDATA[Filings overlapping the selected range are shown with their full approved dates and days. Days are not prorated to the filter range. This is not a leave-balance ledger. Current Area/Business Unit assignment is used; verify historical transfers.]]></text></element></summary>
+    <noData height="90"><element kind="staticText" x="0" y="10" width="782" height="25" fontSize="14" bold="true" hTextAlign="Center"><text><![CDATA[APPROVED LEAVE SUMMARY]]></text></element><element kind="staticText" x="0" y="48" width="782" height="28" fontSize="10" hTextAlign="Center"><text><![CDATA[No approved leave filings match the selected filters.]]></text></element></noData>
+    <pageFooter height="18"><element kind="textField" x="700" y="0" width="82" height="15" fontSize="8" hTextAlign="Right"><expression><![CDATA["Page " + $V{PAGE_NUMBER}]]></expression></element></pageFooter>
+</jasperReport>

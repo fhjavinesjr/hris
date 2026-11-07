@@ -115,12 +115,11 @@ public class PayrollComputationEngine {
                     deductionLines, request.getSalaryType(), entryDeductions);
 
             // ── Step 8b: Add taxable income entries to taxable income ─────────
-            // (income entries were already added to grossAmount in buildEarnings)
-            List<PayrollDataSnapshot.IncomeEntryDTO> incomeEntries = snap.getIncomeEntriesMap()
-                    .getOrDefault(emp.getEmployeeNo(), Collections.emptyList());
-            for (PayrollDataSnapshot.IncomeEntryDTO entry : incomeEntries) {
-                if (Boolean.TRUE.equals(entry.getIsTaxable()) && entry.getAmount() != null && entry.getAmount() > 0) {
-                    taxableIncome += entry.getAmount();
+            // Basic pay is already included above; use each other paid line's saved tax setting.
+            for (PayrollDetailEarning line : earningLines) {
+                if (!"BASIC".equalsIgnoreCase(line.getEarningCode())
+                        && Boolean.TRUE.equals(line.getIsTaxable())) {
+                    taxableIncome += line.getAmount();
                 }
             }
 
@@ -312,6 +311,7 @@ public class PayrollComputationEngine {
 
         PayrollDetailEarning basicLine = new PayrollDetailEarning(
                 null, "BASIC", "Contractual Services", roundOff(actualBasic), true, 0);
+        applyGeneratedEarningTaxSettings(basicLine, snap.getBasicEarningTaxSettings());
         lines.add(basicLine);
         gross += basicLine.getAmount();
 
@@ -324,6 +324,7 @@ public class PayrollComputationEngine {
                 PayrollDetailEarning line = new PayrollDetailEarning(
                         null, entry.getEarningType(), entry.getEarningTypeName(),
                         roundOff(amount), Boolean.TRUE.equals(entry.getIsTaxable()), lines.size());
+                line.setBir2316ItemNo(entry.getBir2316ItemNo());
                 lines.add(line);
                 gross += line.getAmount();
             }
@@ -591,6 +592,7 @@ public class PayrollComputationEngine {
         // Basic salary
         PayrollDetailEarning basicLine = new PayrollDetailEarning(
                 null, "BASIC", "Basic Salary", roundOff(actualBasic), true, 0);
+        applyGeneratedEarningTaxSettings(basicLine, snap.getBasicEarningTaxSettings());
         lines.add(basicLine);
         gross += basicLine.getAmount();
 
@@ -609,6 +611,7 @@ public class PayrollComputationEngine {
             PayrollDetailEarning line = new PayrollDetailEarning(
                     null, a.getAllowanceCode(), a.getAllowanceName(),
                     roundOff(amount), Boolean.TRUE.equals(a.getIsTaxable()), lines.size());
+            line.setBir2316ItemNo(a.getBir2316ItemNo());
             lines.add(line);
             gross += line.getAmount();
         }
@@ -629,6 +632,7 @@ public class PayrollComputationEngine {
                 if (Boolean.TRUE.equals(emp.getIsPartTime())) hazardAmount /= 2;
                 PayrollDetailEarning hazardLine = new PayrollDetailEarning(
                         null, "HAZARD", "Hazard Pay", hazardAmount, false, lines.size());
+                applyGeneratedEarningTaxSettings(hazardLine, snap.getHazardEarningTaxSettings());
                 lines.add(hazardLine);
                 gross += hazardAmount;
             }
@@ -643,6 +647,7 @@ public class PayrollComputationEngine {
                 PayrollDetailEarning line = new PayrollDetailEarning(
                         null, entry.getEarningType(), entry.getEarningTypeName(),
                         roundOff(amount), Boolean.TRUE.equals(entry.getIsTaxable()), lines.size());
+                line.setBir2316ItemNo(entry.getBir2316ItemNo());
                 lines.add(line);
                 gross += line.getAmount();
             }
@@ -654,6 +659,13 @@ public class PayrollComputationEngine {
     /**
      * Compute individual allowance amount using ZCMC formulas (from legacy PayrollComputation.java).
      */
+    private void applyGeneratedEarningTaxSettings(PayrollDetailEarning line,
+            PayrollDataSnapshot.GeneratedEarningTaxSettings settings) {
+        if (settings == null) return;
+        if (settings.taxable() != null) line.setIsTaxable(settings.taxable());
+        line.setBir2316ItemNo(settings.bir2316ItemNo());
+    }
+
     private double computeAllowanceAmount(AllowanceDTO a,
                                            AttendanceSummary attendance,
                                            double basicPerSalary,

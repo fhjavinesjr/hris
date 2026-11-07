@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS payroll_detail_earning ADD COLUMN IF NOT EXISTS bir2316ItemNo VARCHAR(4);

@@ -34,6 +34,7 @@ public class AllowanceDTO {
 
     /** true = Laundry allowance (needs proportional absent+leave day deduction). */
     private Boolean isLaundry = false;
+    private String bir2316ItemNo;
 
     // Getters / Setters
     public String getEmployeeNo() { return employeeNo; }
@@ -58,4 +59,6 @@ public class AllowanceDTO {
     public void setIsSubsistence(Boolean isSubsistence) { this.isSubsistence = isSubsistence; }
     public Boolean getIsLaundry() { return isLaundry; }
     public void setIsLaundry(Boolean isLaundry) { this.isLaundry = isLaundry; }
+    public String getBir2316ItemNo() { return bir2316ItemNo; }
+    public void setBir2316ItemNo(String bir2316ItemNo) { this.bir2316ItemNo = bir2316ItemNo; }
 }

@@ -120,6 +120,10 @@ public class PersonalDataImpl implements PersonalDataService {
                     personalDataDTO.getQ42()
             );
 
+            personalData.setRdoCode(personalDataDTO.getRdoCode());
+            personalData.setBirRegionCode(personalDataDTO.getBirRegionCode());
+            personalData.setBirBranchCode(personalDataDTO.getBirBranchCode());
+
             personalDataRepository.save(personalData);
             initializePasswordIfMissing(personalData);
             return personalDataDTO;
@@ -220,6 +224,10 @@ public class PersonalDataImpl implements PersonalDataService {
                     personalData.getQ39cDetails(),
                     personalData.getQ42()
             );
+
+            personalDataDTO.setRdoCode(personalData.getRdoCode());
+            personalDataDTO.setBirRegionCode(personalData.getBirRegionCode());
+            personalDataDTO.setBirBranchCode(personalData.getBirBranchCode());
 
             return personalDataDTO;
         }

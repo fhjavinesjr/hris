@@ -140,14 +140,12 @@ class SsoServiceImplTest {
     }
 
     @Test
-    void establishedRoleOneCanLaunchPrimeHrWithoutARuleset() {
-        SsoLaunchResponse launch = service.launch("001", "ROLE_1", "primehr");
-        assertNotNull(launch.code());
-        verify(ticketRepository).save(org.mockito.ArgumentMatchers.any(SsoLoginTicket.class));
+    void agencyRoleOneCannotLaunchPrimeHrWithoutARuleset() {
+        assertThrows(ResponseStatusException.class, () -> service.launch("001", "ROLE_1", "primehr"));
     }
 
     @Test
-    void roleOneUsesMatchingRulesetBeforeLegacyAdministratorFallback() throws Exception {
+    void roleOneUsesMatchingRulesetPermissions() throws Exception {
         PermissionRuleset userRuleset = new PermissionRuleset(
                 "USER", false, "{}", "{\"hrManagement\":true}");
         userRuleset.setPermissionId(1L);
@@ -166,6 +164,16 @@ class SsoServiceImplTest {
         assertNotNull(exchange.permission());
         assertEquals("USER", exchange.permission().getPermissionName());
         assertFalse(exchange.permission().getIsAdministrator());
+    }
+
+    @Test
+    void agencyAdministratorStillNeedsPortalPermission() {
+        PermissionRuleset agencyAdmin = new PermissionRuleset(
+                "Agency Administrator", true, "{}", "{\"primeHr\":false}");
+        agencyAdmin.setPermissionId(2L);
+        when(permissionRepository.findById(2L)).thenReturn(Optional.of(agencyAdmin));
+
+        assertThrows(ResponseStatusException.class, () -> service.launch("001", "2", "primehr"));
     }
 
     @Test

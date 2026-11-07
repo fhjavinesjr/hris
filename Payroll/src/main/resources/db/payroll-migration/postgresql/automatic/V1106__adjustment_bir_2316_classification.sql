@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS payroll_adjustment_line
+    ADD COLUMN IF NOT EXISTS "bir2316ItemNo" VARCHAR(4);

@@ -46,6 +46,12 @@ public class Settings implements Serializable {
     @Column(name = "tinNo")
     private String tinNo;
 
+    @Column(name = "rdoCode", length = 10)
+    private String rdoCode;
+
+    @Column(name = "birBranchCode", length = 4)
+    private String birBranchCode;
+
     @Column(name = "pagIbigNo")
     private String pagIbigNo;
 
@@ -181,6 +187,18 @@ public class Settings implements Serializable {
     public void setTinNo(String tinNo) {
         this.tinNo = tinNo;
     }
+
+    public String getRdoCode() {
+        return rdoCode;
+    }
+
+    public void setRdoCode(String rdoCode) {
+        this.rdoCode = rdoCode;
+    }
+
+    public String getBirBranchCode() { return birBranchCode; }
+
+    public void setBirBranchCode(String birBranchCode) { this.birBranchCode = birBranchCode; }
 
     public String getPagIbigNo() {
         return pagIbigNo;

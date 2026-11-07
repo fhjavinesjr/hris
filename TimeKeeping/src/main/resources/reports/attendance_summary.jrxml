@@ -1,0 +1,85 @@
+<jasperReport name="attendance_summary" language="java" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="782" leftMargin="30" rightMargin="30" topMargin="24" bottomMargin="24" whenNoDataType="NoDataSection" uuid="ae334184-92c2-4a15-9500-e80f724d3412">
+    <parameter name="runId" class="java.lang.String"/>
+    <parameter name="monthLabel" class="java.lang.String"/>
+    <parameter name="agency" class="java.lang.String"/>
+    <parameter name="area" class="java.lang.String"/>
+    <parameter name="businessUnit" class="java.lang.String"/>
+    <parameter name="summaryTitle" class="java.lang.String"/>
+    <parameter name="summaryNote" class="java.lang.String"/>
+    <parameter name="noDataMessage" class="java.lang.String"/>
+    <parameter name="preparedBy" class="java.lang.String"/>
+    <parameter name="preparedPosition" class="java.lang.String"/>
+    <parameter name="certifiedBy" class="java.lang.String"/>
+    <parameter name="certifiedPosition" class="java.lang.String"/>
+    <parameter name="verifiedBy" class="java.lang.String"/>
+    <parameter name="verifiedPosition" class="java.lang.String"/>
+    <query language="SQL"><![CDATA[
+        SELECT employee_id, employee_no, employee_name, business_unit_id, business_unit,
+               work_date, attendance_status, metric_minutes, overtime_approved, remarks
+        FROM mra_print_day
+        WHERE run_id = $P{runId} AND metric_minutes > 0
+        ORDER BY business_unit, business_unit_id, employee_name, employee_id, work_date
+    ]]></query>
+    <field name="employee_id" class="java.lang.Long"/>
+    <field name="employee_no" class="java.lang.String"/>
+    <field name="employee_name" class="java.lang.String"/>
+    <field name="business_unit_id" class="java.lang.Long"/>
+    <field name="business_unit" class="java.lang.String"/>
+    <field name="work_date" class="java.sql.Date"/>
+    <field name="attendance_status" class="java.lang.String"/>
+    <field name="metric_minutes" class="java.lang.Integer"/>
+    <field name="overtime_approved" class="java.lang.Integer"/>
+    <field name="remarks" class="java.lang.String"/>
+    <variable name="employeeMinutes" resetType="Group" resetGroup="employeeGroup" calculation="Sum" class="java.lang.Integer"><expression><![CDATA[$F{metric_minutes}]]></expression></variable>
+    <variable name="employeeDays" resetType="Group" resetGroup="employeeGroup" calculation="Count" class="java.lang.Integer"><expression><![CDATA[$F{work_date}]]></expression></variable>
+    <variable name="reportMinutes" calculation="Sum" class="java.lang.Integer"><expression><![CDATA[$F{metric_minutes}]]></expression></variable>
+    <group name="employeeGroup" reprintHeaderOnEachPage="true" keepTogether="true">
+        <expression><![CDATA[String.valueOf($F{business_unit_id}) + "|" + String.valueOf($F{employee_id})]]></expression>
+        <groupHeader><band height="28">
+            <element kind="textField" mode="Opaque" x="0" y="2" width="782" height="24" backcolor="#E8EEF5" fontName="Arial" fontSize="9" bold="true" vTextAlign="Middle"><expression><![CDATA[$F{employee_name} + "  (" + $F{employee_no} + ")  |  " + $F{business_unit}]]></expression><box><pen lineWidth="0.5"/></box></element>
+        </band></groupHeader>
+        <groupFooter><band height="23">
+            <element kind="textField" x="0" y="2" width="782" height="18" fontName="Arial" fontSize="8" bold="true"><expression><![CDATA["EMPLOYEE TOTAL: " + $V{employeeDays} + " date(s)  |  " + $V{employeeMinutes} + " minutes"]]></expression></element>
+        </band></groupFooter>
+    </group>
+    <pageHeader height="115">
+        <element kind="staticText" x="0" y="0" width="782" height="14" fontName="Arial" fontSize="8" hTextAlign="Center"><text><![CDATA[Republic of the Philippines]]></text></element>
+        <element kind="textField" x="0" y="15" width="782" height="18" fontName="Arial" fontSize="10" bold="true" hTextAlign="Center"><expression><![CDATA[$P{agency}]]></expression></element>
+        <element kind="textField" x="0" y="38" width="782" height="22" fontName="Arial" fontSize="14" bold="true" hTextAlign="Center"><expression><![CDATA[$P{summaryTitle}]]></expression></element>
+        <element kind="textField" x="0" y="64" width="782" height="17" fontName="Arial" fontSize="8" hTextAlign="Center"><expression><![CDATA[$P{monthLabel} + "  |  Area: " + $P{area} + "  |  Business Unit: " + $P{businessUnit}]]></expression></element>
+        <element kind="textField" x="0" y="85" width="782" height="28" fontName="Arial" fontSize="8" hTextAlign="Center" textAdjust="StretchHeight"><expression><![CDATA[$P{summaryNote}]]></expression></element>
+    </pageHeader>
+    <columnHeader height="24">
+        <element kind="staticText" mode="Opaque" x="0" y="0" width="120" height="23" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true"><text><![CDATA[Work date]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="120" y="0" width="105" height="23" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true"><text><![CDATA[Minutes]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="225" y="0" width="190" height="23" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true"><text><![CDATA[DTR status]]></text><box><pen lineWidth="0.5"/></box></element>
+        <element kind="staticText" mode="Opaque" x="415" y="0" width="367" height="23" backcolor="#E8EEF5" fontName="Arial" fontSize="8" bold="true"><text><![CDATA[DTR remarks / evidence]]></text><box><pen lineWidth="0.5"/></box></element>
+    </columnHeader>
+    <detail><band height="17">
+        <element kind="textField" x="0" y="0" width="120" height="16" fontName="Arial" fontSize="8" pattern="MMM dd, yyyy"><expression><![CDATA[$F{work_date}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="120" y="0" width="105" height="16" fontName="Arial" fontSize="8"><expression><![CDATA[$F{metric_minutes}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="225" y="0" width="190" height="16" fontName="Arial" fontSize="8"><expression><![CDATA[$F{attendance_status}]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+        <element kind="textField" x="415" y="0" width="367" height="16" fontName="Arial" fontSize="8"><expression><![CDATA[($F{remarks} == null ? "" : $F{remarks}) + ("OVERTIME SUMMARY".equals($P{summaryTitle}) ? ($F{overtime_approved} != null && $F{overtime_approved}.intValue() == 1 ? " [OT approved]" : " [OT approval not confirmed]") : "")]]></expression><box><bottomPen lineWidth="0.25"/></box></element>
+    </band></detail>
+    <summary height="100">
+        <element kind="textField" x="0" y="0" width="782" height="18" fontName="Arial" fontSize="9" bold="true"><expression><![CDATA["REPORT TOTAL: " + $V{reportMinutes} + " minutes"]]></expression></element>
+        <element kind="staticText" x="15" y="28" width="220" height="14" fontName="Arial" fontSize="8"><text><![CDATA[Prepared by:]]></text></element>
+        <element kind="staticText" x="280" y="28" width="220" height="14" fontName="Arial" fontSize="8"><text><![CDATA[Certified by:]]></text></element>
+        <element kind="staticText" x="545" y="28" width="220" height="14" fontName="Arial" fontSize="8"><text><![CDATA[Verified by:]]></text></element>
+        <element kind="line" x="15" y="48" width="220" height="1"/>
+        <element kind="line" x="280" y="48" width="220" height="1"/>
+        <element kind="line" x="545" y="48" width="220" height="1"/>
+        <element kind="textField" x="15" y="52" width="220" height="16" fontName="Arial" fontSize="8" bold="true"><expression><![CDATA[$P{preparedBy}]]></expression></element>
+        <element kind="textField" x="280" y="52" width="220" height="16" fontName="Arial" fontSize="8" bold="true"><expression><![CDATA[$P{certifiedBy}]]></expression></element>
+        <element kind="textField" x="545" y="52" width="220" height="16" fontName="Arial" fontSize="8" bold="true"><expression><![CDATA[$P{verifiedBy}]]></expression></element>
+        <element kind="textField" x="15" y="70" width="220" height="16" fontName="Arial" fontSize="8"><expression><![CDATA[$P{preparedPosition}]]></expression></element>
+        <element kind="textField" x="280" y="70" width="220" height="16" fontName="Arial" fontSize="8"><expression><![CDATA[$P{certifiedPosition}]]></expression></element>
+        <element kind="textField" x="545" y="70" width="220" height="16" fontName="Arial" fontSize="8"><expression><![CDATA[$P{verifiedPosition}]]></expression></element>
+    </summary>
+    <noData height="110">
+        <element kind="textField" x="0" y="0" width="782" height="24" fontName="Arial" fontSize="14" bold="true" hTextAlign="Center"><expression><![CDATA[$P{summaryTitle}]]></expression></element>
+        <element kind="textField" x="0" y="28" width="782" height="17" fontName="Arial" fontSize="8" hTextAlign="Center"><expression><![CDATA[$P{monthLabel} + "  |  " + $P{area} + "  |  " + $P{businessUnit}]]></expression></element>
+        <element kind="textField" x="0" y="56" width="782" height="35" fontName="Arial" fontSize="10" hTextAlign="Center"><expression><![CDATA[$P{noDataMessage}]]></expression></element>
+    </noData>
+    <pageFooter height="18"><element kind="textField" x="700" y="0" width="82" height="15" fontName="Arial" fontSize="8" hTextAlign="Right"><expression><![CDATA["Page " + $V{PAGE_NUMBER}]]></expression></element></pageFooter>
+</jasperReport>

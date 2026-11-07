@@ -1,0 +1,13 @@
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS birBranchCode VARCHAR(4);
+
+UPDATE natureofappointment
+SET birEmploymentStatusCode = CASE
+    WHEN UPPER(BTRIM(nature)) LIKE '%PERMANENT%' OR UPPER(BTRIM(nature)) LIKE '%REGULAR%' THEN 'R'
+    WHEN UPPER(BTRIM(nature)) LIKE '%CASUAL%' THEN 'C'
+    WHEN UPPER(BTRIM(nature)) LIKE '%CONTRACTUAL%' OR UPPER(BTRIM(nature)) LIKE '%PROJECT%' THEN 'CP'
+    WHEN UPPER(BTRIM(nature)) LIKE '%SEASONAL%' THEN 'S'
+    WHEN UPPER(BTRIM(nature)) LIKE '%PROBATION%' THEN 'P'
+    WHEN UPPER(BTRIM(nature)) LIKE '%APPRENTICE%' OR UPPER(BTRIM(nature)) LIKE '%LEARNER%' THEN 'AL'
+    ELSE birEmploymentStatusCode
+END
+WHERE birEmploymentStatusCode IS NULL;

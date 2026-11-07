@@ -8,6 +8,7 @@ public class NatureOfAppointmentDTO implements Serializable {
     private String code;
     private String nature;
     private Boolean isContractual = false;
+    private String birEmploymentStatusCode;
 
     public NatureOfAppointmentDTO() {
 
@@ -50,5 +51,13 @@ public class NatureOfAppointmentDTO implements Serializable {
 
     public void setIsContractual(Boolean isContractual) {
         this.isContractual = isContractual;
+    }
+
+    public String getBirEmploymentStatusCode() {
+        return birEmploymentStatusCode;
+    }
+
+    public void setBirEmploymentStatusCode(String birEmploymentStatusCode) {
+        this.birEmploymentStatusCode = birEmploymentStatusCode;
     }
 }

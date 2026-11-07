@@ -19,7 +19,7 @@ class PrimeHrReportSourceServiceTest {
         Settings value = new Settings(); value.setSettingsId(7L); value.setCompanyName("ISOFT Test Agency");
         value.setAddress("Main Road"); value.setCity("Quezon City"); value.setZipCode("1100");
         value.setMainLogo(new byte[]{1, 2, 3});
-        when(settings.findTopByOrderBySettingsIdDesc()).thenReturn(Optional.of(value));
+        when(settings.findFirstByOrderBySettingsIdDesc()).thenReturn(Optional.of(value));
         when(plantilla.findById(11L)).thenReturn(Optional.of(new Plantilla(11L, "Administrative Officer V", 22L)));
         when(positions.findById(22L)).thenReturn(Optional.of(new JobPosition(22L, "Administrative Officer V", 18L)));
         PrimeHrReportSourceService service = new PrimeHrReportSourceServiceImpl(settings, plantilla, positions);
@@ -37,7 +37,7 @@ class PrimeHrReportSourceServiceTest {
         PlantillaRepository plantilla = mock(PlantillaRepository.class);
         JobPositionRepository positions = mock(JobPositionRepository.class);
         PrimeHrReportSourceService service = new PrimeHrReportSourceServiceImpl(settings, plantilla, positions);
-        when(settings.findTopByOrderBySettingsIdDesc()).thenReturn(Optional.empty());
+        when(settings.findFirstByOrderBySettingsIdDesc()).thenReturn(Optional.empty());
         when(plantilla.findById(11L)).thenReturn(Optional.empty());
         assertThatThrownBy(service::branding).isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(() -> service.position(11L)).isInstanceOf(ResponseStatusException.class);

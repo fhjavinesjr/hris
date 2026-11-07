@@ -48,6 +48,28 @@ class PayrollComputationEngineLeaveWithoutPayTest {
     }
 
     @Test
+    void generatedBasicAndHazardCarryAdministrativeTaxSettingsIntoWithholdingBase() {
+        LocalDate date = LocalDate.of(2026, 9, 14);
+        PayrollDataSnapshot snapshot = new PayrollDataSnapshot();
+        snapshot.setAutoComputeHazardPay(true);
+        snapshot.setHazardPayRateByGrade(Map.of(1, 25.0));
+        snapshot.setBasicEarningTaxSettings(
+                new PayrollDataSnapshot.GeneratedEarningTaxSettings(true, "39"));
+        snapshot.setHazardEarningTaxSettings(
+                new PayrollDataSnapshot.GeneratedEarningTaxSettings(true, "49"));
+
+        PayrollDetail result = new PayrollComputationEngine().compute(employee(), request(date), snapshot);
+
+        assertEquals("39", result.getEarnings().get(0).getBir2316ItemNo());
+        assertEquals("49", result.getEarnings().get(1).getBir2316ItemNo());
+        assertEquals(true, result.getEarnings().get(1).getIsTaxable());
+        snapshot.setHazardEarningTaxSettings(
+                new PayrollDataSnapshot.GeneratedEarningTaxSettings(false, "35"));
+        PayrollDetail exemptHazard = new PayrollComputationEngine().compute(employee(), request(date), snapshot);
+        assertEquals(250.0, result.getTaxableIncome() - exemptHazard.getTaxableIncome());
+    }
+
+    @Test
     void personalPassSlipDoesNotTurnMissingAttendanceIntoPaidPresence() {
         LocalDate date = LocalDate.of(2026, 9, 14);
         EmployeePayrollInfoDTO employee = employee();
