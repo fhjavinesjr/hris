@@ -1,0 +1,3 @@
+package com.primehr.succession.infrastructure;
+import com.primehr.succession.domain.SuccessionCriticalPositionDesignation; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
+public interface SuccessionCriticalPositionDesignationRepository extends JpaRepository<SuccessionCriticalPositionDesignation,String>{Optional<SuccessionCriticalPositionDesignation> findByIdAndAgencyId(String id,String agencyId);List<SuccessionCriticalPositionDesignation> findByAgencyIdOrderByCreatedAtDesc(String agencyId);boolean existsByAgencyIdAndTargetTypeAndTargetIdAndStatusIn(String agencyId,com.primehr.positionprofile.domain.PositionTargetType targetType,Long targetId,Collection<SuccessionCriticalPositionDesignation.Status> statuses);}

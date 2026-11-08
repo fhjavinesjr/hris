@@ -1,0 +1,2 @@
+package com.primehr.succession.infrastructure;import com.primehr.succession.domain.SuccessionReadinessGapItem;import org.springframework.data.jpa.repository.JpaRepository;import java.util.List;
+public interface SuccessionReadinessGapItemRepository extends JpaRepository<SuccessionReadinessGapItem,String>{List<SuccessionReadinessGapItem>findByAgencyIdAndAssessmentIdOrderByDisplayOrder(String agencyId,String assessmentId);}

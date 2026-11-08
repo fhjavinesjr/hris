@@ -1,0 +1,2 @@
+package com.primehr.learningdevelopment.infrastructure;import com.primehr.learningdevelopment.domain.LdProvider;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface LdProviderRepository extends JpaRepository<LdProvider,String>{Optional<LdProvider>findByIdAndAgencyId(String id,String agency);List<LdProvider>findByAgencyIdOrderByNameAsc(String agency);boolean existsByAgencyIdAndNormalizedCode(String agency,String code);boolean existsByAgencyIdAndNormalizedCodeAndIdNot(String agency,String code,String id);}

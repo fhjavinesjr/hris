@@ -1,0 +1,2 @@
+package com.primehr.learningdevelopment.infrastructure;import com.primehr.learningdevelopment.domain.LdIntervention;import org.springframework.data.jpa.repository.JpaRepository;import java.util.Optional;
+public interface LdInterventionRepository extends JpaRepository<LdIntervention,String>{Optional<LdIntervention>findByIdAndAgencyId(String id,String agency);boolean existsByAgencyIdAndNormalizedCode(String agency,String code);}

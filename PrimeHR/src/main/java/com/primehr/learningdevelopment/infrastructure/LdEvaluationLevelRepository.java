@@ -1,0 +1,2 @@
+package com.primehr.learningdevelopment.infrastructure;import com.primehr.learningdevelopment.domain.LdEvaluationLevel;import org.springframework.data.jpa.repository.JpaRepository;import java.util.List;
+public interface LdEvaluationLevelRepository extends JpaRepository<LdEvaluationLevel,String>{List<LdEvaluationLevel>findByAgencyIdAndFrameworkVersionIdOrderByDisplayOrderAsc(String agency,String framework);void deleteByAgencyIdAndFrameworkVersionId(String agency,String framework);}

@@ -1,0 +1,2 @@
+package com.primehr.succession.infrastructure;import com.primehr.succession.domain.SuccessionReadinessCriterionFinding;import org.springframework.data.jpa.repository.JpaRepository;import java.util.List;
+public interface SuccessionReadinessCriterionFindingRepository extends JpaRepository<SuccessionReadinessCriterionFinding,String>{List<SuccessionReadinessCriterionFinding>findByAgencyIdAndAssessmentIdOrderByDisplayOrder(String agency,String assessment);void deleteByAgencyIdAndAssessmentId(String agency,String assessment);}

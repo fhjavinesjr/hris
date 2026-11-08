@@ -1,0 +1,1 @@
+package com.primehr.rewardsrecognition.infrastructure;import com.primehr.rewardsrecognition.domain.RrDecisionEvent;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface RrDecisionEventRepository extends JpaRepository<RrDecisionEvent,String>{List<RrDecisionEvent>findByAgencyIdAndEvaluationCaseIdOrderByDecidedAt(String a,String c);}

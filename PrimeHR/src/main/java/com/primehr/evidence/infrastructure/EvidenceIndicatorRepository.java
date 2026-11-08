@@ -1,0 +1,2 @@
+package com.primehr.evidence.infrastructure;import com.primehr.evidence.domain.EvidenceIndicator;import org.springframework.data.jpa.repository.JpaRepository;import java.util.List;
+public interface EvidenceIndicatorRepository extends JpaRepository<EvidenceIndicator,String>{List<EvidenceIndicator>findByAgencyIdAndFrameworkVersionIdOrderByDisplayOrder(String agency,String framework);void deleteByAgencyIdAndFrameworkVersionId(String agency,String framework);}

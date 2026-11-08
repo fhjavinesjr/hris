@@ -1,0 +1,11 @@
+package com.primehr.learningdevelopment.plan.domain;
+
+public enum LearningNeedSourceType {
+    COMPETENCY_GAP_REFERRAL,
+    PERFORMANCE_DEVELOPMENT_OUTCOME,
+    ORGANIZATIONAL_NEED,
+    SUPERVISOR_OBSERVATION,
+    EMPLOYEE_CAREER_GOAL,
+    STATUTORY_PROFESSIONAL_REQUIREMENT,
+    OTHER
+}

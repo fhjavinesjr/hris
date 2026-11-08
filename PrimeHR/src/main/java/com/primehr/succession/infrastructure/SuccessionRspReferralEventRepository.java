@@ -1,0 +1,3 @@
+package com.primehr.succession.infrastructure;
+import com.primehr.succession.domain.SuccessionRspReferralEvent;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface SuccessionRspReferralEventRepository extends JpaRepository<SuccessionRspReferralEvent,String>{List<SuccessionRspReferralEvent>findByAgencyIdAndReferralIdOrderByEventSequence(String agency,String referral);Optional<SuccessionRspReferralEvent>findFirstByAgencyIdAndReferralIdOrderByEventSequenceDesc(String agency,String referral);}

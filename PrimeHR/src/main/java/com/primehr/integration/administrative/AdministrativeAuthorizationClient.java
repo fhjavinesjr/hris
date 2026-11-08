@@ -1,34 +1,20 @@
 package com.primehr.integration.administrative;
 
-import com.primehr.config.PrimeHrProperties;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-
-import java.net.http.HttpClient;
-import java.time.Duration;
 
 @Component
 public class AdministrativeAuthorizationClient {
     private static final String COMPETENCY_FEATURE = "primehr.competency";
     private final RestClient restClient;
 
-    public AdministrativeAuthorizationClient(PrimeHrProperties properties) {
-        PrimeHrProperties.Administrative configuration = properties.administrative();
-        if (configuration.baseUrl().isBlank()) {
-            throw new IllegalStateException("PRIMEHR_ADMINISTRATIVE_API_URL must be configured");
-        }
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(configuration.connectTimeoutMillis()))
-                .build();
-        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(client);
-        requestFactory.setReadTimeout(Duration.ofMillis(configuration.readTimeoutMillis()));
-        this.restClient = RestClient.builder().baseUrl(configuration.baseUrl())
-                .requestFactory(requestFactory).build();
+    public AdministrativeAuthorizationClient(
+            @Qualifier("administrativeRestClient") RestClient restClient) {
+        this.restClient = restClient;
     }
 
     public EffectiveFeaturePermission resolve(String authorizationHeader) {
@@ -45,11 +31,6 @@ public class AdministrativeAuthorizationClient {
                             .queryParam("featureKey", featureKey).build())
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
                     .retrieve()
-                    .onStatus(status -> status.value() == 401 || status.value() == 403,
-                            (request, response) -> { throw new AccessDeniedException("Access denied"); })
-                    .onStatus(HttpStatusCode::isError,
-                            (request, response) -> { throw new AuthorizationDependencyException(
-                                    "Administrative authorization is unavailable", null); })
                     .body(EffectiveFeaturePermission.class);
             if (permission == null || !featureKey.equals(permission.featureKey())) {
                 throw new AuthorizationDependencyException("Administrative returned an invalid permission response", null);
@@ -72,11 +53,6 @@ public class AdministrativeAuthorizationClient {
                             .queryParam("featureKey", featureKey).queryParam("employeeNo", employeeNo)
                             .queryParam("employeeRole", employeeRole).build())
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader).retrieve()
-                    .onStatus(status -> status.value() == 401 || status.value() == 403,
-                            (request, response) -> { throw new AccessDeniedException("Access denied"); })
-                    .onStatus(HttpStatusCode::isError,
-                            (request, response) -> { throw new AuthorizationDependencyException(
-                                    "Administrative assignment authorization is unavailable", null); })
                     .body(EffectiveFeaturePermission.class);
             if (permission == null || !featureKey.equals(permission.featureKey())) {
                 throw new AuthorizationDependencyException("Administrative returned an invalid assignment permission", null);

@@ -1,0 +1,3 @@
+package com.primehr.rewardsrecognition.infrastructure;
+import com.primehr.rewardsrecognition.domain.RrIncentiveAuthorization;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface RrIncentiveAuthorizationRepository extends JpaRepository<RrIncentiveAuthorization,String>{Optional<RrIncentiveAuthorization>findByIdAndAgencyId(String id,String agencyId);List<RrIncentiveAuthorization>findByAgencyIdAndAwardRecordIdOrderByAuthorizedAt(String agencyId,String awardRecordId);}

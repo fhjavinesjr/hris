@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: ISOFT PRIME-HRM API
-  version: 6.12.0-phase-6e.2
-  description: Governed Performance Management planning, monitoring, coaching, deterministic rating, PMT calibration, and immutable finalization. Acknowledgment, appeals, PIP, and rating reports remain excluded.
+  version: 12.3.0-phase-12c
+  description: Governed PRIME-HRM domains with recipient-owned, source-revalidated in-application workflow projections, without workflow mutation, reminders, external delivery, automatic source correction or deletion.
 servers:
   - url: /api/primehr/v1
 security:
@@ -1191,6 +1191,8 @@ paths:
     post: {operationId: submitPerformanceRatingAssessment, responses: {'200': {description: Immutable submitted assessment; supervisor submission requires policy-mandated self-assessment}}}
   /performance-management/rating-cases/{caseId}/calibration:
     post: {operationId: openPerformanceCalibration, responses: {'201': {description: Policy-gated calibration with effective PMT roster and conflict snapshot}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/calibrations:
+    get: {operationId: listPerformanceCalibrations, responses: {'200': {description: Calibration cases restricted to the authenticated actor's snapshotted PMT participation}}}
   /performance-management/calibrations/{calibrationId}:
     get: {operationId: getPerformanceCalibration, responses: {'200': {description: Authorized PMT calibration case}}}
   /performance-management/calibrations/{calibrationId}/proposal:
@@ -1201,6 +1203,8 @@ paths:
     post: {operationId: finalizePerformanceRating, responses: {'200': {description: Immutable final rating from the authorized supervisor or calibrated result}}}
   /performance-management/final-ratings:
     get: {operationId: listPerformanceFinalRatings, responses: {'200': {description: Scope-filtered immutable final-rating revisions and receipt status}}}
+  /performance-management/final-ratings/mine:
+    get: {operationId: listOwnPerformanceFinalRatings, responses: {'200': {description: Authenticated employee immutable final-rating revisions and receipt status only}}}
   /performance-management/final-ratings/{finalRatingId}/acknowledgment:
     post: {operationId: acknowledgePerformanceFinalRating, responses: {'200': {description: Employee receipt acknowledgment without implying agreement}}}
   /performance-management/final-ratings/{finalRatingId}/close-without-acknowledgment:
@@ -1209,6 +1213,8 @@ paths:
     post: {operationId: createPerformanceRatingAppeal, responses: {'201': {description: Owner-filed draft appeal against an exact final-rating revision}}}
   /performance-management/appeals:
     get: {operationId: listPerformanceRatingAppeals, responses: {'200': {description: Scope-filtered rating appeals}}}
+  /performance-management/appeals/mine:
+    get: {operationId: listOwnPerformanceRatingAppeals, responses: {'200': {description: Authenticated employee rating appeals only}}}
   /performance-management/appeals/{appealId}:
     put: {operationId: editPerformanceRatingAppeal, responses: {'200': {description: Owner-edited draft appeal}, '409': {$ref: '#/components/responses/Conflict'}}}
   /performance-management/appeals/{appealId}/submit:
@@ -1224,6 +1230,8 @@ paths:
     post: {operationId: createPerformanceInterventionRule, responses: {'201': {description: Immutable exact-band intervention rule}}}
   /performance-management/interventions:
     get: {operationId: listPerformanceInterventions, responses: {'200': {description: Scope-filtered alerts and improvement plans}}}
+  /performance-management/interventions/mine:
+    get: {operationId: listOwnPerformanceInterventions, responses: {'200': {description: Authenticated employee alerts and improvement plans only, with PMT-private notes omitted}}}
   /performance-management/interventions/{interventionId}/issue:
     post: {operationId: issuePerformanceIntervention, responses: {'200': {description: Non-disciplinary plan with support, accountability, and dates}}}
   /performance-management/interventions/{interventionId}/acknowledge:
@@ -1234,6 +1242,786 @@ paths:
     post: {operationId: createPerformanceInterventionCheckpoint, responses: {'201': {description: Dated improvement-plan checkpoint}}}
   /performance-management/interventions/{interventionId}/checkpoints/{checkpointId}/complete:
     post: {operationId: completePerformanceInterventionCheckpoint, responses: {'200': {description: Audited checkpoint completion with separated employee-visible and PMT-private notes}}}
+  /performance-management/reports/commitments/{id}.pdf:
+    get: {operationId: printApprovedPerformanceCommitment, responses: {'200': {description: Bean-driven approved OPCR, DPCR, or IPCR planning PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/reports/final-ratings/{id}.pdf:
+    get: {operationId: printFinalPerformanceRating, responses: {'200': {description: Bean-driven finalized OPCR, DPCR, or IPCR rated PDF from the exact final-rating revision, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/reports/monitoring/{id}.pdf:
+    get: {operationId: printPerformanceMonitoring, responses: {'200': {description: Employee-visible monitoring and accomplishment PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/reports/coaching/{id}.pdf:
+    get: {operationId: printPerformanceCoaching, responses: {'200': {description: Employee-visible coaching PDF with private notes excluded, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/reports/development-plans/{id}.pdf:
+    get: {operationId: printPerformanceDevelopmentPlan, responses: {'200': {description: Employee-visible individual development-plan PDF with PMT-private notes excluded, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/reports/interventions/{id}.pdf:
+    get: {operationId: printPerformanceIntervention, responses: {'200': {description: Employee-visible performance intervention PDF with PMT-private notes excluded, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /performance-management/reports/register:
+    get:
+      operationId: listPerformanceOutcomeRegister
+      description: Agency-wide paginated final-rating register. Current revisions are returned unless includeHistory is true.
+      parameters:
+        - {name: from, in: query, required: true, schema: {type: string, format: date}}
+        - {name: to, in: query, required: true, schema: {type: string, format: date}}
+        - {name: includeHistory, in: query, schema: {type: boolean, default: false}}
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/Size'}
+        - {name: cycleId, in: query, schema: {type: string, maxLength: 36}}
+        - {name: formType, in: query, schema: {type: string, enum: [OPCR, DPCR, IPCR]}}
+        - {name: businessUnitId, in: query, schema: {type: integer, format: int64, minimum: 1}}
+        - {name: employeeNo, in: query, schema: {type: string}}
+        - {name: ratingLabel, in: query, schema: {type: string}}
+      responses:
+        '200': {description: Paginated performance outcome register, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceRegisterPage'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /performance-management/reports/analytics:
+    get:
+      operationId: getPerformanceOutcomeAnalytics
+      description: Agency-wide aggregate analytics. Results and breakdown cells below the configured distinct-employee privacy threshold are suppressed.
+      parameters:
+        - {name: from, in: query, required: true, schema: {type: string, format: date}}
+        - {name: to, in: query, required: true, schema: {type: string, format: date}}
+        - {name: includeHistory, in: query, schema: {type: boolean, default: false}}
+        - {name: cycleId, in: query, schema: {type: string, maxLength: 36}}
+        - {name: formType, in: query, schema: {type: string, enum: [OPCR, DPCR, IPCR]}}
+        - {name: businessUnitId, in: query, schema: {type: integer, format: int64, minimum: 1}}
+        - {name: employeeNo, in: query, schema: {type: string}}
+        - {name: ratingLabel, in: query, schema: {type: string}}
+      responses:
+        '200': {description: Privacy-controlled aggregate performance analytics, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceAnalytics'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /integration/v1/performance-outcomes:
+    servers: [{url: /api/primehr}]
+    get:
+      operationId: pullPerformanceOutcomes
+      description: Versioned, agency-wide, read-only pull feed of current factual performance outcomes. The change interval is exclusive at changedAfter and inclusive at changedThrough.
+      parameters:
+        - {name: changedAfter, in: query, required: true, schema: {type: string, format: date-time}}
+        - {name: changedThrough, in: query, required: true, schema: {type: string, format: date-time}}
+        - {$ref: '#/components/parameters/Page'}
+        - {name: size, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 100}}
+      responses:
+        '200': {description: Versioned read-only performance outcome page, content: {application/json: {schema: {$ref: '#/components/schemas/PerformanceOutcomePage'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /learning-development/policies:
+    get: {operationId: listLdPolicies, responses: {'200': {description: Agency L&D governance policy versions}}}
+    post: {operationId: createLdPolicy, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdPolicyInput'}}}}, responses: {'201': {description: Draft policy created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/policies/effective:
+    get: {operationId: getEffectiveLdPolicy, parameters: [{name: on, in: query, required: true, schema: {type: string, format: date}}], responses: {'200': {description: Effective published policy}, '404': {$ref: '#/components/responses/NotFound'}}}
+  /learning-development/policies/{versionId}:
+    parameters: [{name: versionId, in: path, required: true, schema: {type: string, maxLength: 36}}]
+    get: {operationId: getLdPolicy, responses: {'200': {description: Policy version}}}
+    put: {operationId: updateLdPolicyDraft, responses: {'200': {description: Draft policy updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/policies/{versionId}/revisions:
+    post: {operationId: createLdPolicyRevision, parameters: [{name: versionId, in: path, required: true, schema: {type: string}}], responses: {'201': {description: Successor draft created}}}
+  /learning-development/policies/{versionId}/publish:
+    post: {operationId: publishLdPolicy, parameters: [{name: versionId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Policy published}}}
+  /learning-development/policies/{versionId}/retire:
+    post: {operationId: retireLdPolicy, parameters: [{name: versionId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Policy retired}}}
+  /learning-development/interventions:
+    get: {operationId: listLdInterventions, responses: {'200': {description: Versioned intervention catalog}}}
+    post: {operationId: createLdIntervention, responses: {'201': {description: Draft intervention created}}}
+  /learning-development/interventions/{versionId}:
+    parameters: [{name: versionId, in: path, required: true, schema: {type: string}}]
+    get: {operationId: getLdIntervention, responses: {'200': {description: Intervention version}}}
+    put: {operationId: updateLdInterventionDraft, responses: {'200': {description: Draft intervention updated}}}
+  /learning-development/interventions/{versionId}/revisions:
+    post: {operationId: createLdInterventionRevision, parameters: [{name: versionId, in: path, required: true, schema: {type: string}}], responses: {'201': {description: Successor draft created}}}
+  /learning-development/interventions/{versionId}/publish:
+    post: {operationId: publishLdIntervention, parameters: [{name: versionId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Intervention published}}}
+  /learning-development/interventions/{versionId}/retire:
+    post: {operationId: retireLdIntervention, parameters: [{name: versionId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Intervention retired}}}
+  /learning-development/providers:
+    get: {operationId: listLdProviders, responses: {'200': {description: Provider registry}}}
+    post: {operationId: createLdProvider, responses: {'201': {description: Provider created}}}
+  /learning-development/providers/{providerId}:
+    get: {operationId: getLdProvider, parameters: [{name: providerId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Provider record}}}
+    put: {operationId: updateLdProvider, parameters: [{name: providerId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Provider updated}}}
+  /learning-development/providers/{providerId}/{state}:
+    post: {operationId: transitionLdProvider, parameters: [{name: providerId, in: path, required: true, schema: {type: string}}, {name: state, in: path, required: true, schema: {type: string, enum: [activate, deactivate]}}], responses: {'200': {description: Provider status changed}}}
+  /learning-development/resource-persons:
+    get: {operationId: listLdResourcePersons, responses: {'200': {description: Resource-person registry}}}
+    post: {operationId: createLdResourcePerson, responses: {'201': {description: Resource person created}}}
+  /learning-development/resource-persons/{resourcePersonId}:
+    get: {operationId: getLdResourcePerson, parameters: [{name: resourcePersonId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Resource-person record}}}
+    put: {operationId: updateLdResourcePerson, parameters: [{name: resourcePersonId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Resource person updated}}}
+  /learning-development/resource-persons/{resourcePersonId}/{state}:
+    post: {operationId: transitionLdResourcePerson, parameters: [{name: resourcePersonId, in: path, required: true, schema: {type: string}}, {name: state, in: path, required: true, schema: {type: string, enum: [activate, deactivate]}}], responses: {'200': {description: Resource-person status changed}}}
+  /learning-development/evaluation-frameworks:
+    get: {operationId: listLdEvaluationFrameworks, responses: {'200': {description: Evaluation framework versions}}}
+    post: {operationId: createLdEvaluationFramework, responses: {'201': {description: Draft framework created}}}
+  /learning-development/evaluation-frameworks/effective:
+    get: {operationId: getEffectiveLdEvaluationFramework, parameters: [{name: on, in: query, required: true, schema: {type: string, format: date}}], responses: {'200': {description: Effective evaluation framework}}}
+  /learning-development/evaluation-frameworks/{versionId}:
+    parameters: [{name: versionId, in: path, required: true, schema: {type: string}}]
+    get: {operationId: getLdEvaluationFramework, responses: {'200': {description: Evaluation framework version}}}
+    put: {operationId: updateLdEvaluationFrameworkDraft, responses: {'200': {description: Draft framework updated}}}
+  /learning-development/evaluation-frameworks/{versionId}/levels:
+    put: {operationId: replaceLdEvaluationLevels, parameters: [{name: versionId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Draft evaluation levels replaced}}}
+  /learning-development/evaluation-frameworks/{versionId}/revisions:
+    post: {operationId: createLdEvaluationFrameworkRevision, parameters: [{name: versionId, in: path, required: true, schema: {type: string}}], responses: {'201': {description: Successor framework draft created}}}
+  /learning-development/evaluation-frameworks/{versionId}/publish:
+    post: {operationId: publishLdEvaluationFramework, parameters: [{name: versionId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Evaluation framework published}}}
+  /learning-development/evaluation-frameworks/{versionId}/retire:
+    post: {operationId: retireLdEvaluationFramework, parameters: [{name: versionId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Evaluation framework retired}}}
+  /learning-development/needs:
+    get:
+      operationId: listLearningNeeds
+      parameters: [{name: employeeNo, in: query, schema: {type: string}}]
+      responses:
+        '200':
+          description: Permission-scoped learning needs
+          content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/LdLearningNeed'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post: {operationId: createLearningNeed, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdLearningNeedInput'}}}}, responses: {'201': {description: Learning need created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/needs/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    put: {operationId: updateLearningNeed, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdLearningNeedInput'}}}}, responses: {'200': {description: Learning need updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/needs/{id}/cancel:
+    post: {operationId: cancelLearningNeed, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdIdpTransition'}}}}, responses: {'200': {description: Learning need cancelled}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/referrals/{id}/disposition:
+    post: {operationId: dispositionLearningReferral, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdReferralDispositionInput'}}}}, responses: {'200': {description: Exact referral version dispositioned}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/individual-plans:
+    get:
+      operationId: listIndividualDevelopmentPlans
+      parameters: [{name: employeeNo, in: query, schema: {type: string}}]
+      responses:
+        '200':
+          description: Permission-scoped Individual Development Plans
+          content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/LdIndividualDevelopmentPlan'}}}}
+    post: {operationId: createIndividualDevelopmentPlan, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdIdpCreate'}}}}, responses: {'201': {description: Draft Individual Development Plan created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/individual-plans/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get: {operationId: getIndividualDevelopmentPlan, responses: {'200': {description: Individual Development Plan}, '404': {$ref: '#/components/responses/NotFound'}}}
+    put: {operationId: updateIndividualDevelopmentPlanGoal, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdIdpGoalUpdate'}}}}, responses: {'200': {description: Draft or returned plan updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/individual-plans/{id}/items:
+    post: {operationId: addIndividualDevelopmentPlanItem, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdIdpItemInput'}}}}, responses: {'200': {description: Need snapshot added to the plan}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/individual-plans/{id}/items/{itemId}:
+    parameters: [{$ref: '#/components/parameters/Id'}, {name: itemId, in: path, required: true, schema: {type: string, maxLength: 36}}]
+    put: {operationId: updateIndividualDevelopmentPlanItem, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdIdpItemUpdate'}}}}, responses: {'200': {description: Plan item updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+    delete: {operationId: removeIndividualDevelopmentPlanItem, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdIdpTransition'}}}}, responses: {'200': {description: Plan item removed and need reopened}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/individual-plans/{id}/{transition}:
+    post:
+      operationId: transitionIndividualDevelopmentPlan
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {name: transition, in: path, required: true, schema: {type: string, enum: [submit, recommend, return, approve, cancel]}}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdIdpTransition'}}}}
+      responses: {'200': {description: Individual Development Plan lifecycle transition completed}, '409': {$ref: '#/components/responses/Conflict'}}
+  /learning-development/individual-plans/{id}/amendments:
+    post: {operationId: amendIndividualDevelopmentPlan, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdIdpTransition'}}}}, responses: {'201': {description: Successor draft created from an approved plan}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/plans:
+    get: {operationId: listLdConsolidatedPlans, responses: {'200': {description: Permission-scoped office and agency plans}}}
+    post: {operationId: createLdConsolidatedPlan, responses: {'201': {description: Draft consolidation plan created}}}
+  /learning-development/plans/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get: {operationId: getLdConsolidatedPlan, responses: {'200': {description: Consolidated plan}}}
+    put: {operationId: updateLdConsolidatedPlan, responses: {'200': {description: Draft consolidated plan updated}}}
+  /learning-development/plans/{id}/sources:
+    post: {operationId: addLdConsolidatedPlanSource, responses: {'200': {description: Exact approved IDP item or organizational need snapshot consolidated}}}
+  /learning-development/plans/{id}/sources/{sourceId}:
+    delete: {operationId: removeLdConsolidatedPlanSource, responses: {'200': {description: Draft plan source removed}}}
+  /learning-development/plans/{id}/{transition}:
+    post: {operationId: transitionLdConsolidatedPlan, parameters: [{name: transition, in: path, required: true, schema: {type: string, enum: [submit, approve, publish, cancel]}}], responses: {'200': {description: Plan lifecycle transition completed}}}
+  /learning-development/plans/{id}/revisions:
+    post: {operationId: reviseLdConsolidatedPlan, responses: {'201': {description: Successor plan draft created}}}
+  /learning-development/programs:
+    get: {operationId: listLdPrograms, responses: {'200': {description: Permission-scoped L&D programs}}}
+    post: {operationId: createLdProgram, responses: {'201': {description: Program draft created from a published plan}}}
+  /learning-development/programs/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get: {operationId: getLdProgram, responses: {'200': {description: L&D program}}}
+    put: {operationId: updateLdProgram, responses: {'200': {description: Draft program updated}}}
+  /learning-development/programs/{id}/sources:
+    post: {operationId: addLdProgramSource, responses: {'200': {description: Consolidated plan source assigned to the program}}}
+  /learning-development/programs/{id}/sources/{sourceId}:
+    delete: {operationId: removeLdProgramSource, responses: {'200': {description: Draft program source removed}}}
+  /learning-development/programs/{id}/{transition}:
+    post: {operationId: transitionLdProgram, parameters: [{name: transition, in: path, required: true, schema: {type: string, enum: [submit, approve, cancel]}}], responses: {'200': {description: Program lifecycle transition completed}}}
+  /learning-development/programs/{id}/revisions:
+    post: {operationId: reviseLdProgram, responses: {'201': {description: Successor program draft created}}}
+  /learning-development/offerings:
+    get: {operationId: listLdOfferings, responses: {'200': {description: Permission-scoped scheduled offerings}}}
+    post: {operationId: createLdOffering, responses: {'201': {description: Offering draft created from an approved program}}}
+  /learning-development/offerings/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get: {operationId: getLdOffering, responses: {'200': {description: Scheduled offering}}}
+    put: {operationId: updateLdOffering, responses: {'200': {description: Draft offering updated}}}
+  /learning-development/offerings/{id}/sessions:
+    put: {operationId: replaceLdOfferingSessions, responses: {'200': {description: Validated non-overlapping session schedule replaced}}}
+  /learning-development/offerings/{id}/resources:
+    put: {operationId: replaceLdOfferingResources, responses: {'200': {description: Active resource-person snapshots replaced}}}
+  /learning-development/offerings/{id}/{transition}:
+    post: {operationId: transitionLdOffering, parameters: [{name: transition, in: path, required: true, schema: {type: string, enum: [submit, approve, publish, cancel]}}], responses: {'200': {description: Offering lifecycle transition completed}}}
+  /learning-development/offerings/{id}/revisions:
+    post: {operationId: reviseLdOffering, responses: {'201': {description: Successor offering draft created}}}
+  /learning-development/nominations:
+    get: {operationId: listLdNominations, responses: {'200': {description: Permission-scoped nominations}}}
+    post: {operationId: createLdNomination, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdNominationCreate'}}}}, responses: {'201': {description: Draft nomination created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/nominations/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get: {operationId: getLdNomination, responses: {'200': {description: Nomination and immutable route snapshot}}}
+    put: {operationId: updateLdNomination, responses: {'200': {description: Draft or returned nomination updated}}}
+  /learning-development/nominations/{id}/{transition}:
+    post: {operationId: transitionLdNomination, parameters: [{$ref: '#/components/parameters/Id'}, {name: transition, in: path, required: true, schema: {type: string, enum: [submit, recommend, return, approve, cancel]}}], responses: {'200': {description: Nomination lifecycle transition completed}}}
+  /learning-development/enrollments:
+    get: {operationId: listLdEnrollments, responses: {'200': {description: Permission-scoped invitations and confirmations}}}
+  /learning-development/enrollments/{id}:
+    get: {operationId: getLdEnrollment, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Enrollment}}}
+  /learning-development/enrollments/{id}/{transition}:
+    post: {operationId: transitionLdEnrollment, parameters: [{$ref: '#/components/parameters/Id'}, {name: transition, in: path, required: true, schema: {type: string, enum: [confirm, decline, cancel]}}], responses: {'200': {description: Enrollment state changed}}}
+  /learning-development/enrollments/{id}/substitution:
+    post: {operationId: substituteLdEnrollment, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdEnrollmentSubstitution'}}}}, responses: {'200': {description: Original enrollment substituted by an independently approved invitation}}}
+  /learning-development/offerings/{id}/training-order-source:
+    get: {operationId: getLdTrainingOrderSource, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Immutable approved Training Order source}}}
+    post: {operationId: finalizeLdTrainingOrderSource, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdTrainingOrderInput'}}}}, responses: {'201': {description: Immutable approved Training Order source finalized}}}
+  /learning-development/completion-cases:
+    get: {operationId: listLdCompletionCases, responses: {'200': {description: Permission-scoped participant completion cases}}}
+  /learning-development/completion-cases/mine:
+    get: {operationId: listMyLdCompletionCases, responses: {'200': {description: Authenticated participant completion cases}}}
+  /learning-development/completion-cases/{id}:
+    get: {operationId: getLdCompletionCase, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Completion case with attendance, outputs, and evidence metadata}}}
+  /learning-development/completion-cases/{id}/mine:
+    get: {operationId: getMyLdCompletionCase, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Participant-owned completion case}}}
+  /learning-development/enrollments/{id}/completion-case:
+    post: {operationId: openLdCompletionCase, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdCompletionOpen'}}}}, responses: {'201': {description: Completion case opened from a confirmed approved Training Order participant}}}
+  /learning-development/completion-cases/{id}/attendance/{sessionId}:
+    put: {operationId: recordLdSessionAttendance, parameters: [{$ref: '#/components/parameters/Id'}, {name: sessionId, in: path, required: true, schema: {type: string}}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdAttendanceInput'}}}}, responses: {'200': {description: Draft attendance record updated}}}
+  /learning-development/completion-cases/{id}/outputs:
+    post: {operationId: addLdCompletionOutput, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdCompletionOutputInput'}}}}, responses: {'201': {description: Required completion output added}}}
+  /learning-development/completion-cases/{id}/outputs/{outputId}/{action}:
+    post: {operationId: decideLdCompletionOutput, parameters: [{$ref: '#/components/parameters/Id'}, {name: outputId, in: path, required: true, schema: {type: string}}, {name: action, in: path, required: true, schema: {type: string, enum: [verify, waive]}}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdCompletionOutputDecision'}}}}, responses: {'200': {description: Output verified against evidence or explicitly waived}}}
+  /learning-development/completion-cases/{id}/evidence:
+    post: {operationId: uploadLdCompletionEvidence, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: '#/components/schemas/LdCompletionEvidenceUpload'}}}}, responses: {'201': {description: Secured evidence metadata recorded}}}
+  /learning-development/completion-cases/{id}/evidence/mine:
+    post: {operationId: uploadMyLdCompletionEvidence, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: '#/components/schemas/LdCompletionEvidenceUpload'}}}}, responses: {'201': {description: Participant evidence recorded for the participant-owned case}}}
+  /learning-development/completion-cases/{id}/evidence/{evidenceId}/content:
+    get: {operationId: downloadLdCompletionEvidence, parameters: [{$ref: '#/components/parameters/Id'}, {name: evidenceId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Authorized no-store evidence content}}}
+  /learning-development/completion-cases/{id}/evidence/{evidenceId}/content/mine:
+    get: {operationId: downloadMyLdCompletionEvidence, parameters: [{$ref: '#/components/parameters/Id'}, {name: evidenceId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Participant-owned no-store evidence content}}}
+  /learning-development/completion-cases/{id}/submit:
+    post: {operationId: submitLdCompletionCase, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdCompletionTransition'}}}}, responses: {'200': {description: Complete draft submitted for independent verification}}}
+  /learning-development/completion-cases/{id}/return:
+    post: {operationId: returnLdCompletionCase, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdCompletionTransition'}}}}, responses: {'200': {description: Completion case returned for changes}}}
+  /learning-development/completion-cases/{id}/finalize:
+    post: {operationId: finalizeLdCompletionCase, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdCompletionDecision'}}}}, responses: {'200': {description: Completion immutably finalized by an independent agency-wide verifier}}}
+  /learning-development/evaluation/tasks:
+    get: {operationId: listLdEvaluationTasks, responses: {'200': {description: Permission-scoped evaluation tasks with immutable result revisions}}}
+  /learning-development/evaluation/tasks/mine:
+    get: {operationId: listMyLdEvaluationTasks, responses: {'200': {description: Participant evaluation records}}}
+  /learning-development/evaluation/tasks/assigned:
+    get: {operationId: listAssignedLdEvaluationTasks, responses: {'200': {description: Assigned evaluator inbox}}}
+  /learning-development/evaluation/completion-cases/{id}/initialize:
+    post: {operationId: initializeLdEvaluationTasks, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdEvaluationInitialize'}}}}, responses: {'201': {description: Exact offering framework frozen into evaluator tasks}}}
+  /learning-development/evaluation/tasks/{id}/results:
+    post: {operationId: submitLdEvaluationResultRevision, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdEvaluationResultInput'}}}}, responses: {'201': {description: Immutable evaluation result revision submitted}}}
+  /learning-development/evaluation/tasks/{id}/results/{resultId}/decision:
+    post: {operationId: decideLdEvaluationResult, parameters: [{$ref: '#/components/parameters/Id'}, {name: resultId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Result independently verified or returned}}}
+  /learning-development/evaluation/action-plans:
+    get: {operationId: listLdLearningActionPlans, responses: {'200': {description: Permission-scoped learning action plans}}}
+  /learning-development/evaluation/action-plans/mine:
+    get: {operationId: listMyLdLearningActionPlans, responses: {'200': {description: Participant learning action plans}}}
+  /learning-development/evaluation/action-plans/assigned:
+    get: {operationId: listAssignedLdLearningActionPlans, responses: {'200': {description: Assigned supervisor follow-through inbox}}}
+  /learning-development/evaluation/completion-cases/{id}/action-plan:
+    post: {operationId: createLdLearningActionPlan, parameters: [{$ref: '#/components/parameters/Id'}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LdLearningActionPlanInput'}}}}, responses: {'201': {description: Learning action plan created separately from attendance}}}
+  /learning-development/evaluation/action-plans/{id}/follow-up:
+    post: {operationId: recordLdSupervisorFollowThrough, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Delayed supervisor follow-through recorded}}}
+  /learning-development/evaluation/effectiveness:
+    get: {operationId: getLdEffectiveness, responses: {'200': {description: Agency-wide privacy-controlled intervention, provider, and offering effectiveness, content: {application/json: {schema: {$ref: '#/components/schemas/LdEffectiveness'}}}}}}
+  /learning-development/evaluation/completion-cases/{id}/hrm-review-packet:
+    get: {operationId: getLdHrmReviewPacket, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Read-only HRM review packet without CoreHR mutation}}}
+  /learning-development/reports/individual-plans/{id}.pdf:
+    get: {operationId: printLdIndividualDevelopmentPlan, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Approved permission-scoped IDP PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/reports/training-orders/{offeringId}.pdf:
+    get: {operationId: printLdTrainingOrder, parameters: [{name: offeringId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Approved offering Training Order PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/reports/completion-cases/{id}.pdf:
+    get: {operationId: printLdCompletionPacket, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Verified completed-case PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /learning-development/reports/evaluation-summaries/{completionId}.pdf:
+    get: {operationId: printLdEvaluationSummary, parameters: [{name: completionId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Permission-scoped verified evaluation summary PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /integration/v1/learning-completions:
+    servers: [{url: /api/primehr}]
+    get: {operationId: pullLearningCompletions, responses: {'200': {description: Versioned, paginated, audited, read-only verified completion outcomes}}}
+  /rewards-recognition/policies:
+    get: {operationId: listRrPolicies, responses: {'200': {description: Agency-scoped PRAISE policy versions}}}
+    post: {operationId: createRrPolicy, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RrPolicyInput'}}}}, responses: {'201': {description: PRAISE policy draft created}}}
+  /rewards-recognition/policies/effective:
+    get: {operationId: getEffectiveRrPolicy, parameters: [{name: on, in: query, required: true, schema: {type: string, format: date}}], responses: {'200': {description: Effective PRAISE policy}}}
+  /rewards-recognition/policies/{id}:
+    get: {operationId: getRrPolicy, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: PRAISE policy version}}}
+    put: {operationId: updateRrPolicy, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: PRAISE policy draft updated}}}
+  /rewards-recognition/policies/{id}/revisions:
+    post: {operationId: reviseRrPolicy, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: PRAISE policy revision created}}}
+  /rewards-recognition/policies/{id}/publish:
+    post: {operationId: publishRrPolicy, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: PRAISE policy published}}}
+  /rewards-recognition/policies/{id}/retire:
+    post: {operationId: retireRrPolicy, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: PRAISE policy retired}}}
+  /rewards-recognition/categories:
+    get: {operationId: listRrCategories, responses: {'200': {description: Agency-scoped award category versions}}}
+    post: {operationId: createRrCategory, responses: {'201': {description: Award category draft created}}}
+  /rewards-recognition/categories/{id}:
+    get: {operationId: getRrCategory, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Award category version}}}
+    put: {operationId: updateRrCategory, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Award category draft updated}}}
+  /rewards-recognition/categories/{id}/criteria:
+    put: {operationId: replaceRrCategoryCriteria, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Draft criteria replaced}}}
+  /rewards-recognition/categories/{id}/revisions:
+    post: {operationId: reviseRrCategory, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: Award category revision created}}}
+  /rewards-recognition/categories/{id}/publish:
+    post: {operationId: publishRrCategory, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Award category published}}}
+  /rewards-recognition/categories/{id}/retire:
+    post: {operationId: retireRrCategory, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Award category retired}}}
+  /rewards-recognition/committee-charters:
+    get: {operationId: listRrCommitteeCharters, responses: {'200': {description: Agency-scoped committee charter versions}}}
+    post: {operationId: createRrCommitteeCharter, responses: {'201': {description: Committee charter draft created}}}
+  /rewards-recognition/committee-charters/{id}:
+    get: {operationId: getRrCommitteeCharter, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Committee charter version}}}
+    put: {operationId: updateRrCommitteeCharter, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Committee charter draft updated}}}
+  /rewards-recognition/committee-charters/{id}/roster:
+    put: {operationId: replaceRrCommitteeRoster, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Draft committee roster replaced}}}
+  /rewards-recognition/committee-charters/{id}/revisions:
+    post: {operationId: reviseRrCommitteeCharter, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: Committee charter revision created}}}
+  /rewards-recognition/committee-charters/{id}/publish:
+    post: {operationId: publishRrCommitteeCharter, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Committee charter published}}}
+  /rewards-recognition/committee-charters/{id}/retire:
+    post: {operationId: retireRrCommitteeCharter, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Committee charter retired}}}
+  /rewards-recognition/cycles:
+    get: {operationId: listRrAwardCycles, responses: {'200': {description: Agency-scoped award cycles}}}
+    post: {operationId: createRrAwardCycle, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RrAwardCycleInput'}}}}, responses: {'201': {description: Award cycle draft created}}}
+  /rewards-recognition/cycles/{id}:
+    get: {operationId: getRrAwardCycle, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Award cycle}}}
+    put: {operationId: updateRrAwardCycle, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Award cycle draft updated}}}
+  /rewards-recognition/cycles/{id}/{action}:
+    post: {operationId: transitionRrAwardCycle, parameters: [{$ref: '#/components/parameters/Id'}, {name: action, in: path, required: true, schema: {type: string, enum: [open, close, cancel]}}], responses: {'200': {description: Award cycle transitioned}}}
+  /rewards-recognition/nominations:
+    get: {operationId: listRrNominations, responses: {'200': {description: Scope-controlled nominations}}}
+    post: {operationId: createRrNomination, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RrNominationInput'}}}}, responses: {'201': {description: Nomination draft created}}}
+  /rewards-recognition/nominations/{id}:
+    get: {operationId: getRrNomination, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Nomination}}}
+    put: {operationId: updateRrNomination, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Nomination draft updated}}}
+  /rewards-recognition/nominations/{id}/submit:
+    post: {operationId: submitRrNomination, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Nomination submitted}}}
+  /rewards-recognition/nominations/{id}/withdraw:
+    post: {operationId: withdrawRrNomination, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Nomination withdrawn}}}
+  /rewards-recognition/nominations/{id}/evidence:
+    post: {operationId: uploadRrNominationEvidence, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: Secured draft evidence uploaded}}}
+  /rewards-recognition/nominations/{id}/evidence/{evidenceId}/content:
+    get: {operationId: downloadRrNominationEvidence, parameters: [{$ref: '#/components/parameters/Id'}, {name: evidenceId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Authorized evidence content}}}
+  /rewards-recognition/nominations/{id}/evidence/{evidenceId}:
+    delete: {operationId: deleteRrNominationEvidence, parameters: [{$ref: '#/components/parameters/Id'}, {name: evidenceId, in: path, required: true, schema: {type: string}}, {name: recordVersion, in: query, required: true, schema: {type: integer, format: int64}}], responses: {'200': {description: Draft evidence removed}}}
+  /rewards-recognition/evaluation-cases:
+    get: {operationId: listRrEvaluationCases, responses: {'200': {description: Assignment-scoped evaluation cases}}}
+  /rewards-recognition/evaluation-cases/{id}:
+    get: {operationId: getRrEvaluationCase, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Eligibility, assignments, independent ratings, immutable decisions, and issues}}}
+  /rewards-recognition/nominations/{id}/evaluation:
+    post: {operationId: initializeRrEvaluationCase, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: Case created from submitted nomination and frozen effective committee roster}}}
+  /rewards-recognition/evaluation-cases/{id}/eligibility:
+    put: {operationId: decideRrEligibility, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Human-owned reasoned eligibility findings recorded}}}
+  /rewards-recognition/evaluation-cases/{id}/assignments/{assignmentId}/conflict:
+    post: {operationId: declareRrEvaluatorConflict, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Evaluator conflict and recusal recorded}}}
+  /rewards-recognition/evaluation-cases/{id}/assignments/{assignmentId}/replacement:
+    post: {operationId: replaceRrEvaluator, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Recused member linked to an authorized frozen-roster replacement}}}
+  /rewards-recognition/evaluation-cases/{id}/assignments/{assignmentId}/score:
+    put: {operationId: submitRrIndependentScore, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Member-owned criterion ratings submitted with server-derived weighted score}}}
+  /rewards-recognition/evaluation-cases/{id}/recommendation:
+    post: {operationId: decideRrCommitteeRecommendation, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Quorum-validated committee recommendation, return, or disqualification}}}
+  /rewards-recognition/evaluation-cases/{id}/decision:
+    post: {operationId: decideRrFinalOutcome, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Head-of-agency final decision recorded as an immutable event}}}
+  /rewards-recognition/evaluation-cases/{id}/issues:
+    post: {operationId: fileRrReconsideration, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: Reconsideration filed without overwriting the final decision}}}
+  /rewards-recognition/evaluation-cases/{id}/issues/{issueId}/resolve:
+    post: {operationId: resolveRrReconsideration, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Reconsideration resolution appended to decision history}}}
+  /rewards-recognition/awards:
+    get: {operationId: listRrAwards, responses: {'200': {description: Scope-controlled current award revisions}}}
+  /rewards-recognition/awards/{id}:
+    get: {operationId: getRrAward, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Immutable award revision with incentive and HAP events}}}
+  /rewards-recognition/evaluation-cases/{id}/award:
+    post: {operationId: conferRrAward, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: Immutable conferment created from final approved decision}}}
+  /rewards-recognition/awards/{id}/corrections:
+    post: {operationId: correctRrAward, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: Successor correction created without overwriting award history}}}
+  /rewards-recognition/awards/{id}/revocations:
+    post: {operationId: revokeRrAward, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: Successor revocation created without deleting award history}}}
+  /rewards-recognition/awards/{id}/incentives:
+    post: {operationId: authorizeRrIncentive, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: Monetary or non-monetary authorization recorded without Payroll posting}}}
+  /rewards-recognition/awards/{id}/incentives/{authorizationId}/fulfillment:
+    post: {operationId: recordRrFulfillment, parameters: [{$ref: '#/components/parameters/Id'}, {name: authorizationId, in: path, required: true, schema: {type: string}}], responses: {'201': {description: Append-only fulfillment evidence recorded without payment execution}}}
+  /rewards-recognition/awards/{id}/hap-events:
+    post: {operationId: recordRrHapEvent, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'201': {description: External HAP packet status recorded without CSC adjudication}}}
+  /rewards-recognition/reports/annual-register:
+    get: {operationId: getRrAnnualRegister, parameters: [{name: year, in: query, required: true, schema: {type: integer, minimum: 2000, maximum: 2100}}], responses: {'200': {description: Agency-wide annual PRAISE register facts}}}
+  /rewards-recognition/reports/nominations/{id}.pdf:
+    get: {operationId: printRrNomination, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Scope-controlled bean-driven nomination record PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}}}
+  /rewards-recognition/reports/evaluation-cases/{id}.pdf:
+    get: {operationId: printRrEvaluation, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Scope-controlled restricted evaluation record PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}}}
+  /rewards-recognition/reports/awards/{id}.pdf:
+    get: {operationId: printRrAward, parameters: [{$ref: '#/components/parameters/Id'}], responses: {'200': {description: Scope-controlled award, citation, incentive, fulfillment and HAP record PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}}}
+  /rewards-recognition/reports/annual-register.pdf:
+    get: {operationId: printRrAnnualRegister, parameters: [{name: year, in: query, required: true, schema: {type: integer, minimum: 2000, maximum: 2100}}], responses: {'200': {description: Agency-wide annual PRAISE register PDF, content: {application/pdf: {schema: {type: string, format: binary}}}}}}
+  /rewards-recognition/reports/analytics:
+    get: {operationId: getRrPrivacyAnalytics, parameters: [{name: year, in: query, required: true, schema: {type: integer, minimum: 2000, maximum: 2100}}], responses: {'200': {description: Agency-wide privacy-thresholded category aggregates without employee ranking}}}
+  /succession/governance-policies:
+    get: {summary: List succession governance policies, responses: {'200': {description: Success}}}
+    post: {summary: Create succession governance policy draft, responses: {'201': {description: Created}}}
+  /succession/governance-policies/effective:
+    get: {summary: Resolve effective succession governance policy, responses: {'200': {description: Success}}}
+  /succession/governance-policies/{id}:
+    get: {summary: Get succession governance policy version, responses: {'200': {description: Success}}}
+    put: {summary: Update succession governance policy draft, responses: {'200': {description: Success}}}
+  /succession/governance-policies/{id}/revisions:
+    post: {summary: Create succession governance policy revision, responses: {'201': {description: Created}}}
+  /succession/governance-policies/{id}/publish:
+    post: {summary: Publish succession governance policy, responses: {'200': {description: Success}}}
+  /succession/governance-policies/{id}/retire:
+    post: {summary: Retire succession governance policy, responses: {'200': {description: Success}}}
+  /succession/readiness-scales:
+    get: {summary: List succession readiness scales, responses: {'200': {description: Success}}}
+    post: {summary: Create succession readiness scale draft, responses: {'201': {description: Created}}}
+  /succession/readiness-scales/{id}:
+    get: {summary: Get succession readiness scale version, responses: {'200': {description: Success}}}
+    put: {summary: Update succession readiness scale draft, responses: {'200': {description: Success}}}
+  /succession/readiness-scales/{id}/levels:
+    put: {summary: Replace configurable readiness levels, responses: {'200': {description: Success}}}
+  /succession/readiness-scales/{id}/revisions:
+    post: {summary: Create succession readiness scale revision, responses: {'201': {description: Created}}}
+  /succession/readiness-scales/{id}/publish:
+    post: {summary: Publish succession readiness scale, responses: {'200': {description: Success}}}
+  /succession/readiness-scales/{id}/retire:
+    post: {summary: Retire succession readiness scale, responses: {'200': {description: Success}}}
+  /succession/committee-charters:
+    get: {summary: List succession committee charters, responses: {'200': {description: Success}}}
+    post: {summary: Create succession committee charter draft, responses: {'201': {description: Created}}}
+  /succession/committee-charters/{id}:
+    get: {summary: Get succession committee charter version, responses: {'200': {description: Success}}}
+    put: {summary: Update succession committee charter draft, responses: {'200': {description: Success}}}
+  /succession/committee-charters/{id}/roster:
+    put: {summary: Replace authoritative HRM-sourced committee roster, responses: {'200': {description: Success}}}
+  /succession/committee-charters/{id}/revisions:
+    post: {summary: Create succession committee charter revision, responses: {'201': {description: Created}}}
+  /succession/committee-charters/{id}/publish:
+    post: {summary: Publish succession committee charter, responses: {'200': {description: Success}}}
+  /succession/committee-charters/{id}/retire:
+    post: {summary: Retire succession committee charter, responses: {'200': {description: Success}}}
+  /succession/committee-charters/{id}/conflicts:
+    get: {summary: List standing committee conflicts, responses: {'200': {description: Success}}}
+    post: {summary: Declare standing committee conflict, responses: {'201': {description: Created}}}
+  /succession/committee-conflicts/{id}/resolve:
+    post: {summary: Resolve standing committee conflict, responses: {'200': {description: Success}}}
+  /succession/career-families:
+    get: {summary: List versioned career families and explicit pathways, responses: {'200': {description: Success}}}
+    post: {summary: Create career family draft, responses: {'201': {description: Created}}}
+  /succession/career-families/{id}:
+    get: {summary: Get career family version, responses: {'200': {description: Success}}}
+    put: {summary: Update career family draft, responses: {'200': {description: Success}}}
+  /succession/career-families/{id}/pathways:
+    put: {summary: Replace authoritative position-to-position pathways, responses: {'200': {description: Success}}}
+  /succession/career-families/{id}/revisions:
+    post: {summary: Create career family revision, responses: {'201': {description: Created}}}
+  /succession/career-families/{id}/publish:
+    post: {summary: Publish career family after position snapshot validation, responses: {'200': {description: Success}}}
+  /succession/career-families/{id}/retire:
+    post: {summary: Retire career family, responses: {'200': {description: Success}}}
+  /succession/criticality-frameworks:
+    get: {summary: List versioned critical-position frameworks, responses: {'200': {description: Success}}}
+    post: {summary: Create criticality framework draft, responses: {'201': {description: Created}}}
+  /succession/criticality-frameworks/{id}:
+    get: {summary: Get criticality framework version, responses: {'200': {description: Success}}}
+    put: {summary: Update criticality framework draft, responses: {'200': {description: Success}}}
+  /succession/criticality-frameworks/{id}/criteria:
+    put: {summary: Replace qualitative criticality criteria, responses: {'200': {description: Success}}}
+  /succession/criticality-frameworks/{id}/revisions:
+    post: {summary: Create criticality framework revision, responses: {'201': {description: Created}}}
+  /succession/criticality-frameworks/{id}/publish:
+    post: {summary: Publish criticality framework, responses: {'200': {description: Success}}}
+  /succession/criticality-frameworks/{id}/retire:
+    post: {summary: Retire criticality framework, responses: {'200': {description: Success}}}
+  /succession/critical-positions:
+    get: {summary: List permission-scoped critical-position designations, responses: {'200': {description: Success}}}
+    post: {summary: Create human-authored critical-position designation draft, responses: {'201': {description: Created}}}
+  /succession/critical-positions/{id}:
+    get: {summary: Get critical-position designation, responses: {'200': {description: Success}}}
+    put: {summary: Update designation draft and qualitative findings, responses: {'200': {description: Success}}}
+  /succession/critical-positions/{id}/submit:
+    post: {summary: Submit designation for committee review, responses: {'200': {description: Success}}}
+  /succession/critical-positions/{id}/approve:
+    post: {summary: Approve designation as active committee member, responses: {'200': {description: Success}}}
+  /succession/critical-positions/{id}/reject:
+    post: {summary: Reject designation as active committee member, responses: {'200': {description: Success}}}
+  /succession/critical-positions/{id}/retire:
+    post: {summary: Retire approved designation, responses: {'200': {description: Success}}}
+  /succession/intake/cycles:
+    get: {summary: List privacy-controlled succession cycles, responses: {'200': {description: Success}}}
+    post: {summary: Create succession cycle draft, responses: {'201': {description: Created}}}
+  /succession/intake/cycles/{id}:
+    put: {summary: Update succession cycle draft, responses: {'200': {description: Success}}}
+  /succession/intake/cycles/{id}/{action}:
+    post: {summary: Open close or cancel succession cycle, responses: {'200': {description: Success}}}
+  /succession/intake/cycles/{id}/risk-reviews:
+    get: {summary: List assigned continuity risk reviews, responses: {'200': {description: Success}}}
+    post: {summary: Create human-owned continuity risk review, responses: {'201': {description: Created}}}
+  /succession/intake/risk-reviews/{id}:
+    put: {summary: Update draft continuity risk review, responses: {'200': {description: Success}}}
+  /succession/intake/risk-reviews/{id}/finalize:
+    post: {summary: Finalize continuity risk review, responses: {'200': {description: Success}}}
+  /succession/intake/candidates:
+    get: {summary: List own assigned or agency-wide candidate intake, responses: {'200': {description: Success}}}
+    post: {summary: Create authorized nomination or self-expression draft, responses: {'201': {description: Created}}}
+  /succession/intake/candidates/{id}:
+    get: {summary: Get privacy-filtered candidate intake, responses: {'200': {description: Success}}}
+    put: {summary: Update candidate intake draft, responses: {'200': {description: Success}}}
+  /succession/intake/candidates/{id}/notice:
+    post: {summary: Send candidate privacy notice, responses: {'200': {description: Success}}}
+  /succession/intake/candidates/{id}/consent:
+    post: {summary: Record authenticated candidate consent, responses: {'200': {description: Success}}}
+  /succession/intake/candidates/{id}/submit:
+    post: {summary: Submit consented candidate intake after source freshness checks, responses: {'200': {description: Success}}}
+  /succession/intake/candidates/{id}/eligibility:
+    post: {summary: Record human eligibility review without readiness or ranking, responses: {'200': {description: Success}}}
+  /succession/intake/candidates/{id}/withdraw:
+    post: {summary: Withdraw candidate intake, responses: {'200': {description: Success}}}
+  /succession/intake/candidates/{id}/evidence:
+    post: {summary: Upload secured candidate evidence, responses: {'201': {description: Created}}}
+  /succession/intake/candidates/{id}/evidence/{evidenceId}/content:
+    get: {summary: Download authorized candidate evidence with no-store response, responses: {'200': {description: Success}}}
+  /succession/readiness:
+    get: {summary: List own assigned or agency-wide readiness reviews, responses: {'200': {description: Privacy-filtered readiness reviews}}}
+  /succession/readiness/{id}:
+    get: {summary: Get candidate-safe or panel-authorized readiness review, responses: {'200': {description: Success}}}
+  /succession/readiness/candidates/{candidateId}:
+    post: {summary: Initialize frozen target-gap and panel snapshots for an eligible candidate, responses: {'201': {description: Created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /succession/readiness/{id}/assignments/{assignmentId}/conflict:
+    post: {summary: Declare candidate-specific panel conflict and recusal, responses: {'200': {description: Success}}}
+  /succession/readiness/{id}/assignments/{assignmentId}/replacement:
+    post: {summary: Record authorized replacement from the frozen non-conflicted panel, responses: {'200': {description: Success}}}
+  /succession/readiness/{id}/findings:
+    put: {summary: Replace reasoned configurable readiness criterion findings, responses: {'200': {description: Success}}}
+  /succession/readiness/{id}/recommendation:
+    post: {summary: Record quorum-controlled human readiness recommendation, responses: {'200': {description: Success}}}
+  /succession/readiness/{id}/decision:
+    post: {summary: Finalize authorized append-only pool decision after source freshness checks, responses: {'200': {description: Success}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /succession/development:
+    get: {summary: List own assigned or agency-wide succession development plans, responses: {'200': {description: Privacy-filtered plans}}}
+  /succession/development/{id}:
+    get: {summary: Get candidate-safe or panel-authorized development plan, responses: {'200': {description: Success}}}
+    put: {summary: Update a draft succession development plan, responses: {'200': {description: Success}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /succession/development/decisions/{decisionId}:
+    post: {summary: Create a target-position development plan from an included final pool decision, responses: {'201': {description: Created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /succession/development/{id}/sources:
+    post: {summary: Link an exact approved IDP item or completed L&D case without creating enrollment, responses: {'200': {description: Success}}}
+  /succession/development/{id}/milestones:
+    post: {summary: Add a measurable dated development milestone, responses: {'200': {description: Success}}}
+  /succession/development/{id}/milestones/{milestoneId}/status:
+    put: {summary: Record milestone progress evidence and separated feedback, responses: {'200': {description: Success}}}
+  /succession/development/{id}/activation:
+    post: {summary: Activate a sourced plan with measurable milestones, responses: {'200': {description: Success}}}
+  /succession/development/{id}/acknowledgment:
+    post: {summary: Record the authenticated candidate acknowledgment or response, responses: {'200': {description: Success}}}
+  /succession/development/{id}/reviews:
+    post: {summary: Record a human periodic review without automatically changing pool membership, responses: {'200': {description: Success}}}
+  /succession/development/{id}/completion:
+    post: {summary: Complete a plan after milestone completion and human review, responses: {'200': {description: Success}}}
+  /succession/development/{id}/membership-events:
+    post: {summary: Append an authorized correction expiry removal or reinstatement event, responses: {'200': {description: Success}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /succession/continuity/plans:
+    get: {summary: List confidential assigned or agency-wide position continuity plans, responses: {'200': {description: Permission-filtered plans}}}
+  /succession/continuity/plans/{id}:
+    get: {summary: Get a confidential continuity plan and frozen non-ranked bench coverage, responses: {'200': {description: Success}}}
+    put: {summary: Update a draft position continuity plan, responses: {'200': {description: Success}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /succession/continuity/risk-reviews/{riskId}/plans:
+    post: {summary: Create a continuity plan from a finalized exact-source risk review, responses: {'201': {description: Created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /succession/continuity/plans/{id}/submission:
+    post: {summary: Submit a continuity plan for independent approval, responses: {'200': {description: Success}}}
+  /succession/continuity/plans/{id}/approval:
+    post: {summary: Independently approve a submitted continuity plan, responses: {'200': {description: Success}}}
+  /succession/continuity/plans/{id}/finalization:
+    post: {summary: Finalize the plan and freeze active unexpired non-ranked bench facts, responses: {'200': {description: Success}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /succession/continuity/referrals:
+    get: {summary: List confidential authorized RSP referral packets and receipt history, responses: {'200': {description: Permission-filtered referrals}}}
+  /succession/continuity/referrals/{id}:
+    get: {summary: Get a confidential RSP referral packet without an application or selection outcome, responses: {'200': {description: Success}}}
+    put: {summary: Update a draft referral narrative, responses: {'200': {description: Success}}}
+  /succession/continuity/plans/{planId}/referrals:
+    post: {summary: Create a referral packet from a current frozen bench entry without creating an RSP application, responses: {'201': {description: Created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /succession/continuity/referrals/{id}/vacancy-link:
+    post: {summary: Freeze an exact matching approved or published RSP vacancy link, responses: {'200': {description: Success}}}
+  /succession/continuity/referrals/{id}/authorization:
+    post: {summary: Independently authorize a current conflict-free referral, responses: {'200': {description: Success}}}
+  /succession/continuity/referrals/{id}/dispatch:
+    post: {summary: Dispatch a vacancy-linked referral without applying or shortlisting the employee, responses: {'200': {description: Success}}}
+  /succession/continuity/referrals/{id}/receipt:
+    post: {summary: Record agency-wide RSP receipt of the packet, responses: {'200': {description: Success}}}
+  /succession/continuity/referrals/{id}/status:
+    post: {summary: Append UNDER_REVIEW CLOSED or DECLINED status without a selection or appointment action, responses: {'200': {description: Success}}}
+  /succession/continuity/referrals/{id}/withdrawal:
+    post: {summary: Withdraw an unreceived referral with employee-visible and restricted reason, responses: {'200': {description: Success}}}
+  /succession/reports/readiness/{id}.pdf:
+    get: {summary: Generate an ownership-filtered candidate readiness assessment summary PDF, responses: {'200': {description: PDF report}}}
+  /succession/reports/development/{id}.pdf:
+    get: {summary: Generate an ownership-filtered succession development plan PDF, responses: {'200': {description: PDF report}}}
+  /succession/reports/continuity/{id}.pdf:
+    get: {summary: Generate a restricted critical-position continuity plan and bench PDF, responses: {'200': {description: PDF report}}}
+  /succession/reports/referrals/{id}.pdf:
+    get: {summary: Generate an authorized RSP referral packet that creates no RSP application, responses: {'200': {description: PDF report}}}
+  /succession/reports/coverage-register.pdf:
+    get: {summary: Generate an assigned or agency-wide position coverage register without named bench members, responses: {'200': {description: PDF report}}}
+  /succession/reports/analytics:
+    get: {summary: Return agency-wide privacy-threshold succession coverage aggregates without employee ranking, responses: {'200': {description: Privacy-controlled analytics}}}
+  /evidence/frameworks:
+    get: {operationId: listEvidenceFrameworkVersions, responses: {'200': {description: Agency evidence framework versions}}}
+    post:
+      operationId: createEvidenceFrameworkDraft
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EvidenceFrameworkInput'}}}}
+      responses: {'201': {description: Draft framework created}, '409': {$ref: '#/components/responses/Conflict'}}
+  /evidence/frameworks/effective:
+    get: {operationId: getEffectiveEvidenceFramework, parameters: [{name: on, in: query, required: true, schema: {type: string, format: date}}], responses: {'200': {description: Effective published framework}, '404': {$ref: '#/components/responses/NotFound'}}}
+  /evidence/frameworks/{id}:
+    get: {operationId: getEvidenceFrameworkVersion, responses: {'200': {description: Framework version}}}
+    put:
+      operationId: updateEvidenceFrameworkDraft
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EvidenceFrameworkInput'}}}}
+      responses: {'200': {description: Draft framework updated}, '409': {$ref: '#/components/responses/Conflict'}}
+  /evidence/frameworks/{id}/content:
+    put:
+      operationId: replaceEvidenceFrameworkContent
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EvidenceFrameworkContentInput'}}}}
+      responses: {'200': {description: Draft framework content atomically replaced}, '409': {$ref: '#/components/responses/Conflict'}}
+  /evidence/frameworks/{id}/revisions:
+    post: {operationId: reviseEvidenceFramework, responses: {'201': {description: Successor draft with copied content}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence/frameworks/{id}/publish:
+    post: {operationId: publishEvidenceFramework, responses: {'200': {description: Complete framework published for internal reference}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence/frameworks/{id}/retire:
+    post: {operationId: retireEvidenceFramework, responses: {'200': {description: Published framework retired}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cycles:
+    get: {operationId: listEvidenceAssessmentCycles, responses: {'200': {description: Visible assessment cycles}}}
+    post: {operationId: createEvidenceAssessmentCycle, responses: {'201': {description: Assessment cycle created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cycles/{id}:
+    get: {operationId: getEvidenceAssessmentCycle, responses: {'200': {description: Assessment cycle}}}
+    put: {operationId: updateEvidenceAssessmentCycle, responses: {'200': {description: Assessment cycle updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cycles/{id}/{action}:
+    post: {operationId: transitionEvidenceAssessmentCycle, responses: {'200': {description: Assessment cycle transitioned}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases:
+    get: {operationId: listEvidenceAssessmentCases, responses: {'200': {description: Assigned or agency-visible assessment cases}}}
+    post: {operationId: createEvidenceAssessmentCase, responses: {'201': {description: Assessment case created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/validation/cases:
+    get: {operationId: listEvidenceValidationCases, responses: {'200': {description: Validation-permission-scoped assessment cases}}}
+  /evidence-assessments/action/cases:
+    get: {operationId: listEvidenceCorrectiveActionCases, responses: {'200': {description: Corrective-action-permission-scoped assessment cases}}}
+  /evidence-assessments/cases/{id}:
+    get: {operationId: getEvidenceAssessmentCase, responses: {'200': {description: Assessment case and history}}}
+    put: {operationId: updateEvidenceAssessmentCase, responses: {'200': {description: Draft or returned case updated}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases/{id}/submit:
+    post: {operationId: submitEvidenceAssessmentCase, responses: {'200': {description: Case submitted or resubmitted}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases/{id}/withdraw:
+    post: {operationId: withdrawEvidenceAssessmentCase, responses: {'200': {description: Case withdrawn}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases/{id}/evidence/live:
+    post: {operationId: linkEvidenceLiveSource, responses: {'201': {description: Exact live-source version linked}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases/{id}/evidence/upload:
+    post: {operationId: uploadAssessmentEvidence, responses: {'201': {description: Classified evidence uploaded}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases/{id}/evidence/{evidenceId}/reverify:
+    post: {operationId: reverifyAssessmentEvidence, responses: {'200': {description: Live evidence reverified}}}
+  /evidence-assessments/cases/{id}/evidence/{evidenceId}/content:
+    get: {operationId: downloadAssessmentEvidence, responses: {'200': {description: Authorized evidence content}}}
+  /evidence-assessments/cases/{id}/validator/recuse:
+    post: {operationId: recuseEvidenceValidator, responses: {'200': {description: Validator recused}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases/{id}/validator/reassign:
+    post: {operationId: reassignEvidenceValidator, responses: {'200': {description: Validator reassigned}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases/{id}/findings:
+    put: {operationId: saveEvidenceFindings, responses: {'200': {description: Human findings versioned}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases/{id}/return:
+    post: {operationId: returnEvidenceAssessmentCase, responses: {'200': {description: Case returned to owner}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases/{id}/finalize:
+    post: {operationId: finalizeEvidenceAssessmentCase, responses: {'200': {description: Human validation finalized}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /evidence-assessments/cases/{id}/gaps:
+    post: {operationId: createEvidenceGap, responses: {'201': {description: Evidence gap created}}}
+  /evidence-assessments/cases/{id}/gaps/{gapId}:
+    put: {operationId: updateEvidenceGap, responses: {'200': {description: Evidence gap updated}}}
+  /evidence-assessments/cases/{id}/gaps/{gapId}/{action}:
+    post: {operationId: transitionEvidenceGap, responses: {'200': {description: Evidence gap transitioned}}}
+  /evidence-assessments/cases/{id}/actions:
+    post: {operationId: createEvidenceCorrectiveAction, responses: {'201': {description: Corrective action created}}}
+  /evidence-assessments/cases/{id}/actions/{actionId}:
+    put: {operationId: updateEvidenceCorrectiveAction, responses: {'200': {description: Corrective action updated}}}
+  /evidence-assessments/cases/{id}/actions/{actionId}/submit:
+    post: {operationId: submitEvidenceCorrectiveAction, responses: {'200': {description: Corrective action submitted for verification}}}
+  /evidence-assessments/cases/{id}/actions/{actionId}/{action}:
+    post: {operationId: transitionEvidenceCorrectiveAction, responses: {'200': {description: Corrective action transitioned}}}
+  /evidence-readiness/cases/{id}/calculation:
+    get: {operationId: calculateInternalEvidenceReadiness, responses: {'200': {description: Transparent completeness and evidence-coverage facts; not an official score or Governance Level}}}
+  /evidence-readiness/cases/{id}/snapshots:
+    get: {operationId: listInternalReadinessSnapshots, responses: {'200': {description: Immutable signed snapshot lineage}}}
+    post:
+      operationId: signInternalReadinessSnapshot
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EvidenceReadinessSignOff'}}}}
+      responses: {'201': {description: Human-signed immutable internal readiness snapshot}, '409': {$ref: '#/components/responses/Conflict'}}
+  /evidence-readiness/exceptions:
+    get: {operationId: listEvidenceReadinessExceptions, responses: {'200': {description: Missing, invalid, expiring evidence and overdue corrective-action view}}}
+  /evidence-readiness/reports/cases/{id}/evidence-index.pdf:
+    get: {operationId: printInternalEvidenceIndex, responses: {'200': {description: SQL-free bean-driven internal evidence index PDF}}}
+  /evidence-readiness/reports/snapshots/{id}/internal-assessment.pdf:
+    get: {operationId: printInternalReadinessAssessment, responses: {'200': {description: SQL-free bean-driven internal self-assessment PDF with non-official disclaimer}}}
+  /evidence-readiness/analytics:
+    get: {operationId: getPrivacyControlledEvidenceAnalytics, responses: {'200': {description: Cohort-suppressed cross-module aggregate decision support}}}
+  /operations/reconciliation-runs:
+    get: {operationId: listReconciliationRuns, responses: {'200': {description: Agency reconciliation runs and non-content findings}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    post: {operationId: runReconciliation, responses: {'200': {description: Completed read-only reconciliation run}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /operations/status:
+    get:
+      operationId: getProtectedOperationsStatus
+      responses:
+        '200':
+          description: Sanitized application and dependency status for agency-wide operations users
+          content: {application/json: {schema: {$ref: '#/components/schemas/OperationsStatus'}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /operations/reconciliation-findings/{id}/acknowledge:
+    post: {operationId: acknowledgeReconciliationFinding, parameters: [{name: id, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Finding acknowledged with audit}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /operations/reconciliation-findings/{id}/resolve:
+    post: {operationId: resolveReconciliationFinding, parameters: [{name: id, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Finding resolved with audit}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /operations/retention-policies:
+    get: {operationId: listRetentionPolicyVersions, responses: {'200': {description: Versioned retention policies}}}
+    post: {operationId: createRetentionPolicyVersion, responses: {'200': {description: Retention policy version created}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /operations/legal-holds:
+    get: {operationId: listLegalHolds, responses: {'200': {description: Legal holds}}}
+    post: {operationId: placeLegalHold, responses: {'200': {description: Legal hold placed}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /operations/legal-holds/{id}/release:
+    post: {operationId: releaseLegalHold, parameters: [{name: id, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Legal hold released}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /operations/retention-eligibility:
+    get:
+      operationId: getRetentionEligibilityReport
+      parameters: [{name: asOf, in: query, required: true, schema: {type: string, format: date}}]
+      responses: {'200': {description: Report-only retention eligibility; this endpoint never deletes content}}
+  /notifications/me:
+    get:
+      operationId: listMyNotifications
+      description: Authenticated-own pageable notification feed. Recipient identity comes only from the bearer principal.
+      parameters:
+        - {name: unreadOnly, in: query, schema: {type: boolean, default: false}}
+        - {name: includeDismissed, in: query, schema: {type: boolean, default: false}}
+        - {name: page, in: query, schema: {type: integer, minimum: 0, default: 0}}
+        - {name: size, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses: {'200': {description: Own notification page, content: {application/json: {schema: {$ref: '#/components/schemas/NotificationPage'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /notifications/me/unread-count:
+    get:
+      operationId: countMyUnreadNotifications
+      responses: {'200': {description: Own unread count, content: {application/json: {schema: {$ref: '#/components/schemas/NotificationUnreadCount'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /notifications/me/{id}/read:
+    put:
+      operationId: markMyNotificationRead
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/NotificationMarkRequest'}}}}
+      responses: {'200': {description: Own notification marked read, content: {application/json: {schema: {$ref: '#/components/schemas/Notification'}}}}, '404': {$ref: '#/components/responses/NotFound'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /notifications/me/read-all:
+    put:
+      operationId: markAllMyNotificationsRead
+      responses: {'200': {description: Own active notifications marked read, content: {application/json: {schema: {$ref: '#/components/schemas/NotificationMarkAllResult'}}}}}
+  /notifications/me/{id}/dismiss:
+    put:
+      operationId: dismissMyInformationalNotification
+      description: Dismisses only an informational notice; it never resolves or mutates the source workflow.
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/NotificationMarkRequest'}}}}
+      responses: {'200': {description: Own informational notification dismissed, content: {application/json: {schema: {$ref: '#/components/schemas/Notification'}}}}, '404': {$ref: '#/components/responses/NotFound'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /notifications/me/{id}/target:
+    get:
+      operationId: resolveMyNotificationTarget
+      description: Revalidates the authenticated recipient and exact source assignment/lifecycle before returning a controlled route key. It never executes the source workflow.
+      parameters: [{$ref: '#/components/parameters/Id'}]
+      responses: {'200': {description: Safe source-target availability, content: {application/json: {schema: {$ref: '#/components/schemas/NotificationTargetResolution'}}}}, '404': {$ref: '#/components/responses/NotFound'}}
 components:
   securitySchemes:
     bearerAuth:
@@ -1324,6 +2112,687 @@ components:
     PositionProfileComparison: {description: Exact-version requirement comparison, content: {application/json: {schema: {$ref: '#/components/schemas/PositionProfileComparison'}}}}
     AuditEventPage: {description: Page of append-only position-profile audit events, content: {application/json: {schema: {$ref: '#/components/schemas/AuditEventPage'}}}}
   schemas:
+    NotificationSourceDomain: {type: string, enum: [COMPETENCY, RSP, PERFORMANCE, LEARNING_DEVELOPMENT, REWARDS_RECOGNITION, SUCCESSION, EVIDENCE, OPERATIONS]}
+    NotificationEventCode: {type: string, enum: [ACTION_ASSIGNED, RECORD_RETURNED, OUTCOME_AVAILABLE, DUE_REMINDER]}
+    NotificationKind: {type: string, enum: [ACTION_REQUIRED, INFORMATIONAL]}
+    NotificationRouteKey: {type: string, enum: [COMPETENCY, RSP, PERFORMANCE, LEARNING_DEVELOPMENT, REWARDS_RECOGNITION, SUCCESSION, EVIDENCE, OPERATIONS]}
+    Notification:
+      type: object
+      required: [id, recordVersion, sourceDomain, eventCode, kind, sourceAggregateType, sourceAggregateId, sourceRecordVersion, routeKey, title, message, actionState, createdAt]
+      properties:
+        id: {type: string}
+        recordVersion: {type: integer, format: int64}
+        sourceDomain: {$ref: '#/components/schemas/NotificationSourceDomain'}
+        eventCode: {$ref: '#/components/schemas/NotificationEventCode'}
+        kind: {$ref: '#/components/schemas/NotificationKind'}
+        sourceAggregateType: {type: string}
+        sourceAggregateId: {type: string}
+        sourceRecordVersion: {type: integer, format: int64}
+        routeKey: {$ref: '#/components/schemas/NotificationRouteKey'}
+        title: {type: string, maxLength: 200}
+        message: {type: string, maxLength: 500}
+        dueAt: {type: string, format: date-time, nullable: true}
+        actionState: {type: string, enum: [ACTIVE, CLOSED]}
+        readAt: {type: string, format: date-time, nullable: true}
+        dismissedAt: {type: string, format: date-time, nullable: true}
+        createdAt: {type: string, format: date-time}
+    NotificationPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content: {type: array, items: {$ref: '#/components/schemas/Notification'}}
+        page: {type: integer}
+        size: {type: integer}
+        totalElements: {type: integer, format: int64}
+        totalPages: {type: integer}
+        first: {type: boolean}
+        last: {type: boolean}
+    NotificationUnreadCount: {type: object, required: [unreadCount], properties: {unreadCount: {type: integer, format: int64, minimum: 0}}}
+    NotificationMarkRequest: {type: object, required: [recordVersion], properties: {recordVersion: {type: integer, format: int64, minimum: 0}}}
+    NotificationMarkAllResult:
+      type: object
+      required: [updated, readAt]
+      properties:
+        updated: {type: integer, minimum: 0}
+        readAt: {type: string, format: date-time}
+    NotificationTargetResolution:
+      type: object
+      required: [available, routeKey, sourceAggregateType, sourceAggregateId, actionState]
+      properties:
+        available: {type: boolean}
+        routeKey: {$ref: '#/components/schemas/NotificationRouteKey'}
+        sourceAggregateType: {type: string}
+        sourceAggregateId: {type: string}
+        actionState: {type: string, enum: [ACTIVE, CLOSED]}
+    EvidenceReadinessSignOff:
+      type: object
+      required: [caseRecordVersion, reason]
+      properties:
+        caseRecordVersion: {type: integer, format: int64}
+        supersedesSnapshotId: {type: string, maxLength: 36, nullable: true}
+        supersedesRecordVersion: {type: integer, format: int64, nullable: true}
+        reason: {type: string, maxLength: 3000}
+        expiringThrough: {type: string, format: date, nullable: true}
+    EvidenceRequirementFact:
+      type: object
+      required: [requirementId, requirementCode, title, required, excluded, currentEvidenceCount, validEvidenceCount, covered, blockers]
+      properties:
+        requirementId: {type: string, maxLength: 36}
+        requirementCode: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 300}
+        required: {type: boolean}
+        findingOutcome: {$ref: '#/components/schemas/EvidenceFindingOutcome'}
+        excluded: {type: boolean}
+        currentEvidenceCount: {type: integer, minimum: 0}
+        validEvidenceCount: {type: integer, minimum: 0}
+        covered: {type: boolean}
+        blockers: {type: array, items: {type: string}}
+    EvidenceReadinessCalculation:
+      type: object
+      required: [assessmentCaseId, cycleId, frameworkVersionId, frameworkDefinitionVersion, frameworkContentRevision, frameworkFingerprint, caseContentRevision, caseSubmissionRevision, calculatedOn, expiringThrough, totalRequirements, excludedRequirements, applicableRequirements, assessedRequirements, coveredRequirements, completenessPercent, coveragePercent, missingInputCount, expiringEvidenceCount, overdueActionCount, requirements, missingInputs, disclaimer]
+      properties:
+        assessmentCaseId: {type: string, maxLength: 36}
+        cycleId: {type: string, maxLength: 36}
+        frameworkVersionId: {type: string, maxLength: 36}
+        frameworkDefinitionVersion: {type: integer, minimum: 1}
+        frameworkContentRevision: {type: integer, minimum: 1}
+        frameworkFingerprint: {type: string, maxLength: 64}
+        caseContentRevision: {type: integer, minimum: 0}
+        caseSubmissionRevision: {type: integer, minimum: 1}
+        calculatedOn: {type: string, format: date}
+        expiringThrough: {type: string, format: date}
+        totalRequirements: {type: integer, minimum: 1}
+        excludedRequirements: {type: integer, minimum: 0}
+        applicableRequirements: {type: integer, minimum: 0}
+        assessedRequirements: {type: integer, minimum: 0}
+        coveredRequirements: {type: integer, minimum: 0}
+        completenessPercent: {type: number, format: decimal, minimum: 0, maximum: 100}
+        coveragePercent: {type: number, format: decimal, minimum: 0, maximum: 100}
+        missingInputCount: {type: integer, minimum: 0}
+        expiringEvidenceCount: {type: integer, minimum: 0}
+        overdueActionCount: {type: integer, minimum: 0}
+        requirements: {type: array, items: {$ref: '#/components/schemas/EvidenceRequirementFact'}}
+        missingInputs: {type: array, items: {type: string}}
+        disclaimer: {type: string, description: Explicitly states that this is not an official CSC score, Governance Level, certification, accreditation, or determination.}
+    EvidenceReadinessSnapshot:
+      type: object
+      required: [id, recordVersion, assessmentCaseId, snapshotRevision, totalRequirements, excludedRequirements, applicableRequirements, assessedRequirements, coveredRequirements, completenessPercent, coveragePercent, missingInputCount, expiringEvidenceCount, overdueActionCount, factsFingerprint, disclaimer, signedBy, signedAt, signOffReason, requirements]
+      properties:
+        id: {type: string, maxLength: 36}
+        recordVersion: {type: integer, format: int64}
+        assessmentCaseId: {type: string, maxLength: 36}
+        snapshotRevision: {type: integer, minimum: 1}
+        supersedesSnapshotId: {type: string, maxLength: 36, nullable: true}
+        totalRequirements: {type: integer, minimum: 1}
+        excludedRequirements: {type: integer, minimum: 0}
+        applicableRequirements: {type: integer, minimum: 0}
+        assessedRequirements: {type: integer, minimum: 0}
+        coveredRequirements: {type: integer, minimum: 0}
+        completenessPercent: {type: number, format: decimal}
+        coveragePercent: {type: number, format: decimal}
+        missingInputCount: {type: integer, minimum: 0}
+        expiringEvidenceCount: {type: integer, minimum: 0}
+        overdueActionCount: {type: integer, minimum: 0}
+        factsFingerprint: {type: string, maxLength: 64}
+        disclaimer: {type: string}
+        signedBy: {type: string, maxLength: 100}
+        signedAt: {type: string, format: date-time}
+        signOffReason: {type: string, maxLength: 3000}
+        requirements: {type: array, items: {$ref: '#/components/schemas/EvidenceRequirementFact'}}
+    EvidenceExceptionView:
+      type: object
+      required: [asOf, expiringThrough, evidence, overdueActions]
+      properties:
+        asOf: {type: string, format: date}
+        expiringThrough: {type: string, format: date}
+        evidence: {type: array, items: {type: object}}
+        overdueActions: {type: array, items: {type: object}}
+    EvidenceAggregateAnalytics:
+      type: object
+      required: [from, to, minimumCohort, assessmentCohort, assessmentSuppressed, assessmentMetrics, modules, privacyNotice]
+      properties:
+        from: {type: string, format: date}
+        to: {type: string, format: date}
+        minimumCohort: {type: integer, minimum: 2}
+        assessmentCohort: {type: integer, minimum: 0}
+        assessmentSuppressed: {type: boolean}
+        assessmentSuppressionReason: {type: string, nullable: true}
+        assessmentMetrics: {type: array, items: {type: object}}
+        modules: {type: array, items: {type: object, description: Already privacy-filtered source-domain aggregate; suppressed cells contain no metrics.}}
+        privacyNotice: {type: string}
+    EvidenceAssessmentCycleStatus: {type: string, enum: [DRAFT, OPEN, CLOSED, CANCELLED]}
+    EvidenceAssessmentCaseStatus: {type: string, enum: [DRAFT, SUBMITTED, RETURNED, RESUBMITTED, FINALIZED, WITHDRAWN]}
+    EvidenceArtifactKind: {type: string, enum: [LIVE_SOURCE, UPLOAD]}
+    EvidenceSourceType: {type: string, enum: [COMPETENCY_PROFILE, PERFORMANCE_OUTCOME, LD_COMPLETION]}
+    EvidenceClassification: {type: string, enum: [PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED]}
+    EvidenceVisibility: {type: string, enum: [OWNER_AND_VALIDATOR, VALIDATOR_ONLY, AGENCY_AUTHORIZED]}
+    EvidenceVerificationStatus: {type: string, enum: [VERIFIED, STALE, BROKEN, UNVERIFIED]}
+    EvidenceFindingOutcome: {type: string, enum: [MET, PARTIALLY_MET, NOT_MET, NOT_APPLICABLE, NEEDS_REVIEW]}
+    EvidenceGapStatus: {type: string, enum: [OPEN, RESOLVED, REOPENED]}
+    EvidenceCorrectiveActionStatus: {type: string, enum: [PLANNED, IN_PROGRESS, SUBMITTED_FOR_VERIFICATION, VERIFIED, RETURNED, CANCELLED]}
+    EvidenceAssessmentCycleInput:
+      type: object
+      required: [code, title, frameworkVersionId, periodStart, periodEnd, dueDate]
+      properties:
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        frameworkVersionId: {type: string, maxLength: 36}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        dueDate: {type: string, format: date}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    EvidenceAssessmentCaseInput:
+      type: object
+      required: [cycleId, code, title, organizationType, organizationId, ownerEmployeeNo, validatorEmployeeNo]
+      properties:
+        cycleId: {type: string, maxLength: 36}
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 250}
+        organizationType: {type: string, enum: [AREA, BUSINESS_UNIT]}
+        organizationId: {type: integer, format: int64}
+        ownerEmployeeNo: {type: string, maxLength: 100}
+        validatorEmployeeNo: {type: string, maxLength: 100}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    EvidenceAssessmentTransition:
+      type: object
+      required: [recordVersion, reason]
+      properties:
+        recordVersion: {type: integer, format: int64}
+        reason: {type: string, maxLength: 3000}
+    EvidenceArtifactMetadata:
+      type: object
+      required: [caseRecordVersion, requirementId, title, classification, visibility, retentionTag, evidenceDate]
+      properties:
+        caseRecordVersion: {type: integer, format: int64}
+        requirementId: {type: string, maxLength: 36}
+        title: {type: string, maxLength: 250}
+        notes: {type: string, maxLength: 3000, nullable: true}
+        classification: {$ref: '#/components/schemas/EvidenceClassification'}
+        visibility: {$ref: '#/components/schemas/EvidenceVisibility'}
+        retentionTag: {type: string, maxLength: 100}
+        evidenceDate: {type: string, format: date}
+        reviewDueDate: {type: string, format: date, nullable: true}
+        supersedesId: {type: string, maxLength: 36, nullable: true}
+    EvidenceFindingInput:
+      type: object
+      required: [requirementId, outcome, rationale]
+      properties:
+        requirementId: {type: string, maxLength: 36}
+        outcome: {$ref: '#/components/schemas/EvidenceFindingOutcome'}
+        rationale: {type: string, maxLength: 4000}
+        notApplicableAuthority: {type: string, maxLength: 1000, nullable: true}
+    EvidenceAssessmentCase:
+      type: object
+      required: [id, recordVersion, contentRevision, cycleId, frameworkVersionId, code, title, status, submissionRevision, evidence, findings, gaps, actions, history]
+      properties:
+        id: {type: string, maxLength: 36}
+        recordVersion: {type: integer, format: int64}
+        contentRevision: {type: integer, minimum: 0}
+        cycleId: {type: string, maxLength: 36}
+        frameworkVersionId: {type: string, maxLength: 36}
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 250}
+        status: {$ref: '#/components/schemas/EvidenceAssessmentCaseStatus'}
+        submissionRevision: {type: integer, minimum: 0}
+        evidence: {type: array, items: {type: object}}
+        findings: {type: array, items: {type: object}}
+        gaps: {type: array, items: {type: object}}
+        actions: {type: array, items: {type: object}}
+        history: {type: array, items: {type: object}}
+    EvidenceFrameworkStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, RETIRED]
+    EvidenceRequirementType:
+      type: string
+      enum: [LIVE_TRANSACTION, REPORT, DOCUMENT, POLICY, OTHER]
+    EvidenceFrameworkInput:
+      type: object
+      required: [code, title, issuingBody, legalBasis, authorityReference, internalUseDisclaimer]
+      properties:
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        issuingBody: {type: string, maxLength: 250}
+        legalBasis: {type: string, maxLength: 2000}
+        authorityReference: {type: string, maxLength: 250}
+        internalUseDisclaimer: {type: string, maxLength: 2000, description: Must state that ISOFT HRIS does not make an official CSC determination.}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    EvidenceFrameworkContentInput:
+      type: object
+      required: [recordVersion, pillars, levels, indicators, requirements]
+      properties:
+        recordVersion: {type: integer, format: int64}
+        pillars: {type: array, minItems: 1, items: {type: object}}
+        levels: {type: array, minItems: 1, items: {type: object, description: Reference-only Governance Level labels; never an ISOFT determination.}}
+        indicators: {type: array, minItems: 1, items: {type: object}}
+        requirements: {type: array, minItems: 1, items: {type: object}}
+    EvidenceFramework:
+      type: object
+      required: [id, frameworkId, code, title, issuingBody, legalBasis, authorityReference, internalUseDisclaimer, contentRevision, definitionVersion, status, recordVersion, pillars, levels, indicators, requirements]
+      properties:
+        id: {type: string, maxLength: 36}
+        frameworkId: {type: string, maxLength: 36}
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 200}
+        issuingBody: {type: string, maxLength: 250}
+        legalBasis: {type: string, maxLength: 2000}
+        authorityReference: {type: string, maxLength: 250}
+        internalUseDisclaimer: {type: string, maxLength: 2000}
+        contentRevision: {type: integer, minimum: 0}
+        definitionVersion: {type: integer, minimum: 1}
+        status: {$ref: '#/components/schemas/EvidenceFrameworkStatus'}
+        effectiveFrom: {type: string, format: date, nullable: true}
+        effectiveTo: {type: string, format: date, nullable: true}
+        recordVersion: {type: integer, format: int64}
+        pillars: {type: array, items: {type: object}}
+        levels: {type: array, items: {type: object}}
+        indicators: {type: array, items: {type: object}}
+        requirements: {type: array, items: {type: object}}
+    SuccessionDefinitionStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, RETIRED]
+    SuccessionPolicy:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        legalBasis: {type: string}
+        privacyNotice: {type: string}
+        minimumAggregateCohort: {type: integer, minimum: 3}
+    SuccessionReadinessLevel:
+      type: object
+      properties:
+        code: {type: string}
+        label: {type: string}
+        developmentGuidance: {type: string}
+        allowsPoolMembership: {type: boolean}
+    SuccessionReadinessScale:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        levels: {type: array, items: {$ref: '#/components/schemas/SuccessionReadinessLevel'}}
+    SuccessionCommitteeMember:
+      type: object
+      properties:
+        employeeNo: {type: string}
+        displayName: {type: string, readOnly: true}
+        sourceFingerprint: {type: string, readOnly: true}
+    SuccessionCommitteeCharter:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        members: {type: array, items: {$ref: '#/components/schemas/SuccessionCommitteeMember'}}
+    SuccessionCommitteeConflict:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        declaringEmployeeNo: {type: string}
+        relatedEmployeeNo: {type: string}
+        status: {type: string, enum: [ACTIVE, RESOLVED]}
+    SuccessionReadinessAssessmentStatus: {type: string, enum: [PANEL_REVIEW, RECOMMENDED, FINALIZED]}
+    SuccessionReadinessFindingOutcome: {type: string, enum: [MET, PARTIALLY_MET, NOT_MET, NEEDS_EVIDENCE]}
+    SuccessionPoolDecisionOutcome: {type: string, enum: [INCLUDED, NOT_INCLUDED]}
+    SuccessionReadinessGapItem:
+      type: object
+      properties:
+        competencyCode: {type: string}
+        requiredLevelCode: {type: string}
+        attainedLevelCode: {type: string, nullable: true}
+        gap: {type: integer, nullable: true}
+        classification: {type: string, enum: [BELOW, MEETS, EXCEEDS, NOT_ASSESSED]}
+        notAssessedReason: {type: string, nullable: true}
+    SuccessionReadinessAssessment:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        candidateId: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/SuccessionReadinessAssessmentStatus'}
+        positionProfileId: {type: string, format: uuid}
+        personProfileId: {type: string, format: uuid}
+        gapItems: {type: array, items: {$ref: '#/components/schemas/SuccessionReadinessGapItem'}}
+        recordVersion: {type: integer, format: int64}
+    SuccessionDevelopmentPlanStatus: {type: string, enum: [DRAFT, ACTIVE, COMPLETED, SUPERSEDED, CANCELLED]}
+    SuccessionDevelopmentSourceType: {type: string, enum: [APPROVED_IDP_ITEM, COMPLETED_LD_CASE]}
+    SuccessionDevelopmentMilestoneStatus: {type: string, enum: [PLANNED, IN_PROGRESS, COMPLETED, NOT_MET]}
+    SuccessionDevelopmentReviewRecommendation: {type: string, enum: [CONTINUE, COMPLETE, REMOVE_FROM_POOL]}
+    SuccessionPoolMembershipEventType: {type: string, enum: [ACTIVATED, CORRECTED, EXPIRED, REMOVED, REINSTATED]}
+    SuccessionPoolMembershipStatus: {type: string, enum: [ACTIVE, EXPIRED, REMOVED]}
+    SuccessionDevelopmentPlan:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        poolDecisionId: {type: string, format: uuid}
+        employeeNo: {type: string}
+        targetPositionName: {type: string}
+        status: {$ref: '#/components/schemas/SuccessionDevelopmentPlanStatus'}
+        acknowledgmentStatus: {type: string, enum: [PENDING, ACKNOWLEDGED, RESPONSE_SUBMITTED]}
+        recordVersion: {type: integer, format: int64}
+    SuccessionPoolMembershipEvent:
+      type: object
+      properties:
+        eventType: {$ref: '#/components/schemas/SuccessionPoolMembershipEventType'}
+        resultingStatus: {$ref: '#/components/schemas/SuccessionPoolMembershipStatus'}
+        effectiveOn: {type: string, format: date}
+        expiresOn: {type: string, format: date, nullable: true}
+    SuccessionContinuityPlanStatus: {type: string, enum: [DRAFT, SUBMITTED, APPROVED, FINALIZED]}
+    SuccessionBenchCoverageStatus: {type: string, enum: [NOT_ASSESSED, NO_ACTIVE_BENCH, ACTIVE_BENCH]}
+    SuccessionRspReferralStatus: {type: string, enum: [DRAFT, AUTHORIZED, SENT, RECEIVED, UNDER_REVIEW, CLOSED, DECLINED, WITHDRAWN]}
+    SuccessionBenchCoverageEntry:
+      type: object
+      description: Confidential immutable active-membership snapshot; array order is not a candidate rank.
+      properties:
+        candidateId: {type: string, format: uuid}
+        employeeNo: {type: string}
+        readinessLevelCode: {type: string}
+        membershipExpiresOn: {type: string, format: date}
+        developmentStatus: {type: string, nullable: true}
+    SuccessionContinuityPlan:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        riskReviewId: {type: string, format: uuid}
+        designationId: {type: string, format: uuid}
+        positionName: {type: string}
+        status: {$ref: '#/components/schemas/SuccessionContinuityPlanStatus'}
+        coverageStatus: {$ref: '#/components/schemas/SuccessionBenchCoverageStatus'}
+        benchCoverage: {type: array, items: {$ref: '#/components/schemas/SuccessionBenchCoverageEntry'}}
+        recordVersion: {type: integer, format: int64}
+    SuccessionRspReferralEvent:
+      type: object
+      properties:
+        sequence: {type: integer}
+        eventType: {type: string}
+        resultingStatus: {$ref: '#/components/schemas/SuccessionRspReferralStatus'}
+        employeeVisibleReason: {type: string}
+        restrictedReason: {type: string}
+    SuccessionRspReferralPacket:
+      type: object
+      description: Referral-only packet; it is not an application, shortlist, selection, appointment, or promotion.
+      properties:
+        id: {type: string, format: uuid}
+        referralCode: {type: string}
+        employeeNo: {type: string}
+        vacancyPublicationId: {type: string, format: uuid, nullable: true}
+        status: {$ref: '#/components/schemas/SuccessionRspReferralStatus'}
+        events: {type: array, items: {$ref: '#/components/schemas/SuccessionRspReferralEvent'}}
+        recordVersion: {type: integer, format: int64}
+    RrDefinitionStatus: {type: string, enum: [DRAFT, PUBLISHED, RETIRED]}
+    RrNomineeType: {type: string, enum: [INDIVIDUAL, GROUP, ORGANIZATION_UNIT]}
+    RrIncentiveType: {type: string, enum: [MONETARY, NON_MONETARY, BOTH]}
+    RrQuorumType: {type: string, enum: [COUNT, PERCENTAGE]}
+    RrCommitteeRole: {type: string, enum: [CHAIR, VICE_CHAIR, MEMBER, SECRETARIAT]}
+    RrPolicyInput:
+      type: object
+      required: [code, title, legalBasis, policyReference]
+      properties:
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 200}
+        legalBasis: {type: string, maxLength: 2000}
+        policyReference: {type: string, maxLength: 250}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    RrPolicyResponse: {type: object, properties: {id: {type: string}, status: {$ref: '#/components/schemas/RrDefinitionStatus'}, recordVersion: {type: integer, format: int64}}}
+    RrAwardCriterion: {type: object, properties: {code: {type: string}, weightPercent: {type: number}, maximumScore: {type: number}, displayOrder: {type: integer}}}
+    RrAwardCategory: {type: object, properties: {id: {type: string}, nomineeType: {$ref: '#/components/schemas/RrNomineeType'}, incentiveType: {$ref: '#/components/schemas/RrIncentiveType'}, criteria: {type: array, items: {$ref: '#/components/schemas/RrAwardCriterion'}}}}
+    RrCommitteeMember: {type: object, properties: {employeeNo: {type: string}, memberRole: {$ref: '#/components/schemas/RrCommitteeRole'}, votingMember: {type: boolean}, effectiveFrom: {type: string, format: date}}}
+    RrCommitteeCharter: {type: object, properties: {id: {type: string}, quorumType: {$ref: '#/components/schemas/RrQuorumType'}, quorumValue: {type: number}, members: {type: array, items: {$ref: '#/components/schemas/RrCommitteeMember'}}}}
+    RrAwardCycleStatus: {type: string, enum: [DRAFT, OPEN, CLOSED, CANCELLED]}
+    RrNominationStatus: {type: string, enum: [DRAFT, SUBMITTED, WITHDRAWN]}
+    RrNominationSourceType: {type: string, enum: [COMPETENCY_PROFILE, PERFORMANCE_OUTCOME, LD_COMPLETION]}
+    RrEvidenceVisibility: {type: string, enum: [NOMINEE_VISIBLE, COMMITTEE_RESTRICTED, PUBLICATION_SAFE]}
+    RrAwardCycleInput:
+      type: object
+      required: [code, title, policyVersionId, nominationOpensOn, nominationClosesOn, evaluationOpensOn, evaluationClosesOn, decisionDueOn]
+      properties: {code: {type: string}, title: {type: string}, policyVersionId: {type: string}, nominationOpensOn: {type: string, format: date}, nominationClosesOn: {type: string, format: date}, evaluationOpensOn: {type: string, format: date}, evaluationClosesOn: {type: string, format: date}, decisionDueOn: {type: string, format: date}, confermentOn: {type: string, format: date}, recordVersion: {type: integer, format: int64}}
+    RrAwardCycle: {type: object, properties: {id: {type: string}, status: {$ref: '#/components/schemas/RrAwardCycleStatus'}, policyFingerprint: {type: string}, recordVersion: {type: integer, format: int64}}}
+    RrNominationSourceInput: {type: object, required: [type, sourceId, sourceVersion], properties: {type: {$ref: '#/components/schemas/RrNominationSourceType'}, sourceId: {type: string}, sourceVersion: {type: integer, format: int64}, sourceFingerprint: {type: string}, sourceChangedAt: {type: string, format: date-time}}}
+    RrNominationInput: {type: object, required: [cycleId, categoryVersionId, contributionNarrative], properties: {cycleId: {type: string}, categoryVersionId: {type: string}, individualEmployeeId: {type: integer, format: int64}, groupName: {type: string}, organizationType: {type: string, enum: [AREA, BUSINESS_UNIT]}, organizationId: {type: integer, format: int64}, contributionNarrative: {type: string}, sources: {type: array, items: {$ref: '#/components/schemas/RrNominationSourceInput'}}, recordVersion: {type: integer, format: int64}}}
+    RrNominationEvidence: {type: object, properties: {id: {type: string}, filename: {type: string}, checksum: {type: string}, visibility: {$ref: '#/components/schemas/RrEvidenceVisibility'}}}
+    RrNomination: {type: object, properties: {id: {type: string}, status: {$ref: '#/components/schemas/RrNominationStatus'}, nomineeType: {$ref: '#/components/schemas/RrNomineeType'}, categoryFingerprint: {type: string}, submissionFingerprint: {type: string}, evidence: {type: array, items: {$ref: '#/components/schemas/RrNominationEvidence'}}, recordVersion: {type: integer, format: int64}}}
+    RrEvaluationStatus: {type: string, enum: [ELIGIBILITY_REVIEW, ELIGIBLE, DISQUALIFIED, RETURNED, EVALUATION, DELIBERATION, RECOMMENDED, NOT_RECOMMENDED, FINAL_APPROVED, FINAL_DISAPPROVED, RECONSIDERATION_PENDING]}
+    RrEligibilityOutcome: {type: string, enum: [PASS, FAIL, NOT_APPLICABLE]}
+    RrEvaluatorStatus: {type: string, enum: [ASSIGNED, RECUSED, REPLACED, SUBMITTED]}
+    RrDecisionOutcome: {type: string, enum: [RECOMMEND, NOT_RECOMMEND, RETURN, DISQUALIFY, APPROVE, DISAPPROVE]}
+    RrEvaluationCase: {type: object, properties: {id: {type: string}, nominationId: {type: string}, charterFingerprint: {type: string}, status: {$ref: '#/components/schemas/RrEvaluationStatus'}, calculatedScore: {type: number}, quorumMet: {type: boolean}, recordVersion: {type: integer, format: int64}}}
+    RrAwardRecordType: {type: string, enum: [CONFERMENT, CORRECTION, REVOCATION]}
+    RrFulfillmentStatus: {type: string, enum: [PARTIALLY_FULFILLED, FULFILLED, CANCELLED]}
+    RrHapStatus: {type: string, enum: [PREPARED, ENDORSED, SUBMITTED, ACKNOWLEDGED, RETURNED, WITHDRAWN]}
+    RrIncentiveAuthorization: {type: object, properties: {id: {type: string}, type: {type: string, enum: [MONETARY, NON_MONETARY]}, authorizedAmount: {type: number}, currencyCode: {type: string}, authorizationReference: {type: string}}}
+    RrAwardRecord: {type: object, properties: {id: {type: string}, awardCode: {type: string}, revisionNo: {type: integer}, recordType: {$ref: '#/components/schemas/RrAwardRecordType'}, nomineeDisplayName: {type: string}, publicationCitation: {type: string}, conferredOn: {type: string, format: date}, current: {type: boolean}, revoked: {type: boolean}, incentives: {type: array, items: {$ref: '#/components/schemas/RrIncentiveAuthorization'}}, recordVersion: {type: integer, format: int64}}}
+    RrAnnualRegister: {type: object, properties: {year: {type: integer}, totalAwards: {type: integer, format: int64}, revokedAwards: {type: integer, format: int64}, monetaryAuthorized: {type: number}, monetaryFulfilled: {type: number}, records: {type: array, items: {$ref: '#/components/schemas/RrAwardRecord'}}}}
+    LdDefinitionStatus: {type: string, enum: [DRAFT, PUBLISHED, RETIRED]}
+    LdInterventionCategory: {type: string, enum: [CLASSROOM, ONLINE_BLENDED, COACHING, MENTORING, JOB_ROTATION, JOB_SHADOWING, SELF_DEVELOPMENT, SCHOLARSHIP, SPECIAL_PROJECT, KNOWLEDGE_SHARING, OTHER]}
+    LdModality: {type: string, enum: [IN_PERSON, ONLINE, BLENDED, WORKPLACE, SELF_DIRECTED, OTHER]}
+    LdEvaluationLevelType: {type: string, enum: [REACTION, LEARNING, BEHAVIOR_APPLICATION, RESULTS, RETURN_OF_EXPECTATION]}
+    LdEvaluationScoreMethod: {type: string, enum: [QUALITATIVE, PERCENTAGE, POINTS, PASS_FAIL]}
+    LdPolicyInput:
+      type: object
+      required: [code, title, legalBasis, planningYearStartMonth, minimumPlannedInterventions, supervisoryMinimumHours, behaviorEvaluationMinDays, behaviorEvaluationMaxDays]
+      properties:
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 200}
+        description: {type: string, maxLength: 2000, nullable: true}
+        legalBasis: {type: string, maxLength: 1000}
+        planningYearStartMonth: {type: integer, minimum: 1, maximum: 12}
+        minimumPlannedInterventions: {type: integer, minimum: 0}
+        supervisoryMinimumHours: {type: number, minimum: 0}
+        behaviorEvaluationMinDays: {type: integer, minimum: 0}
+        behaviorEvaluationMaxDays: {type: integer, minimum: 0}
+        requiresIdp: {type: boolean}
+        requiresSupervisorRecommendation: {type: boolean}
+        requiresFinalApproval: {type: boolean}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    LdPolicyResponse:
+      allOf:
+        - $ref: '#/components/schemas/LdPolicyInput'
+        - type: object
+          required: [id, policyId, definitionVersion, status, recordVersion]
+          properties:
+            id: {type: string, maxLength: 36}
+            policyId: {type: string, maxLength: 36}
+            definitionVersion: {type: integer, minimum: 1}
+            supersedesId: {type: string, nullable: true}
+            status: {$ref: '#/components/schemas/LdDefinitionStatus'}
+    LdInterventionInput:
+      type: object
+      required: [code, title, category, defaultModality, intendedOutcomes]
+      properties:
+        code: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 200}
+        description: {type: string, nullable: true}
+        category: {$ref: '#/components/schemas/LdInterventionCategory'}
+        defaultModality: {$ref: '#/components/schemas/LdModality'}
+        intendedOutcomes: {type: string, maxLength: 3000}
+        deliveryRequirements: {type: string, maxLength: 3000, nullable: true}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    LdProvider: {type: object, required: [id, code, name, providerType, status, recordVersion], properties: {id: {type: string}, code: {type: string}, name: {type: string}, providerType: {type: string}, status: {type: string, enum: [ACTIVE, INACTIVE]}, recordVersion: {type: integer, format: int64}}}
+    LdResourcePerson: {type: object, required: [id, code, personSource, displayName, status, recordVersion], properties: {id: {type: string}, code: {type: string}, personSource: {type: string, enum: [EMPLOYEE, EXTERNAL]}, employeeNo: {type: string, nullable: true}, displayName: {type: string}, providerId: {type: string, nullable: true}, status: {type: string, enum: [ACTIVE, INACTIVE]}, recordVersion: {type: integer, format: int64}}}
+    LdEvaluationLevel: {type: object, required: [levelType, required, dueAfterDays, scoreMethod, evidenceRequirements, instrumentGuidance, displayOrder], properties: {levelType: {$ref: '#/components/schemas/LdEvaluationLevelType'}, required: {type: boolean}, dueAfterDays: {type: integer, minimum: 0}, scoreMethod: {$ref: '#/components/schemas/LdEvaluationScoreMethod'}, passingScore: {type: number, nullable: true}, evidenceRequirements: {type: string}, instrumentGuidance: {type: string}, displayOrder: {type: integer, minimum: 1}}}
+    LdEvaluationFramework: {type: object, required: [id, frameworkId, code, title, legalBasis, definitionVersion, status, levelRevision, levels, recordVersion], properties: {id: {type: string}, frameworkId: {type: string}, code: {type: string}, title: {type: string}, legalBasis: {type: string}, definitionVersion: {type: integer}, status: {$ref: '#/components/schemas/LdDefinitionStatus'}, levelRevision: {type: integer}, levels: {type: array, items: {$ref: '#/components/schemas/LdEvaluationLevel'}}, recordVersion: {type: integer, format: int64}}}
+    LdLearningNeedSource: {type: string, enum: [COMPETENCY_GAP_REFERRAL, PERFORMANCE_DEVELOPMENT_OUTCOME, ORGANIZATIONAL_NEED, SUPERVISOR_OBSERVATION, EMPLOYEE_CAREER_GOAL, STATUTORY_PROFESSIONAL_REQUIREMENT, OTHER]}
+    LdLearningNeedStatus: {type: string, enum: [OPEN, LINKED, CANCELLED]}
+    LdIdpStatus: {type: string, enum: [DRAFT, SUBMITTED, RECOMMENDED, RETURNED, APPROVED, CANCELLED]}
+    LdReferralDispositionDecision: {type: string, enum: [ACCEPTED, RETURNED, DECLINED]}
+    LdLearningNeedInput:
+      type: object
+      required: [employeeId, sourceType, developmentObjective, currentState, targetState, successMeasure, priority]
+      properties:
+        employeeId: {type: integer, format: int64}
+        sourceType: {$ref: '#/components/schemas/LdLearningNeedSource'}
+        sourceReferenceId: {type: string, nullable: true}
+        sourceVersion: {type: integer, format: int64, nullable: true}
+        sourceFingerprint: {type: string, maxLength: 64, nullable: true}
+        targetCompetencyId: {type: string, nullable: true}
+        targetCompetencyCode: {type: string, nullable: true}
+        targetCompetencyName: {type: string, nullable: true}
+        developmentObjective: {type: string}
+        currentState: {type: string}
+        targetState: {type: string}
+        successMeasure: {type: string}
+        targetDate: {type: string, format: date, nullable: true}
+        priority: {type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL]}
+        recordVersion: {type: integer, format: int64, nullable: true}
+    LdLearningNeed:
+      allOf:
+        - {$ref: '#/components/schemas/LdLearningNeedInput'}
+        - {type: object, required: [id, employeeNo, employeeName, appointmentId, employeeFingerprint, status, recordVersion], properties: {id: {type: string}, employeeNo: {type: string}, employeeName: {type: string}, appointmentId: {type: integer, format: int64}, employeeFingerprint: {type: string}, status: {$ref: '#/components/schemas/LdLearningNeedStatus'}}}
+    LdReferralDispositionInput: {type: object, required: [referralVersion, decision, reason], properties: {referralVersion: {type: integer, format: int64}, decision: {$ref: '#/components/schemas/LdReferralDispositionDecision'}, reason: {type: string}, currentState: {type: string, nullable: true}, targetState: {type: string, nullable: true}, successMeasure: {type: string, nullable: true}, targetDate: {type: string, format: date, nullable: true}, priority: {type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL], nullable: true}, linkedIdpItemId: {type: string, nullable: true}}}
+    LdIdpCreate: {type: object, required: [employeeId, planningYear, overallGoal], properties: {employeeId: {type: integer, format: int64}, planningYear: {type: integer, minimum: 2000, maximum: 2200}, overallGoal: {type: string}}}
+    LdIdpGoalUpdate: {type: object, required: [recordVersion, overallGoal], properties: {recordVersion: {type: integer, format: int64}, overallGoal: {type: string}}}
+    LdIdpTransition: {type: object, required: [recordVersion], properties: {recordVersion: {type: integer, format: int64}, reason: {type: string, nullable: true}}}
+    LdIdpItemInput: {type: object, required: [recordVersion, learningNeedId, interventionCategory, employeeCommitment, supervisorCommitment, displayOrder], properties: {recordVersion: {type: integer, format: int64}, learningNeedId: {type: string}, interventionCategory: {type: string}, employeeCommitment: {type: string}, supervisorCommitment: {type: string}, displayOrder: {type: integer, minimum: 1}}}
+    LdIdpItemUpdate: {type: object, required: [planRecordVersion, itemRecordVersion, interventionCategory, employeeCommitment, supervisorCommitment, displayOrder], properties: {planRecordVersion: {type: integer, format: int64}, itemRecordVersion: {type: integer, format: int64}, interventionCategory: {type: string}, employeeCommitment: {type: string}, supervisorCommitment: {type: string}, displayOrder: {type: integer, minimum: 1}}}
+    LdIdpItem: {type: object, required: [id, learningNeedId, sourceType, developmentObjective, currentState, targetState, interventionCategory, successMeasure, targetDate, priority, displayOrder, recordVersion], properties: {id: {type: string}, learningNeedId: {type: string}, sourceType: {$ref: '#/components/schemas/LdLearningNeedSource'}, sourceReferenceId: {type: string, nullable: true}, sourceVersion: {type: integer, format: int64, nullable: true}, sourceFingerprint: {type: string, nullable: true}, developmentObjective: {type: string}, currentState: {type: string}, targetState: {type: string}, interventionCategory: {type: string}, successMeasure: {type: string}, targetDate: {type: string, format: date}, employeeCommitment: {type: string}, supervisorCommitment: {type: string}, priority: {type: string}, displayOrder: {type: integer}, recordVersion: {type: integer, format: int64}}}
+    LdIdpRouteStep: {type: object, required: [level, action, employeeNo, employeeName, status], properties: {level: {type: integer}, action: {type: string, enum: [RECOMMEND, APPROVE]}, employeeNo: {type: string}, employeeName: {type: string}, status: {type: string, enum: [PENDING, CURRENT, RECOMMENDED, RETURNED, APPROVED, SKIPPED]}, decidedBy: {type: string, nullable: true}, decidedAt: {type: string, format: date-time, nullable: true}, decisionReason: {type: string, nullable: true}}}
+    LdIndividualDevelopmentPlan: {type: object, required: [id, seriesId, planVersion, employeeId, employeeNo, employeeName, appointmentId, businessUnitId, planningYear, overallGoal, status, contentRevision, recordVersion, items, route], properties: {id: {type: string}, seriesId: {type: string}, planVersion: {type: integer}, supersedesId: {type: string, nullable: true}, employeeId: {type: integer, format: int64}, employeeNo: {type: string}, employeeName: {type: string}, appointmentId: {type: integer, format: int64}, businessUnitId: {type: integer, format: int64}, businessUnitName: {type: string}, areaId: {type: integer, format: int64}, areaName: {type: string}, planningYear: {type: integer}, overallGoal: {type: string}, status: {$ref: '#/components/schemas/LdIdpStatus'}, contentRevision: {type: integer}, recordVersion: {type: integer, format: int64}, submittedBy: {type: string, nullable: true}, submittedAt: {type: string, format: date-time, nullable: true}, approvedBy: {type: string, nullable: true}, approvedAt: {type: string, format: date-time, nullable: true}, returnReason: {type: string, nullable: true}, items: {type: array, items: {$ref: '#/components/schemas/LdIdpItem'}}, route: {type: array, items: {$ref: '#/components/schemas/LdIdpRouteStep'}}}}
+    LdConsolidatedPlanStatus: {type: string, enum: [DRAFT, SUBMITTED, APPROVED, CANCELLED]}
+    LdConsolidatedPlan: {type: object, required: [id, seriesId, planVersion, scopeType, planningYear, status, sources], properties: {id: {type: string}, seriesId: {type: string}, planVersion: {type: integer}, scopeType: {type: string, enum: [OFFICE, AGENCY]}, planningYear: {type: integer}, status: {$ref: '#/components/schemas/LdConsolidatedPlanStatus'}, sources: {type: array, items: {$ref: '#/components/schemas/LdConsolidatedPlanSource'}}}}
+    LdConsolidatedPlanSource: {type: object, required: [id, sourceType, sourceId, sourceVersion, sourceFingerprint], properties: {id: {type: string}, sourceType: {type: string, enum: [APPROVED_IDP_ITEM, ORGANIZATIONAL_NEED]}, sourceId: {type: string}, sourceVersion: {type: integer, format: int64}, sourceFingerprint: {type: string}}}
+    LdProgramStatus: {type: string, enum: [DRAFT, SUBMITTED, APPROVED, CANCELLED]}
+    LdProgram: {type: object, required: [id, seriesId, programVersion, planId, code, status, sources], properties: {id: {type: string}, seriesId: {type: string}, programVersion: {type: integer}, planId: {type: string}, code: {type: string}, status: {$ref: '#/components/schemas/LdProgramStatus'}, sources: {type: array, items: {type: object}}}}
+    LdOfferingStatus: {type: string, enum: [DRAFT, SUBMITTED, APPROVED, PUBLISHED, CANCELLED]}
+    LdOffering: {type: object, required: [id, seriesId, offeringVersion, programId, code, status, sessions, resources], properties: {id: {type: string}, seriesId: {type: string}, offeringVersion: {type: integer}, programId: {type: string}, code: {type: string}, status: {$ref: '#/components/schemas/LdOfferingStatus'}, sessions: {type: array, items: {type: object}}, resources: {type: array, items: {type: object}}}}
+    LdNominationSourceType: {type: string, enum: [IDP_ITEM, PLAN_SOURCE, JUSTIFIED]}
+    LdNominationStatus: {type: string, enum: [DRAFT, SUBMITTED, RECOMMENDED, RETURNED, APPROVED, CANCELLED]}
+    LdNominationCreate: {type: object, required: [offeringId, employeeId, sourceType, justification, estimatedCost], properties: {offeringId: {type: string}, employeeId: {type: integer, format: int64}, sourceType: {$ref: '#/components/schemas/LdNominationSourceType'}, sourceId: {type: string, nullable: true}, justification: {type: string, maxLength: 3000}, estimatedCost: {type: number, minimum: 0}}}
+    LdNomination: {type: object, required: [id, recordVersion, offeringId, employeeId, employeeNo, status, route], properties: {id: {type: string}, recordVersion: {type: integer, format: int64}, offeringId: {type: string}, employeeId: {type: integer, format: int64}, employeeNo: {type: string}, status: {$ref: '#/components/schemas/LdNominationStatus'}, route: {type: array, items: {$ref: '#/components/schemas/LdIdpRouteStep'}}}}
+    LdEnrollmentStatus: {type: string, enum: [INVITED, CONFIRMED, DECLINED, CANCELLED, SUBSTITUTED]}
+    LdEnrollment: {type: object, required: [id, recordVersion, nominationId, offeringId, employeeId, employeeNo, status], properties: {id: {type: string}, recordVersion: {type: integer, format: int64}, nominationId: {type: string}, offeringId: {type: string}, employeeId: {type: integer, format: int64}, employeeNo: {type: string}, status: {$ref: '#/components/schemas/LdEnrollmentStatus'}}}
+    LdEnrollmentSubstitution: {type: object, required: [recordVersion, replacementEnrollmentId, replacementRecordVersion, reason], properties: {recordVersion: {type: integer, format: int64}, replacementEnrollmentId: {type: string}, replacementRecordVersion: {type: integer, format: int64}, reason: {type: string, maxLength: 2000}}}
+    LdTrainingOrderInput: {type: object, required: [orderNumber, subject, attendanceDirective], properties: {orderNumber: {type: string, maxLength: 100}, subject: {type: string, maxLength: 1000}, attendanceDirective: {type: string, maxLength: 3000}, dressCode: {type: string, nullable: true}, notes: {type: string, nullable: true}}}
+    LdTrainingOrderSource: {type: object, required: [id, offeringId, offeringVersion, orderNumber, approvedBy, approvedAt, snapshotFingerprint, participants], properties: {id: {type: string}, offeringId: {type: string}, offeringVersion: {type: integer}, orderNumber: {type: string}, approvedBy: {type: string}, approvedAt: {type: string, format: date-time}, snapshotFingerprint: {type: string}, participants: {type: array, items: {type: object}}}}
+    LdCompletionStatus: {type: string, enum: [DRAFT, FOR_VERIFICATION, COMPLETED, NOT_COMPLETED]}
+    LdCompletionDecisionType: {type: string, enum: [COMPLETED, NOT_COMPLETED]}
+    LdAttendanceStatus: {type: string, enum: [UNRECORDED, PRESENT, PARTIAL, ABSENT]}
+    LdCompletionOutputStatus: {type: string, enum: [REQUIRED, SUBMITTED, VERIFIED, WAIVED]}
+    LdCompletionEvidenceType: {type: string, enum: [OUTPUT, CERTIFICATE, ATTENDANCE, OTHER]}
+    LdCompletionOpen: {type: object, required: [enrollmentRecordVersion], properties: {enrollmentRecordVersion: {type: integer, format: int64}}}
+    LdAttendanceInput: {type: object, required: [recordVersion, status, attendedHours, creditedHours], properties: {recordVersion: {type: integer, format: int64}, status: {$ref: '#/components/schemas/LdAttendanceStatus'}, attendedHours: {type: number, minimum: 0}, creditedHours: {type: number, minimum: 0}, remarks: {type: string, nullable: true}}}
+    LdCompletionOutputInput: {type: object, required: [caseRecordVersion, code, title, description], properties: {caseRecordVersion: {type: integer, format: int64}, code: {type: string, maxLength: 80}, title: {type: string, maxLength: 300}, description: {type: string, maxLength: 3000}}}
+    LdCompletionOutputDecision: {type: object, required: [caseRecordVersion, outputRecordVersion], properties: {caseRecordVersion: {type: integer, format: int64}, outputRecordVersion: {type: integer, format: int64}, reason: {type: string, nullable: true}}}
+    LdCompletionTransition: {type: object, required: [recordVersion], properties: {recordVersion: {type: integer, format: int64}, reason: {type: string, nullable: true}}}
+    LdCompletionDecision: {type: object, required: [recordVersion, decision, completionDate, reason], properties: {recordVersion: {type: integer, format: int64}, decision: {$ref: '#/components/schemas/LdCompletionDecisionType'}, completionDate: {type: string, format: date}, reason: {type: string, maxLength: 3000}}}
+    LdCompletionEvidenceUpload: {type: object, required: [evidenceType, file], properties: {evidenceType: {$ref: '#/components/schemas/LdCompletionEvidenceType'}, outputId: {type: string, nullable: true}, certificateNumber: {type: string, nullable: true}, certificateIssuer: {type: string, nullable: true}, certificateIssueDate: {type: string, format: date, nullable: true}, file: {type: string, format: binary}}}
+    LdSessionAttendance: {type: object, required: [id, recordVersion, sessionId, sessionTitle, startsAt, endsAt, plannedHours, status, attendedHours, creditedHours], properties: {id: {type: string}, recordVersion: {type: integer, format: int64}, sessionId: {type: string}, sessionTitle: {type: string}, startsAt: {type: string, format: date-time}, endsAt: {type: string, format: date-time}, plannedHours: {type: number}, status: {$ref: '#/components/schemas/LdAttendanceStatus'}, attendedHours: {type: number}, creditedHours: {type: number}, remarks: {type: string, nullable: true}, recordedBy: {type: string, nullable: true}, recordedAt: {type: string, format: date-time, nullable: true}}}
+    LdCompletionOutput: {type: object, required: [id, recordVersion, code, title, description, status], properties: {id: {type: string}, recordVersion: {type: integer, format: int64}, code: {type: string}, title: {type: string}, description: {type: string}, status: {$ref: '#/components/schemas/LdCompletionOutputStatus'}, submittedBy: {type: string, nullable: true}, submittedAt: {type: string, format: date-time, nullable: true}, verifiedBy: {type: string, nullable: true}, verifiedAt: {type: string, format: date-time, nullable: true}, decisionReason: {type: string, nullable: true}}}
+    LdCompletionEvidence: {type: object, required: [id, recordVersion, evidenceType, filename, mediaType, byteSize, checksum, uploadedBy, uploadedAt], properties: {id: {type: string}, recordVersion: {type: integer, format: int64}, outputId: {type: string, nullable: true}, evidenceType: {$ref: '#/components/schemas/LdCompletionEvidenceType'}, filename: {type: string}, mediaType: {type: string}, byteSize: {type: integer, format: int64}, checksum: {type: string}, certificateNumber: {type: string, nullable: true}, certificateIssuer: {type: string, nullable: true}, certificateIssueDate: {type: string, format: date, nullable: true}, uploadedBy: {type: string}, uploadedAt: {type: string, format: date-time}}}
+    LdCompletionCase: {type: object, required: [id, recordVersion, enrollmentId, trainingOrderId, offeringId, employeeId, employeeNo, employeeName, plannedHours, creditedHours, status, contentRevision, attendance, outputs, evidence], properties: {id: {type: string}, recordVersion: {type: integer, format: int64}, enrollmentId: {type: string}, trainingOrderId: {type: string}, offeringId: {type: string}, employeeId: {type: integer, format: int64}, employeeNo: {type: string}, employeeName: {type: string}, plannedHours: {type: number}, creditedHours: {type: number}, status: {$ref: '#/components/schemas/LdCompletionStatus'}, contentRevision: {type: integer}, completionDate: {type: string, format: date, nullable: true}, completionFingerprint: {type: string, nullable: true}, attendance: {type: array, items: {$ref: '#/components/schemas/LdSessionAttendance'}}, outputs: {type: array, items: {$ref: '#/components/schemas/LdCompletionOutput'}}, evidence: {type: array, items: {$ref: '#/components/schemas/LdCompletionEvidence'}}}}
+    LdEvaluationInitialize: {type: object, required: [completionRecordVersion], properties: {completionRecordVersion: {type: integer, format: int64}, supervisorEmployeeNo: {type: string, nullable: true}, staffEvaluatorEmployeeNo: {type: string, nullable: true}}}
+    LdEvaluationResultInput: {type: object, required: [taskRecordVersion, narrative], properties: {taskRecordVersion: {type: integer, format: int64}, score: {type: number, nullable: true}, passed: {type: boolean, nullable: true}, narrative: {type: string, maxLength: 4000}, evidenceReference: {type: string, maxLength: 500, nullable: true}}}
+    LdEvaluationResult: {type: object, required: [id, recordVersion, resultRevision, narrative, status, submittedBy, submittedAt, resultFingerprint], properties: {id: {type: string}, recordVersion: {type: integer, format: int64}, resultRevision: {type: integer, minimum: 1}, supersedesResultId: {type: string, nullable: true}, score: {type: number, nullable: true}, passed: {type: boolean, nullable: true}, narrative: {type: string}, evidenceReference: {type: string, nullable: true}, status: {type: string, enum: [SUBMITTED, VERIFIED, RETURNED]}, submittedBy: {type: string}, submittedAt: {type: string, format: date-time}, resultFingerprint: {type: string}}}
+    LdEvaluationTask: {type: object, required: [id, recordVersion, completionCaseId, offeringId, employeeNo, frameworkVersionId, frameworkFingerprint, levelType, required, scoreMethod, evaluatorRole, assignedEvaluatorNo, dueDate, status, results], properties: {id: {type: string}, recordVersion: {type: integer, format: int64}, completionCaseId: {type: string}, offeringId: {type: string}, employeeNo: {type: string}, frameworkVersionId: {type: string}, frameworkFingerprint: {type: string}, levelType: {type: string, enum: [REACTION, LEARNING, BEHAVIOR_APPLICATION, RESULTS, RETURN_OF_EXPECTATION]}, required: {type: boolean}, scoreMethod: {type: string, enum: [QUALITATIVE, PERCENTAGE, POINTS, PASS_FAIL]}, evaluatorRole: {type: string, enum: [PARTICIPANT, SUPERVISOR, LD_STAFF]}, assignedEvaluatorNo: {type: string}, dueDate: {type: string, format: date}, status: {type: string, enum: [OPEN, SATISFIED]}, results: {type: array, items: {$ref: '#/components/schemas/LdEvaluationResult'}}}}
+    LdLearningActionPlanInput: {type: object, required: [completionRecordVersion, supervisorEmployeeNo, applicationObjective, successMeasure, targetDate], properties: {completionRecordVersion: {type: integer, format: int64}, supervisorEmployeeNo: {type: string}, applicationObjective: {type: string, maxLength: 3000}, successMeasure: {type: string, maxLength: 3000}, targetDate: {type: string, format: date}}}
+    LdEffectivenessRow: {type: object, required: [dimension, sourceId, label, verifiedResults, passedResults], properties: {dimension: {type: string, enum: [OFFERING, PROVIDER, INTERVENTION]}, sourceId: {type: string}, label: {type: string}, verifiedResults: {type: integer, format: int64, minimum: 0}, passedResults: {type: integer, format: int64, minimum: 0}, averageScore: {type: number, nullable: true}}}
+    LdEffectiveness: {type: object, required: [generatedAt, minimumCohort, suppressedGroups, rows], properties: {generatedAt: {type: string, format: date-time}, minimumCohort: {type: integer, minimum: 2}, suppressedGroups: {type: integer, minimum: 0}, rows: {type: array, items: {$ref: '#/components/schemas/LdEffectivenessRow'}}}}
+    LdHrmReviewPacket: {type: object, required: [completionId, employeeNo, employeeName, offeringId, creditedHours, completionDate, completionFingerprint, evaluations], properties: {completionId: {type: string}, employeeNo: {type: string}, employeeName: {type: string}, offeringId: {type: string}, creditedHours: {type: number}, completionDate: {type: string, format: date}, completionFingerprint: {type: string}, evaluations: {type: array, items: {$ref: '#/components/schemas/LdEvaluationTask'}}, actionPlan: {nullable: true}}}
+    LdCompletionOutcome: {type: object, required: [completionId, recordVersion, employeeNo, offeringId, offeringVersion, offeringCode, offeringTitle, programId, programVersion, interventionVersionId, creditedHours, completionDate, verifiedAt, completionFingerprint, changedAt, outcomeFingerprint], properties: {completionId: {type: string}, recordVersion: {type: integer, format: int64}, employeeNo: {type: string}, offeringId: {type: string}, offeringVersion: {type: integer}, offeringCode: {type: string}, offeringTitle: {type: string}, programId: {type: string}, programVersion: {type: integer}, interventionVersionId: {type: string}, providerId: {type: string, nullable: true}, providerName: {type: string, nullable: true}, creditedHours: {type: number}, completionDate: {type: string, format: date}, verifiedAt: {type: string, format: date-time}, completionFingerprint: {type: string}, changedAt: {type: string, format: date-time}, outcomeFingerprint: {type: string}}}
+    PerformanceRegisterPage:
+      type: object
+      required: [from, to, includeHistory, page, size, totalElements, totalPages, content]
+      properties:
+        from: {type: string, format: date}
+        to: {type: string, format: date}
+        includeHistory: {type: boolean}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1, maximum: 100}
+        totalElements: {type: integer, format: int64, minimum: 0}
+        totalPages: {type: integer, minimum: 0}
+        content: {type: array, items: {$ref: '#/components/schemas/PerformanceRegisterRow'}}
+    PerformanceRegisterRow:
+      type: object
+      required: [finalRatingId, ratingCaseId, ratingRevision, currentRevision, employeeNo, employeeName, formType, cycleId, businessUnitId, businessUnitName, periodStart, periodEnd, finalScore, ratingLabel, finalizedAt, acknowledgmentStatus, appealStatus, interventionAction, interventionStatus, calculationFingerprint]
+      properties:
+        finalRatingId: {type: string, maxLength: 36}
+        ratingCaseId: {type: string, maxLength: 36}
+        ratingRevision: {type: integer, minimum: 1}
+        supersedesFinalRatingId: {type: string, maxLength: 36, nullable: true}
+        currentRevision: {type: boolean}
+        employeeNo: {type: string}
+        employeeName: {type: string}
+        formType: {type: string, enum: [OPCR, DPCR, IPCR]}
+        cycleId: {type: string, maxLength: 36}
+        businessUnitId: {type: integer, format: int64}
+        businessUnitName: {type: string}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        finalScore: {type: number}
+        ratingLabel: {type: string}
+        finalizedAt: {type: string, format: date-time}
+        acknowledgmentStatus: {type: string}
+        appealStatus: {type: string}
+        interventionAction: {type: string}
+        interventionStatus: {type: string}
+        calculationFingerprint: {type: string}
+    PerformanceAggregateMetric:
+      type: object
+      required: [code, label, numerator, value, unit, definition]
+      properties:
+        code: {type: string}
+        label: {type: string}
+        numerator: {type: integer, format: int64}
+        denominator: {type: integer, format: int64, nullable: true}
+        value: {type: number}
+        unit: {type: string, enum: [COUNT, PERCENT, SCORE]}
+        definition: {type: string}
+    PerformanceAggregateBreakdown:
+      type: object
+      required: [dimension, key, label, count, averageScore]
+      properties:
+        dimension: {type: string, enum: [FORM_TYPE, RATING_LABEL, BUSINESS_UNIT]}
+        key: {type: string}
+        label: {type: string}
+        count: {type: integer, format: int64}
+        averageScore: {type: number}
+    PerformanceAnalytics:
+      type: object
+      required: [from, to, minimumCohort, cohortSize, suppressed, metrics, breakdowns]
+      properties:
+        from: {type: string, format: date}
+        to: {type: string, format: date}
+        minimumCohort: {type: integer, minimum: 2}
+        cohortSize: {type: integer, minimum: 0, description: Distinct employee count; returned as zero when the exact cohort is privacy-suppressed.}
+        suppressed: {type: boolean}
+        suppressionReason: {type: string, nullable: true}
+        metrics: {type: array, items: {$ref: '#/components/schemas/PerformanceAggregateMetric'}}
+        breakdowns: {type: array, items: {$ref: '#/components/schemas/PerformanceAggregateBreakdown'}}
+    PerformanceOutcomePage:
+      type: object
+      required: [schemaVersion, changedAfter, changedThrough, generatedAt, page, size, totalElements, totalPages, content]
+      properties:
+        schemaVersion: {type: string, enum: ['1.0']}
+        changedAfter: {type: string, format: date-time}
+        changedThrough: {type: string, format: date-time}
+        generatedAt: {type: string, format: date-time}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1, maximum: 100}
+        totalElements: {type: integer, format: int64, minimum: 0}
+        totalPages: {type: integer, minimum: 0}
+        content: {type: array, items: {$ref: '#/components/schemas/PerformanceOutcome'}}
+    PerformanceOutcome:
+      type: object
+      required: [outcomeId, ratingCaseId, revisionNo, employeeNo, cycleId, formType, businessUnitId, periodStart, periodEnd, finalScore, ratingLabel, finalizedAt, acknowledgmentStatus, appealStatus, interventionAction, interventionStatus, calculationFingerprint, recordVersion, changedAt, outcomeFingerprint]
+      properties:
+        outcomeId: {type: string, maxLength: 36}
+        ratingCaseId: {type: string, maxLength: 36}
+        revisionNo: {type: integer, minimum: 1}
+        supersedesOutcomeId: {type: string, maxLength: 36, nullable: true}
+        employeeNo: {type: string}
+        cycleId: {type: string, maxLength: 36}
+        formType: {type: string, enum: [OPCR, DPCR, IPCR]}
+        businessUnitId: {type: integer, format: int64}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        finalScore: {type: number}
+        ratingLabel: {type: string}
+        finalizedAt: {type: string, format: date-time}
+        acknowledgmentStatus: {type: string}
+        appealStatus: {type: string}
+        successorOutcomeId: {type: string, maxLength: 36, nullable: true}
+        interventionAction: {type: string}
+        interventionStatus: {type: string}
+        calculationFingerprint: {type: string}
+        recordVersion: {type: integer, format: int64, minimum: 0}
+        changedAt: {type: string, format: date-time}
+        outcomeFingerprint: {type: string, minLength: 64, maxLength: 64}
     PerformanceCommitmentWorkflowCommand:
       type: object
       required: [recordVersion, contentRevision, lifecycleRevision, requestKey, overrideWindow]
@@ -1401,6 +2870,51 @@ components:
       required: [recordVersion, bands]
       properties:
         recordVersion: {type: integer, format: int64}
+    SuccessionCareerPath:
+      type: object
+      properties:
+        sourceType: {type: string, enum: [JOB_POSITION, PLANTILLA]}
+        sourceId: {type: integer, format: int64}
+        targetType: {type: string, enum: [JOB_POSITION, PLANTILLA]}
+        targetId: {type: integer, format: int64}
+        relationshipType: {type: string, enum: [VERTICAL, LATERAL, DEVELOPMENTAL]}
+        developmentGuidance: {type: string}
+    SuccessionCareerFamily:
+      type: object
+      properties:
+        id: {type: string}
+        code: {type: string}
+        status: {$ref: '#/components/schemas/SuccessionDefinitionStatus'}
+        links: {type: array, items: {$ref: '#/components/schemas/SuccessionCareerPath'}}
+    SuccessionCriticalityCriterion:
+      type: object
+      properties:
+        id: {type: string}
+        code: {type: string}
+        label: {type: string}
+        evidenceGuidance: {type: string}
+    SuccessionCriticalityFramework:
+      type: object
+      properties:
+        id: {type: string}
+        code: {type: string}
+        status: {$ref: '#/components/schemas/SuccessionDefinitionStatus'}
+        criteria: {type: array, items: {$ref: '#/components/schemas/SuccessionCriticalityCriterion'}}
+    SuccessionCriticalityFinding:
+      type: object
+      properties:
+        criterionId: {type: string}
+        outcome: {type: string, enum: [MET, NOT_MET, NOT_APPLICABLE]}
+        reason: {type: string}
+        evidenceReference: {type: string, nullable: true}
+    SuccessionCriticalPositionDesignation:
+      type: object
+      properties:
+        id: {type: string}
+        targetType: {type: string, enum: [JOB_POSITION, PLANTILLA]}
+        targetId: {type: integer, format: int64}
+        status: {type: string, enum: [DRAFT, SUBMITTED, APPROVED, REJECTED, RETIRED]}
+        findings: {type: array, items: {$ref: '#/components/schemas/SuccessionCriticalityFinding'}}
         bands: {type: array, minItems: 1, items: {$ref: '#/components/schemas/PerformanceRatingBandInput'}}
     PerformanceRatingScalePublish:
       type: object
@@ -2538,12 +4052,30 @@ components:
         last: {type: boolean}
     ApiError:
       type: object
-      required: [timestamp, status, message, path, details]
+      required: [timestamp, status, message, path, correlationId, details]
       properties:
         timestamp: {type: string, format: date-time}
         status: {type: integer}
         message: {type: string}
         path: {type: string}
+        correlationId: {type: string, minLength: 1, maxLength: 100}
         details:
           type: array
           items: {type: string}
+    OperationsDependencyStatus:
+      type: object
+      required: [dependency, status, durationMillis]
+      properties:
+        dependency: {type: string, enum: [ADMINISTRATIVE, HUMAN_RESOURCE, DOCUMENT_STORAGE]}
+        status: {type: string, enum: [UP, DOWN, UNAVAILABLE, UNAUTHORIZED, NOT_CONFIGURED, DISABLED]}
+        responseStatus: {type: integer, nullable: true}
+        durationMillis: {type: integer, format: int64, minimum: 0}
+    OperationsStatus:
+      type: object
+      required: [checkedAt, applicationStatus, dependencies]
+      properties:
+        checkedAt: {type: string, format: date-time}
+        applicationStatus: {type: string}
+        dependencies:
+          type: array
+          items: {$ref: '#/components/schemas/OperationsDependencyStatus'}

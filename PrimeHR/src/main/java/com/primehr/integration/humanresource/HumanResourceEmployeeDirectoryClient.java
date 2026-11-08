@@ -1,3 +1,45 @@
 package com.primehr.integration.humanresource;
-import com.primehr.config.PrimeHrProperties; import org.springframework.core.ParameterizedTypeReference; import org.springframework.http.*; import org.springframework.http.client.JdkClientHttpRequestFactory; import org.springframework.stereotype.Component; import org.springframework.web.client.*; import java.net.http.HttpClient; import java.time.Duration; import java.util.*;
-@Component public class HumanResourceEmployeeDirectoryClient {private final RestClient restClient;public HumanResourceEmployeeDirectoryClient(PrimeHrProperties properties){var c=properties.humanResource();HttpClient client=HttpClient.newBuilder().connectTimeout(Duration.ofMillis(c.connectTimeoutMillis())).build();JdkClientHttpRequestFactory factory=new JdkClientHttpRequestFactory(client);factory.setReadTimeout(Duration.ofMillis(c.readTimeoutMillis()));restClient=RestClient.builder().baseUrl(c.baseUrl()).requestFactory(factory).build();}public HumanResourceEmployeeDirectoryEntry require(String employeeNo,String token){try{List<HumanResourceEmployeeDirectoryEntry> values=restClient.get().uri("/api/employees/basicInfo").header(HttpHeaders.AUTHORIZATION,token).retrieve().onStatus(HttpStatusCode::isError,(request,response)->{throw new HumanResourceDependencyException("HumanResource employee directory is unavailable",null);}).body(new ParameterizedTypeReference<>(){});if(values==null)throw new HumanResourceDependencyException("Assigned employee was not found in HumanResource",null);return values.stream().filter(v->v.employeeNo()!=null&&v.employeeNo().equalsIgnoreCase(employeeNo)).findFirst().orElseThrow(()->new HumanResourceDependencyException("Assigned employee was not found in HumanResource",null));}catch(HumanResourceDependencyException e){throw e;}catch(RestClientException e){throw new HumanResourceDependencyException("HumanResource employee directory is unavailable",e);}}}
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import java.util.List;
+
+@Component
+public class HumanResourceEmployeeDirectoryClient {
+    private final RestClient restClient;
+
+    public HumanResourceEmployeeDirectoryClient(
+            @Qualifier("humanResourceRestClient") RestClient restClient) {
+        this.restClient = restClient;
+    }
+
+    public HumanResourceEmployeeDirectoryEntry require(String employeeNo, String token) {
+        try {
+            List<HumanResourceEmployeeDirectoryEntry> values = restClient.get()
+                    .uri("/api/employees/basicInfo")
+                    .header(HttpHeaders.AUTHORIZATION, token)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() {});
+            if (values == null) {
+                throw new HumanResourceDependencyException(
+                        "Assigned employee was not found in HumanResource", null);
+            }
+            return values.stream()
+                    .filter(value -> value.employeeNo() != null
+                            && value.employeeNo().equalsIgnoreCase(employeeNo))
+                    .findFirst()
+                    .orElseThrow(() -> new HumanResourceDependencyException(
+                            "Assigned employee was not found in HumanResource", null));
+        } catch (HumanResourceDependencyException exception) {
+            throw exception;
+        } catch (RestClientException exception) {
+            throw new HumanResourceDependencyException(
+                    "HumanResource employee directory is unavailable", exception);
+        }
+    }
+}

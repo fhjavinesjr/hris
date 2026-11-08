@@ -20,6 +20,106 @@ class EffectiveAuthorizationServiceImplTest {
             new EffectiveAuthorizationServiceImpl(repository, new ObjectMapper());
 
     @Test
+    void phaseTenFrameworkPermissionIsCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("Evidence Administrator", false,
+                "{\"primehr.evidence-framework\":{\"canAccess\":true,\"canAdd\":true," +
+                        "\"canEdit\":true,\"canDelete\":true,\"canPublish\":true," +
+                        "\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Evidence Administrator")).thenReturn(Optional.of(ruleset));
+        var permission = service.resolve("001", "Evidence Administrator", "primehr.evidence-framework");
+        assertThat(permission.canAccess()).isTrue();
+        assertThat(permission.canAdd()).isTrue();
+        assertThat(permission.canEdit()).isTrue();
+        assertThat(permission.canDelete()).isTrue();
+        assertThat(permission.canPublish()).isTrue();
+        assertThat(permission.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+    }
+
+    @Test
+    void phaseTenAssessmentPermissionsAreCanonicalIndependentAndFailClosed() {
+        PermissionRuleset ruleset = new PermissionRuleset("Evidence Assessor", false,
+                "{\"primehr.evidence-assessment\":{\"canAccess\":true,\"canAdd\":true,\"canSubmit\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.evidence-validation\":{\"canAccess\":true,\"canValidate\":true,\"canFinalize\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.evidence-action\":{\"canAccess\":false,\"canEdit\":true,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Evidence Assessor")).thenReturn(Optional.of(ruleset));
+
+        var assessment = service.resolve("001", "Evidence Assessor", "primehr.evidence-assessment");
+        var validation = service.resolve("001", "Evidence Assessor", "primehr.evidence-validation");
+        var action = service.resolve("001", "Evidence Assessor", "primehr.evidence-action");
+
+        assertThat(assessment.canAccess()).isTrue();
+        assertThat(assessment.canAdd()).isTrue();
+        assertThat(assessment.canSubmit()).isTrue();
+        assertThat(assessment.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+        assertThat(validation.canValidate()).isTrue();
+        assertThat(validation.canFinalize()).isTrue();
+        assertThat(validation.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+        assertThat(action.canAccess()).isFalse();
+        assertThat(action.canEdit()).isFalse();
+        assertThat(action.dataScope()).isEqualTo(PermissionDataScope.NONE);
+    }
+
+    @Test
+    void phaseTenReportingAndAnalyticsPermissionsAreCanonicalIndependentAndFailClosed() {
+        PermissionRuleset ruleset = new PermissionRuleset("Evidence Reporting", false,
+                "{\"primehr.evidence-report\":{\"canAccess\":true,\"dataScope\":\"ASSIGNED_RECORDS\"},"
+                        + "\"primehr.evidence-analytics\":{\"canAccess\":false,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Evidence Reporting")).thenReturn(Optional.of(ruleset));
+
+        var report = service.resolve("001", "Evidence Reporting", "primehr.evidence-report");
+        var analytics = service.resolve("001", "Evidence Reporting", "primehr.evidence-analytics");
+
+        assertThat(report.canAccess()).isTrue();
+        assertThat(report.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+        assertThat(analytics.canAccess()).isFalse();
+        assertThat(analytics.dataScope()).isEqualTo(PermissionDataScope.NONE);
+    }
+
+    @Test
+    void phaseSevenFoundationPermissionsAreCanonicalIndependentAndFailClosed() {
+        PermissionRuleset ruleset = new PermissionRuleset("L&D Administrator", false,
+                "{\"primehr.ld-governance\":{\"canAccess\":true,\"canAdd\":true,\"canPublish\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.ld-program\":{\"canAccess\":true,\"canEdit\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.ld-needs\":{\"canAccess\":true,\"canApprove\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.ld-individual-plan\":{\"canAccess\":true,\"canSubmit\":true,\"canFinalize\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.ld-agency-plan\":{\"canAccess\":true,\"canSubmit\":true,\"canApprove\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.ld-evaluation\":{\"canAccess\":false,\"canPublish\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.ld-completion-feed\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("L&D Administrator")).thenReturn(Optional.of(ruleset));
+        var governance=service.resolve("001","L&D Administrator","primehr.ld-governance");
+        var program=service.resolve("001","L&D Administrator","primehr.ld-program");
+        var evaluation=service.resolve("001","L&D Administrator","primehr.ld-evaluation");
+        var needs=service.resolve("001","L&D Administrator","primehr.ld-needs");
+        var idp=service.resolve("001","L&D Administrator","primehr.ld-individual-plan");
+        var agencyPlan=service.resolve("001","L&D Administrator","primehr.ld-agency-plan");
+        var completionFeed=service.resolve("001","L&D Administrator","primehr.ld-completion-feed");
+        assertThat(governance.canAccess()).isTrue();assertThat(governance.canPublish()).isTrue();
+        assertThat(program.canEdit()).isTrue();assertThat(program.canPublish()).isFalse();
+        assertThat(evaluation.canAccess()).isFalse();assertThat(evaluation.canPublish()).isFalse();
+        assertThat(needs.canApprove()).isTrue();
+        assertThat(idp.canSubmit()).isTrue();assertThat(idp.canFinalize()).isTrue();
+        assertThat(idp.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+        assertThat(agencyPlan.canSubmit()).isTrue();assertThat(agencyPlan.canApprove()).isTrue();
+        assertThat(agencyPlan.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+        assertThat(governance.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+        assertThat(completionFeed.canAccess()).isTrue();assertThat(completionFeed.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+    }
+
+    @Test
+    void phaseSevenParticipationPermissionsAreCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("L&D Coordinator", false,
+                "{\"primehr.ld-nomination\":{\"canAccess\":true,\"canSubmit\":true,\"canApprove\":false,\"dataScope\":\"OWN_RECORDS\"}," +
+                        "\"primehr.ld-delivery\":{\"canAccess\":true,\"canEdit\":true,\"canFinalize\":true,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("L&D Coordinator")).thenReturn(Optional.of(ruleset));
+        var nomination=service.resolve("001","L&D Coordinator","primehr.ld-nomination");
+        var delivery=service.resolve("001","L&D Coordinator","primehr.ld-delivery");
+        assertThat(nomination.canSubmit()).isTrue();assertThat(nomination.canApprove()).isFalse();
+        assertThat(nomination.dataScope()).isEqualTo(PermissionDataScope.OWN_RECORDS);
+        assertThat(delivery.canEdit()).isTrue();assertThat(delivery.canFinalize()).isTrue();
+        assertThat(delivery.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+    }
+
+    @Test
     void phaseFiveFProcessReportPermissionsAreCanonicalAndIndependent() {
         PermissionRuleset ruleset = new PermissionRuleset("RSP Reporter", false,
                 "{\"primehr.rsp-register-report\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
@@ -47,13 +147,13 @@ class EffectiveAuthorizationServiceImplTest {
     }
 
     @Test
-    void onlyBuiltInSuperAdminIsUnrestricted() {
+    void builtInAndRoleOneAdministratorsAreUnrestrictedButNamedRolesNeedPermissions() {
         PermissionRuleset administratorRuleset = new PermissionRuleset("Agency Administrator", true, "{}");
         when(repository.findByPermissionNameIgnoreCase("Agency Administrator"))
                 .thenReturn(Optional.of(administratorRuleset));
 
         assertThat(service.resolve("admin", "99", "primehr.competency").administrator()).isTrue();
-        assertThat(service.resolve("001", "ROLE_1", "primehr.competency").administrator()).isFalse();
+        assertThat(service.resolve("001", "ROLE_1", "primehr.competency").administrator()).isTrue();
         assertThat(service.resolve("001", "Agency Administrator", "primehr.competency").administrator()).isFalse();
         assertThat(service.resolve("001", "Agency Administrator", "primehr.competency").canPublish()).isFalse();
     }
@@ -414,6 +514,277 @@ class EffectiveAuthorizationServiceImplTest {
         assertThat(documents.canAdd()).isTrue();
         assertThat(documents.canEdit()).isFalse();
         assertThat(documents.canFinalize()).isTrue();
+    }
+
+    @Test
+    void phaseSixERatingWorkflowKeysResolveIndependentActionsAndScopes() {
+        PermissionRuleset ruleset = new PermissionRuleset("Performance Rating Team", false,
+                "{\"primehr.performance-rating\":{\"canAccess\":true,\"canAdd\":true," +
+                        "\"canSubmit\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.performance-calibration\":{\"canAccess\":true,\"canApprove\":true," +
+                        "\"canFinalize\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.performance-appeal\":{\"canAccess\":true,\"canEdit\":true," +
+                        "\"dataScope\":\"OWN_RECORDS\"}," +
+                        "\"primehr.performance-intervention\":{\"canAccess\":false,\"canFinalize\":true," +
+                        "\"dataScope\":\"AGENCY_WIDE\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("Performance Rating Team"))
+                .thenReturn(Optional.of(ruleset));
+
+        var rating = service.resolve("001", "Performance Rating Team", "primehr.performance-rating");
+        assertThat(rating.canAdd()).isTrue();
+        assertThat(rating.canSubmit()).isTrue();
+        assertThat(rating.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+
+        var calibration = service.resolve("001", "Performance Rating Team", "primehr.performance-calibration");
+        assertThat(calibration.canApprove()).isTrue();
+        assertThat(calibration.canFinalize()).isTrue();
+        assertThat(calibration.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+
+        var appeal = service.resolve("001", "Performance Rating Team", "primehr.performance-appeal");
+        assertThat(appeal.canEdit()).isTrue();
+        assertThat(appeal.dataScope()).isEqualTo(PermissionDataScope.OWN_RECORDS);
+
+        var intervention = service.resolve("001", "Performance Rating Team", "primehr.performance-intervention");
+        assertThat(intervention.canAccess()).isFalse();
+        assertThat(intervention.canFinalize()).isFalse();
+        assertThat(intervention.dataScope()).isEqualTo(PermissionDataScope.NONE);
+    }
+
+    @Test
+    void phaseSixFReportingKeysAreCanonicalIndependentAndAgencyScoped() {
+        PermissionRuleset ruleset = new PermissionRuleset("Performance Reports", false,
+                "{\"primehr.performance-form-report\":{\"canAccess\":true,\"dataScope\":\"OWN_RECORDS\"}," +
+                        "\"primehr.performance-monitoring-report\":{\"canAccess\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.performance-register-report\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.performance-analytics\":{\"canAccess\":false,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.performance-outcome-feed\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Performance Reports")).thenReturn(Optional.of(ruleset));
+
+        var form = service.resolve("001", "Performance Reports", "primehr.performance-form-report");
+        var monitoring = service.resolve("001", "Performance Reports", "primehr.performance-monitoring-report");
+        var register = service.resolve("001", "Performance Reports", "primehr.performance-register-report");
+        var analytics = service.resolve("001", "Performance Reports", "primehr.performance-analytics");
+        var feed = service.resolve("001", "Performance Reports", "primehr.performance-outcome-feed");
+
+        assertThat(form.dataScope()).isEqualTo(PermissionDataScope.OWN_RECORDS);
+        assertThat(monitoring.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+        assertThat(register.canAccess()).isTrue();
+        assertThat(register.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+        assertThat(analytics.canAccess()).isFalse();
+        assertThat(analytics.dataScope()).isEqualTo(PermissionDataScope.NONE);
+        assertThat(feed.canAccess()).isTrue();
+        assertThat(feed.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+    }
+
+    @Test
+    void phaseSevenLearningAndDevelopmentKeysResolveIndependentActionsAndScopes() {
+        PermissionRuleset ruleset = new PermissionRuleset("L&D Team", false,
+                "{\"primehr.ld-governance\":{\"canAccess\":true,\"canPublish\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.ld-needs\":{\"canAccess\":true,\"canSubmit\":true,\"dataScope\":\"OWN_RECORDS\"}," +
+                        "\"primehr.ld-individual-plan\":{\"canAccess\":true,\"canApprove\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.ld-agency-plan\":{\"canAccess\":true,\"canPublish\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.ld-program\":{\"canAccess\":true,\"canDelete\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.ld-nomination\":{\"canAccess\":true,\"canSubmit\":true,\"dataScope\":\"OWN_RECORDS\"}," +
+                        "\"primehr.ld-delivery\":{\"canAccess\":true,\"canFinalize\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.ld-evaluation\":{\"canAccess\":true,\"canApprove\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.ld-report\":{\"canAccess\":true,\"dataScope\":\"OWN_RECORDS\"}," +
+                        "\"primehr.ld-analytics\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.ld-completion-feed\":{\"canAccess\":false,\"dataScope\":\"AGENCY_WIDE\"}}" );
+        when(repository.findByPermissionNameIgnoreCase("L&D Team")).thenReturn(Optional.of(ruleset));
+
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-governance").canPublish()).isTrue();
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-needs").dataScope())
+                .isEqualTo(PermissionDataScope.OWN_RECORDS);
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-individual-plan").canApprove()).isTrue();
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-agency-plan").canPublish()).isTrue();
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-program").canDelete()).isTrue();
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-nomination").canSubmit()).isTrue();
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-delivery").canFinalize()).isTrue();
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-evaluation").canApprove()).isTrue();
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-report").dataScope())
+                .isEqualTo(PermissionDataScope.OWN_RECORDS);
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-analytics").dataScope())
+                .isEqualTo(PermissionDataScope.AGENCY_WIDE);
+        assertThat(service.resolve("001", "L&D Team", "primehr.ld-completion-feed").canAccess()).isFalse();
+    }
+
+    @Test
+    void phaseEightFoundationPermissionsAreCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("PRAISE Administrator", false,
+                "{\"primehr.rr-governance\":{\"canAccess\":true,\"canAdd\":true,\"canPublish\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.rr-committee\":{\"canAccess\":true,\"canEdit\":true,\"canPublish\":false,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("PRAISE Administrator")).thenReturn(Optional.of(ruleset));
+
+        var governance = service.resolve("001", "PRAISE Administrator", "primehr.rr-governance");
+        var committee = service.resolve("001", "PRAISE Administrator", "primehr.rr-committee");
+        assertThat(governance.canAccess()).isTrue();
+        assertThat(governance.canAdd()).isTrue();
+        assertThat(governance.canPublish()).isTrue();
+        assertThat(governance.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+        assertThat(committee.canEdit()).isTrue();
+        assertThat(committee.canPublish()).isFalse();
+    }
+
+    @Test
+    void phaseEightCycleAndNominationPermissionsAreCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("PRAISE Coordinator", false,
+                "{\"primehr.rr-cycle\":{\"canAccess\":true,\"canAdd\":true,\"canSubmit\":true,\"canFinalize\":false,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.rr-nomination\":{\"canAccess\":true,\"canAdd\":true,\"canEdit\":true,\"canDelete\":true,\"canSubmit\":true,\"dataScope\":\"OWN_RECORDS\"}}");
+        when(repository.findByPermissionNameIgnoreCase("PRAISE Coordinator")).thenReturn(Optional.of(ruleset));
+
+        var cycle = service.resolve("001", "PRAISE Coordinator", "primehr.rr-cycle");
+        var nomination = service.resolve("001", "PRAISE Coordinator", "primehr.rr-nomination");
+        assertThat(cycle.canAdd()).isTrue();
+        assertThat(cycle.canSubmit()).isTrue();
+        assertThat(cycle.canFinalize()).isFalse();
+        assertThat(cycle.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+        assertThat(nomination.canEdit()).isTrue();
+        assertThat(nomination.canDelete()).isTrue();
+        assertThat(nomination.canSubmit()).isTrue();
+        assertThat(nomination.dataScope()).isEqualTo(PermissionDataScope.OWN_RECORDS);
+    }
+
+    @Test
+    void phaseEightEvaluationPermissionsAreCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("PRAISE Committee", false,
+                "{\"primehr.rr-eligibility\":{\"canAccess\":true,\"canEdit\":true,\"canApprove\":true,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.rr-evaluation\":{\"canAccess\":true,\"canSubmit\":true,\"canApprove\":false,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.rr-award\":{\"canAccess\":true,\"canFinalize\":true,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("PRAISE Committee")).thenReturn(Optional.of(ruleset));
+
+        assertThat(service.resolve("001", "PRAISE Committee", "primehr.rr-eligibility").canApprove()).isTrue();
+        assertThat(service.resolve("001", "PRAISE Committee", "primehr.rr-evaluation").canSubmit()).isTrue();
+        assertThat(service.resolve("001", "PRAISE Committee", "primehr.rr-evaluation").canApprove()).isFalse();
+        assertThat(service.resolve("001", "PRAISE Committee", "primehr.rr-award").canFinalize()).isTrue();
+    }
+
+    @Test
+    void phaseEightFulfillmentAndReportPermissionsAreCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("PRAISE Secretariat", false,
+                "{\"primehr.rr-fulfillment\":{\"canAccess\":true,\"canAdd\":true,\"canApprove\":false,\"dataScope\":\"ASSIGNED_RECORDS\"}," +
+                        "\"primehr.rr-report\":{\"canAccess\":true,\"dataScope\":\"OWN_RECORDS\"}," +
+                        "\"primehr.rr-analytics\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("PRAISE Secretariat")).thenReturn(Optional.of(ruleset));
+
+        var fulfillment = service.resolve("001", "PRAISE Secretariat", "primehr.rr-fulfillment");
+        var report = service.resolve("001", "PRAISE Secretariat", "primehr.rr-report");
+        var analytics = service.resolve("001", "PRAISE Secretariat", "primehr.rr-analytics");
+        assertThat(fulfillment.canAdd()).isTrue();
+        assertThat(fulfillment.canApprove()).isFalse();
+        assertThat(fulfillment.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+        assertThat(report.canAccess()).isTrue();
+        assertThat(report.dataScope()).isEqualTo(PermissionDataScope.OWN_RECORDS);
+        assertThat(analytics.canAccess()).isTrue();
+        assertThat(analytics.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+    }
+
+    @Test
+    void phaseNineSuccessionFoundationPermissionsAreCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("Succession Administrator", false,
+                "{\"primehr.succession-governance\":{\"canAccess\":true,\"canAdd\":true,\"canPublish\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.succession-committee\":{\"canAccess\":true,\"canEdit\":true,\"canPublish\":false,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Succession Administrator")).thenReturn(Optional.of(ruleset));
+
+        var governance = service.resolve("001", "Succession Administrator", "primehr.succession-governance");
+        var committee = service.resolve("001", "Succession Administrator", "primehr.succession-committee");
+        assertThat(governance.canAdd()).isTrue();
+        assertThat(governance.canPublish()).isTrue();
+        assertThat(committee.canEdit()).isTrue();
+        assertThat(committee.canPublish()).isFalse();
+        assertThat(committee.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+    }
+
+    @Test
+    void phaseNineCareerPathAndCriticalPositionPermissionsAreCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("Succession Planner", false,
+                "{\"primehr.succession-career-path\":{\"canAccess\":true,\"canPublish\":true,\"dataScope\":\"AGENCY_WIDE\"}," +
+                        "\"primehr.succession-critical-position\":{\"canAccess\":true,\"canSubmit\":true,\"canApprove\":false,\"dataScope\":\"ASSIGNED_RECORDS\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Succession Planner")).thenReturn(Optional.of(ruleset));
+
+        var career = service.resolve("001", "Succession Planner", "primehr.succession-career-path");
+        var critical = service.resolve("001", "Succession Planner", "primehr.succession-critical-position");
+        assertThat(career.canPublish()).isTrue();
+        assertThat(career.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+        assertThat(critical.canSubmit()).isTrue();
+        assertThat(critical.canApprove()).isFalse();
+        assertThat(critical.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+    }
+
+    @Test
+    void phaseNineCandidatePoolPermissionIsCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("Succession Candidate", false,
+                "{\"primehr.succession-pool\":{\"canAccess\":true,\"canAdd\":true,\"canSubmit\":true,\"canApprove\":false,\"dataScope\":\"OWN_RECORDS\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Succession Candidate")).thenReturn(Optional.of(ruleset));
+        var pool = service.resolve("EMP-1", "Succession Candidate", "primehr.succession-pool");
+        assertThat(pool.canAdd()).isTrue();
+        assertThat(pool.canSubmit()).isTrue();
+        assertThat(pool.canApprove()).isFalse();
+        assertThat(pool.dataScope()).isEqualTo(PermissionDataScope.OWN_RECORDS);
+    }
+
+    @Test
+    void phaseNineReadinessPermissionIsCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("Succession Panel", false,
+                "{\"primehr.succession-readiness\":{\"canAccess\":true,\"canEdit\":true,\"canSubmit\":true,\"canFinalize\":false,\"dataScope\":\"ASSIGNED_RECORDS\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Succession Panel")).thenReturn(Optional.of(ruleset));
+        var readiness = service.resolve("PANEL-1", "Succession Panel", "primehr.succession-readiness");
+        assertThat(readiness.canEdit()).isTrue();
+        assertThat(readiness.canSubmit()).isTrue();
+        assertThat(readiness.canFinalize()).isFalse();
+        assertThat(readiness.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+    }
+
+    @Test
+    void phaseNineDevelopmentPermissionIsCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("Succession Development Panel", false,
+                "{\"primehr.succession-development\":{\"canAccess\":true,\"canEdit\":true,\"canSubmit\":true,\"canFinalize\":false,\"dataScope\":\"ASSIGNED_RECORDS\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Succession Development Panel")).thenReturn(Optional.of(ruleset));
+        var development = service.resolve("PANEL-1", "Succession Development Panel", "primehr.succession-development");
+        assertThat(development.canEdit()).isTrue();
+        assertThat(development.canSubmit()).isTrue();
+        assertThat(development.canFinalize()).isFalse();
+        assertThat(development.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+    }
+
+    @Test
+    void phaseNineContinuityPermissionIsCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("Succession Continuity Planner", false,
+                "{\"primehr.succession-continuity\":{\"canAccess\":true,\"canAdd\":true,\"canSubmit\":true,\"canApprove\":true,\"canFinalize\":false,\"dataScope\":\"ASSIGNED_RECORDS\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Succession Continuity Planner")).thenReturn(Optional.of(ruleset));
+        var continuity = service.resolve("PANEL-1", "Succession Continuity Planner", "primehr.succession-continuity");
+        assertThat(continuity.canAdd()).isTrue();
+        assertThat(continuity.canApprove()).isTrue();
+        assertThat(continuity.canFinalize()).isFalse();
+        assertThat(continuity.dataScope()).isEqualTo(PermissionDataScope.ASSIGNED_RECORDS);
+    }
+
+    @Test
+    void phaseNineReportingAndAnalyticsPermissionsAreIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("Succession Reporting", false,
+                "{\"primehr.succession-report\":{\"canAccess\":true,\"dataScope\":\"OWN_RECORDS\"}," +
+                        "\"primehr.succession-analytics\":{\"canAccess\":true,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("Succession Reporting")).thenReturn(Optional.of(ruleset));
+        var report = service.resolve("EMP-1", "Succession Reporting", "primehr.succession-report");
+        var analytics = service.resolve("EMP-1", "Succession Reporting", "primehr.succession-analytics");
+        assertThat(report.canAccess()).isTrue();
+        assertThat(report.dataScope()).isEqualTo(PermissionDataScope.OWN_RECORDS);
+        assertThat(analytics.canAccess()).isTrue();
+        assertThat(analytics.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
+    }
+
+    @Test
+    void phaseElevenOperationsPermissionIsCanonicalAndIndependent() {
+        PermissionRuleset ruleset = new PermissionRuleset("PrimeHR Operations", false,
+                "{\"primehr.operations\":{\"canAccess\":true,\"canAdd\":true,\"canEdit\":true," +
+                        "\"canDelete\":false,\"dataScope\":\"AGENCY_WIDE\"}}");
+        when(repository.findByPermissionNameIgnoreCase("PrimeHR Operations")).thenReturn(Optional.of(ruleset));
+
+        var operations = service.resolve("OPS-1", "PrimeHR Operations", "primehr.operations");
+        assertThat(operations.canAccess()).isTrue();
+        assertThat(operations.canAdd()).isTrue();
+        assertThat(operations.canEdit()).isTrue();
+        assertThat(operations.canDelete()).isFalse();
+        assertThat(operations.dataScope()).isEqualTo(PermissionDataScope.AGENCY_WIDE);
     }
 
     @Test

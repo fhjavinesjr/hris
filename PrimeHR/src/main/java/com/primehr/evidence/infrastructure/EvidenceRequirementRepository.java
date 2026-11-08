@@ -1,0 +1,2 @@
+package com.primehr.evidence.infrastructure;import com.primehr.evidence.domain.EvidenceRequirement;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface EvidenceRequirementRepository extends JpaRepository<EvidenceRequirement,String>{Optional<EvidenceRequirement>findByIdAndAgencyIdAndFrameworkVersionId(String id,String agency,String framework);List<EvidenceRequirement>findByAgencyIdAndFrameworkVersionIdOrderByDisplayOrder(String agency,String framework);void deleteByAgencyIdAndFrameworkVersionId(String agency,String framework);}

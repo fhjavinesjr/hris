@@ -1,0 +1,3 @@
+package com.primehr.succession.infrastructure;
+import com.primehr.succession.domain.SuccessionBenchCoverageEntry;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface SuccessionBenchCoverageEntryRepository extends JpaRepository<SuccessionBenchCoverageEntry,String>{List<SuccessionBenchCoverageEntry>findByAgencyIdAndContinuityPlanIdOrderByEmployeeNo(String agency,String plan);Optional<SuccessionBenchCoverageEntry>findByIdAndAgencyIdAndContinuityPlanId(String id,String agency,String plan);}

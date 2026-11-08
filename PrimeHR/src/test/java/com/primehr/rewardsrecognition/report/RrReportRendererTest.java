@@ -1,0 +1,3 @@
+package com.primehr.rewardsrecognition.report;
+import org.junit.jupiter.api.Test;import java.util.List;import static org.assertj.core.api.Assertions.assertThat;
+class RrReportRendererTest{@Test void compilesAndFillsBeanDrivenPraiseRecord(){byte[]pdf=new RrReportRenderer().render("Annual PRAISE Register — 2026","System-generated operational record.","EMP-00001",List.of(new RrReportData.Row("Award","Award code","RR-2026-0001"),new RrReportData.Row("Citation","Publication citation","Recognized for an authorized, human-approved contribution.")));assertThat(pdf).startsWith("%PDF".getBytes()).hasSizeGreaterThan(1_000);}}

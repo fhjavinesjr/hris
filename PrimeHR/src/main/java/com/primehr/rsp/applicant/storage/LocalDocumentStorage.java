@@ -13,5 +13,6 @@ public class LocalDocumentStorage implements DocumentStorage {
     public void put(String key,byte[] content,String media){Path target=resolve(key);try{Files.createDirectories(target.getParent());Files.write(target,content,StandardOpenOption.CREATE_NEW);}catch(IOException e){throw new IllegalStateException("Document could not be stored",e);}}
     public InputStream get(String key){try{return Files.newInputStream(resolve(key));}catch(IOException e){throw new IllegalStateException("Document could not be read",e);}}
     public void delete(String key){try{Files.deleteIfExists(resolve(key));}catch(IOException e){throw new IllegalStateException("Document could not be removed",e);}}
+    public StorageObjectMetadata metadata(String key){Path target=resolve(key);try{return Files.exists(target)?new StorageObjectMetadata(true,Files.size(target),Files.probeContentType(target)):new StorageObjectMetadata(false,null,null);}catch(IOException e){throw new IllegalStateException("Document metadata could not be read",e);}}
     private Path resolve(String key){if(key==null||!key.matches("[A-Za-z0-9/_-]+"))throw new IllegalArgumentException("Invalid storage object key");Path target=root.resolve(key).normalize();if(!target.startsWith(root))throw new IllegalArgumentException("Storage path escapes configured root");return target;}
 }

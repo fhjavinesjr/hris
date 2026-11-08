@@ -145,7 +145,7 @@ class CompetencyAdminControllerTest {
         String authorization = "Bearer " + token("2");
         when(agencyScope.resolveAgencyId(any())).thenReturn("TRUSTED-AGENCY");
         when(service.publishCategory(eq("TRUSTED-AGENCY"), eq("category-1"),
-                any(PublishDefinitionRequest.class), isNull()))
+                any(PublishDefinitionRequest.class), anyString()))
                 .thenThrow(new PublicationConflictException("The definition changed before publication"));
 
         mockMvc.perform(post("/api/primehr/v1/admin/competency-categories/category-1/publish")

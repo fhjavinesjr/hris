@@ -8,6 +8,7 @@ public record ApiErrorResponse(
         int status,
         String message,
         String path,
+        String correlationId,
         List<String> details
 ) {
     public ApiErrorResponse {

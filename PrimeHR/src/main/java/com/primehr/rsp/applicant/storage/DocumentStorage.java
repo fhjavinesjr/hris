@@ -5,4 +5,7 @@ public interface DocumentStorage {
     void put(String objectKey,byte[] content,String mediaType);
     InputStream get(String objectKey);
     void delete(String objectKey);
+    StorageObjectMetadata metadata(String objectKey);
+
+    record StorageObjectMetadata(boolean exists, Long byteSize, String mediaType) {}
 }

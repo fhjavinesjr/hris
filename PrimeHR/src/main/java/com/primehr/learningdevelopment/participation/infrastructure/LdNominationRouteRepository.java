@@ -1,0 +1,2 @@
+package com.primehr.learningdevelopment.participation.infrastructure;import com.primehr.learningdevelopment.participation.domain.*;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface LdNominationRouteRepository extends JpaRepository<LdNominationRoute,String>{Optional<LdNominationRoute>findFirstByAgencyIdAndNominationIdOrderByRouteRevisionDesc(String agency,String nomination);}

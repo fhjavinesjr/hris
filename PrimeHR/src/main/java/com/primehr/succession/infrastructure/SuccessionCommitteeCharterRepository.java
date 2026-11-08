@@ -1,0 +1,2 @@
+package com.primehr.succession.infrastructure; import com.primehr.succession.domain.SuccessionCommitteeCharter; import org.springframework.data.jpa.repository.JpaRepository; import java.util.Optional;
+public interface SuccessionCommitteeCharterRepository extends JpaRepository<SuccessionCommitteeCharter,String>{boolean existsByAgencyIdAndNormalizedCode(String agencyId,String code);Optional<SuccessionCommitteeCharter> findByIdAndAgencyId(String id,String agencyId);}

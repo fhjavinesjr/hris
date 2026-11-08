@@ -1,0 +1,3 @@
+package com.primehr.succession.infrastructure;
+import com.primehr.succession.domain.*; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
+public interface SuccessionCareerFamilyVersionRepository extends JpaRepository<SuccessionCareerFamilyVersion,String>{Optional<SuccessionCareerFamilyVersion> findByIdAndAgencyId(String id,String agencyId);List<SuccessionCareerFamilyVersion> findByAgencyIdOrderByCreatedAtDesc(String agencyId);List<SuccessionCareerFamilyVersion> findByAgencyIdAndFamilyIdOrderByDefinitionVersionDesc(String agencyId,String familyId);List<SuccessionCareerFamilyVersion> findByAgencyIdAndStatus(String agencyId,SuccessionDefinitionStatus status);}

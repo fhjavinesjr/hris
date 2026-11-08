@@ -23,6 +23,44 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String PRIMEHR_GAP_CONFIGURATION = "primehr.gap-configuration";
     public static final String PRIMEHR_COMPETENCY_GAP = "primehr.competency-gap";
     public static final String PRIMEHR_LD_REFERRAL = "primehr.ld-referral";
+    public static final String PRIMEHR_LD_GOVERNANCE = "primehr.ld-governance";
+    public static final String PRIMEHR_LD_PROGRAM = "primehr.ld-program";
+    public static final String PRIMEHR_LD_EVALUATION = "primehr.ld-evaluation";
+    public static final String PRIMEHR_LD_NEEDS = "primehr.ld-needs";
+    public static final String PRIMEHR_LD_INDIVIDUAL_PLAN = "primehr.ld-individual-plan";
+    public static final String PRIMEHR_LD_AGENCY_PLAN = "primehr.ld-agency-plan";
+    public static final String PRIMEHR_LD_NOMINATION = "primehr.ld-nomination";
+    public static final String PRIMEHR_LD_DELIVERY = "primehr.ld-delivery";
+    public static final String PRIMEHR_LD_REPORT = "primehr.ld-report";
+    public static final String PRIMEHR_LD_ANALYTICS = "primehr.ld-analytics";
+    public static final String PRIMEHR_LD_COMPLETION_FEED = "primehr.ld-completion-feed";
+    public static final String PRIMEHR_RR_GOVERNANCE = "primehr.rr-governance";
+    public static final String PRIMEHR_RR_COMMITTEE = "primehr.rr-committee";
+    public static final String PRIMEHR_RR_CYCLE = "primehr.rr-cycle";
+    public static final String PRIMEHR_RR_NOMINATION = "primehr.rr-nomination";
+    public static final String PRIMEHR_RR_ELIGIBILITY = "primehr.rr-eligibility";
+    public static final String PRIMEHR_RR_EVALUATION = "primehr.rr-evaluation";
+    public static final String PRIMEHR_RR_AWARD = "primehr.rr-award";
+    public static final String PRIMEHR_RR_FULFILLMENT = "primehr.rr-fulfillment";
+    public static final String PRIMEHR_RR_REPORT = "primehr.rr-report";
+    public static final String PRIMEHR_RR_ANALYTICS = "primehr.rr-analytics";
+    public static final String PRIMEHR_SUCCESSION_GOVERNANCE = "primehr.succession-governance";
+    public static final String PRIMEHR_SUCCESSION_COMMITTEE = "primehr.succession-committee";
+    public static final String PRIMEHR_SUCCESSION_CAREER_PATH = "primehr.succession-career-path";
+    public static final String PRIMEHR_SUCCESSION_CRITICAL_POSITION = "primehr.succession-critical-position";
+    public static final String PRIMEHR_SUCCESSION_POOL = "primehr.succession-pool";
+    public static final String PRIMEHR_SUCCESSION_READINESS = "primehr.succession-readiness";
+    public static final String PRIMEHR_SUCCESSION_DEVELOPMENT = "primehr.succession-development";
+    public static final String PRIMEHR_SUCCESSION_CONTINUITY = "primehr.succession-continuity";
+    public static final String PRIMEHR_SUCCESSION_REPORT = "primehr.succession-report";
+    public static final String PRIMEHR_SUCCESSION_ANALYTICS = "primehr.succession-analytics";
+    public static final String PRIMEHR_EVIDENCE_FRAMEWORK = "primehr.evidence-framework";
+    public static final String PRIMEHR_EVIDENCE_ASSESSMENT = "primehr.evidence-assessment";
+    public static final String PRIMEHR_EVIDENCE_VALIDATION = "primehr.evidence-validation";
+    public static final String PRIMEHR_EVIDENCE_ACTION = "primehr.evidence-action";
+    public static final String PRIMEHR_EVIDENCE_REPORT = "primehr.evidence-report";
+    public static final String PRIMEHR_EVIDENCE_ANALYTICS = "primehr.evidence-analytics";
+    public static final String PRIMEHR_OPERATIONS = "primehr.operations";
     public static final String ADMIN_QUALIFICATION_STANDARD = "administrative.qualification-standard";
     public static final String PRIMEHR_RSP_RECRUITMENT_PLANNING = "primehr.rsp-recruitment-planning";
     public static final String PRIMEHR_RSP_VACANCY_PUBLICATION = "primehr.rsp-vacancy-publication";
@@ -39,6 +77,27 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     public static final String PRIMEHR_RSP_EVIDENCE_INDEX_REPORT = "primehr.rsp-evidence-index-report";
     public static final String PRIMEHR_RSP_REGISTER_REPORT = "primehr.rsp-register-report";
     public static final String PRIMEHR_RSP_PROCESS_ANALYTICS = "primehr.rsp-process-analytics";
+    public static final String PRIMEHR_PERFORMANCE_POLICY = "primehr.performance-policy";
+    public static final String PRIMEHR_PERFORMANCE_CYCLE = "primehr.performance-cycle";
+    public static final String PRIMEHR_PERFORMANCE_PMT = "primehr.performance-pmt";
+    public static final String PRIMEHR_PERFORMANCE_RATING_SCALE = "primehr.performance-rating-scale";
+    public static final String PRIMEHR_PERFORMANCE_SUCCESS_INDICATOR = "primehr.performance-success-indicator";
+    public static final String PRIMEHR_PERFORMANCE_TEMPLATE = "primehr.performance-template";
+    public static final String PRIMEHR_PERFORMANCE_OBJECTIVE = "primehr.performance-objective";
+    public static final String PRIMEHR_PERFORMANCE_PLAN_ASSIGNMENT = "primehr.performance-plan-assignment";
+    public static final String PRIMEHR_OFFICE_PERFORMANCE_COMMITMENT = "primehr.office-performance-commitment";
+    public static final String PRIMEHR_INDIVIDUAL_PERFORMANCE_COMMITMENT = "primehr.individual-performance-commitment";
+    public static final String PRIMEHR_PERFORMANCE_MONITORING = "primehr.performance-monitoring";
+    public static final String PRIMEHR_PERFORMANCE_COACHING = "primehr.performance-coaching";
+    public static final String PRIMEHR_PERFORMANCE_RATING = "primehr.performance-rating";
+    public static final String PRIMEHR_PERFORMANCE_CALIBRATION = "primehr.performance-calibration";
+    public static final String PRIMEHR_PERFORMANCE_APPEAL = "primehr.performance-appeal";
+    public static final String PRIMEHR_PERFORMANCE_INTERVENTION = "primehr.performance-intervention";
+    public static final String PRIMEHR_PERFORMANCE_FORM_REPORT = "primehr.performance-form-report";
+    public static final String PRIMEHR_PERFORMANCE_MONITORING_REPORT = "primehr.performance-monitoring-report";
+    public static final String PRIMEHR_PERFORMANCE_REGISTER_REPORT = "primehr.performance-register-report";
+    public static final String PRIMEHR_PERFORMANCE_ANALYTICS = "primehr.performance-analytics";
+    public static final String PRIMEHR_PERFORMANCE_OUTCOME_FEED = "primehr.performance-outcome-feed";
     public static final String HRM_APPOINTMENT_INTAKE = "hrm.appointment-intake";
     public static final String HRM_ONBOARDING_CONFIGURATION = "hrm.onboarding-configuration";
     public static final String HRM_ONBOARDING = "hrm.onboarding";
@@ -65,7 +124,23 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
     private static final Set<String> SUPPORTED_FEATURES = Set.of(PRIMEHR_COMPETENCY,
             PRIMEHR_POSITION_PROFILE, PRIMEHR_ASSESSMENT_ADMINISTRATION, PRIMEHR_COMPETENCY_ASSESSMENT,
             PRIMEHR_ASSESSMENT_VALIDATION, PRIMEHR_PERSON_PROFILE, PRIMEHR_GAP_CONFIGURATION,
-            PRIMEHR_COMPETENCY_GAP, PRIMEHR_LD_REFERRAL, ADMIN_QUALIFICATION_STANDARD,
+            PRIMEHR_COMPETENCY_GAP, PRIMEHR_LD_REFERRAL, PRIMEHR_LD_GOVERNANCE,
+            PRIMEHR_LD_PROGRAM, PRIMEHR_LD_EVALUATION, PRIMEHR_LD_NEEDS,
+            PRIMEHR_LD_INDIVIDUAL_PLAN, PRIMEHR_LD_AGENCY_PLAN, PRIMEHR_LD_NOMINATION,
+            PRIMEHR_LD_DELIVERY, PRIMEHR_LD_REPORT, PRIMEHR_LD_ANALYTICS,
+            PRIMEHR_LD_COMPLETION_FEED, PRIMEHR_RR_GOVERNANCE, PRIMEHR_RR_COMMITTEE,
+            PRIMEHR_RR_CYCLE, PRIMEHR_RR_NOMINATION, PRIMEHR_RR_ELIGIBILITY,
+            PRIMEHR_RR_EVALUATION, PRIMEHR_RR_AWARD, PRIMEHR_RR_FULFILLMENT,
+            PRIMEHR_RR_REPORT, PRIMEHR_RR_ANALYTICS, PRIMEHR_SUCCESSION_GOVERNANCE,
+            PRIMEHR_SUCCESSION_COMMITTEE, PRIMEHR_SUCCESSION_CAREER_PATH,
+            PRIMEHR_SUCCESSION_CRITICAL_POSITION, PRIMEHR_SUCCESSION_POOL, PRIMEHR_SUCCESSION_READINESS,
+            PRIMEHR_SUCCESSION_DEVELOPMENT, PRIMEHR_SUCCESSION_CONTINUITY, PRIMEHR_SUCCESSION_REPORT,
+            PRIMEHR_SUCCESSION_ANALYTICS,
+            PRIMEHR_EVIDENCE_FRAMEWORK, PRIMEHR_EVIDENCE_ASSESSMENT,
+            PRIMEHR_EVIDENCE_VALIDATION, PRIMEHR_EVIDENCE_ACTION,
+            PRIMEHR_EVIDENCE_REPORT, PRIMEHR_EVIDENCE_ANALYTICS,
+            PRIMEHR_OPERATIONS,
+            ADMIN_QUALIFICATION_STANDARD,
             PRIMEHR_RSP_RECRUITMENT_PLANNING, PRIMEHR_RSP_VACANCY_PUBLICATION,
             PRIMEHR_RSP_APPLICANT_INTAKE, PRIMEHR_RSP_SCREENING_POLICY,
             PRIMEHR_RSP_APPLICATION_SCREENING, PRIMEHR_RSP_EVALUATION_POLICY,
@@ -73,7 +148,17 @@ public class EffectiveAuthorizationServiceImpl implements EffectiveAuthorization
             PRIMEHR_RSP_SELECTION_DECISION, PRIMEHR_RSP_APPOINTMENT_HANDOFF,
             PRIMEHR_RSP_COMPARATIVE_REPORT, PRIMEHR_RSP_SELECTION_REPORT,
             PRIMEHR_RSP_EVIDENCE_INDEX_REPORT, PRIMEHR_RSP_REGISTER_REPORT,
-            PRIMEHR_RSP_PROCESS_ANALYTICS,
+            PRIMEHR_RSP_PROCESS_ANALYTICS, PRIMEHR_PERFORMANCE_POLICY,
+            PRIMEHR_PERFORMANCE_CYCLE, PRIMEHR_PERFORMANCE_PMT,
+            PRIMEHR_PERFORMANCE_RATING_SCALE, PRIMEHR_PERFORMANCE_SUCCESS_INDICATOR,
+            PRIMEHR_PERFORMANCE_TEMPLATE, PRIMEHR_PERFORMANCE_OBJECTIVE,
+            PRIMEHR_PERFORMANCE_PLAN_ASSIGNMENT, PRIMEHR_OFFICE_PERFORMANCE_COMMITMENT,
+            PRIMEHR_INDIVIDUAL_PERFORMANCE_COMMITMENT, PRIMEHR_PERFORMANCE_MONITORING,
+            PRIMEHR_PERFORMANCE_COACHING, PRIMEHR_PERFORMANCE_RATING,
+            PRIMEHR_PERFORMANCE_CALIBRATION, PRIMEHR_PERFORMANCE_APPEAL,
+            PRIMEHR_PERFORMANCE_INTERVENTION, PRIMEHR_PERFORMANCE_FORM_REPORT,
+            PRIMEHR_PERFORMANCE_MONITORING_REPORT, PRIMEHR_PERFORMANCE_REGISTER_REPORT,
+            PRIMEHR_PERFORMANCE_ANALYTICS, PRIMEHR_PERFORMANCE_OUTCOME_FEED,
             HRM_APPOINTMENT_INTAKE, HRM_ONBOARDING_CONFIGURATION, HRM_ONBOARDING,
             HRM_APPOINTMENT_REPORT, HRM_ONBOARDING_REPORT, HRM_APPOINTMENT_DOCUMENTS,
             HRM_EMPLOYMENT_RECORD, HRM_LEAVE_SUMMARY_REPORT, HRM_SELF_SERVICE_BEGINNING_BALANCE,

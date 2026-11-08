@@ -1,0 +1,2 @@
+package com.primehr.succession.infrastructure; import com.primehr.succession.domain.SuccessionGovernancePolicy; import org.springframework.data.jpa.repository.JpaRepository; import java.util.Optional;
+public interface SuccessionGovernancePolicyRepository extends JpaRepository<SuccessionGovernancePolicy,String>{boolean existsByAgencyIdAndNormalizedCode(String agencyId,String code);Optional<SuccessionGovernancePolicy> findByIdAndAgencyId(String id,String agencyId);}

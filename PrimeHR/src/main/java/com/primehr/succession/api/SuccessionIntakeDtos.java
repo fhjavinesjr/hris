@@ -1,0 +1,18 @@
+package com.primehr.succession.api;
+import com.primehr.succession.domain.*;import jakarta.validation.Valid;import jakarta.validation.constraints.*;import java.io.InputStream;import java.time.*;import java.util.List;
+public final class SuccessionIntakeDtos{private SuccessionIntakeDtos(){}
+ public record CycleInput(@NotBlank @Size(max=80)String code,@NotBlank @Size(max=200)String title,@Size(max=2000)String description,@NotBlank String policyVersionId,@NotBlank String charterVersionId,@NotNull LocalDate nominationOpensOn,@NotNull LocalDate nominationClosesOn,@NotNull LocalDate eligibilityDueOn,Long recordVersion){}
+ public record Transition(@NotNull Long recordVersion,@NotBlank @Size(max=2000)String reason){}
+ public record CycleResponse(String id,String code,String title,String description,String policyVersionId,int policyDefinitionVersion,String charterVersionId,LocalDate nominationOpensOn,LocalDate nominationClosesOn,LocalDate eligibilityDueOn,String status,long recordVersion){}
+ public record RiskInput(@NotBlank String designationId,@NotNull SuccessionContinuityRiskReview.RiskLevel riskLevel,@NotBlank @Size(max=4000)String riskReason,@NotBlank @Size(max=4000)String continuityControls,@NotNull LocalDate reviewDate,@NotNull LocalDate nextReviewDate,Long recordVersion){}
+ public record RiskResponse(String id,String cycleId,String designationId,String targetType,Long targetId,Long jobPositionId,String positionName,Long plantillaId,String plantillaName,String riskLevel,String riskReason,String continuityControls,LocalDate reviewDate,LocalDate nextReviewDate,String status,String finalizedBy,Instant finalizedAt,long recordVersion){}
+ public record CandidateInput(@NotBlank String cycleId,@NotBlank String designationId,@NotNull @Positive Long employeeId,@NotNull SuccessionCandidate.IntakeType intakeType,@NotBlank @Size(max=4000)String nominationReason,Long recordVersion){}
+ public record NoticeInput(@NotNull Long recordVersion,@NotBlank @Size(max=4000)String noticeText){}
+ public record ConsentInput(@NotNull Long recordVersion,@AssertTrue boolean consent,@NotBlank @Size(max=4000)String consentStatement){}
+ public record FindingInput(@NotBlank @Size(max=80)String criterionCode,@NotBlank @Size(max=200)String criterionLabel,@NotNull SuccessionEligibilityFinding.Outcome outcome,@NotBlank @Size(max=4000)String reason,boolean employeeVisible,@Min(1)int displayOrder){}
+ public record EligibilityInput(@NotNull Long recordVersion,boolean eligible,@NotBlank @Size(max=4000)String reason,@NotEmpty List<@Valid FindingInput> findings){}
+ public record FindingResponse(String id,String criterionCode,String criterionLabel,String outcome,String reason,boolean employeeVisible,int displayOrder){}
+ public record EvidenceResponse(String id,String title,String filename,String mediaType,long byteSize,String checksum,String visibility,String retentionTag,String uploadedBy,Instant uploadedAt){}
+ public record EvidenceContent(String filename,String mediaType,long size,InputStream stream){}
+ public record CandidateResponse(String id,String cycleId,String designationId,String intakeType,String initiatedBy,Long employeeId,String employeeNo,String employeeName,Long appointmentId,Long currentJobPositionId,Long currentPlantillaId,String targetType,Long targetId,Long targetJobPositionId,String targetPositionName,Long targetPlantillaId,String targetPlantillaName,String nominationReason,String status,String noticeText,Instant noticeSentAt,String consentStatement,Instant consentedAt,String eligibilityOutcome,String eligibilityReason,String eligibilityReviewedBy,Instant eligibilityReviewedAt,String withdrawnBy,Instant withdrawnAt,String withdrawalReason,long recordVersion,List<FindingResponse> findings,List<EvidenceResponse> evidence){}
+}

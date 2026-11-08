@@ -46,7 +46,7 @@ public class PerformancePlanningSourceServiceImpl implements PerformancePlanning
         return new PersonnelMembership(employeeId,unit.getBusinessUnitsId(),unit.getBusinessUnitsCode(),unit.getBusinessUnitsName(),area.getAreasId(),area.getAreasName(),row.isHead(),row.isCoApprover(),row.getBase(),fingerprint(raw),now);
     }
     @Override public ApprovalRoute approvalRoute(Long businessUnitId,String requestCode){positive(businessUnitId,"businessUnitId");String code=required(requestCode,"requestCode").toUpperCase(Locale.ROOT);
-        if(!Set.of("PERFORMANCE_OFFICE_COMMITMENT","PERFORMANCE_INDIVIDUAL_COMMITMENT").contains(code))throw new IllegalArgumentException("Unsupported performance approval request code");
+        if(!Set.of("PERFORMANCE_OFFICE_COMMITMENT","PERFORMANCE_INDIVIDUAL_COMMITMENT","LEARNING_INDIVIDUAL_DEVELOPMENT_PLAN").contains(code))throw new IllegalArgumentException("Unsupported approval request code");
         BusinessUnits unit=units.findById(businessUnitId).orElseThrow(()->missing("Business Unit"));EmployeeRequest request=requests.findByCodeIgnoreCase(code).orElseThrow(()->missing("Employee Request"));
         List<ApprovalWorkflow> rows=workflows.findByBusinessUnitIdAndEmployeeRequestIdOrderByApprovalLevelAscApprovalWorkflowIdAsc(businessUnitId,request.getEmployeeRequestId());
         if(rows.isEmpty())throw new ResponseStatusException(HttpStatus.CONFLICT,"Performance approval route is not configured");
